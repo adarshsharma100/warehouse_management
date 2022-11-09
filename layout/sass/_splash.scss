@@ -1,0 +1,155 @@
+.preloader {
+  position: fixed;
+  z-index: 999999;
+  background: #edf1f5;
+  width: 100%;
+  height: 100%;
+}
+.preloader-content {
+  border: 0 solid transparent;
+  border-radius: 50%;
+  width: 150px;
+  height: 150px;
+  position: absolute;
+  top: calc(50vh - 75px);
+  left: calc(50vw - 75px);
+}
+
+.preloader-content:before,
+.preloader-content:after {
+  content: "";
+  border: 1em solid var(--primary-color);
+  border-radius: 50%;
+  width: inherit;
+  height: inherit;
+  position: absolute;
+  top: 0;
+  left: 0;
+  animation: loader 2s linear infinite;
+  opacity: 0;
+}
+
+.preloader-content:before {
+  animation-delay: 0.5s;
+}
+
+@keyframes loader {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+.blink-text {
+  // color: #000;
+  // font-weight: bold;
+  // font-size: 2rem;
+  animation: blinkingText 5s infinite;
+}
+.blink-text-incident {
+  animation: linear blinkingIncident 5s infinite;
+}
+.blinking-border {
+  animation: linear blinkingIncidentTable 5s infinite !important;
+  // border: 1px solid yellow !important;
+}
+.blinking-border .p-datatable .p-datatable-tbody > tr > td {
+  animation: linear blinkingIncidentTable 5s infinite !important;
+}
+.p-datatable.p-datatable-gridlines .p-datatable-tbody > tr > td {
+  border-width: 2px !important;
+}
+
+@keyframes blinkingIncidentTable {
+  0% {
+    // background: radial-gradient(red, #1f2d40)
+    background-color: rgba(129, 50, 50, 0.5);
+  }
+  25% {
+    // background: radial-gradient(#1f2d40, #1f2d40);
+    background-color: #1f2d40;
+  }
+  50% {
+    background-color: rgba(129, 50, 50, 0.5);
+    // background: radial-gradient(red, #1f2d40);
+  }
+  75% {
+    // background: radial-gradient(#1f2d40, #1f2d40);
+    background-color: #1f2d40;
+  }
+  100% {
+    background-color: rgba(129, 50, 50, 0.5);
+    // background: radial-gradient(red, #1f2d40);
+  }
+}
+@keyframes blinkingText {
+  0% {
+    background-color: rgba(129, 50, 50, 0.5) !important;
+  }
+  25% {
+    background-color: #1f2d40 !important;
+  }
+  50% {
+    background-color: rgba(129, 50, 50, 0.5) !important;
+  }
+  75% {
+    background-color: #1f2d40 !important;
+  }
+  100% {
+    background-color: rgba(129, 50, 50, 0.5) !important;
+  }
+}
+
+.p-tabview .p-tabview-panels {
+  position: relative;
+}
+.side-acknowledge {
+  position: absolute;
+  top: -5vh;
+  z-index: 1001;
+  // right: -71vw;
+}
+@keyframes blinkingIncident {
+  0% {
+    background-color: rgba(129, 50, 50, 0.5);
+  }
+  25% {
+    background-color: #17212f;
+  }
+  50% {
+    background-color: rgba(129, 50, 50, 0.5);
+  }
+  75% {
+    background-color: #17212f;
+  }
+  100% {
+    background-color: rgba(129, 50, 50, 0.5);
+  }
+}
+.p-timeline-event-opposite {
+  flex: none !important;
+}
+
+.card {
+  &.message-output {
+    background-color: #17212f !important;
+    box-shadow: rgb(23 33 47 / 25%) 0px 30px 60px -12px inset,
+      rgb(0 0 0 / 30%) 0px 18px 36px -18px inset !important;
+  }
+}
+.p-datatable.p-datatable-gridlines .p-datatable-tbody > tr > td {
+  // padding-top: 2px;
+  // padding-bottom: ;
+  // padding-left: 6px;
+  padding: 2px 0px 2px 6px !important;
+}
+.p-tabview .p-tabview-panels {
+  padding: 0px !important;
+}

@@ -1,0 +1,24 @@
+.alarms {
+  background: var(--surface-ground);
+
+  .leaderboard__picture {
+    max-width: 100%;
+    // width: 30px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px var(--surface-border), 0 0 0 10px var(--surface-card);
+    width: 25px;
+    height: 25px;
+  }
+}
+
+.dashboard {
+  .card {
+    height: 100%;
+  }
+  .online {
+    border: 1px solid var(--primary-color);
+  }
+}
+.p-scrollpanel-bar-x {
+  display: none;
+}
