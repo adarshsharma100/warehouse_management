@@ -8,12 +8,11 @@ datasource db {
 }
 
 model gatepass_order {
-  gpo_id         Int              @id @unique(map: "gpo_id_UNIQUE") @default(autoincrement())
-  gatepass_code  String           @db.VarChar(45)
-  quantity       Int
-  to_party       String           @db.VarChar(45)
-  created_at     DateTime         @db.DateTime(0)
-  purchase_order purchase_order[]
+  gpo_id        Int      @id @unique(map: "gpo_id_UNIQUE") @default(autoincrement())
+  gatepass_code String   @db.VarChar(45)
+  quantity      Int
+  to_party      String   @db.VarChar(45)
+  created_at    DateTime @db.DateTime(0)
 }
 
 model grn {
@@ -48,31 +47,29 @@ model products {
 }
 
 model purchase_order {
-  po_id                        Int                   @unique(map: "po_id_UNIQUE") @default(autoincrement())
-  po_status                    String                @db.VarChar(45)
-  po_type                      String                @db.VarChar(45)
+  po_id                        Int                       @unique(map: "po_id_UNIQUE") @default(autoincrement())
+  po_status                    Int                       @default(1)
+  po_type                      String                    @default("Manual") @db.VarChar(45)
   ordered_qty                  Int
-  received_qty                 Int
+  received_qty                 Int                       @default(0)
   total                        Int
-  updated_on                   DateTime              @db.DateTime(0)
-  approved_on                  DateTime              @db.DateTime(0)
-  created_at                   DateTime              @db.DateTime(0)
-  from_party                   String                @db.VarChar(45)
-  expiry_date                  DateTime              @db.DateTime(0)
-  expected_delivery            DateTime              @db.DateTime(0)
-  agreement                    String                @db.VarChar(45)
+  updated_on                   DateTime                  @db.DateTime(0)
+  approved_on                  DateTime                  @db.DateTime(0)
+  created_at                   DateTime                  @db.DateTime(0)
+  from_party                   String                    @db.VarChar(45)
+  expiry_date                  DateTime                  @db.DateTime(0)
+  expected_delivery            DateTime                  @db.DateTime(0)
+  agreement                    String                    @db.VarChar(45)
   purchase_order_status_pos_id Int
   rfq_id                       Int
-  gatepass_order_gpo_id        Int
   vendor_vendor_id             Int
-  gatepass_order               gatepass_order        @relation(fields: [gatepass_order_gpo_id], references: [gpo_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_gatepass_order1")
-  purchase_order_status        purchase_order_status @relation(fields: [purchase_order_status_pos_id], references: [pos_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_purchase_order_status1")
-  rfq                          rfq                   @relation(fields: [rfq_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_rfq1")
-  vendor                       vendor                @relation(fields: [vendor_vendor_id], references: [vendor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_vendor1")
+  purchase_order_status        purchase_order_status     @relation(fields: [purchase_order_status_pos_id], references: [pos_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_purchase_order_status1")
+  rfq                          rfq                       @relation(fields: [rfq_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_rfq1")
+  vendor                       vendor                    @relation(fields: [vendor_vendor_id], references: [vendor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_vendor1")
+  purchase_order_products      purchase_order_products[]
 
-  @@id([po_id, purchase_order_status_pos_id, rfq_id, gatepass_order_gpo_id, vendor_vendor_id])
+  @@id([po_id, purchase_order_status_pos_id, rfq_id, vendor_vendor_id])
   @@unique([po_id, purchase_order_status_pos_id])
-  @@index([gatepass_order_gpo_id], map: "fk_purchase_order_gatepass_order1_idx")
   @@index([purchase_order_status_pos_id], map: "fk_purchase_order_purchase_order_status1_idx")
   @@index([rfq_id], map: "fk_purchase_order_rfq1_idx")
   @@index([vendor_vendor_id], map: "fk_purchase_order_vendor1_idx")
@@ -99,12 +96,13 @@ model vendor {
 }
 
 model vendor_products {
-  vp_id               Int      @unique(map: "vpt_id_UNIQUE") @default(autoincrement())
-  unit_price          Int
-  vendor_vendor_id    Int
-  products_product_id Int
-  products            products @relation(fields: [products_product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_products_products1")
-  vendor              vendor   @relation(fields: [vendor_vendor_id], references: [vendor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_products_vendor")
+  vp_id                   Int                       @unique(map: "vpt_id_UNIQUE") @default(autoincrement())
+  unit_price              Int
+  vendor_vendor_id        Int
+  products_product_id     Int
+  products                products                  @relation(fields: [products_product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_products_products1")
+  vendor                  vendor                    @relation(fields: [vendor_vendor_id], references: [vendor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_products_vendor")
+  purchase_order_products purchase_order_products[]
 
   @@id([vp_id, vendor_vendor_id, products_product_id])
   @@index([products_product_id], map: "fk_vendor_products_products1_idx")
@@ -125,7 +123,7 @@ model rfq {
 model session {
   id                 Int       @id @default(autoincrement())
   createdAt          DateTime  @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime  @default(now())
   expiresAt          DateTime?
   handle             String    @unique(map: "Session_handle_key")
   hashedSessionToken String?
@@ -177,4 +175,23 @@ model rfq_products {
   @@id([rfq_products_id, rfq_id, products_product_id])
   @@index([products_product_id], map: "fk_rfq_products_products1_idx")
   @@index([rfq_id], map: "fk_rfq_products_rfq1_idx")
+}
+
+model purchase_order_products {
+  pop_id                                      Int             @unique(map: "pop_id_UNIQUE")
+  purchase_order_po_id                        Int
+  purchase_order_purchase_order_status_pos_id Int
+  purchase_order_rfq_id                       Int?            @unique(map: "purchase_order_rfq_id_UNIQUE")
+  purchase_order_vendor_vendor_id             Int
+  vendor_products_vp_id                       Int
+  vendor_products_vendor_vendor_id            Int
+  vendor_products_products_product_id         Int
+  quantity                                    Int
+  price_per_unit                              Int?
+  purchase_order                              purchase_order? @relation(fields: [purchase_order_po_id, purchase_order_purchase_order_status_pos_id, purchase_order_rfq_id, purchase_order_vendor_vendor_id], references: [po_id, purchase_order_status_pos_id, rfq_id, vendor_vendor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_products_purchase_order1")
+  vendor_products                             vendor_products @relation(fields: [vendor_products_vp_id, vendor_products_vendor_vendor_id, vendor_products_products_product_id], references: [vp_id, vendor_vendor_id, products_product_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_products_vendor_products1")
+
+  @@id([purchase_order_po_id, purchase_order_purchase_order_status_pos_id, purchase_order_vendor_vendor_id, vendor_products_vp_id, vendor_products_vendor_vendor_id, vendor_products_products_product_id, pop_id, quantity])
+  @@index([purchase_order_po_id, purchase_order_purchase_order_status_pos_id, purchase_order_rfq_id, purchase_order_vendor_vendor_id], map: "fk_purchase_order_products_purchase_order1")
+  @@index([vendor_products_vp_id, vendor_products_vendor_vendor_id, vendor_products_products_product_id], map: "fk_purchase_order_products_vendor_products1_idx")
 }
