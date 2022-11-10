@@ -115,7 +115,7 @@ model rfq {
   id             Int              @id @unique(map: "rfc_id_key") @default(autoincrement())
   created_at     DateTime         @default(now())
   updated_at     DateTime         @default(now())
-  expected_dod   Int
+  expected_dod   String           @db.VarChar(45)
   rfq_code       String           @db.VarChar(45)
   rfq_name       String           @db.VarChar(45)
   purchase_order purchase_order[]

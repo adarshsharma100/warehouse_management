@@ -3,10 +3,12 @@ import db from "db"
 import { z } from "zod"
 
 const CreateRfq = z.object({
-  expected_dod: z.number(),
-  price_per_unit: z.number(),
-  quantity: z.number(),
-  products_product_id: z.number(),
+  expected_dod: z.string(),
+  // price_per_unit: z.number(),
+  // quantity: z.number(),
+  rfq_code: z.string(),
+  rfq_name: z.string(),
+  // products_product_id: z.number(),
 })
 
 export default resolver.pipe(resolver.zod(CreateRfq), resolver.authorize(), async (input) => {

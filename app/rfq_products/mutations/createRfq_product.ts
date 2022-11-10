@@ -1,0 +1,21 @@
+import { resolver } from "@blitzjs/rpc"
+import db from "db"
+import { z } from "zod"
+
+const CreateRfq_product = z.object({
+  products_product_id: z.number(),
+  quantity: z.number(),
+  price_per_unit: z.number(),
+  rfq_id: z.number(),
+})
+
+export default resolver.pipe(
+  resolver.zod(CreateRfq_product),
+  resolver.authorize(),
+  async (input) => {
+    // TODO: in multi-tenant app, you must add validation to ensure correct tenant
+    const rfq_product = await db.rfq_products.create({ data: input })
+
+    return rfq_product
+  }
+)
