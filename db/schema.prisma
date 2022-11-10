@@ -51,15 +51,15 @@ model purchase_order {
   po_id                        Int                   @unique(map: "po_id_UNIQUE") @default(autoincrement())
   po_status                    String                @db.VarChar(45)
   po_type                      String                @db.VarChar(45)
-  ordered_qty                  String                @db.VarChar(45)
-  received_qty                 String                @db.VarChar(45)
-  total                        String                @db.VarChar(45)
-  updated_on                   String                @db.VarChar(45)
-  approved_on                  String                @db.VarChar(45)
-  created_at                   String                @db.VarChar(45)
+  ordered_qty                  Int
+  received_qty                 Int
+  total                        Int
+  updated_on                   DateTime              @db.DateTime(0)
+  approved_on                  DateTime              @db.DateTime(0)
+  created_at                   DateTime              @db.DateTime(0)
   from_party                   String                @db.VarChar(45)
-  expiry_date                  String                @db.VarChar(45)
-  expected_delivery            String                @db.VarChar(45)
+  expiry_date                  DateTime              @db.DateTime(0)
+  expected_delivery            DateTime              @db.DateTime(0)
   agreement                    String                @db.VarChar(45)
   purchase_order_status_pos_id Int
   rfq_id                       Int
