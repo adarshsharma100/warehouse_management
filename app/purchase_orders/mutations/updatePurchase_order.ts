@@ -3,17 +3,17 @@ import db from "db"
 import { z } from "zod"
 
 const UpdatePurchase_order = z.object({
-  id: z.number(),
+  po_id: z.number(),
   name: z.string(),
 })
 
 export default resolver.pipe(
   resolver.zod(UpdatePurchase_order),
   resolver.authorize(),
-  async ({ id, ...data }) => {
+  async ({ po_id, ...data }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const purchase_order = await db.purchase_order.update({
-      where: { id },
+      where: { po_id },
       data,
     })
 

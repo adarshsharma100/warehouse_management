@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc"
 import db, { Prisma } from "db"
 
 interface GetPurchase_ordersInput
-  extends Pick<Prisma.Purchase_orderFindManyArgs, "where" | "orderBy" | "skip" | "take"> {}
+  extends Pick<Prisma.purchase_orderFindManyArgs, "where" | "orderBy" | "skip" | "take"> {}
 
 export default resolver.pipe(
   resolver.authorize(),
