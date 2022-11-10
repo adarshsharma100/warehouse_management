@@ -143,7 +143,7 @@ const Layout = ({ children }) => {
         {
           label: "Request for Quotations",
           icon: "pi pi-fw pi-paperclip",
-          to: "rfqs",
+          to: "/rfqs",
           // items: assets.map(({ display_name, id }) => {
           //   return { label: display_name, to: `/assets/${id}` }
           // }),
@@ -157,7 +157,7 @@ const Layout = ({ children }) => {
         {
           label: "Purchase Orders",
           icon: "pi pi-fw pi-truck",
-          to: "/alerts",
+          to: "/purchase_orders",
         },
       ],
     },
