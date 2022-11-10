@@ -16,7 +16,7 @@ export const EditPurchase_order = () => {
   const purchase_orderId = useParam("purchase_orderId", "number")
   const [purchase_order, { setQueryData }] = useQuery(
     getPurchase_order,
-    { id: purchase_orderId },
+    { po_id: purchase_orderId },
     {
       // This ensures the query never refreshes and overwrites the form data while the user is editing.
       staleTime: Infinity,
@@ -27,11 +27,11 @@ export const EditPurchase_order = () => {
   return (
     <>
       <Head>
-        <title>Edit Purchase_order {purchase_order.id}</title>
+        <title>Edit Purchase_order {purchase_order.po_id}</title>
       </Head>
 
       <div>
-        <h1>Edit Purchase_order {purchase_order.id}</h1>
+        <h1>Edit Purchase_order {purchase_order.po_id}</h1>
         <pre>{JSON.stringify(purchase_order, null, 2)}</pre>
 
         <Purchase_orderForm
@@ -44,11 +44,11 @@ export const EditPurchase_order = () => {
           onSubmit={async (values) => {
             try {
               const updated = await updatePurchase_orderMutation({
-                id: purchase_order.id,
+                id: purchase_order.po_id,
                 ...values,
               })
               await setQueryData(updated)
-              await router.push(Routes.ShowPurchase_orderPage({ purchase_orderId: updated.id }))
+              await router.push(Routes.ShowPurchase_orderPage({ purchase_orderId: updated.po_id }))
             } catch (error: any) {
               console.error(error)
               return {
