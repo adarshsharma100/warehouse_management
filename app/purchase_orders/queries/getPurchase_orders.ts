@@ -18,7 +18,35 @@ export default resolver.pipe(
       skip,
       take,
       count: () => db.purchase_order.count({ where }),
-      query: (paginateArgs) => db.purchase_order.findMany({ ...paginateArgs, where, orderBy }),
+      query: (paginateArgs) =>
+        db.purchase_order.findMany({
+          ...paginateArgs,
+          where,
+          orderBy,
+          select: {
+            agreement: true,
+            approved_on: true,
+            created_at: true,
+            expected_delivery: true,
+            expiry_date: true,
+            from_party: true,
+            gatepass_order: true,
+            gatepass_order_gpo_id: true,
+            ordered_qty: true,
+            po_id: true,
+            po_status: true,
+            po_type: true,
+            purchase_order_status: true,
+            purchase_order_status_pos_id: true,
+            received_qty: true,
+            rfq: true,
+            rfq_id: true,
+            total: true,
+            updated_on: true,
+            vendor: true,
+            vendor_vendor_id: true,
+          },
+        }),
     })
 
     return {

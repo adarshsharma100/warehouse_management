@@ -15,11 +15,11 @@ const ITEMS_PER_PAGE = 100
 export const Purchase_ordersList = () => {
   const router = useRouter()
   const page = Number(router.query.page) || 0
-  // const [{ purchase_orders, hasMore }] = usePaginatedQuery(getPurchase_orders, {
-  //   orderBy: { id: "asc" },
-  //   skip: ITEMS_PER_PAGE * page,
-  //   take: ITEMS_PER_PAGE,
-  // })
+  const [{ purchase_orders, hasMore }, { refetch }] = usePaginatedQuery(getPurchase_orders, {
+    orderBy: { po_id: "asc" },
+    skip: ITEMS_PER_PAGE * page,
+    take: ITEMS_PER_PAGE,
+  })
 
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
   const goToNextPage = () => router.push({ query: { page: page + 1 } })
