@@ -127,7 +127,7 @@ const Layout = ({ children }) => {
         {
           label: "Vendor",
           icon: "pi pi-fw pi-home",
-          to: "/stats",
+          to: "/vendors",
         },
         // {
         //   label: "Assets",
@@ -137,12 +137,13 @@ const Layout = ({ children }) => {
         {
           label: "Vendor Catalog",
           icon: "pi pi-fw pi-map",
-          to: "/alerts",
+          to: "/vendor_products",
         },
 
         {
           label: "Request for Quotations",
           icon: "pi pi-fw pi-paperclip",
+          to: "rfqs",
           // items: assets.map(({ display_name, id }) => {
           //   return { label: display_name, to: `/assets/${id}` }
           // }),

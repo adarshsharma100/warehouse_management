@@ -2,7 +2,8 @@ import { ErrorFallbackProps, ErrorComponent, ErrorBoundary, AppProps } from "@bl
 import { AuthenticationError, AuthorizationError } from "blitz"
 import React from "react"
 import { withBlitz } from "app/blitz-client"
-import "primereact/resources/themes/lara-light-teal/theme.css"
+// import "primereact/resources/themes/lara-light-teal/theme.css"
+import "primereact/resources/themes/saga-purple/theme.css"
 import "../layout/layout.scss"
 // import "primereact/resources/themes/arya-orange/theme.css"
 import "primereact/resources/primereact.min.css" //core css
