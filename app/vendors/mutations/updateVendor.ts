@@ -1,19 +1,25 @@
-import { resolver } from "@blitzjs/rpc";
-import db from "db";
-import { z } from "zod";
+import { resolver } from "@blitzjs/rpc"
+import db from "db"
+import { z } from "zod"
 
 const UpdateVendor = z.object({
-  id: z.number(),
-  name: z.string(),
-});
+  vendor_code: z.string(),
+  vendor_sku: z.string(),
+  vendor_email: z.string(),
+  vendor_city: z.string(),
+  vendor_contact: z.string(),
+  vendor_gstin: z.string(),
+  vendor: z.string(),
+  vendor_id: z.number(),
+})
 
 export default resolver.pipe(
   resolver.zod(UpdateVendor),
   resolver.authorize(),
-  async ({ id, ...data }) => {
+  async ({ vendor_id, ...data }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-    const vendor = await db.vendor.update({ where: { id }, data });
+    const vendor = await db.vendor.update({ where: { vendor_id }, data })
 
-    return vendor;
+    return vendor
   }
-);
+)
