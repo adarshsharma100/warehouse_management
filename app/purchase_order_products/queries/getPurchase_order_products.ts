@@ -19,7 +19,26 @@ export default resolver.pipe(
       take,
       count: () => db.purchase_order_products.count({ where }),
       query: (paginateArgs) =>
-        db.purchase_order_products.findMany({ ...paginateArgs, where, orderBy }),
+        db.purchase_order_products.findMany({
+          ...paginateArgs,
+          where,
+          orderBy,
+
+          select: {
+            pop_id: true,
+            price_per_unit: true,
+            // purchase_order: true,
+            purchase_order_po_id: true,
+            purchase_order_purchase_order_status_pos_id: true,
+            purchase_order_vendor_vendor_id: true,
+            quantity: true,
+            received_quantity: true,
+            vendor_products: { select: { products: true } },
+            vendor_products_products_product_id: true,
+            vendor_products_vendor_vendor_id: true,
+            vendor_products_vp_id: true,
+          },
+        }),
     })
 
     return {

@@ -232,7 +232,7 @@ export const VendorsList = () => {
                 <Button
                   label="Edit"
                   icon="pi pi-pencil"
-                  className="mr-1"
+                  className="m-1"
                   onClick={() => {
                     setActiveVendor(true)
                     setVendorDetails({ ...rowData })
@@ -242,6 +242,7 @@ export const VendorsList = () => {
                 <Button
                   label="Delete"
                   icon="pi pi-trash"
+                  className="m-1"
                   onClick={async () => {
                     await deleteVendorMutation({ vendor_id: rowData.vendor_id })
                     await refetch()

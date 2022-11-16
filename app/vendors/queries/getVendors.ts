@@ -31,6 +31,7 @@ export default resolver.pipe(
             vendor_email: true,
             vendor_gstin: true,
             vendor_id: true,
+            vendor_sku: true,
             vendor_products: true,
           },
         }),

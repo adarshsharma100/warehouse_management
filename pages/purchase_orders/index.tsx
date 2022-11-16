@@ -127,8 +127,8 @@ export const Purchase_ordersList = () => {
   const tableProducts = purchase_order_products.map((ele) => {
     return {
       ...ele,
-      product_name: ele.vendor_products.products.name,
-      product_sku: ele.vendor_products.products.products_sku,
+      product_name: ele?.vendor_products?.products.name,
+      product_sku: ele?.vendor_products?.products.products_sku,
     }
   })
 
