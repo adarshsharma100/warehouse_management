@@ -18,7 +18,22 @@ export default resolver.pipe(
       skip,
       take,
       count: () => db.vendor.count({ where }),
-      query: (paginateArgs) => db.vendor.findMany({ ...paginateArgs, where, orderBy }),
+      query: (paginateArgs) =>
+        db.vendor.findMany({
+          ...paginateArgs,
+          where,
+          orderBy,
+          select: {
+            vendor: true,
+            vendor_city: true,
+            vendor_code: true,
+            vendor_contact: true,
+            vendor_email: true,
+            vendor_gstin: true,
+            vendor_id: true,
+            vendor_products: true,
+          },
+        }),
     })
 
     return {

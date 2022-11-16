@@ -48,31 +48,31 @@ model products {
 
 model purchase_order {
   po_id                        Int                       @unique(map: "po_id_UNIQUE") @default(autoincrement())
-  po_status                    Int                       @default(1)
   po_type                      String                    @default("Manual") @db.VarChar(45)
-  ordered_qty                  Int
-  received_qty                 Int                       @default(0)
-  total                        Int
-  updated_on                   DateTime                  @db.DateTime(0)
-  approved_on                  DateTime                  @db.DateTime(0)
-  created_at                   DateTime                  @db.DateTime(0)
+  ordered_qty                  Int?
+  received_qty                 Int?                      @default(0)
+  updated_on                   DateTime?                 @default(now())
+  approved_on                  DateTime?                 @db.DateTime(0)
+  created_at                   DateTime?                 @default(now())
   from_party                   String                    @db.VarChar(45)
   expiry_date                  DateTime                  @db.DateTime(0)
   expected_delivery            DateTime                  @db.DateTime(0)
   agreement                    String                    @db.VarChar(45)
-  purchase_order_status_pos_id Int
-  rfq_id                       Int
+  purchase_order_status_pos_id Int                       @default(1)
   vendor_vendor_id             Int
+  po_name                      String                    @db.VarChar(45)
+  po_code                      String                    @db.VarChar(45)
+  rfq_id                       Int
   purchase_order_status        purchase_order_status     @relation(fields: [purchase_order_status_pos_id], references: [pos_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_purchase_order_status1")
   rfq                          rfq                       @relation(fields: [rfq_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_rfq1")
   vendor                       vendor                    @relation(fields: [vendor_vendor_id], references: [vendor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_vendor1")
   purchase_order_products      purchase_order_products[]
 
-  @@id([po_id, purchase_order_status_pos_id, rfq_id, vendor_vendor_id])
+  @@id([po_id, purchase_order_status_pos_id, vendor_vendor_id])
   @@unique([po_id, purchase_order_status_pos_id])
   @@index([purchase_order_status_pos_id], map: "fk_purchase_order_purchase_order_status1_idx")
-  @@index([rfq_id], map: "fk_purchase_order_rfq1_idx")
   @@index([vendor_vendor_id], map: "fk_purchase_order_vendor1_idx")
+  @@index([rfq_id], map: "fk_purchase_order_rfq1_idx")
 }
 
 model purchase_order_status {
@@ -178,20 +178,20 @@ model rfq_products {
 }
 
 model purchase_order_products {
-  pop_id                                      Int             @unique(map: "pop_id_UNIQUE")
+  pop_id                                      Int             @unique(map: "pop_id_UNIQUE") @default(autoincrement())
   purchase_order_po_id                        Int
   purchase_order_purchase_order_status_pos_id Int
-  purchase_order_rfq_id                       Int?            @unique(map: "purchase_order_rfq_id_UNIQUE")
   purchase_order_vendor_vendor_id             Int
   vendor_products_vp_id                       Int
   vendor_products_vendor_vendor_id            Int
   vendor_products_products_product_id         Int
   quantity                                    Int
   price_per_unit                              Int?
-  purchase_order                              purchase_order? @relation(fields: [purchase_order_po_id, purchase_order_purchase_order_status_pos_id, purchase_order_rfq_id, purchase_order_vendor_vendor_id], references: [po_id, purchase_order_status_pos_id, rfq_id, vendor_vendor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_products_purchase_order1")
+  received_quantity                           Int?
+  purchase_order                              purchase_order  @relation(fields: [purchase_order_po_id, purchase_order_purchase_order_status_pos_id, purchase_order_vendor_vendor_id], references: [po_id, purchase_order_status_pos_id, vendor_vendor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_products_purchase_order1")
   vendor_products                             vendor_products @relation(fields: [vendor_products_vp_id, vendor_products_vendor_vendor_id, vendor_products_products_product_id], references: [vp_id, vendor_vendor_id, products_product_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_products_vendor_products1")
 
-  @@id([purchase_order_po_id, purchase_order_purchase_order_status_pos_id, purchase_order_vendor_vendor_id, vendor_products_vp_id, vendor_products_vendor_vendor_id, vendor_products_products_product_id, pop_id, quantity])
-  @@index([purchase_order_po_id, purchase_order_purchase_order_status_pos_id, purchase_order_rfq_id, purchase_order_vendor_vendor_id], map: "fk_purchase_order_products_purchase_order1")
+  @@id([pop_id, purchase_order_po_id, purchase_order_purchase_order_status_pos_id, purchase_order_vendor_vendor_id, vendor_products_vp_id, vendor_products_vendor_vendor_id, vendor_products_products_product_id, quantity])
+  @@index([purchase_order_po_id, purchase_order_purchase_order_status_pos_id, purchase_order_vendor_vendor_id], map: "fk_purchase_order_products_purchase_order1")
   @@index([vendor_products_vp_id, vendor_products_vendor_vendor_id, vendor_products_products_product_id], map: "fk_purchase_order_products_vendor_products1_idx")
 }

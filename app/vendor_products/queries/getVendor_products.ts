@@ -28,6 +28,8 @@ export default resolver.pipe(
             unit_price: true,
             products: true,
             vendor: true,
+            vendor_vendor_id: true,
+            products_product_id: true,
           },
         }),
     })

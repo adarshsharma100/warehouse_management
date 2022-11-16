@@ -3,7 +3,14 @@ import db from "db"
 import { z } from "zod"
 
 const CreatePurchase_order = z.object({
-  name: z.string(),
+  vendor_vendor_id: z.number(),
+  po_code: z.string(),
+  po_name: z.string(),
+  expiry_date: z.date(),
+  expected_delivery: z.date(),
+  from_party: z.string(),
+  agreement: z.string(),
+  rfq_id: z.number().optional(),
 })
 
 export default resolver.pipe(
