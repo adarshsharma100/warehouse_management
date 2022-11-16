@@ -4,7 +4,9 @@ import { z } from "zod"
 
 const UpdateRfq = z.object({
   id: z.number(),
-  name: z.string(),
+  expected_dod: z.string(),
+  rfq_code: z.string(),
+  rfq_name: z.string(),
 })
 
 export default resolver.pipe(

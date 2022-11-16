@@ -8,7 +8,7 @@ const CreateProduct = z.object({
 
 export default resolver.pipe(resolver.zod(CreateProduct), resolver.authorize(), async (input) => {
   // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-  const product = await db.product.create({ data: input })
+  const product = await db.products.create({ data: input })
 
   return product
 })
