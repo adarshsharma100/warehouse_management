@@ -19,8 +19,13 @@ export default resolver.pipe(
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const rfq_product = await db.rfq_products.updateMany({
       data: input,
+      // data: {
+      //   price_per_unit: 10,
+      // },
       // where: {
-      //   rfq_id: { contains: input[0].rfq_id },
+      //   rfq_products_id: {
+      //     in: [9, 10],
+      //   },
       // },
     })
 
