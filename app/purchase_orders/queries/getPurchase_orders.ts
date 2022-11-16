@@ -30,6 +30,7 @@ export default resolver.pipe(
             expected_delivery: true,
             expiry_date: true,
             from_party: true,
+            purchase_order_products: true,
             ordered_qty: true,
             po_id: true,
             po_name: true,
