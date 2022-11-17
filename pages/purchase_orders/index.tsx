@@ -149,11 +149,12 @@ export const Purchase_ordersList = () => {
   }
   const removeFields = (index) => {
     console.log("index12123: ", itemList)
-    console.log("index12123 ", index)
-    let data = [...itemList]
-    const data2 = data.splice(index, 1)
-    console.log("index12123: ", itemList)
-    setItemList(data2)
+    // console.log("index12123 ", index)
+    // let data = [...itemList]
+    // const data2 = data.splice(index, 1)
+    // console.log("index12123: ", itemList)
+    // setItemList(data2)
+    setItemList(itemList.filter((data, i) => index !== i))
   }
   const handleFormChange = (e: any, i: number) => {
     console.log("many", e)

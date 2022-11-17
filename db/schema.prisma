@@ -62,9 +62,9 @@ model purchase_order {
   vendor_vendor_id             Int
   po_name                      String                    @db.VarChar(45)
   po_code                      String                    @db.VarChar(45)
-  rfq_id                       Int
+  rfq_id                       Int?
   purchase_order_status        purchase_order_status     @relation(fields: [purchase_order_status_pos_id], references: [pos_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_purchase_order_status1")
-  rfq                          rfq                       @relation(fields: [rfq_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_rfq1")
+  rfq                          rfq?                      @relation(fields: [rfq_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_rfq1")
   vendor                       vendor                    @relation(fields: [vendor_vendor_id], references: [vendor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_vendor1")
   purchase_order_products      purchase_order_products[]
 
@@ -164,7 +164,7 @@ model user {
 }
 
 model rfq_products {
-  rfq_products_id     Int      @default(autoincrement())
+  rfq_products_id     Int      @unique(map: "rfq_products_id_UNIQUE") @default(autoincrement())
   rfq_id              Int
   products_product_id Int
   quantity            Int?

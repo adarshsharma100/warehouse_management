@@ -28,6 +28,7 @@ import createManyPurchase_order_product from "app/purchase_order_products/mutati
 import createPurchase_order from "app/purchase_orders/mutations/createPurchase_order"
 import updateRfq from "app/rfqs/mutations/updateRfq"
 import updateManyRfq_products from "app/rfq_products/mutations/updateManyRfq_products"
+import updateRfq_product from "app/rfq_products/mutations/updateRfq_product"
 
 const ITEMS_PER_PAGE = 100
 
@@ -70,7 +71,8 @@ export const RfqsList = () => {
   const [deleteRFQProductMutation] = useMutation(deleteRfq_product)
   const [deleteRFQMutation] = useMutation(deleteRfq)
   const [createManyPurchaseOrderProductsMutation] = useMutation(createManyPurchase_order_product)
-  const [updateManyRfqProductsMutation] = useMutation(updateManyRfq_products)
+  // const [updateManyRfqProductsMutation] = useMutation(updateManyRfq_products)
+  const [updateRfqProductMutation] = useMutation(updateRfq_product)
   const [createPurchaseOrderMutation] = useMutation(createPurchase_order)
   const productOptions = products.map(({ product_id, name }) => {
     return { name, value: product_id }
@@ -192,12 +194,13 @@ export const RfqsList = () => {
     setItemList([...itemList, newfield])
   }
   const removeFields = (index) => {
-    console.log("index12123: ", itemList)
-    console.log("index12123 ", index)
-    let data = [...itemList]
-    const data2 = data.splice(index, 1)
-    console.log("index12123: ", itemList)
-    setItemList(data2)
+    // console.log("index12123: ", itemList)
+    // console.log("index12123 ", index)
+    // let data = [...itemList]
+    // data.splice(parseInt(index), 1)
+    // console.log("index12123: ", itemList)
+    // setItemList(data)
+    setItemList(itemList.filter((data, i) => index !== i))
   }
   const addFieldsPurchase = () => {
     let newfield = {
@@ -600,19 +603,17 @@ export const RfqsList = () => {
         <form
           onSubmit={async () => {
             if (rfqEditState) {
-              // await updateRFQMutation({ ...rfqDetails })
-              const many = itemList.map((ele) => {
-                return {
-                  rfq_id: rfqDetails.id,
-                  price_per_unit: Number(ele.price_per_unit),
-                  products_product_id: Number(ele.products_product_id),
-                  quantity: Number(ele.quantity),
-                  rfq_products_id: Number(ele.rfq_products_id),
-                }
-              })
+              await updateRFQMutation({ ...rfqDetails })
               try {
-                const error = await updateManyRfqProductsMutation(many)
-                console.log("error: ", error)
+                itemList.forEach(async (ele) => {
+                  await updateRfqProductMutation({
+                    rfq_id: Number(rfqDetails.id),
+                    price_per_unit: Number(ele.price_per_unit),
+                    products_product_id: Number(ele.products_product_id),
+                    quantity: Number(ele.quantity),
+                    rfq_products_id: Number(ele.rfq_products_id),
+                  })
+                })
               } catch (error: any) {
                 console.log("error: ", error)
               }
@@ -734,7 +735,8 @@ export const RfqsList = () => {
                   disabled={itemList.length <= 1}
                   icon="pi pi-minus"
                   className="m-2 p-button-rounded "
-                  onClick={removeFields}
+                  onClick={() => removeFields(i)}
+                  // onClick={}
                 />
               </div>
             )
@@ -749,23 +751,16 @@ export const RfqsList = () => {
           </div>
           <div className="flex justify-content-end">
             <Button
-              type="button"
+              type="submit"
               onClick={async () => {
-                const many = itemList.map((ele) => {
-                  return {
-                    rfq_id: Number(rfqDetails.id),
-                    price_per_unit: Number(ele.price_per_unit),
-                    products_product_id: Number(ele.products_product_id),
-                    quantity: Number(ele.quantity),
-                    rfq_products_id: Number(ele.rfq_products_id),
-                  }
-                })
-                try {
-                  const error = await updateManyRfqProductsMutation(many)
-                  console.log("error: ", error)
-                } catch (error: any) {
-                  console.log("error: ", error)
-                }
+                // const many =
+                // console.log("many: ", many)
+                // try {
+                //   const error = await updateManyRfqProductsMutation(many)
+                //   console.log("error: ", error)
+                // } catch (error: any) {
+                //   console.log("error: ", error)
+                // }
               }}
               className="col-3 mr-2 mt-2"
               label="CREATE"
