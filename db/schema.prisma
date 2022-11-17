@@ -85,7 +85,6 @@ model purchase_order_status {
 model vendor {
   vendor_id       Int               @id @unique(map: "vendor_id_UNIQUE") @default(autoincrement())
   vendor_code     String            @db.VarChar(45)
-  vendor_sku      String            @db.VarChar(45)
   vendor_email    String            @db.VarChar(45)
   vendor_city     String            @db.VarChar(45)
   vendor_contact  String            @db.VarChar(45)

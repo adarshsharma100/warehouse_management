@@ -16,7 +16,7 @@ import { useFormik } from "formik"
 import createVendor from "app/vendors/mutations/createVendor"
 import updateVendor from "app/vendors/mutations/updateVendor"
 import deleteVendor from "app/vendors/mutations/deleteVendor"
-
+import { FileUpload } from "primereact/fileupload"
 const ITEMS_PER_PAGE = 100
 
 export const VendorsList = () => {
@@ -33,7 +33,7 @@ export const VendorsList = () => {
   const [vendorDialog, setVendorDialog] = useState(false)
   const [vendorDetails, setVendorDetails] = useState({
     vendor_code: "",
-    vendor_sku: "",
+    // vendor_sku: "",
     vendor_email: "",
     vendor_city: "",
     vendor_contact: "",
@@ -95,7 +95,9 @@ export const VendorsList = () => {
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
-
+  const onBasicUpload = (e) => {
+    console.log("FileUpload", e)
+  }
   return (
     <div>
       <Dialog
@@ -165,13 +167,24 @@ export const VendorsList = () => {
       </Dialog>
       <h2>Vendor List</h2>
       <div className="flex justify-content-end mb-2 ">
+        <FileUpload
+          mode="basic"
+          customUpload
+          // name="demo[]"
+          // url="https://primefaces.org/primereact/showcase/upload.php"
+          // accept="image/*"
+          maxFileSize={1000000}
+          uploadHandler={(e) => onBasicUpload(e)}
+          // onUpload={(e) => onBasicUpload(e)}
+        />
         <Button
           icon="pi pi-plus"
           label="Add Vendors"
+          className="ml-1"
           onClick={() => {
             setVendorDetails({
               vendor_code: "",
-              vendor_sku: "",
+              // vendor_sku: "",
               vendor_email: "",
               vendor_city: "",
               vendor_contact: "",
@@ -209,11 +222,11 @@ export const VendorsList = () => {
           header="Vendor Code"
           // className="text-center"
         />
-        <Column
+        {/* <Column
           field="vendor_sku"
           header="Vendor Sku"
           // className="text-center"
-        />
+        /> */}
         <Column
           field="vendor_email"
           header="Vendor Email"
