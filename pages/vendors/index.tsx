@@ -16,7 +16,8 @@ import { useFormik } from "formik"
 import createVendor from "app/vendors/mutations/createVendor"
 import updateVendor from "app/vendors/mutations/updateVendor"
 import deleteVendor from "app/vendors/mutations/deleteVendor"
-import { FileUpload } from "primereact/fileupload"
+// import { FileUpload } from "primereact/fileupload"
+// const papa = require("papaparse")
 const ITEMS_PER_PAGE = 100
 
 export const VendorsList = () => {
@@ -95,9 +96,22 @@ export const VendorsList = () => {
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
-  const onBasicUpload = (e) => {
-    console.log("FileUpload", e)
-  }
+  // const onBasicUpload = async (e) => {
+  //   console.log("FileUpload", e)
+  //   // await papa.parse(e.files[0], (data) => {
+  //   //   console.log("FileUpload", data)
+  //   // })
+  //   const csv = []
+  //   papa.parse(e.files[0], {
+  //     header: true,
+  //     step: function (result) {
+  //       csv.push(result.data)
+  //     },
+  //     complete: function (results, file) {
+  //       console.log("Complete", csv.length, "records.  ", results, csv)
+  //     },
+  //   })
+  // }
   return (
     <div>
       <Dialog
@@ -167,7 +181,7 @@ export const VendorsList = () => {
       </Dialog>
       <h2>Vendor List</h2>
       <div className="flex justify-content-end mb-2 ">
-        <FileUpload
+        {/* <FileUpload
           mode="basic"
           customUpload
           // name="demo[]"
@@ -176,7 +190,7 @@ export const VendorsList = () => {
           maxFileSize={1000000}
           uploadHandler={(e) => onBasicUpload(e)}
           // onUpload={(e) => onBasicUpload(e)}
-        />
+        /> */}
         <Button
           icon="pi pi-plus"
           label="Add Vendors"

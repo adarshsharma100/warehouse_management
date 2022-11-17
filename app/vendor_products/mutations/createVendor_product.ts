@@ -7,6 +7,9 @@ const CreateVendor_product = z.object({
   unit_price: z.number(),
   vendor_vendor_id: z.number(),
   products_product_id: z.number(),
+  enabled: z.number(),
+  priority: z.number(),
+  vendor_sku: z.string(),
 })
 
 export default resolver.pipe(
