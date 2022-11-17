@@ -763,7 +763,7 @@ export const RfqsList = () => {
                 // }
               }}
               className="col-3 mr-2 mt-2"
-              label="CREATE"
+              label={rfqEditState ? "UPDATE" : "CREATE"}
             />
           </div>
         </form>
@@ -774,6 +774,7 @@ export const RfqsList = () => {
           icon="pi pi-plus"
           label="Create RFQ"
           onClick={() => {
+            setRfqEditState(false)
             setRfqDetails({ rfq_code: "", rfq_name: "", expected_dod: "" })
             setItemList([{ products_product_id: "", quantity: "", price_per_unit: "" }])
             setRfqDialog(true)
