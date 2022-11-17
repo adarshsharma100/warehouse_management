@@ -288,14 +288,14 @@ export const Vendor_productsList = () => {
                     await refetch()
                   }}
                 />
-                <Button
+                {/* <Button
                   label="Generate PO"
                   icon="pi pi-truck"
                   // onClick={async () => {
                   //   await deleteVendorProductMutation({ vp_id: Number(rowData.vp_id) })
                   //   await refetch()
                   // }}
-                />
+                /> */}
               </div>
             )
           }}

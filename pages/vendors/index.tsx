@@ -168,7 +168,18 @@ export const VendorsList = () => {
         <Button
           icon="pi pi-plus"
           label="Add Vendors"
-          onClick={() => setVendorDialog(true)}
+          onClick={() => {
+            setVendorDetails({
+              vendor_code: "",
+              vendor_sku: "",
+              vendor_email: "",
+              vendor_city: "",
+              vendor_contact: "",
+              vendor_gstin: "",
+              vendor: "",
+            })
+            setVendorDialog(true)
+          }}
         ></Button>
       </div>
       <DataTable
@@ -230,7 +241,7 @@ export const VendorsList = () => {
             return (
               <div>
                 <Button
-                  label="Edit"
+                  // label="Edit"
                   icon="pi pi-pencil"
                   className="m-1"
                   onClick={() => {
@@ -240,7 +251,7 @@ export const VendorsList = () => {
                   }}
                 />
                 <Button
-                  label="Delete"
+                  // label="Delete"
                   icon="pi pi-trash"
                   className="m-1"
                   onClick={async () => {
