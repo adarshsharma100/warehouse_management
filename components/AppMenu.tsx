@@ -46,9 +46,9 @@ const AppSubmenu = (props) => {
     return (
       <>
         <i className={item.icon}></i>
-        <span>{item.label}</span>
-        {submenuIcon}
-        {badge}
+        {/* <span>{item.label}</span> */}
+        {/* {submenuIcon} */}
+        {/* {badge} */}
         <Ripple />
       </>
     )
@@ -61,7 +61,9 @@ const AppSubmenu = (props) => {
       return (
         <>
           <Link className="p-ripple" href={item.to}>
-            <a>{content}</a>
+            <a data-pr-tooltip={item.label} data-pr-position="right">
+              {content}
+            </a>
           </Link>
           {/* <NavLink
             aria-label={item.label}
