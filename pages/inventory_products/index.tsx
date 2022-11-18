@@ -52,6 +52,11 @@ export const Inventory_productsList = () => {
           // className="text-center"
         />
         <Column
+          field="name"
+          header="Name"
+          // className="text-center"
+        />
+        <Column
           field="product_type"
           header="Type"
           // className="text-center"
