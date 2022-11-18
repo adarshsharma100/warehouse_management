@@ -1,8 +1,9 @@
 import React from "react"
+import moment from "moment"
 
 export const AppFooter = (props) => {
   return (
-    <div className="layout-footer sticky bottom-0">
+    <div className="layout-footer sticky bottom-0 card">
       {/* <img
         src={
           props.layoutColorMode === "light"
@@ -15,7 +16,10 @@ export const AppFooter = (props) => {
       /> */}
       {/* {"Made with <3 by"} */}
       {/* By */}
-      <span className="font-medium m-2"> © 2022 TIF Labs</span>
+      <span className="font-small m-2"> © {moment().format("Y")}</span>
+      <span className="font-small m-2 text-gray-500">
+        Made with <img style={{ width: "0.8rem" }} src="/heart.gif" /> by TIF Labs Pvt Ltd
+      </span>
     </div>
   )
 }

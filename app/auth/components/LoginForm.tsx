@@ -38,7 +38,7 @@ export const LoginForm = (props: LoginFormProps) => {
       }}
     >
       {/* <div className="text-center text-900 text-5xl font-medium mb-3">Smart Factory</div> */}
-      <div className="text-center text-900 text-3xl font-medium mb-3">Welcome Back</div>
+      {/* <div className="text-center text-900 text-3xl font-medium mb-3">Welcome Back</div> */}
       <div className="max-w-30rem" style={{ margin: "0 auto" }}>
         <LabeledTextField
           type="email"
