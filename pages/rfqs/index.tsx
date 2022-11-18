@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react"
+import { Suspense, useEffect, useRef, useState } from "react"
 import { Routes } from "@blitzjs/next"
 import Head from "next/head"
 import Link from "next/link"
@@ -29,7 +29,7 @@ import createPurchase_order from "app/purchase_orders/mutations/createPurchase_o
 import updateRfq from "app/rfqs/mutations/updateRfq"
 import updateManyRfq_products from "app/rfq_products/mutations/updateManyRfq_products"
 import updateRfq_product from "app/rfq_products/mutations/updateRfq_product"
-
+import { Menu } from "primereact/menu"
 const ITEMS_PER_PAGE = 100
 
 export const RfqsList = () => {
@@ -77,6 +77,7 @@ export const RfqsList = () => {
   const productOptions = products.map(({ product_id, name }) => {
     return { name, value: product_id }
   })
+  const menu = useRef<Menu>(null)
   // console.log("rfqs: ", rfqs)
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
   const goToNextPage = () => router.push({ query: { page: page + 1 } })
@@ -248,6 +249,134 @@ export const RfqsList = () => {
   //     "quantity": 50,
   //     "price_per_unit": "400"
   // }
+  const items = [
+    {
+      label: "Options",
+      items: [
+        {
+          label: "Edit",
+          icon: "pi pi-pencil",
+          command: () => {
+            setRfqEditState(true)
+            setRfqDetails({
+              rfq_code: activeRow.rfq_code,
+              rfq_name: activeRow.rfq_name,
+              expected_dod: activeRow.expected_dod,
+              id: activeRow.id,
+            })
+            const active = tableRfqProducts
+              .filter(({ rfq_id }) => {
+                return rfq_id === activeRow.id
+              })
+              .map(({ products, quantity, price_per_unit, rfq_products_id }) => {
+                return {
+                  products_product_id: products.product_id,
+                  quantity: quantity,
+                  price_per_unit: price_per_unit,
+                  rfq_products_id,
+                }
+              })
+            setItemList(active)
+            console.log("active: ", active)
+            // setActiveRfq(active)
+            setRfqDialog(true)
+            // setActiveVendor(true)
+            // setVendorDetails({ ...rowData })
+            // setVendorDialog(true)
+          },
+        },
+        {
+          label: "Delete",
+          icon: "pi pi-trash",
+          command: async () => {
+            // await deleteRFQProductMutation({ rfq_id: activeRow.id })
+            // await deleteRFQMutation({ id: activeRow.id })
+            // await refetch()
+          },
+        },
+        {
+          label: "View Products",
+          icon: "pi pi-external-link",
+          command: () => {
+            const active = tableRfqProducts.filter(({ rfq_id }) => {
+              return rfq_id === activeRow.id
+            })
+            //  console.log("active: ", active)
+            setActiveRfq(active)
+            setProductDialog(true)
+          },
+        },
+        {
+          label: "Create PO",
+          icon: "pi pi-plus",
+          command: () => {
+            const active = tableRfqProducts.filter(({ rfq_id }) => {
+              return rfq_id === activeRow.id
+            })
+            const activeProducts = active.map(({ products }) => {
+              return products.product_id
+            })
+            const activeVendors = vendors
+
+              .filter(({ vendor_products }) => {
+                const products = vendor_products.map(({ products_product_id }) => {
+                  return products_product_id
+                })
+                console.log("products:421 ", products)
+                return products.some((ele) => {
+                  return activeProducts.includes(ele)
+                })
+              })
+              .map(({ vendor, vendor_id }) => {
+                return { name: vendor, value: vendor_id }
+              })
+            console.log("products:421 ", activeProducts)
+            const activeProductsdetails = vendor_products
+
+              .filter(({ products, vendor }) => {
+                return (
+                  activeProducts.includes(products.product_id) &&
+                  vendor.vendor_id == activeVendors[0]?.value
+                )
+              })
+              .map((ele) => {
+                return {
+                  purchase_order_po_id: "",
+                  purchase_order_purchase_order_status_pos_id: 1,
+                  purchase_order_vendor_vendor_id: ele.vendor.vendor_id,
+                  vendor_products_vp_id: ele.vp_id,
+                  vendor_products_vendor_vendor_id: ele.vendor.vendor_id,
+                  vendor_products_products_product_id: ele.products.product_id,
+                  quantity: "",
+                  price_per_unit: ele.unit_price,
+                  received_quantity: 0,
+                  product_name: ele.products.name,
+                  vendor_unit_price: ele.unit_price,
+                  product_id: ele.products.product_id,
+                }
+              })
+
+            // TDO take quantity from rfq
+            const activeProductsOptions = activeProductsdetails.map((ele) => {
+              return { name: ele.product_name, value: ele.product_id }
+            })
+
+            console.log("active: ", active)
+            console.log("activeVendors: ", activeVendors)
+            console.log("activeProductsdetails: ", activeProductsdetails)
+            setPurchaseProductOption(activeProductsOptions)
+            setVendorOptions(activeVendors)
+            setActiveRfq(active)
+            setActiveRfqId(activeRow.id)
+            setProductItemList(activeProductsdetails)
+            // setActiveRow(rowData)
+            setPurchaseDialog(true)
+          },
+        },
+      ],
+    },
+  ]
+
   return (
     <div>
       <Dialog
@@ -454,7 +583,7 @@ export const RfqsList = () => {
                         </span>
                       )}
                       <span className="p-error">
-                        RFQ price:
+                        Target price:
                         {activeRfq.filter(({ products }) => {
                           return Number(products.product_id) === Number(ele.product_id)
                         })[0]?.price_per_unit ?? "-"}
@@ -831,130 +960,17 @@ export const RfqsList = () => {
           body={(rowData) => {
             return (
               <div>
+                <Menu model={items} popup ref={menu} id="popup_menu" />
                 <Button
-                  // label="Edit"
-                  icon="pi pi-pencil"
-                  className="mr-1"
-                  onClick={() => {
-                    setRfqEditState(true)
-                    setRfqDetails({
-                      rfq_code: rowData.rfq_code,
-                      rfq_name: rowData.rfq_name,
-                      expected_dod: rowData.expected_dod,
-                      id: rowData.id,
-                    })
-                    const active = tableRfqProducts
-                      .filter(({ rfq_id }) => {
-                        return rfq_id === rowData.id
-                      })
-                      .map(({ products, quantity, price_per_unit, rfq_products_id }) => {
-                        return {
-                          products_product_id: products.product_id,
-                          quantity: quantity,
-                          price_per_unit: price_per_unit,
-                          rfq_products_id,
-                        }
-                      })
-                    setItemList(active)
-                    console.log("active: ", active)
-                    // setActiveRfq(active)
-                    setRfqDialog(true)
-                    // setActiveVendor(true)
-                    // setVendorDetails({ ...rowData })
-                    // setVendorDialog(true)
+                  // label="Show"
+                  icon="pi pi-ellipsis-v"
+                  onClick={(event) => {
+                    setActiveRow(rowData)
+                    menu.current.toggle(event)
                   }}
+                  aria-controls="popup_menu"
+                  aria-haspopup
                 />
-                <Button
-                  // label="Delete"
-                  icon="pi pi-trash"
-                  className="mr-1"
-                  onClick={async () => {
-                    await deleteRFQProductMutation({ rfq_id: rowData.id })
-                    await deleteRFQMutation({ id: rowData.id })
-                    await refetch()
-                  }}
-                />
-                <Button
-                  label="View Products"
-                  className="mr-1"
-                  icon="pi pi-external-link"
-                  onClick={() => {
-                    const active = tableRfqProducts.filter(({ rfq_id }) => {
-                      return rfq_id === rowData.id
-                    })
-                    console.log("active: ", active)
-                    setActiveRfq(active)
-                    setProductDialog(true)
-                  }}
-                />
-                <Button
-                  icon="pi pi-plus"
-                  label="Create PO"
-                  onClick={() => {
-                    console.log("rowData: ", rowData)
-                    const active = tableRfqProducts.filter(({ rfq_id }) => {
-                      return rfq_id === rowData.id
-                    })
-                    const activeProducts = active.map(({ products }) => {
-                      return products.product_id
-                    })
-                    const activeVendors = vendors
-
-                      .filter(({ vendor_products }) => {
-                        const products = vendor_products.map(({ products_product_id }) => {
-                          return products_product_id
-                        })
-                        console.log("products:421 ", products)
-                        return products.some((ele) => {
-                          return activeProducts.includes(ele)
-                        })
-                      })
-                      .map(({ vendor, vendor_id }) => {
-                        return { name: vendor, value: vendor_id }
-                      })
-                    console.log("products:421 ", activeProducts)
-                    const activeProductsdetails = vendor_products
-
-                      .filter(({ products, vendor }) => {
-                        return (
-                          activeProducts.includes(products.product_id) &&
-                          vendor.vendor_id == activeVendors[0]?.value
-                        )
-                      })
-                      .map((ele) => {
-                        return {
-                          purchase_order_po_id: "",
-                          purchase_order_purchase_order_status_pos_id: 1,
-                          purchase_order_vendor_vendor_id: ele.vendor.vendor_id,
-                          vendor_products_vp_id: ele.vp_id,
-                          vendor_products_vendor_vendor_id: ele.vendor.vendor_id,
-                          vendor_products_products_product_id: ele.products.product_id,
-                          quantity: "",
-                          price_per_unit: ele.unit_price,
-                          received_quantity: 0,
-                          product_name: ele.products.name,
-                          vendor_unit_price: ele.unit_price,
-                          product_id: ele.products.product_id,
-                        }
-                      })
-
-                    // TDO take quantity from rfq
-                    const activeProductsOptions = activeProductsdetails.map((ele) => {
-                      return { name: ele.product_name, value: ele.product_id }
-                    })
-
-                    console.log("active: ", active)
-                    console.log("activeVendors: ", activeVendors)
-                    console.log("activeProductsdetails: ", activeProductsdetails)
-                    setPurchaseProductOption(activeProductsOptions)
-                    setVendorOptions(activeVendors)
-                    setActiveRfq(active)
-                    setActiveRfqId(rowData.id)
-                    setProductItemList(activeProductsdetails)
-                    // setActiveRow(rowData)
-                    setPurchaseDialog(true)
-                  }}
-                ></Button>
               </div>
             )
           }}

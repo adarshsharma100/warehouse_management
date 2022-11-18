@@ -78,19 +78,21 @@ export const Vendor_productsList = () => {
     )
   }
   // console.log("vendors: ", vendors)
-  const tableVendorProducts = vendor_products.map(({ products, unit_price, vendor, vp_id }) => {
-    return {
-      vp_id,
-      unit_price,
-      item_name: products.name,
-      sku_code: products.products_sku,
-      vendor_code: vendor.vendor_code,
-      vendor_sku: vendor.vendor_sku,
-      vendor: vendor.vendor,
-      vendor_id: vendor.vendor_id,
-      product_id: products.product_id,
+  const tableVendorProducts = vendor_products.map(
+    ({ products, unit_price, vendor, vp_id, vendor_sku }) => {
+      return {
+        vp_id,
+        unit_price,
+        item_name: products.name,
+        sku_code: products.products_sku,
+        vendor_code: vendor.vendor_code,
+        vendor_sku: vendor_sku,
+        vendor: vendor.vendor,
+        vendor_id: vendor.vendor_id,
+        product_id: products.product_id,
+      }
     }
-  })
+  )
   return (
     <div>
       <Dialog
@@ -220,16 +222,11 @@ export const Vendor_productsList = () => {
         // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
         // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
       >
-        <Column
+        {/* <Column
           field="vp_id"
           header="product ID"
           // className="text-center"
-        />
-        <Column
-          field="item_name"
-          header="Item Name"
-          // className="text-center"
-        />
+        /> */}
         <Column
           field="vendor"
           header="Vendor"
@@ -238,6 +235,11 @@ export const Vendor_productsList = () => {
         <Column
           field="vendor_code"
           header="Vendor Code"
+          // className="text-center"
+        />
+        <Column
+          field="item_name"
+          header="Item Name"
           // className="text-center"
         />
         <Column
@@ -281,6 +283,7 @@ export const Vendor_productsList = () => {
                 />
                 <Button
                   // label="Delete"
+                  disabled={true}
                   icon="pi pi-trash"
                   className="mr-1"
                   onClick={async () => {

@@ -126,7 +126,7 @@ export const VendorsList = () => {
             {[
               { type: "text", label: "Vendor", field: "vendor" },
               { type: "text", label: "Vendor Code", field: "vendor_code" },
-              { type: "text", label: "Vendor SKU", field: "vendor_sku" },
+              // { type: "text", label: "Vendor SKU", field: "vendor_sku" },
               { type: "email", label: "Vendor Email", field: "vendor_email" },
               { type: "text", label: "Vendor City", field: "vendor_city" },
               { type: "text", label: "Vendor Contact", field: "vendor_contact" },
@@ -207,11 +207,11 @@ export const VendorsList = () => {
         // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
         // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
       >
-        <Column
+        {/* <Column
           field="vendor_id"
           header="Vendor ID"
           // className="text-center"
-        />
+        /> */}
         <Column
           field="vendor"
           header="Vendor"
@@ -265,6 +265,7 @@ export const VendorsList = () => {
                 />
                 <Button
                   // label="Delete"
+                  disabled={true}
                   icon="pi pi-trash"
                   className="m-1"
                   onClick={async () => {
