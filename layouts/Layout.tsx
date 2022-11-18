@@ -7,6 +7,7 @@ import { AppTopbar } from "components/AppTopBar"
 import { useRouter } from "next/router"
 import { useState, useRef, useEffect, ReactDOM } from "react"
 import { CSSTransition } from "react-transition-group"
+import { Tooltip } from "primereact/tooltip"
 
 const Layout = ({ children }) => {
   const [layoutMode, setLayoutMode] = useState("static")
@@ -322,6 +323,7 @@ const Layout = ({ children }) => {
       }`}
       onClick={onWrapperClick}
     >
+      <Tooltip target=".layout-menu li a" />
       <AppTopbar
         onToggleMenuClick={onToggleMenuClick}
         layoutColorMode={layoutColorMode}
