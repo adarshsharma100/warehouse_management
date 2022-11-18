@@ -16,7 +16,8 @@ import { useFormik } from "formik"
 import createVendor from "app/vendors/mutations/createVendor"
 import updateVendor from "app/vendors/mutations/updateVendor"
 import deleteVendor from "app/vendors/mutations/deleteVendor"
-import { FileUpload } from "primereact/fileupload"
+// import { FileUpload } from "primereact/fileupload"
+// const papa = require("papaparse")
 import { VendorForm } from "app/vendors/components/VendorForm"
 const ITEMS_PER_PAGE = 100
 
@@ -96,9 +97,22 @@ export const VendorsList = () => {
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
-  const onBasicUpload = (e) => {
-    console.log("FileUpload", e)
-  }
+  // const onBasicUpload = async (e) => {
+  //   console.log("FileUpload", e)
+  //   // await papa.parse(e.files[0], (data) => {
+  //   //   console.log("FileUpload", data)
+  //   // })
+  //   const csv = []
+  //   papa.parse(e.files[0], {
+  //     header: true,
+  //     step: function (result) {
+  //       csv.push(result.data)
+  //     },
+  //     complete: function (results, file) {
+  //       console.log("Complete", csv.length, "records.  ", results, csv)
+  //     },
+  //   })
+  // }
   return (
     <div>
       <Dialog
@@ -127,7 +141,7 @@ export const VendorsList = () => {
             {[
               { type: "text", label: "Vendor", field: "vendor" },
               { type: "text", label: "Vendor Code", field: "vendor_code" },
-              { type: "text", label: "Vendor SKU", field: "vendor_sku" },
+              // { type: "text", label: "Vendor SKU", field: "vendor_sku" },
               { type: "email", label: "Vendor Email", field: "vendor_email" },
               { type: "text", label: "Vendor City", field: "vendor_city" },
               { type: "text", label: "Vendor Contact", field: "vendor_contact" },
@@ -166,37 +180,35 @@ export const VendorsList = () => {
           </div>
         </form>
       </Dialog>
-      <div className="flex justify-content-between align-items-center mb-2 ">
-        <h4>Vendor List</h4>
-        <div className="flex">
-          <FileUpload
-            mode="basic"
-            customUpload
-            // name="demo[]"
-            // url="https://primefaces.org/primereact/showcase/upload.php"
-            // accept="image/*"
-            maxFileSize={1000000}
-            uploadHandler={(e) => onBasicUpload(e)}
-            // onUpload={(e) => onBasicUpload(e)}
-          />
-          <Button
-            icon="pi pi-plus"
-            label="Add Vendors"
-            className="ml-1"
-            onClick={() => {
-              setVendorDetails({
-                vendor_code: "",
-                // vendor_sku: "",
-                vendor_email: "",
-                vendor_city: "",
-                vendor_contact: "",
-                vendor_gstin: "",
-                vendor: "",
-              })
-              setVendorDialog(!vendorDialog)
-            }}
-          />
-        </div>
+      <h2>Vendor List</h2>
+      <div className="flex justify-content-end mb-2 ">
+        {/* <FileUpload
+          mode="basic"
+          customUpload
+          // name="demo[]"
+          // url="https://primefaces.org/primereact/showcase/upload.php"
+          // accept="image/*"
+          maxFileSize={1000000}
+          uploadHandler={(e) => onBasicUpload(e)}
+          // onUpload={(e) => onBasicUpload(e)}
+        /> */}
+        <Button
+          icon="pi pi-plus"
+          label="Add Vendors"
+          className="ml-1"
+          onClick={() => {
+            setVendorDetails({
+              vendor_code: "",
+              // vendor_sku: "",
+              vendor_email: "",
+              vendor_city: "",
+              vendor_contact: "",
+              vendor_gstin: "",
+              vendor: "",
+            })
+            setVendorDialog(true)
+          }}
+        ></Button>
       </div>
       {vendorDialog && (
         <div className="card invert">
@@ -215,11 +227,11 @@ export const VendorsList = () => {
         // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
         // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
       >
-        <Column
+        {/* <Column
           field="vendor_id"
           header="Vendor ID"
           // className="text-center"
-        />
+        /> */}
         <Column
           field="vendor"
           header="Vendor"
@@ -273,6 +285,7 @@ export const VendorsList = () => {
                 />
                 <Button
                   // label="Delete"
+                  disabled={true}
                   icon="pi pi-trash"
                   className="m-1"
                   onClick={async () => {

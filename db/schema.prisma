@@ -26,8 +26,8 @@ model grn {
 model inventory_products {
   inventory_product_id Int      @unique @default(autoincrement())
   product_description  String?  @db.VarChar(45)
-  price                Int
-  quantity             Int
+  price                Int?     @default(0)
+  quantity             Int?     @default(0)
   products_product_id  Int
   products             products @relation(fields: [products_product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_products1")
 
@@ -99,6 +99,9 @@ model vendor_products {
   unit_price              Int
   vendor_vendor_id        Int
   products_product_id     Int
+  enabled                 Int                       @default(1) @db.TinyInt
+  priority                Int                       @default(1)
+  vendor_sku              String                    @db.VarChar(45)
   products                products                  @relation(fields: [products_product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_products_products1")
   vendor                  vendor                    @relation(fields: [vendor_vendor_id], references: [vendor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_products_vendor")
   purchase_order_products purchase_order_products[]

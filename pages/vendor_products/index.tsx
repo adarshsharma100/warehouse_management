@@ -17,6 +17,8 @@ import getProducts from "app/products/queries/getProducts"
 import { InputText } from "primereact/inputtext"
 import createVendor_product from "app/vendor_products/mutations/createVendor_product"
 import deleteVendor_product from "app/vendor_products/mutations/deleteVendor_product"
+import { FileUpload } from "primereact/fileupload"
+const papa = require("papaparse")
 
 const ITEMS_PER_PAGE = 100
 
@@ -33,11 +35,14 @@ export const Vendor_productsList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
+
   const [{ products }] = usePaginatedQuery(getProducts, {
     orderBy: { product_id: "asc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
+  console.log("vendors", vendors)
+  console.log("products", products)
   const [vendorDialog, setVendorDialog] = useState(false)
   const [selectedVendor, setSelectedVendor] = useState("")
   const [selectedProduct, setSelectedProduct] = useState("")
@@ -78,19 +83,69 @@ export const Vendor_productsList = () => {
     )
   }
   // console.log("vendors: ", vendors)
-  const tableVendorProducts = vendor_products.map(({ products, unit_price, vendor, vp_id }) => {
-    return {
-      vp_id,
-      unit_price,
-      item_name: products.name,
-      sku_code: products.products_sku,
-      vendor_code: vendor.vendor_code,
-      vendor_sku: vendor.vendor_sku,
-      vendor: vendor.vendor,
-      vendor_id: vendor.vendor_id,
-      product_id: products.product_id,
+  const tableVendorProducts = vendor_products.map(
+    ({ products, unit_price, vendor, vp_id, vendor_sku }) => {
+      return {
+        vp_id,
+        unit_price,
+        item_name: products.name,
+        sku_code: products.products_sku,
+        vendor_code: vendor.vendor_code,
+        vendor_sku: vendor_sku,
+        vendor: vendor.vendor,
+        vendor_id: vendor.vendor_id,
+        product_id: products.product_id,
+      }
     }
-  })
+  )
+  const onBasicUpload = async (e) => {
+    // console.log("FileUpload", e)
+    // await papa.parse(e.files[0], (data) => {
+    //   console.log("FileUpload", data)
+    // })
+    const failedCsv = []
+    const csv = []
+    papa.parse(e.files[0], {
+      header: true,
+      step: function (result) {
+        csv.push(result.data)
+      },
+      complete: async function (results, file) {
+        console.log("FileUpload ", csv)
+        const header = csv.pop()
+        const finalResults = csv.map((el) => {
+          const vendor_vendor_id = vendors.filter(({ vendor_code }) => {
+            // console.log("vendor code21", vendor_code, el["Vendor Code"])
+            return vendor_code === el["Vendor Code"]
+          })[0]?.vendor_id
+          const products_product_id = products.filter(({ products_sku }) => {
+            return products_sku === el["Product Sku"]
+          })[0]?.product_id
+          return {
+            vendor_sku: el["Vendor SkuCode"],
+            priority: Number(el["Priority"]),
+            enabled: Number(el["Enabled"]),
+            unit_price: Number(el["Vendor Price"]),
+            vendor_vendor_id: Number(vendor_vendor_id),
+            products_product_id: Number(products_product_id),
+          }
+        })
+        finalResults.forEach(async (ele) => {
+          try {
+            await createVendorProductMutation(ele)
+            await refetch()
+          } catch (error) {
+            failedCsv.push(ele)
+          }
+        })
+        // failedCsv.push(header)
+        // console.log("failedCsv: ", failedCsv)
+        // console.log("finalResults: ", finalResults)
+        // const csv_2 = papa.unparse(failedCsv)
+        // console.log("csv_2: ", csv_2)
+      },
+    })
+  }
   return (
     <div>
       <Dialog
@@ -202,6 +257,16 @@ export const Vendor_productsList = () => {
       </Dialog>
       <h4>Vendor Catalog</h4>
       <div className="flex justify-content-end mb-2 ">
+        <FileUpload
+          mode="basic"
+          customUpload
+          // name="demo[]"
+          // url="https://primefaces.org/primereact/showcase/upload.php"
+          // accept="image/*"
+          maxFileSize={1000000}
+          uploadHandler={(e) => onBasicUpload(e)}
+          // onUpload={(e) => onBasicUpload(e)}
+        />
         <Button
           icon="pi pi-plus"
           label="Add Vendor Products"
@@ -220,16 +285,11 @@ export const Vendor_productsList = () => {
         // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
         // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
       >
-        <Column
+        {/* <Column
           field="vp_id"
           header="product ID"
           // className="text-center"
-        />
-        <Column
-          field="item_name"
-          header="Item Name"
-          // className="text-center"
-        />
+        /> */}
         <Column
           field="vendor"
           header="Vendor"
@@ -238,6 +298,11 @@ export const Vendor_productsList = () => {
         <Column
           field="vendor_code"
           header="Vendor Code"
+          // className="text-center"
+        />
+        <Column
+          field="item_name"
+          header="Item Name"
           // className="text-center"
         />
         <Column
@@ -281,6 +346,7 @@ export const Vendor_productsList = () => {
                 />
                 <Button
                   // label="Delete"
+                  disabled={true}
                   icon="pi pi-trash"
                   className="mr-1"
                   onClick={async () => {
