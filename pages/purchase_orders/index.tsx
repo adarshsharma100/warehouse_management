@@ -1,4 +1,4 @@
-import { Suspense, useState } from "react"
+import { Suspense, useRef, useState } from "react"
 import { Routes } from "@blitzjs/next"
 import Head from "next/head"
 import Link from "next/link"
@@ -26,6 +26,7 @@ import createManyPurchase_order_product from "app/purchase_order_products/mutati
 import deletePurchase_order from "app/purchase_orders/mutations/deletePurchase_order"
 import deletePurchase_order_product from "app/purchase_order_products/mutations/deletePurchase_order_product"
 import getRfq_products from "app/rfq_products/queries/getRfq_products"
+import { Menu } from "primereact/menu"
 
 const ITEMS_PER_PAGE = 100
 
@@ -100,6 +101,8 @@ export const Purchase_ordersList = () => {
     agreement: "",
     rfq_id: "",
   })
+  const [activeRow, setActiveRow] = useState({})
+  const menu = useRef<Menu>(null)
 
   const rfqOptions = rfqs.map(({ id, rfq_name, rfq_code }) => {
     return { name: `${rfq_code}:${rfq_name}`, value: id }
@@ -163,6 +166,61 @@ export const Purchase_ordersList = () => {
     console.log("many ", data)
     setItemList(data)
   }
+  const items = [
+    {
+      label: "Options",
+      items: [
+        {
+          label: "Delete",
+          icon: "pi pi-trash",
+          command: async () => {
+            await deletePurchase_orderParoductMutation({
+              purchase_order_po_id: activeRow.po_id,
+            })
+            await deletePurchase_orderMutation({ po_id: activeRow.po_id })
+            await refetch()
+          },
+        },
+        {
+          label: "View Products",
+          icon: "pi pi-external-link",
+          command: () => {
+            const active = tableProducts.filter(({ purchase_order_po_id }) => {
+              return purchase_order_po_id === activeRow.po_id
+            })
+            console.log("active: ", active)
+            setActiveProducts(active)
+            setProductDialog(true)
+          },
+        },
+        {
+          label: "Update Status",
+          icon: "pi pi-chevron-circle-up",
+          command: () => {},
+        },
+        {
+          label: "Generate Gatepass",
+          icon: "pi pi-file",
+          command: () => {},
+        },
+        {
+          label: "Generate GRN",
+          icon: "pi pi-file",
+          command: () => {},
+        },
+        {
+          label: "Set as Recurrent",
+          icon: "pi pi-replay",
+          command: () => {},
+        },
+        {
+          label: "Approve",
+          icon: "pi pi-check-circle",
+          command: () => {},
+        },
+      ],
+    },
+  ]
 
   return (
     <div>
@@ -253,14 +311,16 @@ export const Purchase_ordersList = () => {
               className="mr-2 w-28rem"
               // name="products_product_id"
               // disabled={editState}
-              optionLabel="name"
+              filter
+              showClear
+              filterBy="name"
               value={purchaseDetails.vendor_vendor_id}
               options={vendorOptions}
               onChange={(e) => {
                 setPurchaseDetails({ ...purchaseDetails, vendor_vendor_id: e.value })
                 const productOptionsList = vendor_products
-                  .filter(({ vp_id }) => {
-                    return vp_id === e.value
+                  .filter(({ vendor_vendor_id }) => {
+                    return Number(vendor_vendor_id) === Number(e.value)
                   })
                   .map(({ vp_id, products }) => {
                     return { name: products.name, value: vp_id }
@@ -397,11 +457,14 @@ export const Purchase_ordersList = () => {
                   className="mr-2 w-20rem"
                   name="vendor_products_vp_id"
                   // disabled={editState}
+                  filter
+                  showClear
+                  filterBy="name"
+                  placeholder="Select a Product"
                   optionLabel="name"
                   value={ele?.vendor_products_vp_id}
                   options={productOptions}
                   onChange={(e) => handleFormChange(e, i)}
-                  placeholder="Select  Product"
                 />
                 <div className="p-label ">
                   <label className="mr-2">Price per unit</label>
@@ -597,7 +660,7 @@ export const Purchase_ordersList = () => {
                   //   setVendorDialog(true)
                   // }}
                 /> */}
-                <Button
+                {/* <Button
                   label="Delete"
                   icon="pi pi-trash "
                   className="mb-1 w-8rem"
@@ -621,6 +684,17 @@ export const Purchase_ordersList = () => {
                     setActiveProducts(active)
                     setProductDialog(true)
                   }}
+                /> */}
+                <Menu model={items} popup ref={menu} id="popup_menu" />
+                <Button
+                  // label="Show"
+                  icon="pi pi-ellipsis-v"
+                  onClick={(event) => {
+                    setActiveRow(rowData)
+                    menu.current.toggle(event)
+                  }}
+                  aria-controls="popup_menu"
+                  aria-haspopup
                 />
               </div>
             )
