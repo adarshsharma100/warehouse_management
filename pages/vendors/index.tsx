@@ -17,6 +17,7 @@ import createVendor from "app/vendors/mutations/createVendor"
 import updateVendor from "app/vendors/mutations/updateVendor"
 import deleteVendor from "app/vendors/mutations/deleteVendor"
 import { FileUpload } from "primereact/fileupload"
+import { VendorForm } from "app/vendors/components/VendorForm"
 const ITEMS_PER_PAGE = 100
 
 export const VendorsList = () => {
@@ -102,7 +103,7 @@ export const VendorsList = () => {
     <div>
       <Dialog
         header="Add Vendors"
-        visible={vendorDialog}
+        // visible={vendorDialog}
         style={{ width: "50vw" }}
         // footer={renderFooter}
         onHide={() => setVendorDialog(false)}
@@ -165,36 +166,43 @@ export const VendorsList = () => {
           </div>
         </form>
       </Dialog>
-      <h2>Vendor List</h2>
-      <div className="flex justify-content-end mb-2 ">
-        <FileUpload
-          mode="basic"
-          customUpload
-          // name="demo[]"
-          // url="https://primefaces.org/primereact/showcase/upload.php"
-          // accept="image/*"
-          maxFileSize={1000000}
-          uploadHandler={(e) => onBasicUpload(e)}
-          // onUpload={(e) => onBasicUpload(e)}
-        />
-        <Button
-          icon="pi pi-plus"
-          label="Add Vendors"
-          className="ml-1"
-          onClick={() => {
-            setVendorDetails({
-              vendor_code: "",
-              // vendor_sku: "",
-              vendor_email: "",
-              vendor_city: "",
-              vendor_contact: "",
-              vendor_gstin: "",
-              vendor: "",
-            })
-            setVendorDialog(true)
-          }}
-        ></Button>
+      <div className="flex justify-content-between align-items-center mb-2 ">
+        <h4>Vendor List</h4>
+        <div className="flex">
+          <FileUpload
+            mode="basic"
+            customUpload
+            // name="demo[]"
+            // url="https://primefaces.org/primereact/showcase/upload.php"
+            // accept="image/*"
+            maxFileSize={1000000}
+            uploadHandler={(e) => onBasicUpload(e)}
+            // onUpload={(e) => onBasicUpload(e)}
+          />
+          <Button
+            icon="pi pi-plus"
+            label="Add Vendors"
+            className="ml-1"
+            onClick={() => {
+              setVendorDetails({
+                vendor_code: "",
+                // vendor_sku: "",
+                vendor_email: "",
+                vendor_city: "",
+                vendor_contact: "",
+                vendor_gstin: "",
+                vendor: "",
+              })
+              setVendorDialog(!vendorDialog)
+            }}
+          />
+        </div>
       </div>
+      {vendorDialog && (
+        <div className="card invert">
+          <VendorForm />
+        </div>
+      )}
       <DataTable
         value={vendors}
         showGridlines

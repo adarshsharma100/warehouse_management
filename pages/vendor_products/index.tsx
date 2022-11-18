@@ -200,7 +200,7 @@ export const Vendor_productsList = () => {
           </div>
         </form> */}
       </Dialog>
-      <h2>Vendor Catalog</h2>
+      <h4>Vendor Catalog</h4>
       <div className="flex justify-content-end mb-2 ">
         <Button
           icon="pi pi-plus"

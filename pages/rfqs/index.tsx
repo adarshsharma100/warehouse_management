@@ -768,7 +768,7 @@ export const RfqsList = () => {
           </div>
         </form>
       </Dialog>
-      <h2>Request for Quotations</h2>
+      <h4>Request for Quotations</h4>
       <div className="flex justify-content-end mb-2 ">
         <Button
           icon="pi pi-plus"

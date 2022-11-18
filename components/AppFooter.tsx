@@ -3,7 +3,7 @@ import moment from "moment"
 
 export const AppFooter = (props) => {
   return (
-    <div className="layout-footer sticky bottom-0 card">
+    <div className="layout-footer sticky card">
       {/* <img
         src={
           props.layoutColorMode === "light"
@@ -18,7 +18,7 @@ export const AppFooter = (props) => {
       {/* By */}
       <span className="font-small m-2"> © {moment().format("Y")}</span>
       <span className="font-small m-2 text-gray-500">
-        Made with <img style={{ width: "0.8rem" }} src="/heart.gif" /> by TIF Labs Pvt Ltd
+        Made with <img style={{ width: "0.8rem" }} src="/heart.svg" /> by TIF Labs Pvt Ltd
       </span>
     </div>
   )
