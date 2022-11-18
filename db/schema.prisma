@@ -27,7 +27,7 @@ model inventory_products {
   inventory_product_id Int      @unique @default(autoincrement())
   product_description  String?  @db.VarChar(45)
   price                Int?     @default(0)
-  quantity             Int?     @default(0)
+  quantity             Int      @default(0)
   products_product_id  Int
   products             products @relation(fields: [products_product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_products1")
 
@@ -90,6 +90,9 @@ model vendor {
   vendor_contact  String            @db.VarChar(45)
   vendor_gstin    String            @db.VarChar(45)
   vendor          String            @db.VarChar(45)
+  address         String            @db.VarChar(145)
+  credit_period   String            @db.VarChar(45)
+  lead_time       String            @db.VarChar(45)
   purchase_order  purchase_order[]
   vendor_products vendor_products[]
 }

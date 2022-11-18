@@ -33,6 +33,9 @@ export default resolver.pipe(
             vendor_id: true,
             // vendor_sku: true,
             vendor_products: true,
+            address: true,
+            credit_period: true,
+            lead_time: true,
           },
         }),
     })

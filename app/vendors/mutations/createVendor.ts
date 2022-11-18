@@ -10,6 +10,9 @@ const CreateVendor = z.object({
   vendor_contact: z.string(),
   vendor_gstin: z.string(),
   vendor: z.string(),
+  address: z.string(),
+  credit_period: z.string(),
+  lead_time: z.string(),
 })
 
 export default resolver.pipe(resolver.zod(CreateVendor), resolver.authorize(), async (input) => {
