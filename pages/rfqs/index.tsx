@@ -561,11 +561,14 @@ export const RfqsList = () => {
                     className="mr-2 w-20rem"
                     name="products_product_id"
                     // disabled={editState}
+                    filter
+                    showClear
+                    filterBy="name"
+                    placeholder="Select a Product"
                     optionLabel="name"
                     value={ele.product_id}
                     options={purchaseProductOption}
                     onChange={(e) => handleProductFormChange(e, i)}
-                    placeholder="Select  Product"
                   />
                   <div className="flex-column ">
                     <div className="p-label ">
@@ -760,7 +763,8 @@ export const RfqsList = () => {
               })
               console.log("many: ", many)
               try {
-                await createRFQProductMutation(many)
+                const result = await createRFQProductMutation(many)
+                console.log("error: ", result)
               } catch (error: any) {
                 console.log("error: ", error)
               }
@@ -821,12 +825,15 @@ export const RfqsList = () => {
                 <Dropdown
                   className="mr-2 w-15rem"
                   name="products_product_id"
+                  filter
+                  showClear
+                  filterBy="name"
+                  placeholder="Select a Product"
                   // disabled={editState}
                   optionLabel="name"
                   value={ele.products_product_id}
                   options={productOptions}
                   onChange={(e) => handleFormChange(e, i)}
-                  placeholder="Select  Product"
                 />
                 <div className="p-label ">
                   <label
