@@ -14,6 +14,7 @@ import { Dialog } from "primereact/dialog"
 import { InputText } from "primereact/inputtext"
 import { InputTextarea } from "primereact/inputtextarea"
 import createProduct from "app/products/mutations/createProduct"
+import createInventory_product from "app/inventory_products/mutations/createInventory_product"
 
 const ITEMS_PER_PAGE = 100
 
@@ -26,6 +27,7 @@ export const ProductsList = () => {
     take: ITEMS_PER_PAGE,
   })
   const [createProductMutation] = useMutation(createProduct)
+  const [createInventoryProductMutation] = useMutation(createInventory_product)
   const [productDetails, setProductDetails] = useState({
     name: "",
     description: "",
@@ -46,7 +48,16 @@ export const ProductsList = () => {
         <form
           // onSubmit={formik.handleSubmit}
           onSubmit={async () => {
-            await createProductMutation(productDetails)
+            const result = await createProductMutation(productDetails)
+            try {
+              const all = await createInventoryProductMutation({
+                products_product_id: Number(result.product_id),
+                quantity: 0,
+              })
+              console.log("error: ", all)
+            } catch (error) {
+              console.log(error)
+            }
           }}
           className="p-fluid"
         >
