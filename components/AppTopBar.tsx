@@ -5,8 +5,8 @@ import logout from "app/auth/mutations/logout"
 import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
 import { Routes } from "@blitzjs/next"
-import logo from "../Assets/Images/tif.png"
-import Image from "next/image"
+// import logo from "../Assets/Images/tif.png"
+// import Image from "next/image"
 
 import { Badge } from "primereact/badge"
 
@@ -29,8 +29,8 @@ export const AppTopbar = (props) => {
       </button>
 
       <div className="layout-topbar-logo">
-        <Image src={logo} height="40px" width="40px" alt="logo" />
-        <span className="ml-3">Inventory Management</span>
+        {/* <Image src={logo} height="40px" width="40px" alt="logo" /> */}
+        {/* <span className="ml-3">Inventory Management</span> */}
       </div>
 
       <button

@@ -18,7 +18,7 @@ const ResetPasswordPage: BlitzPage = () => {
 
       {isSuccess ? (
         <div>
-          <h2>Password Reset Successfully</h2>
+          <h4>Password Reset Successfully</h4>
           <p>
             Go to the <Link href={Routes.Home()}>homepage</Link>
           </p>
@@ -27,7 +27,11 @@ const ResetPasswordPage: BlitzPage = () => {
         <Form
           submitText="Reset Password"
           schema={ResetPassword}
-          initialValues={{ password: "", passwordConfirmation: "", token: router.query.token as string }}
+          initialValues={{
+            password: "",
+            passwordConfirmation: "",
+            token: router.query.token as string,
+          }}
           onSubmit={async (values) => {
             try {
               await resetPasswordMutation(values)

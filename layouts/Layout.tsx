@@ -8,6 +8,8 @@ import { useRouter } from "next/router"
 import { useState, useRef, useEffect, ReactDOM } from "react"
 import { CSSTransition } from "react-transition-group"
 import { Tooltip } from "primereact/tooltip"
+import Image from "next/image"
+import logo from "../Assets/Images/tif.png"
 
 const Layout = ({ children }) => {
   const [layoutMode, setLayoutMode] = useState("static")
@@ -332,6 +334,7 @@ const Layout = ({ children }) => {
         onMobileSubTopbarMenuClick={onMobileSubTopbarMenuClick}
       />
       <div className="layout-sidebar" onClick={onSidebarClick}>
+        <Image src={logo} height="35px" width="35px" alt="logo" />
         <AppMenu model={menu} onMenuItemClick={onMenuItemClick} layoutColorMode={layoutColorMode} />
       </div>
 

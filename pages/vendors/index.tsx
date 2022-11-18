@@ -18,6 +18,7 @@ import updateVendor from "app/vendors/mutations/updateVendor"
 import deleteVendor from "app/vendors/mutations/deleteVendor"
 // import { FileUpload } from "primereact/fileupload"
 // const papa = require("papaparse")
+import { VendorForm } from "app/vendors/components/VendorForm"
 const ITEMS_PER_PAGE = 100
 
 export const VendorsList = () => {
@@ -119,7 +120,7 @@ export const VendorsList = () => {
     <div>
       <Dialog
         header="Add Vendors"
-        visible={vendorDialog}
+        // visible={vendorDialog}
         style={{ width: "50vw" }}
         // footer={renderFooter}
         onHide={() => setVendorDialog(false)}
@@ -215,6 +216,11 @@ export const VendorsList = () => {
           }}
         ></Button>
       </div>
+      {vendorDialog && (
+        <div className="card invert">
+          <VendorForm />
+        </div>
+      )}
       <DataTable
         value={vendors}
         showGridlines

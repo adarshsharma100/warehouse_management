@@ -63,7 +63,7 @@ const Home: BlitzPage = () => {
   // Home.authenticate = true
   const router = useRouter()
   return (
-    <section className="bg-white">
+    <section>
       <div className="grid min-h-screen col-12">
         <main
           aria-label="Main"

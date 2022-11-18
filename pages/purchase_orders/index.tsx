@@ -553,7 +553,7 @@ export const Purchase_ordersList = () => {
           </div>
         </form>
       </Dialog>
-      <h2>Purchase Orders</h2>
+      <h4>Purchase Orders</h4>
       <div className="flex justify-content-end mb-2 ">
         <Button
           icon="pi pi-plus"
