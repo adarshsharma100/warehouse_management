@@ -159,6 +159,16 @@ const Layout = ({ children }) => {
           icon: "pi pi-fw pi-truck",
           to: "/purchase_orders",
         },
+        {
+          label: "Inventory",
+          icon: "pi pi-fw pi-cog",
+          to: "/inventory_products",
+        },
+        {
+          label: "Products",
+          icon: "pi pi-fw pi-shopping-bag",
+          to: "/products",
+        },
       ],
     },
     // {
