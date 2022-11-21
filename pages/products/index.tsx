@@ -153,6 +153,8 @@ export const ProductsList = () => {
       <DataTable
         value={products}
         showGridlines
+        scrollable
+        scrollHeight="60vh"
         // header={renderHeader}
         stripedRows
         className="text-s datatable-responsive"

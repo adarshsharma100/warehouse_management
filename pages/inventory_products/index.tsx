@@ -38,6 +38,8 @@ export const Inventory_productsList = () => {
         value={tableInventory}
         showGridlines
         // header={renderHeader}
+        scrollable
+        scrollHeight="60vh"
         stripedRows
         className="text-s datatable-responsive"
       >

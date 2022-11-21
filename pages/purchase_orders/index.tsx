@@ -94,7 +94,7 @@ export const Purchase_ordersList = () => {
   const [purchaseDetails, setPurchaseDetails] = useState({
     vendor_vendor_id: "",
     po_code: "",
-    po_name: "",
+    po_description: "",
     expiry_date: "",
     expected_delivery: "",
     from_party: "",
@@ -104,8 +104,8 @@ export const Purchase_ordersList = () => {
   const [activeRow, setActiveRow] = useState({})
   const menu = useRef<Menu>(null)
 
-  const rfqOptions = rfqs.map(({ id, rfq_name, rfq_code }) => {
-    return { name: `${rfq_code}:${rfq_name}`, value: id }
+  const rfqOptions = rfqs.map(({ id, rfq_description, rfq_code }) => {
+    return { name: `${rfq_code}:${rfq_description}`, value: id }
   })
   const vendorOptions = vendors.map(({ vendor, vendor_id, vendor_code }) => {
     return {
@@ -235,7 +235,8 @@ export const Purchase_ordersList = () => {
           value={activeProducts}
           showGridlines
           // header={renderHeader}
-
+          scrollable
+          scrollHeight="60vh"
           stripedRows
           className="text-s datatable-responsive"
           // paginator
@@ -364,9 +365,9 @@ export const Purchase_ordersList = () => {
             <div className="p-float-label">
               <InputText
                 className="mr-2 w-22rem"
-                value={purchaseDetails.po_name}
+                value={purchaseDetails.po_description}
                 onChange={(e) =>
-                  setPurchaseDetails({ ...purchaseDetails, po_name: e.target.value })
+                  setPurchaseDetails({ ...purchaseDetails, po_description: e.target.value })
                 }
               />
               <label
@@ -514,7 +515,7 @@ export const Purchase_ordersList = () => {
                 const purchaseOrder = await createPurchaseOrderMutation({
                   vendor_vendor_id: Number(purchaseDetails.vendor_vendor_id),
                   po_code: purchaseDetails.po_code,
-                  po_name: purchaseDetails.po_name,
+                  po_description: purchaseDetails.po_description,
                   expiry_date: new Date(purchaseDetails.expiry_date),
                   expected_delivery: new Date(purchaseDetails.expected_delivery),
                   from_party: purchaseDetails.from_party,
@@ -573,14 +574,14 @@ export const Purchase_ordersList = () => {
         // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
         // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
       >
+        {/* <Column
+            field="po_id"
+            header="ID"
+            // className="text-center"
+          /> */}
         <Column
-          field="po_id"
-          header="ID"
-          // className="text-center"
-        />
-        <Column
-          field="po_name"
-          header="Name"
+          field="po_description"
+          header="Description"
           // className="text-center"
         />
         <Column

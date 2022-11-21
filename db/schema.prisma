@@ -40,7 +40,7 @@ model products {
   name               String               @db.VarChar(45)
   description        String?              @db.VarChar(45)
   product_type       String               @db.VarChar(45)
-  products_sku       String?              @db.VarChar(45)
+  products_sku       String?              @unique(map: "products_sku_UNIQUE") @db.VarChar(45)
   inventory_products inventory_products[]
   rfq_products       rfq_products[]
   vendor_products    vendor_products[]
@@ -49,8 +49,6 @@ model products {
 model purchase_order {
   po_id                        Int                       @unique(map: "po_id_UNIQUE") @default(autoincrement())
   po_type                      String                    @default("Manual") @db.VarChar(45)
-  ordered_qty                  Int?
-  received_qty                 Int?                      @default(0)
   updated_on                   DateTime?                 @default(now())
   approved_on                  DateTime?                 @db.DateTime(0)
   created_at                   DateTime?                 @default(now())
@@ -60,7 +58,7 @@ model purchase_order {
   agreement                    String                    @db.VarChar(45)
   purchase_order_status_pos_id Int                       @default(1)
   vendor_vendor_id             Int
-  po_name                      String                    @db.VarChar(45)
+  po_description               String                    @db.VarChar(155)
   po_code                      String                    @db.VarChar(45)
   rfq_id                       Int?
   purchase_order_status        purchase_order_status     @relation(fields: [purchase_order_status_pos_id], references: [pos_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_purchase_order_status1")
@@ -84,11 +82,11 @@ model purchase_order_status {
 
 model vendor {
   vendor_id       Int               @id @unique(map: "vendor_id_UNIQUE") @default(autoincrement())
-  vendor_code     String            @db.VarChar(45)
-  vendor_email    String            @db.VarChar(45)
+  vendor_code     String            @unique(map: "vendor_code_UNIQUE") @db.VarChar(45)
+  vendor_email    String            @unique(map: "vendor_email_UNIQUE") @db.VarChar(45)
   vendor_city     String            @db.VarChar(45)
   vendor_contact  String            @db.VarChar(45)
-  vendor_gstin    String            @db.VarChar(45)
+  vendor_gstin    String            @unique(map: "vendor_gstin_UNIQUE") @db.VarChar(45)
   vendor          String            @db.VarChar(45)
   address         String            @db.VarChar(145)
   credit_period   String            @db.VarChar(45)
@@ -104,7 +102,7 @@ model vendor_products {
   products_product_id     Int
   enabled                 Int                       @default(1) @db.TinyInt
   priority                Int                       @default(1)
-  vendor_sku              String                    @db.VarChar(45)
+  vendor_sku              String                    @unique(map: "vendor_sku_UNIQUE") @db.VarChar(45)
   products                products                  @relation(fields: [products_product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_products_products1")
   vendor                  vendor                    @relation(fields: [vendor_vendor_id], references: [vendor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_products_vendor")
   purchase_order_products purchase_order_products[]
@@ -115,14 +113,14 @@ model vendor_products {
 }
 
 model rfq {
-  id             Int              @id @unique(map: "rfc_id_key") @default(autoincrement())
-  created_at     DateTime         @default(now())
-  updated_at     DateTime         @default(now())
-  expected_dod   String           @db.VarChar(45)
-  rfq_code       String           @db.VarChar(45)
-  rfq_name       String           @db.VarChar(45)
-  purchase_order purchase_order[]
-  rfq_products   rfq_products[]
+  id              Int              @id @unique(map: "rfc_id_key") @default(autoincrement())
+  created_at      DateTime         @default(now())
+  updated_at      DateTime         @default(now())
+  expected_dod    String           @db.VarChar(45)
+  rfq_code        String           @db.VarChar(45)
+  rfq_description String           @db.VarChar(155)
+  purchase_order  purchase_order[]
+  rfq_products    rfq_products[]
 }
 
 model session {

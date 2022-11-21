@@ -224,6 +224,8 @@ export const VendorsList = () => {
       <DataTable
         value={vendors}
         showGridlines
+        // scrollable
+        // scrollHeight="60vh"
         // header={renderHeader}
         stripedRows
         className="text-s datatable-responsive"
