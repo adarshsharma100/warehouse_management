@@ -5,7 +5,7 @@ import { z } from "zod"
 const CreatePurchase_order = z.object({
   vendor_vendor_id: z.number(),
   po_code: z.string(),
-  po_name: z.string(),
+  po_description: z.string(),
   expiry_date: z.date(),
   expected_delivery: z.date(),
   from_party: z.string(),

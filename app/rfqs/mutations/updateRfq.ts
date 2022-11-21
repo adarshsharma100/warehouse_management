@@ -6,7 +6,7 @@ const UpdateRfq = z.object({
   id: z.number(),
   expected_dod: z.string(),
   rfq_code: z.string(),
-  rfq_name: z.string(),
+  rfq_description: z.string(),
 })
 
 export default resolver.pipe(
