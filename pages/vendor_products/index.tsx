@@ -18,6 +18,7 @@ import { InputText } from "primereact/inputtext"
 import createVendor_product from "app/vendor_products/mutations/createVendor_product"
 import deleteVendor_product from "app/vendor_products/mutations/deleteVendor_product"
 import { FileUpload } from "primereact/fileupload"
+import Loading from "components/loading"
 const papa = require("papaparse")
 
 const ITEMS_PER_PAGE = 100
@@ -374,7 +375,7 @@ export const Vendor_productsList = () => {
 
 const Vendor_productsPage = () => {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<Loading />}>
       <Layout>
         <Vendor_productsList />
       </Layout>

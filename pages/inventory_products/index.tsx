@@ -9,6 +9,7 @@ import Layout from "layouts/Layout"
 import { DataTable } from "primereact/datatable"
 import { Column } from "primereact/column"
 import { Button } from "primereact/button"
+import Loading from "components/loading"
 
 const ITEMS_PER_PAGE = 100
 
@@ -105,7 +106,7 @@ export const Inventory_productsList = () => {
 
 const Inventory_productsPage = () => {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<Loading />}>
       <Layout>
         <Inventory_productsList />
       </Layout>

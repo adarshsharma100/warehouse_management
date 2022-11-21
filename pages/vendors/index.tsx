@@ -19,6 +19,7 @@ import deleteVendor from "app/vendors/mutations/deleteVendor"
 // import { FileUpload } from "primereact/fileupload"
 // const papa = require("papaparse")
 import { VendorForm } from "app/vendors/components/VendorForm"
+import Loading from "components/loading"
 const ITEMS_PER_PAGE = 100
 
 export const VendorsList = () => {
@@ -206,7 +207,7 @@ export const VendorsList = () => {
               vendor_gstin: "",
               vendor: "",
             })
-            setVendorDialog(true)
+            setVendorDialog(!vendorDialog)
           }}
         ></Button>
       </div>
@@ -306,7 +307,7 @@ export const VendorsList = () => {
 const VendorsPage = () => {
   return (
     <div>
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<Loading />}>
         <Layout>
           <VendorsList />
         </Layout>

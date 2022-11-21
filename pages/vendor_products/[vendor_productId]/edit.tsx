@@ -10,6 +10,7 @@ import Layout from "app/core/layouts/Layout"
 import getVendor_product from "app/vendor_products/queries/getVendor_product"
 import updateVendor_product from "app/vendor_products/mutations/updateVendor_product"
 import { Vendor_productForm, FORM_ERROR } from "app/vendor_products/components/Vendor_productForm"
+import Loading from "components/loading"
 
 export const EditVendor_product = () => {
   const router = useRouter()
@@ -65,7 +66,7 @@ export const EditVendor_product = () => {
 const EditVendor_productPage = () => {
   return (
     <div>
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<Loading />}>
         <EditVendor_product />
       </Suspense>
 

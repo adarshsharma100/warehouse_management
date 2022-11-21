@@ -26,6 +26,7 @@ import createManyPurchase_order_product from "app/purchase_order_products/mutati
 import deletePurchase_order from "app/purchase_orders/mutations/deletePurchase_order"
 import deletePurchase_order_product from "app/purchase_order_products/mutations/deletePurchase_order_product"
 import getRfq_products from "app/rfq_products/queries/getRfq_products"
+import Loading from "components/loading"
 
 const ITEMS_PER_PAGE = 100
 
@@ -634,7 +635,7 @@ export const Purchase_ordersList = () => {
 
 const Purchase_ordersPage = () => {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<Loading />}>
       <Layout>
         <Purchase_ordersList />
       </Layout>
