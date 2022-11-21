@@ -934,148 +934,153 @@ export const RfqsList = () => {
           }}
         ></Button>
       </div>
-      {rfqDialog && (
-        <div className="card">
-          <form
-            onSubmit={async () => {
-              if (rfqEditState) {
-                await updateRFQMutation({ ...rfqDetails })
-                try {
-                  itemList.forEach(async (ele) => {
-                    await updateRfqProductMutation({
-                      rfq_id: Number(rfqDetails.id),
-                      price_per_unit: Number(ele.price_per_unit),
-                      products_product_id: Number(ele.products_product_id),
-                      quantity: Number(ele.quantity),
-                      rfq_products_id: Number(ele.rfq_products_id),
-                    })
-                  })
-                } catch (error: any) {}
-              } else {
-                const rfc = await createRFQMutation({ ...rfqDetails })
-                //
 
-                const many = itemList.map((ele) => {
-                  return {
-                    rfq_id: rfc.id,
+      <div
+        className={`card ${
+          rfqDialog
+            ? "visible scalein animation-duration-200"
+            : "hidden scaleout animation-duration-200"
+        }`}
+      >
+        <form
+          onSubmit={async () => {
+            if (rfqEditState) {
+              await updateRFQMutation({ ...rfqDetails })
+              try {
+                itemList.forEach(async (ele) => {
+                  await updateRfqProductMutation({
+                    rfq_id: Number(rfqDetails.id),
                     price_per_unit: Number(ele.price_per_unit),
                     products_product_id: Number(ele.products_product_id),
                     quantity: Number(ele.quantity),
-                  }
+                    rfq_products_id: Number(ele.rfq_products_id),
+                  })
                 })
+              } catch (error: any) {}
+            } else {
+              const rfc = await createRFQMutation({ ...rfqDetails })
+              //
 
-                try {
-                  await createRFQProductMutation(many)
-                } catch (error: any) {}
-              }
+              const many = itemList.map((ele) => {
+                return {
+                  rfq_id: rfc.id,
+                  price_per_unit: Number(ele.price_per_unit),
+                  products_product_id: Number(ele.products_product_id),
+                  quantity: Number(ele.quantity),
+                }
+              })
 
-              await refetch()
-            }}
-            className="p-fluid"
-          >
-            <h5>Create RFQ</h5>
-            <div className="formgrid grid">
-              <div className="col-12">
-                <h6>RFQ Details:</h6>
-              </div>
-              {[
-                { type: "text", label: "RFQ Code", field: "rfq_code" },
-                { type: "text", label: "RFQ Name", field: "rfq_name" },
-                { type: "text", label: "Delivery Time", field: "expected_dod" },
-              ].map(({ label, field }, i) => {
-                return (
-                  <div key={`${field}${i}`} className="field col-12 lg:col-4 mt-2">
-                    <span className="p-float-label">
-                      <InputText
-                        id={field}
-                        name={field}
-                        value={rfqDetails.rfq_code}
-                        onChange={(e) => setRfqDetails({ ...rfqDetails, [field]: e.target.value })}
-                      />
-                      <label
-                        htmlFor={field}
-                        // className={classNames({ "p-error": isFormFieldValid("name") })}
-                      >
-                        {label}
-                      </label>
-                    </span>
-                    {/* {getFormErrorMessage("name")} */}
-                  </div>
-                )
-              })}
-              <div className="col-12">
-                <h6>Select Products:</h6>
-              </div>
-              {itemList.map((ele, i) => (
-                <>
-                  <div key={`product-${i}`} className="field col-12 lg:col-7 mt-2">
-                    <Dropdown
-                      name="products_product_id"
-                      // disabled={editState}
-                      optionLabel="name"
-                      value={ele.products_product_id}
-                      options={productOptions}
-                      onChange={(e) => handleFormChange(e, i)}
-                      placeholder="Select  Product"
-                    />
-                  </div>
-                  <div className="field col-12 lg:col-2 mt-2">
-                    <span className="p-float-label">
-                      <InputNumber
-                        id={`product-prixe-${i}`}
-                        // name={ele.field}
-                        value={Number(ele.price_per_unit)}
-                        onChange={(e) => handleFormChange(e, i)}
-                        // className={classNames({ "p-invalid": isFormFieldValid("name") })}
-                      />
-                      <label
-                      // className={classNames({ "p-error": isFormFieldValid("name") })}
-                      >
-                        Price per unit
-                      </label>
-                    </span>
-                    {/* {getFormErrorMessage("name")} */}
-                  </div>
-                  <div className="field col-12 lg:col-2 mt-2">
-                    <span className="p-float-label">
-                      <InputNumber
-                        id={`product-qty-${i}`}
-                        // name={ele.field}
-                        value={Number(ele.quantity)}
-                        onChange={(e) => handleFormChange(e, i)}
-                        // className={classNames({ "p-invalid": isFormFieldValid("name") })}
-                      />
-                      <label
-                      // className={classNames({ "p-error": isFormFieldValid("name") })}
-                      >
-                        Quantity
-                      </label>
-                    </span>
-                    {/* {getFormErrorMessage("name")} */}
-                  </div>
-                  <div className="field col-6 lg:col-1 mt-2">
-                    <span className="p-buttonset">
-                      {i === itemList.length - 1 && (
-                        <Button type="button" label="+" onClick={addFields} />
-                      )}
-                      {itemList.length > 1 && (
-                        <Button
-                          type="button"
-                          label="-"
-                          className="p-button-secondary"
-                          onClick={() => removeFields(i)}
-                        />
-                      )}
-                    </span>
-                  </div>
-                </>
-              ))}
+              try {
+                await createRFQProductMutation(many)
+              } catch (error: any) {}
+            }
+
+            await refetch()
+          }}
+          className="p-fluid"
+        >
+          <h5>Create RFQ</h5>
+          <div className="formgrid grid">
+            <div className="col-12">
+              <h6>RFQ Details:</h6>
             </div>
-            <Divider />
-            <Button type="submit" className="mr-2" label="ADD" />
-          </form>
-        </div>
-      )}
+            {[
+              { type: "text", label: "RFQ Code", field: "rfq_code" },
+              { type: "text", label: "RFQ Name", field: "rfq_name" },
+              { type: "text", label: "Delivery Time", field: "expected_dod" },
+            ].map(({ label, field }, i) => {
+              return (
+                <div key={`${field}${i}`} className="field col-12 lg:col-4 mt-2">
+                  <span className="p-float-label">
+                    <InputText
+                      id={field}
+                      name={field}
+                      value={rfqDetails.rfq_code}
+                      onChange={(e) => setRfqDetails({ ...rfqDetails, [field]: e.target.value })}
+                    />
+                    <label
+                      htmlFor={field}
+                      // className={classNames({ "p-error": isFormFieldValid("name") })}
+                    >
+                      {label}
+                    </label>
+                  </span>
+                  {/* {getFormErrorMessage("name")} */}
+                </div>
+              )
+            })}
+            <div className="col-12">
+              <h6>Select Products:</h6>
+            </div>
+            {itemList.map((ele, i) => (
+              <>
+                <div key={`product-${i}`} className="field col-12 lg:col-7 mt-2">
+                  <Dropdown
+                    name="products_product_id"
+                    // disabled={editState}
+                    optionLabel="name"
+                    value={ele.products_product_id}
+                    options={productOptions}
+                    onChange={(e) => handleFormChange(e, i)}
+                    placeholder="Select  Product"
+                  />
+                </div>
+                <div className="field col-12 lg:col-2 mt-2">
+                  <span className="p-float-label">
+                    <InputNumber
+                      id={`product-prixe-${i}`}
+                      // name={ele.field}
+                      value={Number(ele.price_per_unit)}
+                      onChange={(e) => handleFormChange(e, i)}
+                      // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                    />
+                    <label
+                    // className={classNames({ "p-error": isFormFieldValid("name") })}
+                    >
+                      Price per unit
+                    </label>
+                  </span>
+                  {/* {getFormErrorMessage("name")} */}
+                </div>
+                <div className="field col-12 lg:col-2 mt-2">
+                  <span className="p-float-label">
+                    <InputNumber
+                      id={`product-qty-${i}`}
+                      // name={ele.field}
+                      value={Number(ele.quantity)}
+                      onChange={(e) => handleFormChange(e, i)}
+                      // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                    />
+                    <label
+                    // className={classNames({ "p-error": isFormFieldValid("name") })}
+                    >
+                      Quantity
+                    </label>
+                  </span>
+                  {/* {getFormErrorMessage("name")} */}
+                </div>
+                <div className="field col-6 lg:col-1 mt-2">
+                  <span className="p-buttonset">
+                    {i === itemList.length - 1 && (
+                      <Button type="button" label="+" onClick={addFields} />
+                    )}
+                    {itemList.length > 1 && (
+                      <Button
+                        type="button"
+                        label="-"
+                        className="p-button-secondary"
+                        onClick={() => removeFields(i)}
+                      />
+                    )}
+                  </span>
+                </div>
+              </>
+            ))}
+          </div>
+          <Divider />
+          <Button type="submit" className="mr-2" label="ADD" />
+        </form>
+      </div>
       <DataTable
         value={tableRFQ}
         scrollable

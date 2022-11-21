@@ -217,11 +217,15 @@ export const VendorsList = () => {
           }}
         ></Button>
       </div>
-      {vendorDialog && (
-        <div className="card invert">
-          <VendorForm />
-        </div>
-      )}
+      <div
+        className={`card ${
+          vendorDialog
+            ? "visible scalein animation-duration-200"
+            : "hidden scaleout animation-duration-200"
+        }`}
+      >
+        <VendorForm />
+      </div>
       <DataTable
         value={vendors}
         showGridlines
