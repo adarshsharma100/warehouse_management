@@ -39,6 +39,8 @@ export const Inventory_productsList = () => {
         value={tableInventory}
         showGridlines
         // header={renderHeader}
+        scrollable
+        scrollHeight="60vh"
         stripedRows
         className="text-s datatable-responsive"
       >
@@ -50,6 +52,11 @@ export const Inventory_productsList = () => {
         <Column
           field="products_sku"
           header="SKU"
+          // className="text-center"
+        />
+        <Column
+          field="name"
+          header="Name"
           // className="text-center"
         />
         <Column

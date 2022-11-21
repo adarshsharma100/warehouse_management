@@ -42,6 +42,9 @@ export const VendorsList = () => {
     vendor_contact: "",
     vendor_gstin: "",
     vendor: "",
+    address: "",
+    credit_period: "",
+    lead_time: "",
   })
   const [activeVendor, setActiveVendor] = useState(false)
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
@@ -147,6 +150,9 @@ export const VendorsList = () => {
               { type: "text", label: "Vendor City", field: "vendor_city" },
               { type: "text", label: "Vendor Contact", field: "vendor_contact" },
               { type: "text", label: "Vendor GSTIN", field: "vendor_gstin" },
+              { type: "text", label: "Address", field: "address" },
+              { type: "text", label: "Credit Period", field: "credit_period" },
+              { type: "text", label: "Lead Time", field: "lead_time" },
             ].map((ele, i) => {
               return (
                 <div key={`${ele.field}${i}`} className="field col-6 mt-4">
@@ -219,6 +225,8 @@ export const VendorsList = () => {
       <DataTable
         value={vendors}
         showGridlines
+        // scrollable
+        // scrollHeight="60vh"
         // header={renderHeader}
         stripedRows
         className="text-s datatable-responsive"
@@ -266,6 +274,21 @@ export const VendorsList = () => {
         <Column
           field="vendor_gstin"
           header="Vendor GSTIN"
+          // className="text-center"
+        />
+        <Column
+          field="address"
+          header="Address"
+          // className="text-center"
+        />
+        <Column
+          field="lead_time"
+          header="Lead Time"
+          // className="text-center"
+        />
+        <Column
+          field="credit_period"
+          header="Credit Period"
           // className="text-center"
         />
         <Column

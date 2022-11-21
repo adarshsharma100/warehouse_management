@@ -7,7 +7,7 @@ const CreateRfq = z.object({
   // price_per_unit: z.number(),
   // quantity: z.number(),
   rfq_code: z.string(),
-  rfq_name: z.string(),
+  rfq_description: z.string(),
   // products_product_id: z.number(),
 })
 

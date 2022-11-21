@@ -11,6 +11,9 @@ const UpdateVendor = z.object({
   vendor_gstin: z.string(),
   vendor: z.string(),
   vendor_id: z.number(),
+  address: z.string(),
+  credit_period: z.string(),
+  lead_time: z.string(),
 })
 
 export default resolver.pipe(

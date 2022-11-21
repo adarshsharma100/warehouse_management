@@ -276,6 +276,8 @@ export const Vendor_productsList = () => {
       </div>
       <DataTable
         value={tableVendorProducts}
+        scrollable
+        scrollHeight="60vh"
         showGridlines
         // header={renderHeader}
         stripedRows
