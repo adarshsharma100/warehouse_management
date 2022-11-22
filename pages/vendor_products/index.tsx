@@ -18,7 +18,9 @@ import { InputText } from "primereact/inputtext"
 import createVendor_product from "app/vendor_products/mutations/createVendor_product"
 import deleteVendor_product from "app/vendor_products/mutations/deleteVendor_product"
 import { FileUpload } from "primereact/fileupload"
-const papa = require("papaparse")
+// const papa = require("papaparse")
+import papa from "papaparse"
+import downloadCsv from "download-csv"
 
 const ITEMS_PER_PAGE = 100
 
@@ -35,6 +37,7 @@ export const Vendor_productsList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
+  console.log("vendor_products: ", vendor_products)
 
   const [{ products }] = usePaginatedQuery(getProducts, {
     orderBy: { product_id: "asc" },
@@ -101,7 +104,7 @@ export const Vendor_productsList = () => {
     // await papa.parse(e.files[0], (data) => {
     //   console.log("FileUpload", data)
     // })
-    const failedCsv = []
+
     const csv = []
     papa.parse(e.files[0], {
       header: true,
@@ -120,7 +123,7 @@ export const Vendor_productsList = () => {
             return products_sku === el["Product Sku"]
           })[0]?.product_id
           return {
-            vendor_sku: el["Vendor SkuCode"],
+            vendor_sku: el["Vendor SkuCode"].toString(),
             priority: Number(el["Priority"]),
             enabled: Number(el["Enabled"]),
             unit_price: Number(el["Vendor Price"]),
@@ -128,19 +131,191 @@ export const Vendor_productsList = () => {
             products_product_id: Number(products_product_id),
           }
         })
-        finalResults.forEach(async (ele) => {
+
+        console.log("finalResults: ", finalResults)
+        const promises = finalResults.map(async (ele, i) => {
+          // checking if the vendor code exists in the vendor list or not
+          const csvVendorCode = csv.filter((item) => {
+            return item["Vendor SkuCode"] === ele.vendor_sku
+          })[0]?.["Vendor Code"]
+
+          // checking if the products sku exists in the product list or not
+
+          const csvProductSku = csv.filter((item) => {
+            return item["Vendor SkuCode"] === ele.vendor_sku
+          })[0]?.["Product Sku"]
+          console.log("csvProductSku: ", csvProductSku)
+
+          // if the vendor code and their corresponding products sku doesn't exist in the table
+          let vendorAndProduct = true
+          let vendorId = vendor_products.filter(async ({ vendor, products }) => {
+            if (
+              Number(vendor.vendor_id) === Number(ele.vendor_vendor_id) &&
+              products.products_sku?.toString() === csvProductSku?.toString()
+            ) {
+              vendorAndProduct = false
+              return {}
+              // console.log("lol")
+              // throw "vendor with that product already exist"
+            }
+          })
+          vendorId = await Promise.all(vendorId)
+          console.log("vendorId: ", vendorId)
+          if (!vendorAndProduct) {
+            throw "vendor with that product already exist"
+          }
           try {
-            await createVendorProductMutation(ele)
+            vendorAndProduct && (await createVendorProductMutation(ele))
             await refetch()
+            return {}
           } catch (error) {
-            failedCsv.push(ele)
+            console.log("error: ", error)
+            let errors = ""
+
+            // check whether this vendor code exist in the vendor table or not
+            let isVendorCodePresent = false
+            let checkVendorCode = vendors.filter((v) => {
+              return v.vendor_code.toString() === csvVendorCode.toString()
+            })
+            console.log("checkVendorCode: ", checkVendorCode)
+            if (Number(checkVendorCode.length) === 0) {
+              isVendorCodePresent = true
+            }
+
+            // check whether this products sku exist in the product table or not
+            let isProductSkuPresent = false
+            let checkProductSku = products.filter((p) => {
+              return p.products_sku?.toString() === csvProductSku?.toString()
+            })
+            if (Number(checkProductSku.length) === 0) {
+              isProductSkuPresent = true
+            }
+
+            // check for null values
+            Object.keys(ele).forEach((item) => {
+              console.log("ele[item]: ", ele[item])
+              if (!ele[item]) {
+                if (`${item}` === "vendor_vendor_id") {
+                  isVendorCodePresent
+                    ? (errors += `Vendor Code does not exist in the table. `)
+                    : `${item}` === "vendor_vendor_id"
+                    ? (errors += `Vendor Code is empty `)
+                    : (errors += `${item} is empty. `)
+                }
+
+                if (`${item}` === "products_product_id") {
+                  isProductSkuPresent
+                    ? (errors += `Products sku does not exist in the table. `)
+                    : `${item}` === "products_product_id"
+                    ? (errors += `Products sku is empty `)
+                    : (errors += `${item} is empty. `)
+                }
+
+                if (`${item}` !== "vendor_vendor_id" && `${item}` === "products_product_id") {
+                  errors += `${item} is empty. `
+                }
+              }
+            })
+
+            // let flag = true
+            let vendorId = vendor_products.filter(async ({ vendor, products }) => {
+              if (
+                Number(vendor.vendor_id) === Number(ele.vendor_vendor_id) &&
+                products.products_sku?.toString() === csvProductSku.toString()
+              ) {
+                // flag &&
+                errors += `${csvVendorCode} vendor code with ${csvProductSku} products sku already exists in the products`
+                return {}
+                // flag = false
+              }
+            })
+            vendorId = await Promise.all(vendorId)
+
+            let a = {
+              "Vendor Code": csv.filter((item) => {
+                return item["Vendor SkuCode"] === ele.vendor_sku
+              })[0]?.["Vendor Code"],
+              unit_price: ele.unit_price,
+              vendor_sku: ele.vendor_sku,
+              enabled: ele.enabled,
+              "Product Sku": csv.filter((item) => {
+                return item["Vendor SkuCode"] === ele.vendor_sku
+              })[0]?.["Product Sku"],
+              priority: ele.priority,
+              errors: errors,
+            }
+
+            return a
           }
         })
+        const failedCsv = await Promise.all(promises)
+
+        // const newFailedCsv =
+        // 0failedCsv = failedCsv.map(({enabled, priority, vendor_sku}) => {
+        //   return {
+        //     enabled,
+        //     priority,
+        //     vendor_sku
+        //   }
+        // })
         // failedCsv.push(header)
-        // console.log("failedCsv: ", failedCsv)
+        // const UpdatedfailedCsv = failedCsv.map((item) => {
+        //   return {
+        //     enabled: item["enabled"],
+        //     priority: item["priority"],
+        //     unit_price: item["unit_price"],
+        //     vendor_sku: item["vendor_sku"],
+        //   }
+        // })
+        // console.log("UpdatedfailedCsv: ", UpdatedfailedCsv)
+        console.log("failedCsv: ", failedCsv)
+        failedCsv.forEach((can) => {
+          console.log("enabled", can)
+        })
+        const columns = {
+          "Vendor Code": "Vendor Code",
+          unit_price: "Vendor Price",
+          vendor_sku: "vendor_sku",
+          enabled: "enabled",
+          "Product Sku": "Product Sku",
+          priority: "priority",
+          error: "error",
+        }
+        downloadCsv(failedCsv, columns, "exportFileName")
+        // let csv5 = await new ObjectsToCsv(failedCsv)
+        // console.log("csv5: ", csv5)
+        // var jsonArray = JSON.parse(JSON.stringify(failedCsv))
+        // console.log("jsonArray: ", jsonArray)
         // console.log("finalResults: ", finalResults)
-        // const csv_2 = papa.unparse(failedCsv)
+        // const csv_2 = papa.unparse(csv)
         // console.log("csv_2: ", csv_2)
+        // const args = {
+        //   filename: "failedCsv",
+        //   data: failedCsv,
+        // }
+        // const downloadCSV = async (args) => {
+        //   let filename = args.filename || "export.csv"
+        //   let columns = args.columns || null
+
+        //   // let csv = papa.unparse({ data: args.data, fields: columns })
+        //   let csv = new ObjectsToCsv(args.data)
+        //   console.log("csv:", csv)
+        //   if (csv == null) return
+
+        //   var blob = new Blob([csv], { type: "text/csv;charset=UTF-16LE;" })
+        //   if (window.navigator.msSaveOrOpenBlob)
+        //     // IE hack; see http://msdn.microsoft.com/en-us/library/ie/hh779016.aspx
+        //     window.navigator.msSaveBlob(blob, args.filename)
+        //   else {
+        //     var a = window.document.createElement("a")
+        //     a.href = window.URL.createObjectURL(blob)
+        //     a.download = filename
+        //     document.body.appendChild(a)
+        //     a.click() // IE: "Access is denied"; see: https://connect.microsoft.com/IE/feedback/details/797361/ie-10-treats-blob-url-as-cross-origin-and-denies-access
+        //     document.body.removeChild(a)
+        //   }
+        // }
+        // await downloadCSV(args)
       },
     })
   }
@@ -256,6 +431,7 @@ export const Vendor_productsList = () => {
       <h2>Vendor Catalog</h2>
       <div className="flex justify-content-end mb-2 ">
         <FileUpload
+          accept=".csv"
           mode="basic"
           customUpload
           // name="demo[]"
