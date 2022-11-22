@@ -1,20 +1,21 @@
-import { Suspense } from "react";
-import { Routes } from "@blitzjs/next";
-import Head from "next/head";
-import Link from "next/link";
-import { useRouter } from "next/router";
-import { useQuery, useMutation } from "@blitzjs/rpc";
-import { useParam } from "@blitzjs/next";
+import { Suspense } from "react"
+import { Routes } from "@blitzjs/next"
+import Head from "next/head"
+import Link from "next/link"
+import { useRouter } from "next/router"
+import { useQuery, useMutation } from "@blitzjs/rpc"
+import { useParam } from "@blitzjs/next"
 
-import Layout from "app/core/layouts/Layout";
-import getVendor from "app/vendors/queries/getVendor";
-import deleteVendor from "app/vendors/mutations/deleteVendor";
+import Layout from "app/core/layouts/Layout"
+import getVendor from "app/vendors/queries/getVendor"
+import deleteVendor from "app/vendors/mutations/deleteVendor"
+import Loading from "components/loading"
 
 export const Vendor = () => {
-  const router = useRouter();
-  const vendorId = useParam("vendorId", "number");
-  const [deleteVendorMutation] = useMutation(deleteVendor);
-  const [vendor] = useQuery(getVendor, { id: vendorId });
+  const router = useRouter()
+  const vendorId = useParam("vendorId", "number")
+  const [deleteVendorMutation] = useMutation(deleteVendor)
+  const [vendor] = useQuery(getVendor, { id: vendorId })
 
   return (
     <>
@@ -34,8 +35,8 @@ export const Vendor = () => {
           type="button"
           onClick={async () => {
             if (window.confirm("This will be deleted")) {
-              await deleteVendorMutation({ id: vendor.id });
-              router.push(Routes.VendorsPage());
+              await deleteVendorMutation({ id: vendor.id })
+              router.push(Routes.VendorsPage())
             }
           }}
           style={{ marginLeft: "0.5rem" }}
@@ -44,8 +45,8 @@ export const Vendor = () => {
         </button>
       </div>
     </>
-  );
-};
+  )
+}
 
 const ShowVendorPage = () => {
   return (
@@ -56,14 +57,14 @@ const ShowVendorPage = () => {
         </Link>
       </p>
 
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<Loading />}>
         <Vendor />
       </Suspense>
     </div>
-  );
-};
+  )
+}
 
-ShowVendorPage.authenticate = true;
-ShowVendorPage.getLayout = (page) => <Layout>{page}</Layout>;
+ShowVendorPage.authenticate = true
+ShowVendorPage.getLayout = (page) => <Layout>{page}</Layout>
 
-export default ShowVendorPage;
+export default ShowVendorPage

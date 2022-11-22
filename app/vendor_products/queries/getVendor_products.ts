@@ -30,6 +30,7 @@ export default resolver.pipe(
             vendor: true,
             vendor_vendor_id: true,
             products_product_id: true,
+            vendor_sku: true,
           },
         }),
     })

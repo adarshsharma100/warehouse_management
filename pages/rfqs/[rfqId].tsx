@@ -9,6 +9,7 @@ import { useParam } from "@blitzjs/next"
 import Layout from "app/core/layouts/Layout"
 import getRfq from "app/rfqs/queries/getRfq"
 import deleteRfq from "app/rfqs/mutations/deleteRfq"
+import Loading from "components/loading"
 
 export const Rfq = () => {
   const router = useRouter()
@@ -56,7 +57,7 @@ const ShowRfqPage = () => {
         </Link>
       </p>
 
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<Loading />}>
         <Rfq />
       </Suspense>
     </div>

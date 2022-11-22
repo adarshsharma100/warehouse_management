@@ -10,6 +10,7 @@ import Layout from "app/core/layouts/Layout"
 import getRfq from "app/rfqs/queries/getRfq"
 import updateRfq from "app/rfqs/mutations/updateRfq"
 import { RfqForm, FORM_ERROR } from "app/rfqs/components/RfqForm"
+import Loading from "components/loading"
 
 export const EditRfq = () => {
   const router = useRouter()
@@ -65,7 +66,7 @@ export const EditRfq = () => {
 const EditRfqPage = () => {
   return (
     <div>
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<Loading />}>
         <EditRfq />
       </Suspense>
 

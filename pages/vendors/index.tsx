@@ -18,6 +18,8 @@ import updateVendor from "app/vendors/mutations/updateVendor"
 import deleteVendor from "app/vendors/mutations/deleteVendor"
 // import { FileUpload } from "primereact/fileupload"
 // const papa = require("papaparse")
+import { VendorForm } from "app/vendors/components/VendorForm"
+import Loading from "components/loading"
 const ITEMS_PER_PAGE = 100
 
 export const VendorsList = () => {
@@ -40,6 +42,9 @@ export const VendorsList = () => {
     vendor_contact: "",
     vendor_gstin: "",
     vendor: "",
+    address: "",
+    credit_period: "",
+    lead_time: "",
   })
   const [activeVendor, setActiveVendor] = useState(false)
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
@@ -116,7 +121,7 @@ export const VendorsList = () => {
     <div>
       <Dialog
         header="Add Vendors"
-        visible={vendorDialog}
+        // visible={vendorDialog}
         style={{ width: "50vw" }}
         // footer={renderFooter}
         onHide={() => setVendorDialog(false)}
@@ -140,11 +145,14 @@ export const VendorsList = () => {
             {[
               { type: "text", label: "Vendor", field: "vendor" },
               { type: "text", label: "Vendor Code", field: "vendor_code" },
-              { type: "text", label: "Vendor SKU", field: "vendor_sku" },
+              // { type: "text", label: "Vendor SKU", field: "vendor_sku" },
               { type: "email", label: "Vendor Email", field: "vendor_email" },
               { type: "text", label: "Vendor City", field: "vendor_city" },
               { type: "text", label: "Vendor Contact", field: "vendor_contact" },
               { type: "text", label: "Vendor GSTIN", field: "vendor_gstin" },
+              { type: "text", label: "Address", field: "address" },
+              { type: "text", label: "Credit Period", field: "credit_period" },
+              { type: "text", label: "Lead Time", field: "lead_time" },
             ].map((ele, i) => {
               return (
                 <div key={`${ele.field}${i}`} className="field col-6 mt-4">
@@ -205,13 +213,24 @@ export const VendorsList = () => {
               vendor_gstin: "",
               vendor: "",
             })
-            setVendorDialog(true)
+            setVendorDialog(!vendorDialog)
           }}
         ></Button>
+      </div>
+      <div
+        className={`card ${
+          vendorDialog
+            ? "visible scalein animation-duration-200"
+            : "hidden scaleout animation-duration-200"
+        }`}
+      >
+        <VendorForm />
       </div>
       <DataTable
         value={vendors}
         showGridlines
+        // scrollable
+        // scrollHeight="60vh"
         // header={renderHeader}
         stripedRows
         className="text-s datatable-responsive"
@@ -221,11 +240,11 @@ export const VendorsList = () => {
         // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
         // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
       >
-        <Column
+        {/* <Column
           field="vendor_id"
           header="Vendor ID"
           // className="text-center"
-        />
+        /> */}
         <Column
           field="vendor"
           header="Vendor"
@@ -262,6 +281,21 @@ export const VendorsList = () => {
           // className="text-center"
         />
         <Column
+          field="address"
+          header="Address"
+          // className="text-center"
+        />
+        <Column
+          field="lead_time"
+          header="Lead Time"
+          // className="text-center"
+        />
+        <Column
+          field="credit_period"
+          header="Credit Period"
+          // className="text-center"
+        />
+        <Column
           // field="vendor_gstin"
           header="Action"
           body={(rowData) => {
@@ -279,6 +313,7 @@ export const VendorsList = () => {
                 />
                 <Button
                   // label="Delete"
+                  disabled={true}
                   icon="pi pi-trash"
                   className="m-1"
                   onClick={async () => {
@@ -299,7 +334,7 @@ export const VendorsList = () => {
 const VendorsPage = () => {
   return (
     <div>
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<Loading />}>
         <Layout>
           <VendorsList />
         </Layout>

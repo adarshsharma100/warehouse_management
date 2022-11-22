@@ -15,7 +15,7 @@ const ForgotPasswordPage: BlitzPage = () => {
 
       {isSuccess ? (
         <div>
-          <h2>Request Submitted</h2>
+          <h4>Request Submitted</h4>
           <p>
             If your email is in our system, you will receive instructions to reset your password
             shortly.

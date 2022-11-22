@@ -8,6 +8,8 @@ import { useRouter } from "next/router"
 import { useState, useRef, useEffect, ReactDOM } from "react"
 import { CSSTransition } from "react-transition-group"
 import { Tooltip } from "primereact/tooltip"
+import Image from "next/image"
+import logo from "../Assets/Images/tif.png"
 
 const Layout = ({ children }) => {
   const [layoutMode, setLayoutMode] = useState("static")
@@ -159,6 +161,16 @@ const Layout = ({ children }) => {
           label: "Purchase Orders",
           icon: "pi pi-fw pi-truck",
           to: "/purchase_orders",
+        },
+        {
+          label: "Inventory",
+          icon: "pi pi-fw pi-cog",
+          to: "/inventory_products",
+        },
+        {
+          label: "Products",
+          icon: "pi pi-fw pi-shopping-bag",
+          to: "/products",
         },
       ],
     },
@@ -322,6 +334,7 @@ const Layout = ({ children }) => {
         onMobileSubTopbarMenuClick={onMobileSubTopbarMenuClick}
       />
       <div className="layout-sidebar" onClick={onSidebarClick}>
+        <Image src={logo} height="35px" width="35px" alt="logo" />
         <AppMenu model={menu} onMenuItemClick={onMenuItemClick} layoutColorMode={layoutColorMode} />
       </div>
 

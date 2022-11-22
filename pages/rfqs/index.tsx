@@ -1,10 +1,11 @@
-import { Suspense, useEffect, useState } from "react"
+import { Suspense, useEffect, useRef, useState } from "react"
 import { Routes } from "@blitzjs/next"
 import Head from "next/head"
 import Link from "next/link"
 import { useMutation, usePaginatedQuery } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
 import { InputNumber } from "primereact/inputnumber"
+import { Divider } from "primereact/divider"
 import getRfqs from "app/rfqs/queries/getRfqs"
 import Layout from "layouts/Layout"
 import { DataTable } from "primereact/datatable"
@@ -29,7 +30,9 @@ import createPurchase_order from "app/purchase_orders/mutations/createPurchase_o
 import updateRfq from "app/rfqs/mutations/updateRfq"
 import updateManyRfq_products from "app/rfq_products/mutations/updateManyRfq_products"
 import updateRfq_product from "app/rfq_products/mutations/updateRfq_product"
-
+import { RfqForm } from "app/rfqs/components/RfqForm"
+import { Menu } from "primereact/menu"
+import Loading from "components/loading"
 const ITEMS_PER_PAGE = 100
 
 export const RfqsList = () => {
@@ -60,11 +63,7 @@ export const RfqsList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
-  console.log("vendor_products: ", vendor_products)
-  console.log("rfq_products: ", rfq_products)
-  // console.log("rfqs: ", rfqs)
-  console.log("vendors: ", vendors)
-  console.log("active2: ", vendor_products)
+  const [sendDialog, setSendDialog] = useState(false)
   const [createRFQMutation] = useMutation(createRfq)
   const [updateRFQMutation] = useMutation(updateRfq)
   const [createRFQProductMutation] = useMutation(createManyRfq_products)
@@ -77,7 +76,8 @@ export const RfqsList = () => {
   const productOptions = products.map(({ product_id, name }) => {
     return { name, value: product_id }
   })
-  // console.log("rfqs: ", rfqs)
+  const menu = useRef<Menu>(null)
+  //
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
   const goToNextPage = () => router.push({ query: { page: page + 1 } })
   const [rfqDialog, setRfqDialog] = useState(false)
@@ -87,7 +87,7 @@ export const RfqsList = () => {
   const [vendorChangeState, setVendorChangeState] = useState(false)
   const [rfqDetails, setRfqDetails] = useState({
     rfq_code: "",
-    rfq_name: "",
+    rfq_description: "",
     expected_dod: "",
   })
   const [rfqEditState, setRfqEditState] = useState(false)
@@ -115,7 +115,7 @@ export const RfqsList = () => {
   const [purchaseDetails, setPurchaseDetails] = useState({
     vendor_vendor_id: "",
     po_code: "",
-    po_name: "",
+    po_description: "",
     expiry_date: "",
     expected_delivery: "",
     from_party: "",
@@ -165,7 +165,6 @@ export const RfqsList = () => {
     setProductItemList(activeProductsdetails)
   }, [vendorChangeState])
 
-  console.log("tableRfqProducts: ", tableRfqProducts)
   const tableRFQ = rfqs.map((ele) => {
     return {
       ...ele,
@@ -180,13 +179,13 @@ export const RfqsList = () => {
       value: vendor_id,
     }
   })
-  const rfqOptions = rfqs.map(({ rfq_code, rfq_name, id }) => {
+  const rfqOptions = rfqs.map(({ rfq_code, rfq_description, id }) => {
     return {
-      name: `${rfq_code}: ${rfq_name}`,
+      name: `${rfq_code}: ${rfq_description}`,
       value: id,
     }
   })
-  console.log("rfqOptions: ", rfqOptions)
+
   const [vendorOptions, setVendorOptions] = useState(options)
   const addFields = () => {
     let newfield = { products_product_id: "", quantity: "", price_per_unit: "" }
@@ -194,11 +193,11 @@ export const RfqsList = () => {
     setItemList([...itemList, newfield])
   }
   const removeFields = (index) => {
-    // console.log("index12123: ", itemList)
-    // console.log("index12123 ", index)
+    //
+    //
     // let data = [...itemList]
     // data.splice(parseInt(index), 1)
-    // console.log("index12123: ", itemList)
+    //
     // setItemList(data)
     setItemList(itemList.filter((data, i) => index !== i))
   }
@@ -221,11 +220,9 @@ export const RfqsList = () => {
     setProductItemList([...productItemList, newfield])
   }
   const removeFieldsPurchase = (index) => {
-    console.log("index12123: ", itemList)
-    console.log("index12123 ", index)
     let data = [...productItemList]
     const data2 = data.splice(index, 1)
-    console.log("index12123: ", itemList)
+
     setProductItemList(data2)
   }
   const handleFormChange = (e: any, i: number) => {
@@ -248,8 +245,163 @@ export const RfqsList = () => {
   //     "quantity": 50,
   //     "price_per_unit": "400"
   // }
+  const items = [
+    {
+      label: "Options",
+      items: [
+        {
+          label: "Edit",
+          icon: "pi pi-pencil",
+          command: () => {
+            setRfqEditState(true)
+            setRfqDetails({
+              rfq_code: activeRow.rfq_code,
+              rfq_description: activeRow.rfq_description,
+              expected_dod: activeRow.expected_dod,
+              id: activeRow.id,
+            })
+            const active = tableRfqProducts
+              .filter(({ rfq_id }) => {
+                return rfq_id === activeRow.id
+              })
+              .map(({ products, quantity, price_per_unit, rfq_products_id }) => {
+                return {
+                  products_product_id: products.product_id,
+                  quantity: quantity,
+                  price_per_unit: price_per_unit,
+                  rfq_products_id,
+                }
+              })
+            setItemList(active)
+
+            // setActiveRfq(active)
+            setRfqDialog(true)
+            // setActiveVendor(true)
+            // setVendorDetails({ ...rowData })
+            // setVendorDialog(true)
+          },
+        },
+        {
+          label: "Delete",
+          icon: "pi pi-trash",
+          command: async () => {
+            // await deleteRFQProductMutation({ rfq_id: activeRow.id })
+            // await deleteRFQMutation({ id: activeRow.id })
+            // await refetch()
+          },
+        },
+        {
+          label: "View Products",
+          icon: "pi pi-external-link",
+          command: () => {
+            const active = tableRfqProducts.filter(({ rfq_id }) => {
+              return rfq_id === activeRow.id
+            })
+            //
+            setActiveRfq(active)
+            setProductDialog(true)
+          },
+        },
+        {
+          label: "Create PO",
+          icon: "pi pi-plus",
+          command: () => {
+            const active = tableRfqProducts.filter(({ rfq_id }) => {
+              return rfq_id === activeRow.id
+            })
+            const activeProducts = active.map(({ products }) => {
+              return products.product_id
+            })
+            const activeVendors = vendors
+              .filter(({ vendor_products }) => {
+                const products = vendor_products.map(({ products_product_id }) => {
+                  return products_product_id
+                })
+                return activeProducts.every((ele) => {
+                  return products.includes(ele)
+                })
+                // return products.every((ele) => {
+                //   return activeProducts.includes(ele)
+                // })
+              })
+              .map(({ vendor, vendor_id }) => {
+                return { name: vendor, value: vendor_id }
+              })
+
+            const activeProductsdetails = vendor_products
+
+              .filter(({ products, vendor }) => {
+                return (
+                  activeProducts.includes(products.product_id) &&
+                  vendor.vendor_id == activeVendors[0]?.value
+                )
+              })
+              .map((ele) => {
+                return {
+                  purchase_order_po_id: "",
+                  purchase_order_purchase_order_status_pos_id: 1,
+                  purchase_order_vendor_vendor_id: ele.vendor.vendor_id,
+                  vendor_products_vp_id: ele.vp_id,
+                  vendor_products_vendor_vendor_id: ele.vendor.vendor_id,
+                  vendor_products_products_product_id: ele.products.product_id,
+                  quantity: "",
+                  price_per_unit: ele.unit_price,
+                  received_quantity: 0,
+                  product_name: ele.products.name,
+                  vendor_unit_price: ele.unit_price,
+                  product_id: ele.products.product_id,
+                }
+              })
+
+            // TDO take quantity from rfq
+            const activeProductsOptions = activeProductsdetails.map((ele) => {
+              return { name: ele.product_name, value: ele.product_id }
+            })
+
+            setPurchaseProductOption(activeProductsOptions)
+            setVendorOptions(activeVendors)
+            setActiveRfq(active)
+            setActiveRfqId(activeRow.id)
+            setProductItemList(activeProductsdetails)
+            // setActiveRow(rowData)
+            setPurchaseDialog(true)
+          },
+        },
+        {
+          label: "Send Quotation",
+          icon: "pi pi-send",
+          command: () => {
+            setSendDialog(true)
+          },
+        },
+      ],
+    },
+  ]
+
   return (
     <div>
+      <Dialog
+        header="Send Quotaions"
+        visible={sendDialog}
+        style={{ width: "50vw" }}
+        // footer={renderFooter("displayBasic")}
+        onHide={() => setSendDialog(false)}
+      >
+        <div className="p-float-label">
+          <InputText
+            // name=""
+            className="mr-2 w-16rem"
+            value={purchaseDetails.po_code}
+            onChange={(e) => setPurchaseDetails({ ...purchaseDetails, po_code: e.target.value })}
+          />
+          <label
+          // htmlFor={ele.field}
+          // className={classNames({ "p-error": isFormFieldValid("name") })}
+          >
+            PO Code
+          </label>
+        </div>
+      </Dialog>
       <Dialog
         header="Create PO "
         visible={purchaseDialog}
@@ -263,7 +415,7 @@ export const RfqsList = () => {
           setPurchaseDetails({
             vendor_vendor_id: "",
             po_code: "",
-            po_name: "",
+            po_description: "",
             expiry_date: "",
             expected_delivery: "",
             from_party: "",
@@ -275,7 +427,7 @@ export const RfqsList = () => {
         <form
           onSubmit={async () => {
             // const rfc = await createRFQMutation({ ...rfqDetails })
-            // console.log(" rfc:132 ", rfc)
+            //
             // const many = itemList.map((ele) => {
             //   return {
             //     rfq_id: rfc.id,
@@ -284,11 +436,11 @@ export const RfqsList = () => {
             //     quantity: Number(ele.quantity),
             //   }
             // })
-            // console.log("many: ", many)
+            //
             // try {
             //   await createRFQProductMutation(many)
             // } catch (error: any) {
-            //   console.log("error: ", error)
+            //
             // }
             // await refetch()
           }}
@@ -339,9 +491,9 @@ export const RfqsList = () => {
             <div className="p-float-label">
               <InputText
                 className="mr-2 w-16rem"
-                value={purchaseDetails.po_name}
+                value={purchaseDetails.po_description}
                 onChange={(e) =>
-                  setPurchaseDetails({ ...purchaseDetails, po_name: e.target.value })
+                  setPurchaseDetails({ ...purchaseDetails, po_description: e.target.value })
                 }
               />
               <label
@@ -432,11 +584,14 @@ export const RfqsList = () => {
                     className="mr-2 w-20rem"
                     name="products_product_id"
                     // disabled={editState}
+                    filter
+                    showClear
+                    filterBy="name"
+                    placeholder="Select a Product"
                     optionLabel="name"
                     value={ele.product_id}
                     options={purchaseProductOption}
                     onChange={(e) => handleProductFormChange(e, i)}
-                    placeholder="Select  Product"
                   />
                   <div className="flex-column ">
                     <div className="p-label ">
@@ -454,7 +609,7 @@ export const RfqsList = () => {
                         </span>
                       )}
                       <span className="p-error">
-                        RFQ price:
+                        Target price:
                         {activeRfq.filter(({ products }) => {
                           return Number(products.product_id) === Number(ele.product_id)
                         })[0]?.price_per_unit ?? "-"}
@@ -508,15 +663,14 @@ export const RfqsList = () => {
                 const purchaseOrder = await createPurchaseOrderMutation({
                   vendor_vendor_id: Number(purchaseDetails.vendor_vendor_id),
                   po_code: purchaseDetails.po_code,
-                  po_name: purchaseDetails.po_name,
+                  po_description: purchaseDetails.po_description,
                   expiry_date: new Date(purchaseDetails.expiry_date),
                   expected_delivery: new Date(purchaseDetails.expected_delivery),
                   from_party: purchaseDetails.from_party,
                   agreement: purchaseDetails.agreement,
                   rfq_id: Number(activeRfqId) ?? undefined,
                 })
-                console.log("purchaseOrder: ", purchaseOrder)
-                console.log("productItemList: ", productItemList)
+
                 const list = productItemList.map((ele) => {
                   return {
                     purchase_order_po_id: purchaseOrder?.po_id ?? "",
@@ -533,10 +687,7 @@ export const RfqsList = () => {
                 })
                 try {
                   const result = await createManyPurchaseOrderProductsMutation(list)
-                  console.log("error: ", result)
-                } catch (error: any) {
-                  console.log("error: ", error)
-                }
+                } catch (error: any) {}
                 await refetch()
               }}
             />
@@ -595,7 +746,7 @@ export const RfqsList = () => {
 
       <Dialog
         header="Create RFQ"
-        visible={rfqDialog}
+        // visible={rfqDialog}
         style={{ width: "60vw" }}
         // footer={renderFooter}
         onHide={() => setRfqDialog(false)}
@@ -614,12 +765,10 @@ export const RfqsList = () => {
                     rfq_products_id: Number(ele.rfq_products_id),
                   })
                 })
-              } catch (error: any) {
-                console.log("error: ", error)
-              }
+              } catch (error: any) {}
             } else {
               const rfc = await createRFQMutation({ ...rfqDetails })
-              // console.log(" rfc:132 ", rfc)
+              //
 
               const many = itemList.map((ele) => {
                 return {
@@ -629,9 +778,10 @@ export const RfqsList = () => {
                   quantity: Number(ele.quantity),
                 }
               })
-              console.log("many: ", many)
+
               try {
-                await createRFQProductMutation(many)
+                const result = await createRFQProductMutation(many)
+                console.log("error: ", result)
               } catch (error: any) {
                 console.log("error: ", error)
               }
@@ -645,7 +795,7 @@ export const RfqsList = () => {
             <div className="p-float-label">
               <InputText
                 name=""
-                className="mr-2 w-15rem"
+                className="mr-2"
                 value={rfqDetails.rfq_code}
                 onChange={(e) => setRfqDetails({ ...rfqDetails, rfq_code: e.target.value })}
               />
@@ -659,20 +809,20 @@ export const RfqsList = () => {
 
             <div className="p-float-label">
               <InputText
-                className="mr-2 w-15rem"
-                value={rfqDetails.rfq_name}
-                onChange={(e) => setRfqDetails({ ...rfqDetails, rfq_name: e.target.value })}
+                className="mr-2"
+                value={rfqDetails.rfq_description}
+                onChange={(e) => setRfqDetails({ ...rfqDetails, rfq_description: e.target.value })}
               />
               <label
               // htmlFor={ele.field}
               // className={classNames({ "p-error": isFormFieldValid("name") })}
               >
-                RFQ Name
+                RFQ Description
               </label>
             </div>
             <div className="p-float-label">
               <InputText
-                className="mr-2 w-15rem"
+                className="mr-2"
                 value={rfqDetails.expected_dod}
                 onChange={(e) => setRfqDetails({ ...rfqDetails, expected_dod: e.target.value })}
               />
@@ -692,12 +842,15 @@ export const RfqsList = () => {
                 <Dropdown
                   className="mr-2 w-15rem"
                   name="products_product_id"
+                  filter
+                  showClear
+                  filterBy="name"
+                  placeholder="Select a Product"
                   // disabled={editState}
                   optionLabel="name"
                   value={ele.products_product_id}
                   options={productOptions}
                   onChange={(e) => handleFormChange(e, i)}
-                  placeholder="Select  Product"
                 />
                 <div className="p-label ">
                   <label
@@ -754,12 +907,12 @@ export const RfqsList = () => {
               type="submit"
               onClick={async () => {
                 // const many =
-                // console.log("many: ", many)
+                //
                 // try {
                 //   const error = await updateManyRfqProductsMutation(many)
-                //   console.log("error: ", error)
+                //
                 // } catch (error: any) {
-                //   console.log("error: ", error)
+                //
                 // }
               }}
               className="col-3 mr-2 mt-2"
@@ -768,21 +921,170 @@ export const RfqsList = () => {
           </div>
         </form>
       </Dialog>
-      <h2>Request for Quotations</h2>
-      <div className="flex justify-content-end mb-2 ">
+      <div className="flex justify-content-between align-items-center mb-2 ">
+        <h4>Request for Quotations</h4>
         <Button
           icon="pi pi-plus"
           label="Create RFQ"
           onClick={() => {
             setRfqEditState(false)
-            setRfqDetails({ rfq_code: "", rfq_name: "", expected_dod: "" })
+            setRfqDetails({ rfq_code: "", rfq_description: "", expected_dod: "" })
             setItemList([{ products_product_id: "", quantity: "", price_per_unit: "" }])
-            setRfqDialog(true)
+            setRfqDialog(!rfqDialog)
           }}
         ></Button>
       </div>
+
+      <div
+        className={`card ${
+          rfqDialog
+            ? "visible scalein animation-duration-200"
+            : "hidden scaleout animation-duration-200"
+        }`}
+      >
+        <form
+          onSubmit={async () => {
+            if (rfqEditState) {
+              await updateRFQMutation({ ...rfqDetails })
+              try {
+                itemList.forEach(async (ele) => {
+                  await updateRfqProductMutation({
+                    rfq_id: Number(rfqDetails.id),
+                    price_per_unit: Number(ele.price_per_unit),
+                    products_product_id: Number(ele.products_product_id),
+                    quantity: Number(ele.quantity),
+                    rfq_products_id: Number(ele.rfq_products_id),
+                  })
+                })
+              } catch (error: any) {}
+            } else {
+              const rfc = await createRFQMutation({ ...rfqDetails })
+              //
+
+              const many = itemList.map((ele) => {
+                return {
+                  rfq_id: rfc.id,
+                  price_per_unit: Number(ele.price_per_unit),
+                  products_product_id: Number(ele.products_product_id),
+                  quantity: Number(ele.quantity),
+                }
+              })
+
+              try {
+                await createRFQProductMutation(many)
+              } catch (error: any) {}
+            }
+
+            await refetch()
+          }}
+          className="p-fluid"
+        >
+          <h5>Create RFQ</h5>
+          <div className="formgrid grid">
+            <div className="col-12">
+              <h6>RFQ Details:</h6>
+            </div>
+            {[
+              { type: "text", label: "RFQ Code", field: "rfq_code" },
+              { type: "text", label: "RFQ Name", field: "rfq_name" },
+              { type: "text", label: "Delivery Time", field: "expected_dod" },
+            ].map(({ label, field }, i) => {
+              return (
+                <div key={`${field}${i}`} className="field col-12 lg:col-4 mt-2">
+                  <span className="p-float-label">
+                    <InputText
+                      id={field}
+                      name={field}
+                      value={rfqDetails.rfq_code}
+                      onChange={(e) => setRfqDetails({ ...rfqDetails, [field]: e.target.value })}
+                    />
+                    <label
+                      htmlFor={field}
+                      // className={classNames({ "p-error": isFormFieldValid("name") })}
+                    >
+                      {label}
+                    </label>
+                  </span>
+                  {/* {getFormErrorMessage("name")} */}
+                </div>
+              )
+            })}
+            <div className="col-12">
+              <h6>Select Products:</h6>
+            </div>
+            {itemList.map((ele, i) => (
+              <>
+                <div key={`product-${i}`} className="field col-12 lg:col-7 mt-2">
+                  <Dropdown
+                    name="products_product_id"
+                    // disabled={editState}
+                    optionLabel="name"
+                    value={ele.products_product_id}
+                    options={productOptions}
+                    onChange={(e) => handleFormChange(e, i)}
+                    placeholder="Select  Product"
+                  />
+                </div>
+                <div className="field col-12 lg:col-2 mt-2">
+                  <span className="p-float-label">
+                    <InputNumber
+                      id={`product-prixe-${i}`}
+                      // name={ele.field}
+                      value={Number(ele.price_per_unit)}
+                      onChange={(e) => handleFormChange(e, i)}
+                      // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                    />
+                    <label
+                    // className={classNames({ "p-error": isFormFieldValid("name") })}
+                    >
+                      Price per unit
+                    </label>
+                  </span>
+                  {/* {getFormErrorMessage("name")} */}
+                </div>
+                <div className="field col-12 lg:col-2 mt-2">
+                  <span className="p-float-label">
+                    <InputNumber
+                      id={`product-qty-${i}`}
+                      // name={ele.field}
+                      value={Number(ele.quantity)}
+                      onChange={(e) => handleFormChange(e, i)}
+                      // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                    />
+                    <label
+                    // className={classNames({ "p-error": isFormFieldValid("name") })}
+                    >
+                      Quantity
+                    </label>
+                  </span>
+                  {/* {getFormErrorMessage("name")} */}
+                </div>
+                <div className="field col-6 lg:col-1 mt-2">
+                  <span className="p-buttonset">
+                    {i === itemList.length - 1 && (
+                      <Button type="button" label="+" onClick={addFields} />
+                    )}
+                    {itemList.length > 1 && (
+                      <Button
+                        type="button"
+                        label="-"
+                        className="p-button-secondary"
+                        onClick={() => removeFields(i)}
+                      />
+                    )}
+                  </span>
+                </div>
+              </>
+            ))}
+          </div>
+          <Divider />
+          <Button type="submit" className="mr-2" label="ADD" />
+        </form>
+      </div>
       <DataTable
         value={tableRFQ}
+        scrollable
+        scrollHeight="60vh"
         showGridlines
         // header={renderHeader}
         stripedRows
@@ -804,8 +1106,8 @@ export const RfqsList = () => {
           // className="text-center"
         />
         <Column
-          field="rfq_name"
-          header="Name"
+          field="rfq_description"
+          header="Description"
           // className="text-center"
         />
         <Column
@@ -831,130 +1133,17 @@ export const RfqsList = () => {
           body={(rowData) => {
             return (
               <div>
+                <Menu model={items} popup ref={menu} id="popup_menu" />
                 <Button
-                  // label="Edit"
-                  icon="pi pi-pencil"
-                  className="mr-1"
-                  onClick={() => {
-                    setRfqEditState(true)
-                    setRfqDetails({
-                      rfq_code: rowData.rfq_code,
-                      rfq_name: rowData.rfq_name,
-                      expected_dod: rowData.expected_dod,
-                      id: rowData.id,
-                    })
-                    const active = tableRfqProducts
-                      .filter(({ rfq_id }) => {
-                        return rfq_id === rowData.id
-                      })
-                      .map(({ products, quantity, price_per_unit, rfq_products_id }) => {
-                        return {
-                          products_product_id: products.product_id,
-                          quantity: quantity,
-                          price_per_unit: price_per_unit,
-                          rfq_products_id,
-                        }
-                      })
-                    setItemList(active)
-                    console.log("active: ", active)
-                    // setActiveRfq(active)
-                    setRfqDialog(true)
-                    // setActiveVendor(true)
-                    // setVendorDetails({ ...rowData })
-                    // setVendorDialog(true)
+                  // label="Show"
+                  icon="pi pi-ellipsis-v"
+                  onClick={(event) => {
+                    setActiveRow(rowData)
+                    menu.current.toggle(event)
                   }}
+                  aria-controls="popup_menu"
+                  aria-haspopup
                 />
-                <Button
-                  // label="Delete"
-                  icon="pi pi-trash"
-                  className="mr-1"
-                  onClick={async () => {
-                    await deleteRFQProductMutation({ rfq_id: rowData.id })
-                    await deleteRFQMutation({ id: rowData.id })
-                    await refetch()
-                  }}
-                />
-                <Button
-                  label="View Products"
-                  className="mr-1"
-                  icon="pi pi-external-link"
-                  onClick={() => {
-                    const active = tableRfqProducts.filter(({ rfq_id }) => {
-                      return rfq_id === rowData.id
-                    })
-                    console.log("active: ", active)
-                    setActiveRfq(active)
-                    setProductDialog(true)
-                  }}
-                />
-                <Button
-                  icon="pi pi-plus"
-                  label="Create PO"
-                  onClick={() => {
-                    console.log("rowData: ", rowData)
-                    const active = tableRfqProducts.filter(({ rfq_id }) => {
-                      return rfq_id === rowData.id
-                    })
-                    const activeProducts = active.map(({ products }) => {
-                      return products.product_id
-                    })
-                    const activeVendors = vendors
-
-                      .filter(({ vendor_products }) => {
-                        const products = vendor_products.map(({ products_product_id }) => {
-                          return products_product_id
-                        })
-                        console.log("products:421 ", products)
-                        return products.some((ele) => {
-                          return activeProducts.includes(ele)
-                        })
-                      })
-                      .map(({ vendor, vendor_id }) => {
-                        return { name: vendor, value: vendor_id }
-                      })
-                    console.log("products:421 ", activeProducts)
-                    const activeProductsdetails = vendor_products
-
-                      .filter(({ products, vendor }) => {
-                        return (
-                          activeProducts.includes(products.product_id) &&
-                          vendor.vendor_id == activeVendors[0]?.value
-                        )
-                      })
-                      .map((ele) => {
-                        return {
-                          purchase_order_po_id: "",
-                          purchase_order_purchase_order_status_pos_id: 1,
-                          purchase_order_vendor_vendor_id: ele.vendor.vendor_id,
-                          vendor_products_vp_id: ele.vp_id,
-                          vendor_products_vendor_vendor_id: ele.vendor.vendor_id,
-                          vendor_products_products_product_id: ele.products.product_id,
-                          quantity: "",
-                          price_per_unit: ele.unit_price,
-                          received_quantity: 0,
-                          product_name: ele.products.name,
-                          vendor_unit_price: ele.unit_price,
-                          product_id: ele.products.product_id,
-                        }
-                      })
-
-                    // TDO take quantity from rfq
-                    const activeProductsOptions = activeProductsdetails.map((ele) => {
-                      return { name: ele.product_name, value: ele.product_id }
-                    })
-
-                    console.log("active: ", active)
-                    console.log("activeVendors: ", activeVendors)
-                    console.log("activeProductsdetails: ", activeProductsdetails)
-                    setPurchaseProductOption(activeProductsOptions)
-                    setVendorOptions(activeVendors)
-                    setActiveRfq(active)
-                    setActiveRfqId(rowData.id)
-                    setProductItemList(activeProductsdetails)
-                    // setActiveRow(rowData)
-                    setPurchaseDialog(true)
-                  }}
-                ></Button>
               </div>
             )
           }}
@@ -967,7 +1156,7 @@ export const RfqsList = () => {
 
 const RfqsPage = () => {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<Loading />}>
       <Layout>
         <RfqsList />
       </Layout>

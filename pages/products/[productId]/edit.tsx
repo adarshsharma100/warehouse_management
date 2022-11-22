@@ -7,49 +7,49 @@ import { useQuery, useMutation } from "@blitzjs/rpc"
 import { useParam } from "@blitzjs/next"
 
 import Layout from "app/core/layouts/Layout"
-import getVendor from "app/vendors/queries/getVendor"
-import updateVendor from "app/vendors/mutations/updateVendor"
-import { VendorForm, FORM_ERROR } from "app/vendors/components/VendorForm"
+import getProduct from "app/products/queries/getProduct"
+import updateProduct from "app/products/mutations/updateProduct"
+import { ProductForm, FORM_ERROR } from "app/products/components/ProductForm"
 import Loading from "components/loading"
 
-export const EditVendor = () => {
+export const EditProduct = () => {
   const router = useRouter()
-  const vendorId = useParam("vendorId", "number")
-  const [vendor, { setQueryData }] = useQuery(
-    getVendor,
-    { id: vendorId },
+  const productId = useParam("productId", "number")
+  const [product, { setQueryData }] = useQuery(
+    getProduct,
+    { id: productId },
     {
       // This ensures the query never refreshes and overwrites the form data while the user is editing.
       staleTime: Infinity,
     }
   )
-  const [updateVendorMutation] = useMutation(updateVendor)
+  const [updateProductMutation] = useMutation(updateProduct)
 
   return (
     <>
       <Head>
-        <title>Edit Vendor {vendor.id}</title>
+        <title>Edit Product {product.id}</title>
       </Head>
 
       <div>
-        <h1>Edit Vendor {vendor.id}</h1>
-        <pre>{JSON.stringify(vendor, null, 2)}</pre>
+        <h1>Edit Product {product.id}</h1>
+        <pre>{JSON.stringify(product, null, 2)}</pre>
 
-        <VendorForm
-          submitText="Update Vendor"
+        <ProductForm
+          submitText="Update Product"
           // TODO use a zod schema for form validation
           //  - Tip: extract mutation's schema into a shared `validations.ts` file and
           //         then import and use it here
-          // schema={UpdateVendor}
-          initialValues={vendor}
+          // schema={UpdateProduct}
+          initialValues={product}
           onSubmit={async (values) => {
             try {
-              const updated = await updateVendorMutation({
-                id: vendor.id,
+              const updated = await updateProductMutation({
+                id: product.id,
                 ...values,
               })
               await setQueryData(updated)
-              router.push(Routes.ShowVendorPage({ vendorId: updated.id }))
+              await router.push(Routes.ShowProductPage({ productId: updated.id }))
             } catch (error: any) {
               console.error(error)
               return {
@@ -63,23 +63,23 @@ export const EditVendor = () => {
   )
 }
 
-const EditVendorPage = () => {
+const EditProductPage = () => {
   return (
     <div>
       <Suspense fallback={<Loading />}>
-        <EditVendor />
+        <EditProduct />
       </Suspense>
 
       <p>
-        <Link href={Routes.VendorsPage()}>
-          <a>Vendors</a>
+        <Link href={Routes.ProductsPage()}>
+          <a>Products</a>
         </Link>
       </p>
     </div>
   )
 }
 
-EditVendorPage.authenticate = true
-EditVendorPage.getLayout = (page) => <Layout>{page}</Layout>
+EditProductPage.authenticate = true
+EditProductPage.getLayout = (page) => <Layout>{page}</Layout>
 
-export default EditVendorPage
+export default EditProductPage

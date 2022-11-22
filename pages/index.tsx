@@ -63,7 +63,7 @@ const Home: BlitzPage = () => {
   // Home.authenticate = true
   const router = useRouter()
   return (
-    <section className="bg-white">
+    <section>
       <div className="grid min-h-screen col-12">
         <main
           aria-label="Main"
@@ -84,7 +84,7 @@ const Home: BlitzPage = () => {
               </svg>
             </a>
 
-            <h1 className="mt-6 text-2xl font-bold text-gray-900">Welcome to Inventory</h1>
+            <h1 className="mt-6 text-2xl font-bold text-primary">Welcome to Inventory</h1>
 
             <p className="mt-4 text-gray-500">
               Hi there! Welcome to Watch Mojo. Today we will be rounding up our top picks for anime
