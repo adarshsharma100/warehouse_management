@@ -283,7 +283,7 @@ export const Vendor_productsList = () => {
           priority: "priority",
           error: "error",
         }
-        downloadCsv(failedCsv, columns, "exportFileName")
+        downloadCsv(failedCsv, columns, "failed vendor products")
         // let csv5 = await new ObjectsToCsv(failedCsv)
         // console.log("csv5: ", csv5)
         // var jsonArray = JSON.parse(JSON.stringify(failedCsv))
