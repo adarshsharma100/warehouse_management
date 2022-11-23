@@ -1,6 +1,8 @@
 import { resolver } from "@blitzjs/rpc"
+// import updateVendor from "app/vendors/mutations/updateVendor"
 import db from "db"
 import { z } from "zod"
+// const [updateVendorMutation] = useMutation(updateVendor)
 
 const CreateVendor = z.object({
   vendor_code: z.string(),
@@ -17,6 +19,10 @@ const CreateVendor = z.object({
 export default resolver.pipe(resolver.zod(CreateVendor), resolver.authorize(), async (input) => {
   // TODO: in multi-tenant app, you must add validation to ensure correct tenant
   const vendor = await db.vendor.create({ data: input })
-
-  return vendor
+  return await db.vendor.update({
+    where: { vendor_id: vendor.vendor_id },
+    data: {
+      vendor_id_helper: `TIF_VENDOR_${vendor.vendor_id}`,
+    },
+  })
 })
