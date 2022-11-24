@@ -30,6 +30,10 @@ import updateRfq from "app/rfqs/mutations/updateRfq"
 import updateManyRfq_products from "app/rfq_products/mutations/updateManyRfq_products"
 import updateRfq_product from "app/rfq_products/mutations/updateRfq_product"
 import { Menu } from "primereact/menu"
+import { InputTextarea } from "primereact/inputtextarea"
+import { mail } from "../../helperFunctions/mail"
+import { Chips } from "primereact/chips"
+import axios from "axios"
 const ITEMS_PER_PAGE = 100
 
 export const RfqsList = () => {
@@ -125,6 +129,12 @@ export const RfqsList = () => {
     rfq_id: null,
   })
   const [activeRow, setActiveRow] = useState({})
+
+  const [mailDetails, setMailDetails] = useState({
+    to: [],
+    subject: "",
+    message: "",
+  })
   const tableRfqProducts = rfq_products.map((ele) => {
     return {
       ...ele,
@@ -396,19 +406,95 @@ export const RfqsList = () => {
         // footer={renderFooter("displayBasic")}
         onHide={() => setSendDialog(false)}
       >
-        <div className="p-float-label">
-          <InputText
+        <div className="p-float-label mt-5">
+          {/* <InputText
             // name=""
-            className="mr-2 w-16rem"
+            className="mr-2 w-full"
             value={purchaseDetails.po_code}
             onChange={(e) => setPurchaseDetails({ ...purchaseDetails, po_code: e.target.value })}
+          /> */}
+          <Chips
+            className="mr-2 w-full"
+            value={mailDetails.to}
+            onChange={(e) => setMailDetails({ ...mailDetails, to: e.value })}
+          />
+
+          <label
+          // htmlFor={ele.field}
+          // className={classNames({ "p-error": isFormFieldValid("name") })}
+          >
+            To
+          </label>
+        </div>
+        <div className="p-float-label mt-5">
+          <InputText
+            // name=""
+            className="mr-2 w-full"
+            value={mailDetails.subject}
+            onChange={(e) => setMailDetails({ ...mailDetails, subject: e.target.value })}
           />
           <label
           // htmlFor={ele.field}
           // className={classNames({ "p-error": isFormFieldValid("name") })}
           >
-            PO Code
+            Subject
           </label>
+        </div>
+        <div className="p-float-label mt-5">
+          <InputTextarea
+            // name=""
+            rows={15}
+            className="mr-2 w-full"
+            value={mailDetails.message}
+            onChange={(e) => setMailDetails({ ...mailDetails, message: e.target.value })}
+          />
+          <label
+          // htmlFor={ele.field}
+          // className={classNames({ "p-error": isFormFieldValid("name") })}
+          >
+            Message
+          </label>
+        </div>
+        <div className="w-full flex justify-content-end mt-2 pl-2">
+          <Button
+            icon="pi pi-send"
+            label="Send"
+            onClick={() => {
+              const data = JSON.stringify({
+                to: JSON.stringify(mailDetails.to),
+                subject: mailDetails.subject,
+                message: mailDetails.message,
+              })
+
+              var config = {
+                method: "post",
+                url: "http://localhost:3000/api/rfq",
+                headers: {
+                  "Content-Type": "application/json",
+                  // Cookie:
+                  //   "industrial-poc_sAnonymousSessionToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJibGl0empzIjp7ImlzQW5vbnltb3VzIjp0cnVlLCJoYW5kbGUiOiJqckZqQ2MwblE5UEVvYV92d25teEs3WGU0bjRoeDhySTphand0IiwicHVibGljRGF0YSI6eyJ1c2VySWQiOm51bGx9LCJhbnRpQ1NSRlRva2VuIjoiZGRWaTNNU1M3WE1GLWlBS1E5YTFJRmtkWnJMdThfWlUifSwiaWF0IjoxNjY0NzcyNTk2LCJhdWQiOiJibGl0empzIiwiaXNzIjoiYmxpdHpqcyIsInN1YiI6ImFub255bW91cyJ9.tn2TauSX_KSb4BbavfsXnOkn_m1fe_x0UCx8woCYZdk; industrial-poc_sAntiCsrfToken=ddVi3MSS7XMF-iAKQ9a1IFkdZrLu8_ZU; industrial-poc_sPublicDataToken=eyJ1c2VySWQiOm51bGx9",
+                },
+                data: data,
+              }
+
+              axios(config)
+                .then(function (response) {
+                  console.log(JSON.stringify(response.data))
+                })
+                .catch(function (error) {
+                  console.log(error)
+                })
+              // mail(
+              //   "care@robocraze.com",
+              //   mailDetails.to,
+              //   mailDetails.subject,
+              //   mailDetails.message,
+              //   null,
+              //   null,
+              //   null
+              // )
+            }}
+          />
         </div>
       </Dialog>
       <Dialog
@@ -990,11 +1076,11 @@ export const RfqsList = () => {
           header="Created at"
           // className="text-center"
         />
-        <Column
+        {/* <Column
           field="updated_at"
           header="Updated at"
           // className="text-center"
-        />
+        /> */}
         <Column
           // field="vendor_gstin"
           header="Action"
