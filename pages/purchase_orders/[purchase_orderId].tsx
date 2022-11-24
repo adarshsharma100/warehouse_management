@@ -9,6 +9,7 @@ import { useParam } from "@blitzjs/next"
 import Layout from "app/core/layouts/Layout"
 import getPurchase_order from "app/purchase_orders/queries/getPurchase_order"
 import deletePurchase_order from "app/purchase_orders/mutations/deletePurchase_order"
+import Loading from "components/loading"
 
 export const Purchase_order = () => {
   const router = useRouter()
@@ -62,7 +63,7 @@ const ShowPurchase_orderPage = () => {
         </Link>
       </p>
 
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<Loading />}>
         <Purchase_order />
       </Suspense>
     </div>

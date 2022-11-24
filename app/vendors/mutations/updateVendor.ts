@@ -4,7 +4,7 @@ import { z } from "zod"
 
 const UpdateVendor = z.object({
   vendor_code: z.string(),
-  vendor_sku: z.string(),
+  // vendor_sku: z.string(),
   vendor_email: z.string(),
   vendor_city: z.string(),
   vendor_contact: z.string(),

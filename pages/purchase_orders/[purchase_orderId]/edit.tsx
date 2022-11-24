@@ -10,6 +10,7 @@ import Layout from "app/core/layouts/Layout"
 import getPurchase_order from "app/purchase_orders/queries/getPurchase_order"
 import updatePurchase_order from "app/purchase_orders/mutations/updatePurchase_order"
 import { Purchase_orderForm, FORM_ERROR } from "app/purchase_orders/components/Purchase_orderForm"
+import Loading from "components/loading"
 
 export const EditPurchase_order = () => {
   const router = useRouter()
@@ -65,7 +66,7 @@ export const EditPurchase_order = () => {
 const EditPurchase_orderPage = () => {
   return (
     <div>
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<Loading />}>
         <EditPurchase_order />
       </Suspense>
 

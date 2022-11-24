@@ -13,6 +13,7 @@ import {
   Inventory_productForm,
   FORM_ERROR,
 } from "app/inventory_products/components/Inventory_productForm"
+import Loading from "components/loading"
 
 export const EditInventory_product = () => {
   const router = useRouter()
@@ -72,7 +73,7 @@ export const EditInventory_product = () => {
 const EditInventory_productPage = () => {
   return (
     <div>
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<Loading />}>
         <EditInventory_product />
       </Suspense>
 

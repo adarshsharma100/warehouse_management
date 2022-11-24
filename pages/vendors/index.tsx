@@ -16,9 +16,11 @@ import { useFormik } from "formik"
 import createVendor from "app/vendors/mutations/createVendor"
 import updateVendor from "app/vendors/mutations/updateVendor"
 import deleteVendor from "app/vendors/mutations/deleteVendor"
-// import { FileUpload } from "primereact/fileupload"
-// const papa = require("papaparse")
+import { FileUpload } from "primereact/fileupload"
+import papa from "papaparse"
+import downloadCsv from "download-csv"
 import { VendorForm } from "app/vendors/components/VendorForm"
+import Loading from "components/loading"
 const ITEMS_PER_PAGE = 100
 
 export const VendorsList = () => {
@@ -29,6 +31,7 @@ export const VendorsList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
+  console.log("vendors: ", vendors)
   const [createVendorMutation] = useMutation(createVendor)
   const [updateVendorMutation] = useMutation(updateVendor)
   const [deleteVendorMutation] = useMutation(deleteVendor)
@@ -45,6 +48,7 @@ export const VendorsList = () => {
     credit_period: "",
     lead_time: "",
   })
+  console.log("vendorDetails: ", vendorDetails)
   const [activeVendor, setActiveVendor] = useState(false)
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
   const goToNextPage = () => router.push({ query: { page: page + 1 } })
@@ -100,22 +104,123 @@ export const VendorsList = () => {
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
-  // const onBasicUpload = async (e) => {
-  //   console.log("FileUpload", e)
-  //   // await papa.parse(e.files[0], (data) => {
-  //   //   console.log("FileUpload", data)
-  //   // })
-  //   const csv = []
-  //   papa.parse(e.files[0], {
-  //     header: true,
-  //     step: function (result) {
-  //       csv.push(result.data)
-  //     },
-  //     complete: function (results, file) {
-  //       console.log("Complete", csv.length, "records.  ", results, csv)
-  //     },
-  //   })
-  // }
+  const onBasicUpload = async (e) => {
+    console.log("FileUpload", e)
+    // await papa.parse(e.files[0], (data) => {
+    //   console.log("FileUpload", data)
+    // })
+    const csv = [] // this will contain all the data of imported csv file
+    papa.parse(e.files[0], {
+      header: true,
+      step: function (result) {
+        csv.push(result.data)
+      },
+      complete: async function (results, file) {
+        console.log("Complete", csv.length, "records.  ", results, "csvVendor", csv)
+        csv.pop() // to remove the last index value from csv (empty object)
+        const finalResults = csv.map(async (el) => {
+          console.log("testing", el)
+
+          // checking for null values
+          let flag = true // flag true means we are ready to call vendor mutation and vice-versa
+          let a = {}
+
+          // function to validate the csv file
+          const checkError = () => {
+            let errors = " " // this will contain all the error
+
+            // checking if the vendor code, vendor email and vendor gstin are unique or not
+            vendors.forEach(({ vendor_code, vendor_email, vendor_gstin }) => {
+              vendor_code.toString() === el["vendor_code"].toString()
+                ? (errors += "vendor_code should be unique. ")
+                : ""
+              vendor_email.toString() === el["vendor_email"].toString()
+                ? (errors += "vendor_email should be unique. ")
+                : ""
+              vendor_gstin.toString() === el["vendor_gstin"].toString()
+                ? (errors += "vendor_gstin should be unique. ")
+                : ""
+            })
+
+            // checking for null values
+            Object.keys(el).forEach((e) => {
+              if (!el[e]) {
+                errors += `${e} is empty. `
+              }
+            })
+
+            // destructuring el
+            const {
+              vendor,
+              vendor_city,
+              vendor_code,
+              vendor_contact,
+              vendor_email,
+              vendor_gstin,
+              address,
+              credit_period,
+              lead_time,
+            } = el
+
+            let a = {
+              vendor,
+              vendor_city,
+              vendor_code,
+              vendor_contact,
+              vendor_email,
+              vendor_gstin,
+              address,
+              credit_period,
+              lead_time,
+              error: errors,
+            }
+
+            return a
+          }
+
+          // if any of the column is empty in csv file
+          Object.keys(el).forEach((e) => {
+            if (!el[e]) {
+              flag = false
+              a = checkError()
+            }
+          })
+
+          try {
+            flag && (await createVendorMutation(el))
+            flag && (await refetch())
+            return a
+          } catch (error) {
+            console.log("error: ", error)
+            return checkError()
+          }
+        })
+        let failedCsv = await Promise.all(finalResults)
+
+        // removing the empty object from failedCsv
+        failedCsv = failedCsv.filter((ele) => {
+          return Object.getOwnPropertyNames(ele).length !== 0
+        })
+
+        console.log("failedCsv: ", failedCsv)
+
+        // exporting failed csv file as downloadable
+        const columns = {
+          vendor: "vendor",
+          vendor_city: "vendor_city",
+          vendor_code: "vendor_code",
+          vendor_contact: "vendor_contact",
+          vendor_email: "vendor_email",
+          vendor_gstin: "vendor_gstin",
+          address: "address",
+          credit_period: "credit_period",
+          lead_time: "lead_time",
+          error: "error",
+        }
+        await downloadCsv(failedCsv, columns, "failed vendors")
+      },
+    })
+  }
   return (
     <div>
       <Dialog
@@ -188,8 +293,9 @@ export const VendorsList = () => {
       </Dialog>
       <h2>Vendor List</h2>
       <div className="flex justify-content-end mb-2 ">
-        {/* <FileUpload
+        <FileUpload
           mode="basic"
+          accept=".csv"
           customUpload
           // name="demo[]"
           // url="https://primefaces.org/primereact/showcase/upload.php"
@@ -197,7 +303,7 @@ export const VendorsList = () => {
           maxFileSize={1000000}
           uploadHandler={(e) => onBasicUpload(e)}
           // onUpload={(e) => onBasicUpload(e)}
-        /> */}
+        />
         <Button
           icon="pi pi-plus"
           label="Add Vendors"
@@ -212,15 +318,19 @@ export const VendorsList = () => {
               vendor_gstin: "",
               vendor: "",
             })
-            setVendorDialog(true)
+            setVendorDialog(!vendorDialog)
           }}
         ></Button>
       </div>
-      {vendorDialog && (
-        <div className="card invert">
-          <VendorForm />
-        </div>
-      )}
+      <div
+        className={`card ${
+          vendorDialog
+            ? "visible scalein animation-duration-200"
+            : "hidden scaleout animation-duration-200"
+        }`}
+      >
+        <VendorForm />
+      </div>
       <DataTable
         value={vendors}
         showGridlines
@@ -308,7 +418,7 @@ export const VendorsList = () => {
                 />
                 <Button
                   // label="Delete"
-                  disabled={true}
+                  disabled={false}
                   icon="pi pi-trash"
                   className="m-1"
                   onClick={async () => {
@@ -329,7 +439,7 @@ export const VendorsList = () => {
 const VendorsPage = () => {
   return (
     <div>
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<Loading />}>
         <Layout>
           <VendorsList />
         </Layout>

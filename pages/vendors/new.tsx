@@ -1,14 +1,14 @@
-import { Routes } from "@blitzjs/next";
-import Link from "next/link";
-import { useRouter } from "next/router";
-import { useMutation } from "@blitzjs/rpc";
-import Layout from "app/core/layouts/Layout";
-import createVendor from "app/vendors/mutations/createVendor";
-import { VendorForm, FORM_ERROR } from "app/vendors/components/VendorForm";
+import { Routes } from "@blitzjs/next"
+import Link from "next/link"
+import { useRouter } from "next/router"
+import { useMutation } from "@blitzjs/rpc"
+import Layout from "app/core/layouts/Layout"
+import createVendor from "app/vendors/mutations/createVendor"
+import { VendorForm, FORM_ERROR } from "app/vendors/components/VendorForm"
 
 const NewVendorPage = () => {
-  const router = useRouter();
-  const [createVendorMutation] = useMutation(createVendor);
+  const router = useRouter()
+  const [createVendorMutation] = useMutation(createVendor)
 
   return (
     <Layout title={"Create New Vendor"}>
@@ -23,13 +23,13 @@ const NewVendorPage = () => {
         // initialValues={{}}
         onSubmit={async (values) => {
           try {
-            const vendor = await createVendorMutation(values);
-            router.push(Routes.ShowVendorPage({ vendorId: vendor.id }));
+            const vendor = await createVendorMutation(values)
+            await router.push(Routes.ShowVendorPage({ vendorId: vendor.id }))
           } catch (error: any) {
-            console.error(error);
+            console.error(error)
             return {
               [FORM_ERROR]: error.toString(),
-            };
+            }
           }
         }}
       />
@@ -40,9 +40,9 @@ const NewVendorPage = () => {
         </Link>
       </p>
     </Layout>
-  );
-};
+  )
+}
 
-NewVendorPage.authenticate = true;
+NewVendorPage.authenticate = true
 
-export default NewVendorPage;
+export default NewVendorPage

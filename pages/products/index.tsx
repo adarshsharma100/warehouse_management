@@ -15,6 +15,7 @@ import { InputText } from "primereact/inputtext"
 import { InputTextarea } from "primereact/inputtextarea"
 import createProduct from "app/products/mutations/createProduct"
 import createInventory_product from "app/inventory_products/mutations/createInventory_product"
+import Loading from "components/loading"
 
 const ITEMS_PER_PAGE = 100
 
@@ -229,7 +230,7 @@ export const ProductsList = () => {
 
 const ProductsPage = () => {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<Loading />}>
       <Layout>
         <ProductsList />
       </Layout>
