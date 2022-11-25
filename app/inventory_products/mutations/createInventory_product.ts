@@ -3,8 +3,8 @@ import db from "db"
 import { z } from "zod"
 
 const CreateInventory_product = z.object({
-  // product_description: z.string(),
-  // price: z.number(),
+  product_description: z.string(),
+  price: z.number(),
   quantity: z.number(),
   products_product_id: z.number(),
 })
