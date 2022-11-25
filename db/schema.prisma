@@ -199,3 +199,29 @@ model purchase_order_products {
   @@index([purchase_order_po_id, purchase_order_purchase_order_status_pos_id, purchase_order_vendor_vendor_id], map: "fk_purchase_order_products_purchase_order1")
   @@index([vendor_products_vp_id, vendor_products_vendor_vendor_id, vendor_products_products_product_id], map: "fk_purchase_order_products_vendor_products1_idx")
 }
+
+model admins {
+  id                  Int                   @id @unique(map: "id_UNIQUE") @default(autoincrement())
+  name                String                @db.VarChar(45)
+  email               String                @db.VarChar(45)
+  mutation_admin_mail mutation_admin_mail[]
+}
+
+model mutation_admin_mail {
+  id                  Int                 @unique(map: "id_UNIQUE") @default(autoincrement())
+  admins_id           Int
+  mutations_id        Int
+  admins              admins              @relation(fields: [admins_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_mutation_admin_mail_admins1")
+  mutations_functions mutations_functions @relation(fields: [mutations_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_mutation_admin_mail_mutations1")
+
+  @@id([id, admins_id, mutations_id])
+  @@index([admins_id], map: "fk_mutation_admin_mail_admins1_idx")
+  @@index([mutations_id], map: "fk_mutation_admin_mail_mutations1_idx")
+}
+
+model mutations_functions {
+  id                  Int                   @id @unique(map: "id_UNIQUE") @default(autoincrement())
+  name                String                @db.VarChar(45)
+  email_format        String?               @db.VarChar(255)
+  mutation_admin_mail mutation_admin_mail[]
+}

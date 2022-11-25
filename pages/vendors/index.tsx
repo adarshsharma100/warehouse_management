@@ -2,7 +2,7 @@ import { Suspense, useState } from "react"
 import { Routes } from "@blitzjs/next"
 import Head from "next/head"
 import Link from "next/link"
-import { useMutation, usePaginatedQuery } from "@blitzjs/rpc"
+import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
 import getVendors from "app/vendors/queries/getVendors"
 import Layout from "layouts/Layout"
@@ -21,6 +21,9 @@ import papa from "papaparse"
 import downloadCsv from "download-csv"
 import { VendorForm } from "app/vendors/components/VendorForm"
 import Loading from "components/loading"
+import nodemailer from "nodemailer"
+import { mail } from "helperFunctions/mail"
+import axios from "axios"
 const ITEMS_PER_PAGE = 100
 
 export const VendorsList = () => {
@@ -31,6 +34,7 @@ export const VendorsList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
+  // const [mutation_function] = useQuery(getMutations_functions, { name:""})
   console.log("vendors: ", vendors)
   const [createVendorMutation] = useMutation(createVendor)
   const [updateVendorMutation] = useMutation(updateVendor)
@@ -187,7 +191,38 @@ export const VendorsList = () => {
           })
 
           try {
-            flag && (await createVendorMutation(el))
+            // flag && const adminsEmails = await createVendorMutation(el)
+            if (flag) {
+              const adminsEmails = await createVendorMutation(el)
+              if (adminsEmails.adminsEmails.length > 0) {
+                const data = JSON.stringify({
+                  to: adminsEmails.adminsEmails,
+                  subject: "testing",
+                  message: "Hey!! I don't know the message.",
+                })
+                var config = {
+                  method: "post",
+                  url: "http://localhost:3000/api/vendor",
+                  headers: {
+                    "Content-Type": "application/json",
+                    // Cookie:
+                    //   "industrial-poc_sAnonymousSessionToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJibGl0empzIjp7ImlzQW5vbnltb3VzIjp0cnVlLCJoYW5kbGUiOiJqckZqQ2MwblE5UEVvYV92d25teEs3WGU0bjRoeDhySTphand0IiwicHVibGljRGF0YSI6eyJ1c2VySWQiOm51bGx9LCJhbnRpQ1NSRlRva2VuIjoiZGRWaTNNU1M3WE1GLWlBS1E5YTFJRmtkWnJMdThfWlUifSwiaWF0IjoxNjY0NzcyNTk2LCJhdWQiOiJibGl0empzIiwiaXNzIjoiYmxpdHpqcyIsInN1YiI6ImFub255bW91cyJ9.tn2TauSX_KSb4BbavfsXnOkn_m1fe_x0UCx8woCYZdk; industrial-poc_sAntiCsrfToken=ddVi3MSS7XMF-iAKQ9a1IFkdZrLu8_ZU; industrial-poc_sPublicDataToken=eyJ1c2VySWQiOm51bGx9",
+                  },
+                  data: data,
+                }
+
+                // uncomment it when you need
+
+                // axios(config)
+                //   .then(function (response) {
+                //     console.log("response: ", response)
+                //     console.log(JSON.stringify(response.data))
+                //   })
+                //   .catch(function (error) {
+                //     console.log(error)
+                //   })
+              }
+            }
             flag && (await refetch())
             return a
           } catch (error) {
@@ -237,6 +272,9 @@ export const VendorsList = () => {
               await createVendorMutation({
                 ...vendorDetails,
               })
+              // const rules=mutation_function.filter(({name})=>{
+              //       return name=="createVendor"
+              //     })[0].id
             } else {
               await updateVendorMutation({ ...vendorDetails })
             }
