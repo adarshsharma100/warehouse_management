@@ -29,6 +29,7 @@ model inventory_products {
   price                Int?     @default(0)
   quantity             Int      @default(0)
   products_product_id  Int
+  created_at           DateTime @default(now()) @db.DateTime(0)
   products             products @relation(fields: [products_product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_products1")
 
   @@id([inventory_product_id, products_product_id])
@@ -156,15 +157,17 @@ model token {
 }
 
 model user {
-  id             Int       @id @default(autoincrement())
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime
-  name           String?
-  email          String    @unique(map: "User_email_key")
-  hashedPassword String?
-  role           String    @default("USER")
-  session        session[]
-  token          token[]
+  id                  Int                   @id @default(autoincrement())
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  name                String?
+  email               String                @unique(map: "User_email_key")
+  hashedPassword      String?
+  role                String                @default("USER")
+  mutation_admin_mail mutation_admin_mail[]
+  notifications_sent  notifications_sent[]
+  session             session[]
+  token               token[]
 }
 
 model rfq_products {
@@ -200,23 +203,16 @@ model purchase_order_products {
   @@index([vendor_products_vp_id, vendor_products_vendor_vendor_id, vendor_products_products_product_id], map: "fk_purchase_order_products_vendor_products1_idx")
 }
 
-model admins {
-  id                  Int                   @id @unique(map: "id_UNIQUE") @default(autoincrement())
-  name                String                @db.VarChar(45)
-  email               String                @db.VarChar(45)
-  mutation_admin_mail mutation_admin_mail[]
-}
-
 model mutation_admin_mail {
-  id                  Int                 @unique(map: "id_UNIQUE") @default(autoincrement())
-  admins_id           Int
-  mutations_id        Int
-  admins              admins              @relation(fields: [admins_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_mutation_admin_mail_admins1")
-  mutations_functions mutations_functions @relation(fields: [mutations_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_mutation_admin_mail_mutations1")
+  id                     Int                 @unique(map: "id_UNIQUE") @default(autoincrement())
+  user_id                Int
+  mutations_functions_id Int
+  mutations_functions    mutations_functions @relation(fields: [mutations_functions_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_mutation_admin_mail_mutations_functions1")
+  user                   user                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_mutation_admin_mail_user1")
 
-  @@id([id, admins_id, mutations_id])
-  @@index([admins_id], map: "fk_mutation_admin_mail_admins1_idx")
-  @@index([mutations_id], map: "fk_mutation_admin_mail_mutations1_idx")
+  @@id([id, user_id, mutations_functions_id])
+  @@index([mutations_functions_id], map: "fk_mutation_admin_mail_mutations_functions1_idx")
+  @@index([user_id], map: "fk_mutation_admin_mail_user1_idx")
 }
 
 model mutations_functions {
@@ -224,4 +220,16 @@ model mutations_functions {
   name                String                @db.VarChar(45)
   email_format        String?               @db.VarChar(255)
   mutation_admin_mail mutation_admin_mail[]
+}
+
+model notifications_sent {
+  id         Int    @id @unique(map: "id_UNIQUE") @default(autoincrement())
+  user_name  String @db.VarChar(45)
+  user_email String @db.VarChar(45)
+  mutations  String @db.VarChar(45)
+  created_at String @db.VarChar(255)
+  user_id    Int
+  user       user   @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_notifications_sent_user1")
+
+  @@index([user_id], map: "fk_notifications_sent_user1_idx")
 }
