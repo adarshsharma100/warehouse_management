@@ -37,16 +37,16 @@ export default resolver.pipe(resolver.zod(CreateVendor), resolver.authorize(), a
       },
     },
     select: {
-      admins: true,
       id: true,
       mutations_functions: true,
-      admins_id: true,
-      mutations_id: true,
+      mutations_functions_id: true,
+      user: true,
+      user_id: true,
     },
   })
   console.log("admins: ", admins)
-  const adminsEmails = admins.map(({ admins }) => {
-    return admins.email
+  const adminsEmails = admins.map(({ user }) => {
+    return user.email
   })
   console.log("adminsEmails: ", adminsEmails)
   return { adminsEmails, vendor }

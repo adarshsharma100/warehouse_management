@@ -213,14 +213,14 @@ export const VendorsList = () => {
 
                 // uncomment it when you need
 
-                // axios(config)
-                //   .then(function (response) {
-                //     console.log("response: ", response)
-                //     console.log(JSON.stringify(response.data))
-                //   })
-                //   .catch(function (error) {
-                //     console.log(error)
-                //   })
+                axios(config)
+                  .then(function (response) {
+                    console.log("response: ", response)
+                    console.log(JSON.stringify(response.data))
+                  })
+                  .catch(function (error) {
+                    console.log(error)
+                  })
               }
             }
             flag && (await refetch())
@@ -268,13 +268,12 @@ export const VendorsList = () => {
         <form
           // onSubmit={formik.handleSubmit}
           onSubmit={async () => {
+            console.log(vendorDetails)
+            console.log("vendorDetails: ", vendorDetails)
             if (!activeVendor) {
               await createVendorMutation({
                 ...vendorDetails,
               })
-              // const rules=mutation_function.filter(({name})=>{
-              //       return name=="createVendor"
-              //     })[0].id
             } else {
               await updateVendorMutation({ ...vendorDetails })
             }
