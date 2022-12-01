@@ -14,14 +14,17 @@ import { FileUpload } from "primereact/fileupload"
 import papa from "papaparse"
 import downloadCsv from "download-csv"
 import createInventory_product from "app/inventory_products/mutations/createInventory_product"
+import createNotifications_sent from "app/notifications_sents/mutations/createNotifications_sent"
 import getProducts from "app/products/queries/getProducts"
 import deleteInventory_product from "app/inventory_products/mutations/deleteInventory_product"
+import axios from "axios"
 
 const ITEMS_PER_PAGE = 100
 
 export const Inventory_productsList = () => {
   const [createInventory_productMutation] = useMutation(createInventory_product)
   const [deleteInventory_productsMutation] = useMutation(deleteInventory_product)
+  const [createNotifications_sentMutation] = useMutation(createNotifications_sent)
 
   const router = useRouter()
   const page = Number(router.query.page) || 0
@@ -134,7 +137,7 @@ export const Inventory_productsList = () => {
           try {
             // flag && const adminsEmails = await createVendorMutation(el)
             if (flag) {
-              await createInventory_productMutation({
+              const userAndInventory = await createInventory_productMutation({
                 product_description: el["product_description"],
                 price: Number(el["price"]),
                 quantity: Number(el["quantity"]),
