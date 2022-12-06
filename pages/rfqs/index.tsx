@@ -400,6 +400,9 @@ export const RfqsList = () => {
               rfq_code: "TEST",
               rfq_description: "TEST",
               expected_dod: "tomorrow",
+              rfq_sentto: {
+                create: [{ email: "dylan.p@tiflabs.in" }],
+              },
               rfq_products: {
                 create: [
                   {
@@ -418,7 +421,10 @@ export const RfqsList = () => {
                 })),
               },
             })
-          } catch (error) {}
+            console.log("data: ", data)
+          } catch (error) {
+            console.log("error: ", error)
+          }
         }}
       />
       <Button

@@ -39,7 +39,7 @@ model inventory_products {
 model products {
   product_id         Int                  @id @unique @default(autoincrement())
   name               String               @db.VarChar(45)
-  description        String?              @db.VarChar(45)
+  description        String?              @db.LongText
   product_type       String               @db.VarChar(45)
   products_sku       String?              @unique(map: "products_sku_UNIQUE") @db.VarChar(45)
   inventory_products inventory_products[]
@@ -117,7 +117,7 @@ model vendor_products {
 model rfq {
   id              Int              @id @unique(map: "rfc_id_key") @default(autoincrement())
   createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  updatedAt       DateTime         @default(now())
   expected_dod    String           @db.VarChar(45)
   rfq_code        String           @db.VarChar(45)
   rfq_description String           @db.VarChar(155)
@@ -236,10 +236,16 @@ model notifications_sent {
 }
 
 model rfq_sentto {
-  id     Int     @id
+  id     Int     @id @default(autoincrement())
   email  String? @db.VarChar(45)
   rfq_id Int
   rfq    rfq     @relation(fields: [rfq_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_sentto_rfq1")
 
   @@index([rfq_id], map: "fk_rfq_sentto_rfq1_idx")
+}
+
+model prefix {
+  id     Int    @id @default(autoincrement())
+  name   String @db.VarChar(45)
+  prefix String @db.VarChar(45)
 }
