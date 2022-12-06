@@ -2,12 +2,7 @@ import { resolver } from "@blitzjs/rpc"
 import db from "db"
 import { z } from "zod"
 
-const UpdateRfq = z.object({
-  id: z.number(),
-  expected_dod: z.string(),
-  rfq_code: z.string(),
-  rfq_description: z.string(),
-})
+const UpdateRfq = z.unknown()
 
 export default resolver.pipe(
   resolver.zod(UpdateRfq),
