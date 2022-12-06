@@ -93,6 +93,7 @@ export const RfqsList = () => {
     rfq_code: "",
     rfq_description: "",
     expected_dod: "",
+    rfq_email: "",
   })
   const [rfqEditState, setRfqEditState] = useState(false)
   const [activeRfqId, setActiveRfqId] = useState("")
@@ -300,18 +301,18 @@ export const RfqsList = () => {
             // await refetch()
           },
         },
-        {
-          label: "View Products",
-          icon: "pi pi-external-link",
-          command: () => {
-            const active = tableRfqProducts.filter(({ rfq_id }) => {
-              return rfq_id === activeRow.id
-            })
-            //
-            setActiveRfq(active)
-            setProductDialog(true)
-          },
-        },
+        // {
+        //   label: "View Products",
+        //   icon: "pi pi-external-link",
+        //   command: () => {
+        //     const active = tableRfqProducts.filter(({ rfq_id }) => {
+        //       return rfq_id === activeRow.id
+        //     })
+        //     //
+        //     setActiveRfq(active)
+        //     setProductDialog(true)
+        //   },
+        // },
         {
           label: "Create PO",
           icon: "pi pi-plus",
@@ -387,7 +388,60 @@ export const RfqsList = () => {
       ],
     },
   ]
+  const [expandedRows, setExpandedRows] = useState([])
 
+  const allowExpansion = (rowData) => {
+    return rowData.orders.length > 0
+  }
+
+  const rowExpansionTemplate = (data) => {
+    // const rowProducts = tableRfqProducts.filter((prod) => data.id === prod.id)
+    // setActiveRfq(rowProducts)
+    return (
+      <>
+        <DataTable
+          value={activeRfq}
+          showGridlines
+          // header={renderHeader}
+
+          stripedRows
+          className="text-s datatable-responsive w-full"
+          // paginator
+          // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
+          // rows={PAGINATION_VARIABLES.rows}
+          // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
+          // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
+        >
+          <Column
+            field="rfq_products_id"
+            header="ID"
+            // className="text-center"
+          />
+          <Column
+            field="product_sku"
+            header="Product SKU"
+            // className="text-center"
+          />
+
+          <Column
+            field="product_name"
+            header="Name"
+            // className="text-center"
+          />
+          <Column
+            field="price_per_unit"
+            header="Price / Unit"
+            // className="text-center"
+          />
+          <Column
+            field="quantity"
+            header="Quantity"
+            // className="text-center"
+          />
+        </DataTable>
+      </>
+    )
+  }
   return (
     <div>
       <Dialog
@@ -803,7 +857,7 @@ export const RfqsList = () => {
         >
           <Column
             field="rfq_products_id"
-            header="ID"
+            header="ID600"
             // className="text-center"
           />
           <Column
@@ -1017,6 +1071,7 @@ export const RfqsList = () => {
             setRfqDetails({ rfq_code: "", rfq_description: "", expected_dod: "" })
             setItemList([{ products_product_id: "", quantity: "", price_per_unit: "" }])
             setRfqDialog(!rfqDialog)
+            console.log(rfqDetails)
           }}
         ></Button>
       </div>
@@ -1074,6 +1129,7 @@ export const RfqsList = () => {
               { type: "text", label: "RFQ Code", field: "rfq_code" },
               { type: "text", label: "RFQ Name", field: "rfq_name" },
               { type: "text", label: "Delivery Time", field: "expected_dod" },
+              { type: "email", label: "Email", field: "rfq_email" },
             ].map(({ label, field }, i) => {
               return (
                 <div key={`${field}${i}`} className="field col-12 lg:col-4 mt-2">
@@ -1081,7 +1137,7 @@ export const RfqsList = () => {
                     <InputText
                       id={field}
                       name={field}
-                      value={rfqDetails.rfq_code}
+                      value={rfqDetails[field]}
                       onChange={(e) => setRfqDetails({ ...rfqDetails, [field]: e.target.value })}
                     />
                     <label
@@ -1180,7 +1236,18 @@ export const RfqsList = () => {
         // rows={PAGINATION_VARIABLES.rows}
         // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
         // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
+        expandedRows={expandedRows}
+        onRowToggle={(e) => {
+          console.log(e.data[0])
+          const productID = e.data[0] ? e.data[0].id : null
+          setExpandedRows(e.data)
+          const rowProducts = tableRfqProducts.filter((prod) => productID === prod.rfq_id)
+          console.log(rowProducts)
+          setActiveRfq(rowProducts)
+        }}
+        rowExpansionTemplate={rowExpansionTemplate}
       >
+        <Column expander={true} />
         <Column
           field="id"
           header="ID"
