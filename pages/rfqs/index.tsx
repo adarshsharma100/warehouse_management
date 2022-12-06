@@ -93,7 +93,7 @@ export const RfqsList = () => {
     rfq_code: "",
     rfq_description: "",
     expected_dod: "",
-    rfq_email: "",
+    rfq_email: [],
   })
   const [rfqEditState, setRfqEditState] = useState(false)
   const [activeRfqId, setActiveRfqId] = useState("")
@@ -239,6 +239,7 @@ export const RfqsList = () => {
   const handleFormChange = (e: any, i: number) => {
     let data = [...itemList]
     e.target ? (data[i][e.target.name] = e.value) : (data[i][e.originalEvent.target.name] = e.value)
+    console.log("from:handleFormChange", data)
     setItemList(data)
   }
   const handleProductFormChange = (e: any, i: number) => {
@@ -292,15 +293,15 @@ export const RfqsList = () => {
             // setVendorDialog(true)
           },
         },
-        {
-          label: "Delete",
-          icon: "pi pi-trash",
-          command: async () => {
-            // await deleteRFQProductMutation({ rfq_id: activeRow.id })
-            // await deleteRFQMutation({ id: activeRow.id })
-            // await refetch()
-          },
-        },
+        // {
+        //   label: "Delete",
+        //   icon: "pi pi-trash",
+        //   command: async () => {
+        //     // await deleteRFQProductMutation({ rfq_id: activeRow.id })
+        //     // await deleteRFQMutation({ id: activeRow.id })
+        //     // await refetch()
+        //   },
+        // },
         // {
         //   label: "View Products",
         //   icon: "pi pi-external-link",
@@ -444,6 +445,7 @@ export const RfqsList = () => {
   }
   return (
     <div>
+      {console.log(itemList)}
       <Button
         // type="submit"
         className="mr-2"
@@ -472,7 +474,10 @@ export const RfqsList = () => {
                 })),
               },
             })
-          } catch (error) {}
+            // setRfqEditState(false)
+          } catch (error) {
+            console.log(error)
+          }
         }}
       />
       <Button
@@ -1148,10 +1153,9 @@ export const RfqsList = () => {
           label="Create RFQ"
           onClick={() => {
             setRfqEditState(false)
-            setRfqDetails({ rfq_code: "", rfq_description: "", expected_dod: "" })
+            setRfqDetails({ rfq_code: "", rfq_description: "", expected_dod: "", rfq_email: "" })
             setItemList([{ products_product_id: "", quantity: "", price_per_unit: "" }])
             setRfqDialog(!rfqDialog)
-            console.log(rfqDetails)
           }}
         ></Button>
       </div>
@@ -1207,9 +1211,10 @@ export const RfqsList = () => {
             </div>
             {[
               { type: "text", label: "RFQ Code", field: "rfq_code" },
-              { type: "text", label: "RFQ Name", field: "rfq_name" },
+              // { type: "text", label: "RFQ Name", field: "rfq_name" },
               { type: "text", label: "Delivery Time", field: "expected_dod" },
-              { type: "email", label: "Email", field: "rfq_email" },
+              // { type: "email", label: "Email", field: "rfq_email" },
+              { type: "text", label: "RFQ Description", field: "rfq_description" },
             ].map(({ label, field }, i) => {
               return (
                 <div key={`${field}${i}`} className="field col-12 lg:col-4 mt-2">
@@ -1231,6 +1236,16 @@ export const RfqsList = () => {
                 </div>
               )
             })}
+            <div className="p-float-label field col-12 lg:col-4 mt-2">
+              <Chips
+                name="email"
+                value={rfqDetails.rfq_email}
+                onChange={(e) => setRfqDetails({ ...rfqDetails, rfq_email: e.target.value })}
+              />
+              <label style={{ paddingLeft: "0.75rem" }} htmlFor="email">
+                Email
+              </label>
+            </div>
             <div className="col-12">
               <h6>Select Products:</h6>
             </div>
@@ -1251,7 +1266,7 @@ export const RfqsList = () => {
                   <span className="p-float-label">
                     <InputNumber
                       id={`product-prixe-${i}`}
-                      // name={ele.field}
+                      name="price_per_unit"
                       value={Number(ele.price_per_unit)}
                       onChange={(e) => handleFormChange(e, i)}
                       // className={classNames({ "p-invalid": isFormFieldValid("name") })}
@@ -1268,7 +1283,7 @@ export const RfqsList = () => {
                   <span className="p-float-label">
                     <InputNumber
                       id={`product-qty-${i}`}
-                      // name={ele.field}
+                      name="quantity"
                       value={Number(ele.quantity)}
                       onChange={(e) => handleFormChange(e, i)}
                       // className={classNames({ "p-invalid": isFormFieldValid("name") })}
@@ -1304,14 +1319,60 @@ export const RfqsList = () => {
             // type="submit"
             className="mr-2"
             label="ADD"
-            onClick={async () => {
-              try {
-                const data = await createRFQMutation({
-                  rfq_code: "TEST",
-                  rfq_description: "TEST",
-                  expected_dod: "tomorrow",
+            onClick={async (e) => {
+              e.preventDefault()
+              if (rfqEditState) {
+                const newProductList = itemList.filter((item) => !item.rfq_products_id)
+
+                const removemail = { ...rfqDetails }
+
+                delete removemail.rfq_email
+                await updateRFQMutation({
+                  ...removemail,
+                  rfq_products: {
+                    create: newProductList.map((ele) => ({
+                      price_per_unit: Number(ele.price_per_unit),
+                      quantity: Number(ele.quantity),
+                      products: {
+                        connect: {
+                          product_id: Number(ele.products_product_id),
+                        },
+                      },
+                    })),
+                    updateMany: itemList.map((ele) => ({
+                      where: {
+                        rfq_products_id: ele.rfq_products_id,
+                      },
+                      data: {
+                        price_per_unit: Number(ele.price_per_unit),
+                        quantity: Number(ele.quantity),
+                      },
+                    })),
+                  },
                 })
-              } catch (error) {}
+              } else {
+                try {
+                  const newRfqData = await createRFQMutation({
+                    ...rfqDetails,
+                    rfq_products: {
+                      create: itemList.map((ele) => ({
+                        price_per_unit: Number(ele.price_per_unit),
+                        quantity: Number(ele.quantity),
+                        products: {
+                          connect: {
+                            product_id: Number(ele.products_product_id),
+                          },
+                        },
+                      })),
+                    },
+                    rfq_sentto: {
+                      create: rfqDetails.rfq_email.map((item, i) => ({ email: item })),
+                    },
+                  })
+                } catch (error) {
+                  console.log(error)
+                }
+              }
             }}
           />
         </form>

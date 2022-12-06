@@ -7,6 +7,7 @@ const CreateRfq = z.object({
   rfq_description: z.string(),
   expected_dod: z.string(),
   rfq_products: z.unknown(),
+  rfq_sentto: z.unknown(),
 })
 
 export default resolver.pipe(resolver.zod(CreateRfq), resolver.authorize(), async (input) => {
