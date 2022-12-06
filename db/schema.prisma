@@ -116,13 +116,14 @@ model vendor_products {
 
 model rfq {
   id              Int              @id @unique(map: "rfc_id_key") @default(autoincrement())
-  created_at      DateTime         @default(now())
-  updated_at      DateTime         @default(now())
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   expected_dod    String           @db.VarChar(45)
   rfq_code        String           @db.VarChar(45)
   rfq_description String           @db.VarChar(155)
   purchase_order  purchase_order[]
   rfq_products    rfq_products[]
+  rfq_sentto      rfq_sentto[]
 }
 
 model session {
@@ -232,4 +233,13 @@ model notifications_sent {
   user       user   @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_notifications_sent_user1")
 
   @@index([user_id], map: "fk_notifications_sent_user1_idx")
+}
+
+model rfq_sentto {
+  id     Int     @id
+  email  String? @db.VarChar(45)
+  rfq_id Int
+  rfq    rfq     @relation(fields: [rfq_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_sentto_rfq1")
+
+  @@index([rfq_id], map: "fk_rfq_sentto_rfq1_idx")
 }

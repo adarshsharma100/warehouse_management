@@ -390,6 +390,88 @@ export const RfqsList = () => {
 
   return (
     <div>
+      <Button
+        // type="submit"
+        className="mr-2"
+        label="ADD"
+        onClick={async () => {
+          try {
+            const data = await createRFQMutation({
+              rfq_code: "TEST",
+              rfq_description: "TEST",
+              expected_dod: "tomorrow",
+              rfq_products: {
+                create: [
+                  {
+                    price_per_unit: 10,
+                    quantity: 10,
+                    products_product_id: 1,
+                  },
+                ].map((ele) => ({
+                  price_per_unit: Number(ele.price_per_unit),
+                  quantity: Number(ele.quantity),
+                  products: {
+                    connect: {
+                      product_id: Number(ele.products_product_id),
+                    },
+                  },
+                })),
+              },
+            })
+          } catch (error) {}
+        }}
+      />
+      <Button
+        // type="submit"
+        className="mr-2"
+        label="Edit"
+        onClick={async () => {
+          try {
+            const data = await updateRFQMutation({
+              id: 161,
+              rfq_code: "TEST",
+              rfq_description: "TEST UPDATED",
+              expected_dod: "tomorrow after tomorrow",
+              rfq_products: {
+                create: [
+                  {
+                    price_per_unit: 10,
+                    quantity: 10,
+                    products_product_id: 2,
+                  },
+                ].map((ele) => ({
+                  price_per_unit: Number(ele.price_per_unit),
+                  quantity: Number(ele.quantity),
+                  products: {
+                    connect: {
+                      product_id: Number(ele.products_product_id),
+                    },
+                  },
+                })),
+                updateMany: [
+                  {
+                    id: 110,
+                    price_per_unit: 12,
+                    quantity: 13,
+                    products_product_id: 1,
+                  },
+                ].map((ele) => ({
+                  where: {
+                    rfq_products_id: ele.id,
+                  },
+                  data: {
+                    price_per_unit: Number(ele.price_per_unit),
+                    quantity: Number(ele.quantity),
+                  },
+                })),
+              },
+            })
+            console.log("data : ", data)
+          } catch (error) {
+            console.log("error: ", error)
+          }
+        }}
+      />
       <Dialog
         header="Send Quotaions"
         visible={sendDialog}
@@ -469,12 +551,8 @@ export const RfqsList = () => {
               }
 
               axios(config)
-                .then(function (response) {
-                  console.log(JSON.stringify(response.data))
-                })
-                .catch(function (error) {
-                  console.log(error)
-                })
+                .then(function (response) {})
+                .catch(function (error) {})
               // mail(
               //   "care@robocraze.com",
               //   mailDetails.to,
@@ -853,24 +931,26 @@ export const RfqsList = () => {
                 })
               } catch (error: any) {}
             } else {
-              const rfc = await createRFQMutation({ ...rfqDetails })
-              //
-
-              const many = itemList.map((ele) => {
-                return {
-                  rfq_id: rfc.id,
-                  price_per_unit: Number(ele.price_per_unit),
-                  products_product_id: Number(ele.products_product_id),
-                  quantity: Number(ele.quantity),
-                }
+              const rfq = await createRFQMutation({ ...rfqDetails })
+              createRFQMutation({
+                ...rfqDetails,
+                rfq_products: {
+                  create: itemList.map((ele) => ({
+                    price_per_unit: Number(ele.price_per_unit),
+                    quantity: Number(ele.quantity),
+                    products: {
+                      connect: Number(ele.products_product_id),
+                    },
+                  })),
+                },
               })
 
-              try {
-                const result = await createRFQProductMutation(many)
-                console.log("error: ", result)
-              } catch (error: any) {
-                console.log("error: ", error)
-              }
+              // try {
+              //   // const result = await createRFQProductMutation(many)
+              //
+              // } catch (error: any) {
+              //
+              // }
             }
 
             await refetch()
@@ -1044,12 +1124,12 @@ export const RfqsList = () => {
                 })
               } catch (error: any) {}
             } else {
-              const rfc = await createRFQMutation({ ...rfqDetails })
+              const rfq = await createRFQMutation({ ...rfqDetails })
               //
 
               const many = itemList.map((ele) => {
                 return {
-                  rfq_id: rfc.id,
+                  rfq_id: rfq.id,
                   price_per_unit: Number(ele.price_per_unit),
                   products_product_id: Number(ele.products_product_id),
                   quantity: Number(ele.quantity),
@@ -1164,7 +1244,20 @@ export const RfqsList = () => {
             ))}
           </div>
           <Divider />
-          <Button type="submit" className="mr-2" label="ADD" />
+          <Button
+            // type="submit"
+            className="mr-2"
+            label="ADD"
+            onClick={async () => {
+              try {
+                const data = await createRFQMutation({
+                  rfq_code: "TEST",
+                  rfq_description: "TEST",
+                  expected_dod: "tomorrow",
+                })
+              } catch (error) {}
+            }}
+          />
         </form>
       </div>
       <DataTable

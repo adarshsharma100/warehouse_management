@@ -1,18 +1,22 @@
-import { NotFoundError } from "blitz"
-import { resolver } from "@blitzjs/rpc"
-import db from "db"
-import { z } from "zod"
+import { NotFoundError } from "blitz";
+import { resolver } from "@blitzjs/rpc";
+import db from "db";
+import { z } from "zod";
 
 const GetRfq = z.object({
   // This accepts type of undefined, but is required at runtime
   id: z.number().optional().refine(Boolean, "Required"),
-})
+});
 
-export default resolver.pipe(resolver.zod(GetRfq), resolver.authorize(), async ({ id }) => {
-  // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-  const rfq = await db.rfq.findFirst({ where: { id } })
+export default resolver.pipe(
+  resolver.zod(GetRfq),
+  resolver.authorize(),
+  async ({ id }) => {
+    // TODO: in multi-tenant app, you must add validation to ensure correct tenant
+    const rfq = await db.rfq.findFirst({ where: { id } });
 
-  if (!rfq) throw new NotFoundError()
+    if (!rfq) throw new NotFoundError();
 
-  return rfq
-})
+    return rfq;
+  }
+);
