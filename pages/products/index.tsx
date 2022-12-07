@@ -1,10 +1,9 @@
-import { Suspense, useState } from "react"
+import { Suspense, useState, useRef } from "react"
 import { Routes } from "@blitzjs/next"
 import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
+import papa from "papaparse"
 
-import getProducts from "app/products/queries/getProducts"
-import getPrefix from "app/prefixes/queries/getPrefix"
 import Layout from "layouts/Layout"
 import { DataTable } from "primereact/datatable"
 import { Column } from "primereact/column"
@@ -12,10 +11,15 @@ import { Button } from "primereact/button"
 import { Dialog } from "primereact/dialog"
 import { InputText } from "primereact/inputtext"
 import { InputTextarea } from "primereact/inputtextarea"
+import { FileUpload } from "primereact/fileupload"
+import { Toast } from "primereact/toast"
+
 import createProduct from "app/products/mutations/createProduct"
 import updateProduct from "app/products/mutations/updateProduct"
-
+import getProducts from "app/products/queries/getProducts"
+import getPrefix from "app/prefixes/queries/getPrefix"
 import createInventory_product from "app/inventory_products/mutations/createInventory_product"
+
 import Loading from "components/loading"
 
 const ITEMS_PER_PAGE = 100
@@ -39,30 +43,95 @@ export const ProductsList = () => {
   })
   const [productDialog, setProductDialog] = useState(false)
 
+  const [errorProducts, setErrorProducts] = useState([])
+
+  const toast = useRef(null)
+
   if (isLoading || isProductsLoading) {
     return <Loading />
   }
-  console.log(products)
 
   return (
     <div className="grid">
       <div className="col-12 ">
         <div className="card flex justify-content-between align-items-center">
           <h2>Products</h2>
-          <Button
-            icon="pi pi-plus"
-            label="Add Products"
-            className="ml-1"
-            onClick={() => {
-              setProductDetails({
-                name: "",
-                description: "",
-                product_type: "",
-                products_sku: "",
-              })
-              setProductDialog(!productDialog)
-            }}
-          ></Button>
+          <div className="flex">
+            <FileUpload
+              mode="basic"
+              name="products"
+              // url="https://primefaces.org/primereact/showcase/upload.php"
+              accept=".csv"
+              maxFileSize={1000000}
+              customUpload
+              uploadHandler={(e) => {
+                let index = 2
+                setErrorProducts([])
+                papa.parse(e.files[0], {
+                  header: true,
+                  skipEmptyLines: true,
+                  step: async ({ data }, parser) => {
+                    const missingKey = ["NAME", "DESCRIPTION", "SKU", "TYPE"].find(
+                      (key) => !(key in data)
+                    )
+
+                    if (missingKey) {
+                      setErrorProducts([
+                        ...errorProducts,
+                        { message: `Column ${missingKey} missing.` },
+                      ])
+                      parser.abort()
+                    }
+                    // setErrorProducts([
+                    //   ...errorProducts,
+                    //   { ...data, message: error.message, rowNum: index },
+                    // ])
+                    const result = await createProductMutation(
+                      {
+                        name: data?.["NAME"],
+                        description: data?.["DESCRIPTION"],
+                        products_sku: data?.["SKU"],
+                        product_type: data?.["TYPE"],
+                      },
+                      {
+                        onSuccess: () => {
+                          toast?.current?.show({
+                            severity: "success",
+                            summary: "Product Created",
+                            detail: "Product created successfully.",
+                            life: 3000,
+                          })
+                        },
+                        onError: (error) => {
+                          console.log("Product failed: ", data)
+                          setErrorProducts([
+                            ...errorProducts,
+                            { ...data, message: error.message, rowNum: index },
+                          ])
+                        },
+                      }
+                    )
+                    index += 1
+                  },
+                })
+              }}
+              chooseLabel="Upload Products (.csv)"
+            />
+            <Button
+              icon="pi pi-plus"
+              label="Add Products"
+              className="ml-1"
+              onClick={() => {
+                setProductDetails({
+                  name: "",
+                  description: "",
+                  product_type: "",
+                  products_sku: "",
+                })
+                setProductDialog(!productDialog)
+              }}
+            />
+          </div>
         </div>
       </div>
       <div
@@ -88,9 +157,9 @@ export const ProductsList = () => {
               //     products_product_id: Number(result.product_id),
               //     quantity: 0,
               //   })
-              //   console.log("error: ", all)
+              //
               // } catch (error) {
-              //   console.log(error)
+              //
               // }
             }}
             className="p-fluid"
@@ -156,6 +225,35 @@ export const ProductsList = () => {
           </form>
         </div>
       </div>
+      <div
+        className={`col-12 ${
+          errorProducts.length
+            ? "visible scalein animation-duration-200"
+            : "hidden scaleout animation-duration-200"
+        }`}
+      >
+        <div className="card border-primary border-2 bg-primary-reverse">
+          <h6>Following are a list of failed entries: </h6>
+          <ul>
+            {errorProducts.map(({ rowNum, message }, index) => {
+              if (rowNum)
+                return (
+                  <li key={"error-" + index}>
+                    Row Number {rowNum}:{" "}
+                    <ul>
+                      <li>{message}</li>
+                    </ul>
+                  </li>
+                )
+              return (
+                <li key={"error-" + index}>
+                  <li>{message}</li>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      </div>
       <div className="col-12">
         <Button
           label="update"
@@ -168,10 +266,7 @@ export const ProductsList = () => {
                   "Watermelon is a flowering plant species of the Cucurbitaceae family and the name of its edible fruit. A scrambling and trailing vine-like plant, it is a highly cultivated fruit worldwide, with more than 1,000 varieties.",
                 product_type: "Fruit",
               })
-              console.log("data: ", data)
-            } catch (error) {
-              console.log("error: ", error)
-            }
+            } catch (error) {}
           }}
         />
       </div>
