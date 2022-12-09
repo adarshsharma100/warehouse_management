@@ -222,6 +222,7 @@ export const Purchase_ordersList = () => {
       ],
     },
   ]
+  console.log(productDialog)
 
   return (
     <div>
@@ -274,13 +275,20 @@ export const Purchase_ordersList = () => {
           />
         </DataTable>
       </Dialog>
-
-      <Dialog
-        header="Create PO "
-        visible={purchaseDialog}
-        style={{ width: "80vw" }}
-        // footer={renderFooter}
-        onHide={() => setPurchaseDialog(false)}
+      <h4>Purchase Orders</h4>
+      <div className="flex justify-content-end mb-2 ">
+        <Button
+          icon="pi pi-plus"
+          label="Create PO"
+          onClick={() => setPurchaseDialog(!purchaseDialog)}
+        ></Button>
+      </div>
+      <div
+        className={`card ${
+          purchaseDialog
+            ? "visible scalein animation-duration-200"
+            : "hidden scaleout animation-duration-200"
+        }`}
       >
         <form
           onSubmit={
@@ -554,14 +562,6 @@ export const Purchase_ordersList = () => {
             />
           </div>
         </form>
-      </Dialog>
-      <h4>Purchase Orders</h4>
-      <div className="flex justify-content-end mb-2 ">
-        <Button
-          icon="pi pi-plus"
-          label="Create PO"
-          onClick={() => setPurchaseDialog(true)}
-        ></Button>
       </div>
       <DataTable
         value={tablePurchaseOrders}

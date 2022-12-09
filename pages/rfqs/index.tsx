@@ -194,6 +194,12 @@ export const RfqsList = () => {
       // name: ele.products.name,
     }
   })
+
+  const RfqListWithNameAndSku = (rfqs) => {
+    console.log(rfqs)
+  }
+  RfqListWithNameAndSku()
+
   const options = vendors.map(({ vendor, vendor_id, vendor_code }) => {
     return {
       name: ` ${vendor_code}: ${vendor}`,
@@ -409,7 +415,7 @@ export const RfqsList = () => {
       ],
     },
   ]
-  const [expandedRows, setExpandedRows] = useState([])
+  const [expandedRows, setExpandedRows] = useState(null)
 
   const rowExpansionTemplate = (data) => {
     // const rowProducts = tableRfqProducts.filter((prod) => data.id === prod.id)
@@ -417,7 +423,7 @@ export const RfqsList = () => {
     return (
       <>
         <DataTable
-          value={activeRfq}
+          value={data.rfq_products}
           showGridlines
           // header={renderHeader}
 
@@ -435,13 +441,13 @@ export const RfqsList = () => {
             // className="text-center"
           />
           <Column
-            field="product_sku"
+            field="products.products_sku"
             header="Product SKU"
             // className="text-center"
           />
 
           <Column
-            field="product_name"
+            field="products.name"
             header="Name"
             // className="text-center"
           />
@@ -483,10 +489,9 @@ export const RfqsList = () => {
     // console.log(rowData.id)
     return true
   }
-
+  console.log(tableRFQ)
   return (
     <div>
-      {console.log(expandedRows)}
       {updatingRfq && <LoaderFullScreen />}
       {creatingRfq && <LoaderFullScreen />}
       {rfqErrorMsgs && (
@@ -1346,7 +1351,7 @@ export const RfqsList = () => {
                     onChange={(e) => {
                       handleFormChange(e, i)
                       const productPrice = products.filter((item) => item.product_id === e.value)[0]
-                        .Price
+                        ?.Price
                       let data = [...itemList]
                       e.target
                         ? (data[i].price_per_unit = productPrice)
@@ -1526,18 +1531,19 @@ export const RfqsList = () => {
         // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
         expandedRows={expandedRows}
         onRowToggle={(e) => {
-          console.log(`index${e.id}`, e)
-          const productID = e.data[0] ? e.data[0].id : null
+          // console.log(`index${e.id}`, e)
+          // const productID = e.data[0] ? e.data[0].id : null
+          console.log(e.data)
           setExpandedRows(e.data)
-          const rowProducts = tableRfqProducts.filter((prod) => productID === prod.rfq_id)
+          // const rowProducts = tableRfqProducts.filter((prod) => productID === prod.rfq_id)
 
           // console.log("rowProducts", rowProducts)
           // console.log("activeRow", activeRow)
 
-          setActiveRfq(rowProducts)
+          // setActiveRfq(rowProducts)
         }}
         rowExpansionTemplate={rowExpansionTemplate}
-        onRowExpand = {(e) =>  console.log("onRowExpand,",e)}
+        onRowExpand={(e) => console.log("onRowExpand,", e)}
       >
         <Column field="details" header="See More Details" expander={allowExpansion} />
         <Column

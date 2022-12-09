@@ -1,6 +1,6 @@
-import { paginate } from "blitz";
-import { resolver } from "@blitzjs/rpc";
-import db, { Prisma } from "db";
+import { paginate } from "blitz"
+import { resolver } from "@blitzjs/rpc"
+import db, { Prisma } from "db"
 
 interface GetRfqsInput
   extends Pick<Prisma.RfqFindManyArgs, "where" | "orderBy" | "skip" | "take"> {}
@@ -19,14 +19,25 @@ export default resolver.pipe(
       take,
       count: () => db.rfq.count({ where }),
       query: (paginateArgs) =>
-        db.rfq.findMany({ ...paginateArgs, where, orderBy }),
-    });
+        db.rfq.findMany({
+          ...paginateArgs,
+          where,
+          orderBy,
+          include: {
+            rfq_products: {
+              include: {
+                products:true
+              },
+            },
+          },
+        }),
+    })
 
     return {
       rfqs,
       nextPage,
       hasMore,
       count,
-    };
+    }
   }
-);
+)

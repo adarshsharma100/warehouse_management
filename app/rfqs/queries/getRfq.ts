@@ -13,7 +13,10 @@ export default resolver.pipe(
   resolver.authorize(),
   async ({ id }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-    const rfq = await db.rfq.findFirst({ where: { id } });
+    const rfq = await db.rfq.findFirst({ 
+      where: { id },
+      include: {rfq_products:true}
+    });
 
     if (!rfq) throw new NotFoundError();
 
