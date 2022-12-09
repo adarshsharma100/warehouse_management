@@ -42,6 +42,7 @@ model products {
   description        String?              @db.LongText
   product_type       String               @db.VarChar(45)
   products_sku       String?              @unique(map: "products_sku_UNIQUE") @db.VarChar(45)
+  Price              Int?                 @default(0)
   inventory_products inventory_products[]
   rfq_products       rfq_products[]
   vendor_products    vendor_products[]
@@ -117,10 +118,10 @@ model rfq {
   id              Int              @id @unique(map: "rfc_id_key") @default(autoincrement())
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @default(now())
-  expected_dod    String           @db.VarChar(45)
+  expected_dod    String           @db.VarChar(65)
   rfq_code        String           @db.VarChar(45)
   rfq_description String           @db.VarChar(155)
-  active          Int              @db.TinyInt
+  active          Int              @default(1) @db.TinyInt
   purchase_order  purchase_order[]
   rfq_products    rfq_products[]
   rfq_sentto      rfq_sentto[]

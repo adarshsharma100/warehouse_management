@@ -38,6 +38,7 @@ import { Chips } from "primereact/chips"
 import axios from "axios"
 import Loading from "components/loading"
 import LoaderFullScreen from "components/LoaderFullScreen"
+
 const ITEMS_PER_PAGE = 100
 
 export const RfqsList = () => {
@@ -59,7 +60,7 @@ export const RfqsList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
-  const [{ rfq_products }] = usePaginatedQuery(getRfq_products, {
+  const [{ rfq_products }, { refetch: fetchRfqProducts }] = usePaginatedQuery(getRfq_products, {
     orderBy: { rfq_products_id: "asc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
@@ -75,8 +76,10 @@ export const RfqsList = () => {
     take: ITEMS_PER_PAGE,
   })
   const [sendDialog, setSendDialog] = useState(false)
-  const [createRFQMutation, { isLoading: creatingRfq }] = useMutation(createRfq)
-  const [updateRFQMutation, { isLoading: updatingRfq }] = useMutation(updateRfq)
+  const [createRFQMutation, { isLoading: creatingRfq, error: createRFQMutationError }] =
+    useMutation(createRfq)
+  const [updateRFQMutation, { isLoading: updatingRfq, error: updateRFQMutationError }] =
+    useMutation(updateRfq)
   const [createRFQProductMutation] = useMutation(createManyRfq_products)
   const [deleteRFQProductMutation] = useMutation(deleteRfq_product)
   const [deleteRFQMutation] = useMutation(deleteRfq)
@@ -396,20 +399,17 @@ export const RfqsList = () => {
           label: "Update-Status",
           icon: "pi pi-refresh",
           command: async (e) => {
-            const updateStatus = updateRFQMutation({
+            await updateRFQMutation({
               id: activeRow.id,
               active: activeRow.active === 0 ? 1 : 0,
             })
+            await refetch()
           },
         },
       ],
     },
   ]
   const [expandedRows, setExpandedRows] = useState([])
-
-  const allowExpansion = (rowData) => {
-    return rowData.orders.length > 0
-  }
 
   const rowExpansionTemplate = (data) => {
     // const rowProducts = tableRfqProducts.filter((prod) => data.id === prod.id)
@@ -447,7 +447,7 @@ export const RfqsList = () => {
           />
           <Column
             field="price_per_unit"
-            header="Price / Unit"
+            header="Target Price / Unit"
             // className="text-center"
           />
           <Column
@@ -464,15 +464,43 @@ export const RfqsList = () => {
 
   useEffect(() => {
     const currentItemsIds = itemList.map(({ rfq_products_id }) => rfq_products_id)
-
     setCurrentRfqitemsID([...currentItemsIds])
   }, [rfqDialog])
-  if (rfqError) return <div>{rfqError.message}</div>
+
+  const [rfqErrorMsgs, setRfqErrorMsgs] = useState("")
+  useEffect(() => {
+    const ErrorArray = [updateRFQMutationError, createRFQMutationError, rfqError]
+    // console.log(ErrorArray)
+
+    for (let err of ErrorArray) {
+      if (err) setRfqErrorMsgs(err)
+      // console.log(err)
+    }
+  }, [updateRFQMutationError, createRFQMutationError, rfqError])
+
+  const allowExpansion = (rowData) => {
+    // return rowData.orders.length > 0;
+    // console.log(rowData.id)
+    return true
+  }
+
   return (
     <div>
+      {console.log(expandedRows)}
       {updatingRfq && <LoaderFullScreen />}
       {creatingRfq && <LoaderFullScreen />}
-
+      {rfqErrorMsgs && (
+        <div className="error-card flex">
+          <span style={{ width: "fit-content" }}>{rfqErrorMsgs?.message}</span>
+          <Button
+            icon="pi pi-times"
+            className="p-button-rounded p-button-danger p-button-outlined "
+            aria-label="Cancel"
+            onClick={(e) => setRfqErrorMsgs(false)}
+          />
+        </div>
+      )}
+      <p>{`${rfqDetails.expected_dod}`}</p>
       {/* <Button
         // type="submit"
         className="mr-2"
@@ -845,7 +873,7 @@ export const RfqsList = () => {
                   />
                   <div className="flex-column ">
                     <div className="p-label ">
-                      <label className="mr-2">Price per unit</label>
+                      <label className="mr-2">Target price per unit</label>
                       <InputNumber
                         name="price_per_unit"
                         className="mr-2 w-20rem"
@@ -1082,7 +1110,7 @@ export const RfqsList = () => {
               // htmlFor={ele.field}
               // className={classNames({ "p-error": isFormFieldValid("name") })}
               >
-                Delivery time
+                Expected Delivery
               </label>
             </div>
           </div>
@@ -1094,15 +1122,17 @@ export const RfqsList = () => {
                 <Dropdown
                   className="mr-2 w-15rem"
                   name="products_product_id"
+                  value={ele.products_product_id}
+                  options={productOptions}
+                  onChange={(e) => {
+                    handleFormChange(e, i)
+                  }}
+                  optionLabel="name"
                   filter
                   showClear
                   filterBy="name"
-                  placeholder="Select a Product"
+                  placeholder="Select a Products"
                   // disabled={editState}
-                  optionLabel="name"
-                  value={ele.products_product_id}
-                  options={productOptions}
-                  onChange={(e) => handleFormChange(e, i)}
                 />
                 <div className="p-label ">
                   <label
@@ -1239,7 +1269,7 @@ export const RfqsList = () => {
             {[
               { type: "text", label: "RFQ Code", field: "rfq_code" },
               // { type: "text", label: "RFQ Name", field: "rfq_name" },
-              { type: "text", label: "Delivery Time", field: "expected_dod" },
+              // { type: "text", label: "Expected Delivery", field: "expected_dod" },
               // { type: "email", label: "Email", field: "rfq_email" },
               { type: "text", label: "RFQ Description", field: "rfq_description" },
             ].map(({ label, field }, i) => {
@@ -1263,6 +1293,22 @@ export const RfqsList = () => {
                 </div>
               )
             })}
+            <div className="field col-12 lg:col-4 mt-2 ">
+              <span className="p-float-label">
+                <Calendar
+                  id="expected_dod"
+                  minDate={new Date()}
+                  value={new Date(rfqDetails.expected_dod)}
+                  onChange={(e) =>
+                    setRfqDetails({ ...rfqDetails, expected_dod: e.target.value.toString() })
+                  }
+                />
+                <label style={{ zIndex: 10 }} htmlFor="expected_dod">
+                  Expected Delivery
+                </label>
+              </span>
+            </div>
+
             <div className="col-12">
               <h6>Send To Emails:</h6>
             </div>
@@ -1292,9 +1338,21 @@ export const RfqsList = () => {
                     name="products_product_id"
                     // disabled={editState}
                     optionLabel="name"
+                    filter
+                    showClear
+                    filterBy="name"
                     value={ele.products_product_id}
                     options={productOptions}
-                    onChange={(e) => handleFormChange(e, i)}
+                    onChange={(e) => {
+                      handleFormChange(e, i)
+                      const productPrice = products.filter((item) => item.product_id === e.value)[0]
+                        .Price
+                      let data = [...itemList]
+                      e.target
+                        ? (data[i].price_per_unit = productPrice)
+                        : (data[i].price_per_unit = 0)
+                      setItemList(data)
+                    }}
                     placeholder="Select  Product"
                   />
                 </div>
@@ -1310,7 +1368,7 @@ export const RfqsList = () => {
                     <label
                     // className={classNames({ "p-error": isFormFieldValid("name") })}
                     >
-                      Price per unit
+                      Target price per unit
                     </label>
                   </span>
                   {/* {getFormErrorMessage("name")} */}
@@ -1375,6 +1433,8 @@ export const RfqsList = () => {
                   delete removemail.rfq_email
                   const data = await updateRFQMutation({
                     ...removemail,
+                    // expected_dod: rfqDetails.expected_dod.toString(),
+                    active: 1,
                     rfq_products: {
                       create: newProductList.map((ele) => ({
                         price_per_unit: Number(ele.price_per_unit),
@@ -1403,10 +1463,13 @@ export const RfqsList = () => {
                   })
                   console.log(data)
                   setRfqDialog(!rfqDialog)
+                  await refetch()
+                  fetchRfqProducts()
                 } else {
                   try {
                     const newRfqData = await createRFQMutation({
                       ...rfqDetails,
+                      active: 1,
                       rfq_products: {
                         create: itemList.map((ele) => ({
                           price_per_unit: Number(ele.price_per_unit),
@@ -1423,13 +1486,28 @@ export const RfqsList = () => {
                       },
                     })
                     setRfqDialog(!rfqDialog)
+                    await refetch()
+                    fetchRfqProducts()
                   } catch (error) {
                     console.log(error)
                   }
                 }
               }}
             />
-            <Button className="mr-2" label="Cancel" />
+            <Button
+              className="mr-2 p-button-secondary"
+              label="Cancel"
+              onClick={(e) => {
+                e.preventDefault()
+                setRfqDialog(!rfqDialog)
+                setRfqDetails({
+                  rfq_code: "",
+                  rfq_description: "",
+                  expected_dod: "",
+                  rfq_email: [],
+                })
+              }}
+            />
           </div>
         </form>
       </div>
@@ -1448,7 +1526,7 @@ export const RfqsList = () => {
         // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
         expandedRows={expandedRows}
         onRowToggle={(e) => {
-          console.log("productID", e.data[0])
+          console.log(`index${e.id}`, e)
           const productID = e.data[0] ? e.data[0].id : null
           setExpandedRows(e.data)
           const rowProducts = tableRfqProducts.filter((prod) => productID === prod.rfq_id)
@@ -1459,11 +1537,13 @@ export const RfqsList = () => {
           setActiveRfq(rowProducts)
         }}
         rowExpansionTemplate={rowExpansionTemplate}
+        onRowExpand = {(e) =>  console.log("onRowExpand,",e)}
       >
-        <Column field="details" header="See More Details" expander={true} />
+        <Column field="details" header="See More Details" expander={allowExpansion} />
         <Column
           field="id"
           header="ID"
+          body={({ id }) => `RFQ-${id}`}
           // className="text-center"
         />
         <Column
@@ -1478,7 +1558,8 @@ export const RfqsList = () => {
         />
         <Column
           field="expected_dod"
-          header="Delivery days"
+          header="Delivery date"
+          body={(tableRFQ) => new Date(tableRFQ.expected_dod).toLocaleDateString()}
 
           // className="text-center"
         />
@@ -1493,6 +1574,17 @@ export const RfqsList = () => {
           header="Updated at"
           // className="text-center"
         /> */}
+        <Column
+          field="active"
+          header="Status"
+          body={(rowData) => {
+            return (
+              <span className={`badge status-${rowData.active ? "active" : "inactive"}`}>
+                {rowData.active ? "Active" : "Inactive"}
+              </span>
+            )
+          }}
+        />
         <Column
           // field="vendor_gstin"
           header="Action"
@@ -1511,18 +1603,6 @@ export const RfqsList = () => {
                   aria-haspopup
                 />
               </div>
-            )
-          }}
-          // className="text-center"
-        />
-        <Column
-          field="active"
-          header="Status"
-          body={(rowData) => {
-            return (
-              <span className={`badge status-${rowData.active ? "active" : "inactive"}`}>
-                {rowData.active ? "Active" : "Inactive"}
-              </span>
             )
           }}
           // className="text-center"
