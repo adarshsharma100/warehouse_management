@@ -44,12 +44,12 @@ const ITEMS_PER_PAGE = 100
 export const RfqsList = () => {
   const router = useRouter()
   const page = Number(router.query.page) || 0
-  const [{ rfqs, hasMore }, { refetch }] = usePaginatedQuery(getRfqs, {
-    orderBy: { id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-  })
-  const [fetchRfqs, { error: rfqError }] = useQuery(getRfqs, {
+  // const [{ rfqs, hasMore }, { refetch }] = usePaginatedQuery(getRfqs, {
+  //   orderBy: { id: "asc" },
+  //   skip: ITEMS_PER_PAGE * page,
+  //   take: ITEMS_PER_PAGE,
+  // })
+  const [{ rfqs }, { error: rfqError, refetch }] = useQuery(getRfqs, {
     orderBy: { id: "asc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
@@ -195,11 +195,6 @@ export const RfqsList = () => {
     }
   })
 
-  const RfqListWithNameAndSku = (rfqs) => {
-    console.log(rfqs)
-  }
-  RfqListWithNameAndSku()
-
   const options = vendors.map(({ vendor, vendor_id, vendor_code }) => {
     return {
       name: ` ${vendor_code}: ${vendor}`,
@@ -255,6 +250,13 @@ export const RfqsList = () => {
   const handleFormChange = (e: any, i: number) => {
     let data = [...itemList]
     e.target ? (data[i][e.target.name] = e.value) : (data[i][e.originalEvent.target.name] = e.value)
+    setItemList(data)
+  }
+
+  const autoSetProductPrice = () => {
+    const productPrice = products.filter((item) => item.product_id === e.value)[0]?.Price
+    let data = [...itemList]
+    e.target ? (data[i].price_per_unit = productPrice) : (data[i].price_per_unit = 0)
     setItemList(data)
   }
   const handleProductFormChange = (e: any, i: number) => {
@@ -486,10 +488,8 @@ export const RfqsList = () => {
 
   const allowExpansion = (rowData) => {
     // return rowData.orders.length > 0;
-    // console.log(rowData.id)
     return true
   }
-  console.log(tableRFQ)
   return (
     <div>
       {updatingRfq && <LoaderFullScreen />}
@@ -505,7 +505,7 @@ export const RfqsList = () => {
           />
         </div>
       )}
-      <p>{`${rfqDetails.expected_dod}`}</p>
+
       {/* <Button
         // type="submit"
         className="mr-2"
@@ -1305,7 +1305,7 @@ export const RfqsList = () => {
                   minDate={new Date()}
                   value={new Date(rfqDetails.expected_dod)}
                   onChange={(e) =>
-                    setRfqDetails({ ...rfqDetails, expected_dod: e.target.value.toString() })
+                    setRfqDetails({ ...rfqDetails, expected_dod: e.target.value?.toString() })
                   }
                 />
                 <label style={{ zIndex: 10 }} htmlFor="expected_dod">
@@ -1348,8 +1348,9 @@ export const RfqsList = () => {
                     filterBy="name"
                     value={ele.products_product_id}
                     options={productOptions}
-                    onChange={(e) => {
-                      handleFormChange(e, i)
+                    onChange={async (e) => {
+                      await handleFormChange(e, i)
+                      // autoSetProductPrice(e)
                       const productPrice = products.filter((item) => item.product_id === e.value)[0]
                         ?.Price
                       let data = [...itemList]
@@ -1487,7 +1488,9 @@ export const RfqsList = () => {
                         })),
                       },
                       rfq_sentto: {
-                        create: rfqDetails.rfq_email.map((item, i) => ({ email: item })),
+                        create: rfqDetails?.rfq_email.length
+                          ? rfqDetails?.rfq_email?.map((item, i) => ({ email: item }))
+                          : undefined,
                       },
                     })
                     setRfqDialog(!rfqDialog)
@@ -1530,20 +1533,8 @@ export const RfqsList = () => {
         // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
         // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
         expandedRows={expandedRows}
-        onRowToggle={(e) => {
-          // console.log(`index${e.id}`, e)
-          // const productID = e.data[0] ? e.data[0].id : null
-          console.log(e.data)
-          setExpandedRows(e.data)
-          // const rowProducts = tableRfqProducts.filter((prod) => productID === prod.rfq_id)
-
-          // console.log("rowProducts", rowProducts)
-          // console.log("activeRow", activeRow)
-
-          // setActiveRfq(rowProducts)
-        }}
+        onRowToggle={(e) => setExpandedRows(e.data)}
         rowExpansionTemplate={rowExpansionTemplate}
-        onRowExpand={(e) => console.log("onRowExpand,", e)}
       >
         <Column field="details" header="See More Details" expander={allowExpansion} />
         <Column
