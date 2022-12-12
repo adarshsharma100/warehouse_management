@@ -26,7 +26,7 @@ export default resolver.pipe(
           include: {
             rfq_products: {
               include: {
-                products:true
+                products: true,
               },
             },
           },

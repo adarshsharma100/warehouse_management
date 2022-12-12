@@ -158,6 +158,7 @@ export const RfqsList = () => {
     const activeProducts = active.map(({ products }) => {
       return products.product_id
     })
+    console.log("vendor_products", vendor_products)
     const activeProductsdetails = vendor_products
 
       .filter(({ products, vendor }) => {
@@ -422,13 +423,15 @@ export const RfqsList = () => {
   const rowExpansionTemplate = (data) => {
     // const rowProducts = tableRfqProducts.filter((prod) => data.id === prod.id)
     // setActiveRfq(rowProducts)
+    console.log("rowdata", { data })
     return (
-      <>
+      <div className="w-full">
+        <h3>Products List:</h3>
         <DataTable
           value={data.rfq_products}
+          responsiveLayout="scroll"
           showGridlines
           // header={renderHeader}
-
           stripedRows
           className="text-s datatable-responsive w-full"
           // paginator
@@ -464,7 +467,7 @@ export const RfqsList = () => {
             // className="text-center"
           />
         </DataTable>
-      </>
+      </div>
     )
   }
 
@@ -490,6 +493,8 @@ export const RfqsList = () => {
     // return rowData.orders.length > 0;
     return true
   }
+
+  console.log("tableRFQ", tableRFQ)
   return (
     <div>
       {updatingRfq && <LoaderFullScreen />}
@@ -1050,7 +1055,7 @@ export const RfqsList = () => {
                 })
               } catch (error: any) {}
             } else {
-              const rfq = await createRFQMutation({ ...rfqDetails })
+              // const rfq = await createRFQMutation({ ...rfqDetails })
               await createRFQMutation({
                 ...rfqDetails,
                 rfq_products: {
@@ -1208,8 +1213,8 @@ export const RfqsList = () => {
           </div>
         </form>
       </Dialog>
-      <div className="flex justify-content-between align-items-center mb-2 ">
-        <h4>Request for Quotations</h4>
+      <h4>Request for Quotations</h4>
+      <div className="flex justify-content-end align-items-center mb-2 ">
         <Button
           icon="pi pi-plus"
           label="Create RFQ"
@@ -1303,7 +1308,7 @@ export const RfqsList = () => {
                 <Calendar
                   id="expected_dod"
                   minDate={new Date()}
-                  value={new Date(rfqDetails.expected_dod)}
+                  // value={new Date(rfqDetails.expected_dod)}
                   onChange={(e) =>
                     setRfqDetails({ ...rfqDetails, expected_dod: e.target.value?.toString() })
                   }

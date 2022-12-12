@@ -30,7 +30,15 @@ export default resolver.pipe(
             expected_delivery: true,
             expiry_date: true,
             from_party: true,
-            purchase_order_products: true,
+            purchase_order_products: {
+              include: {
+                vendor_products: {
+                  include: {
+                    products: true,
+                  },
+                },
+              },
+            },
             // ordered_qty: true,
             po_id: true,
             po_description: true,

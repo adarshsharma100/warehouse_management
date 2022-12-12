@@ -11,6 +11,7 @@ const CreatePurchase_order = z.object({
   from_party: z.string(),
   agreement: z.string(),
   rfq_id: z.number().optional(),
+  purchase_order_products: z.unknown(),
 })
 
 export default resolver.pipe(
