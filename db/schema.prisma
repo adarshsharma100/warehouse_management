@@ -42,6 +42,7 @@ model products {
   description        String?              @db.LongText
   product_type       String               @db.VarChar(45)
   products_sku       String?              @unique(map: "products_sku_UNIQUE") @db.VarChar(45)
+  Price              Int?                 @default(0)
   inventory_products inventory_products[]
   rfq_products       rfq_products[]
   vendor_products    vendor_products[]
@@ -82,19 +83,18 @@ model purchase_order_status {
 }
 
 model vendor {
-  vendor_id        Int               @id @unique(map: "vendor_id_UNIQUE") @default(autoincrement())
-  vendor_code      String            @unique(map: "vendor_code_UNIQUE") @db.VarChar(45)
-  vendor_email     String            @unique(map: "vendor_email_UNIQUE") @db.VarChar(45)
-  vendor_city      String            @db.VarChar(45)
-  vendor_contact   String            @db.VarChar(45)
-  vendor_gstin     String            @unique(map: "vendor_gstin_UNIQUE") @db.VarChar(45)
-  vendor           String            @db.VarChar(45)
-  address          String            @db.VarChar(145)
-  credit_period    String            @db.VarChar(45)
-  lead_time        String            @db.VarChar(45)
-  vendor_id_helper String            @default("TIF_VENDOR_") @db.VarChar(45)
-  purchase_order   purchase_order[]
-  vendor_products  vendor_products[]
+  vendor_id       Int               @id @unique(map: "vendor_id_UNIQUE") @default(autoincrement())
+  vendor_code     String            @unique(map: "vendor_code_UNIQUE") @db.VarChar(45)
+  vendor_email    String            @unique(map: "vendor_email_UNIQUE") @db.VarChar(45)
+  vendor_city     String            @db.VarChar(45)
+  vendor_contact  String            @db.VarChar(45)
+  vendor_gstin    String            @unique(map: "vendor_gstin_UNIQUE") @db.VarChar(45)
+  vendor          String            @db.VarChar(45)
+  address         String            @db.VarChar(145)
+  credit_period   String            @db.VarChar(45)
+  lead_time       String            @db.VarChar(45)
+  purchase_order  purchase_order[]
+  vendor_products vendor_products[]
 }
 
 model vendor_products {
@@ -118,9 +118,10 @@ model rfq {
   id              Int              @id @unique(map: "rfc_id_key") @default(autoincrement())
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @default(now())
-  expected_dod    String           @db.VarChar(45)
+  expected_dod    String           @db.VarChar(65)
   rfq_code        String           @db.VarChar(45)
   rfq_description String           @db.VarChar(155)
+  active          Int              @default(1) @db.TinyInt
   purchase_order  purchase_order[]
   rfq_products    rfq_products[]
   rfq_sentto      rfq_sentto[]

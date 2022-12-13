@@ -36,7 +36,6 @@ export default resolver.pipe(
             address: true,
             credit_period: true,
             lead_time: true,
-            vendor_id_helper: true,
           },
         }),
     })

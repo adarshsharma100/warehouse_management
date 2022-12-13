@@ -27,7 +27,7 @@ const ITEMS_PER_PAGE = 100
 export const ProductsList = () => {
   const router = useRouter()
   const page = Number(router.query.page) || 0
-  const [{ products }, { isProductsLoading }] = useQuery(getProducts, {
+  const [{ products }, { isLoading: isProductsLoading }] = useQuery(getProducts, {
     orderBy: { product_id: "asc" },
   })
   const [prefix, { isLoading }] = useQuery(getPrefix, { name: "PRODUCT" })
@@ -53,6 +53,7 @@ export const ProductsList = () => {
 
   return (
     <div className="grid">
+      <Toast ref={toast} />
       <div className="col-12 ">
         <div className="card flex justify-content-between align-items-center">
           <h2>Products</h2>

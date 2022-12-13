@@ -3,12 +3,9 @@ import db from "db"
 import { z } from "zod"
 
 const CreateVendor_product = z.object({
-  // vp_id: z.string(),
   unit_price: z.number(),
   vendor_vendor_id: z.number(),
   products_product_id: z.number(),
-  enabled: z.number(),
-  priority: z.number(),
   vendor_sku: z.string(),
 })
 
