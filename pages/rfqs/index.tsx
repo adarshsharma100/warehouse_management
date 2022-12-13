@@ -291,6 +291,7 @@ export const RfqsList = () => {
           icon: "pi pi-pencil",
           command: () => {
             setRfqEditState(true)
+            console.log("activeRow", activeRow.expected_do)
             setRfqDetails({
               rfq_code: activeRow.rfq_code,
               rfq_description: activeRow.rfq_description,
@@ -1214,6 +1215,7 @@ export const RfqsList = () => {
                 //
                 // }
               }}
+              setRfqEditState
               className="col-3 mr-2 mt-2"
               label={rfqEditState ? "UPDATE" : "CREATE"}
             />
@@ -1449,7 +1451,7 @@ export const RfqsList = () => {
                   )
 
                   delete removemail.rfq_email
-                  const data = await updateRFQMutation({
+                  const data = await {
                     ...removemail,
                     // expected_dod: rfqDetails.expected_dod.toString(),
                     active: 1,
@@ -1478,7 +1480,7 @@ export const RfqsList = () => {
                         },
                       },
                     },
-                  })
+                  }
                   console.log(data)
                   setRfqDialog(!rfqDialog)
                   await refetch()

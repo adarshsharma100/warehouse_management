@@ -22,7 +22,7 @@ import getVendor_products from "app/vendor_products/queries/getVendor_products"
 import getRfqs from "app/rfqs/queries/getRfqs"
 import createPurchase_order_product from "app/purchase_order_products/mutations/createPurchase_order_product"
 import createPurchase_order from "app/purchase_orders/mutations/createPurchase_order"
-import { number, undefined } from "zod"
+import { date, number, undefined } from "zod"
 import createManyPurchase_order_product from "app/purchase_order_products/mutations/createManyPurchase_order_product"
 import deletePurchase_order from "app/purchase_orders/mutations/deletePurchase_order"
 import deletePurchase_order_product from "app/purchase_order_products/mutations/deletePurchase_order_product"
@@ -79,16 +79,10 @@ export const Purchase_ordersList = () => {
   const [{ prefixes }] = useQuery(getPrefixes, {
     orderBy: { id: "asc" },
   })
-  console.log("prefixes:", prefixes)
   const [createPurchaseOrderMutation] = useMutation(createPurchase_order)
   const [createManyPurchaseOrderProductsMutation] = useMutation(createManyPurchase_order_product)
   const [deletePurchase_orderMutation] = useMutation(deletePurchase_order)
   const [deletePurchase_orderParoductMutation] = useMutation(deletePurchase_order_product)
-  // console.log("rfqs: ", rfqs)
-  // console.log("vendor_products: ", vendor_products)
-  // console.log("vendors: ", vendors)
-  // console.log("purchase_order_products: ", purchase_order_products)
-  // console.log("purchase_orders: ", purchase_orders)
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
   const goToNextPage = () => router.push({ query: { page: page + 1 } })
   const [purchaseDialog, setPurchaseDialog] = useState(false)
@@ -120,7 +114,10 @@ export const Purchase_ordersList = () => {
     rfq_id: "",
     vendor_email: "",
   })
+  console.log(purchaseDetails)
   const [activeRow, setActiveRow] = useState({})
+  const [poEditState, setPoEditState] = useState(false)
+
   const menu = useRef<Menu>(null)
 
   const rfqOptions = rfqs.map(({ id, rfq_description, rfq_code }) => {
@@ -150,8 +147,10 @@ export const Purchase_ordersList = () => {
       ...ele,
       product_name: ele?.vendor_products?.products.name,
       product_sku: ele?.vendor_products?.products.products_sku,
+      products_product_id: ele?.vendor_products.products?.product_id,
     }
   })
+  // console.log("tableProducts", tableProducts)
 
   const addFields = () => {
     let newfield = {
@@ -197,15 +196,44 @@ export const Purchase_ordersList = () => {
     {
       label: "Options",
       items: [
+        // {
+        //   label: "Delete",
+        //   icon: "pi pi-trash",
+        //   command: async () => {
+        //     await deletePurchase_orderParoductMutation({
+        //       purchase_order_po_id: activeRow.po_id,
+        //     })
+        //     await deletePurchase_orderMutation({ po_id: activeRow.po_id })
+        //     await refetch()
+        //   },
+        // },
         {
-          label: "Delete",
-          icon: "pi pi-trash",
-          command: async () => {
-            await deletePurchase_orderParoductMutation({
-              purchase_order_po_id: activeRow.po_id,
+          label: "Edit",
+          icon: "pi pi-pencil",
+          command: () => {
+            setPoEditState(true)
+            console.log("activeRow", activeRow.expiry_date)
+            const expiry = activeRow.expiry_date
+            // const expected = `${new Date(activeRow.expected_delivery)}`
+
+            setPurchaseDetails({
+              vendor_vendor_id: activeRow.vendor_vendor_id,
+              po_code: activeRow.po_code,
+              po_description: activeRow.po_description,
+              expiry_date: moment(),
+              // expiry_date: expiry,
+              // expected_delivery: expected,
+              from_party: activeRow.from_party,
+              agreement: activeRow.agreement,
+              rfq_id: activeRow.rfq_id,
+              vendor_email: activeRow.vendor_email ? activeRow.vendor_email : "",
             })
-            await deletePurchase_orderMutation({ po_id: activeRow.po_id })
-            await refetch()
+            const active = tableProducts.filter(
+              (ele) => activeRow.po_id === ele.purchase_order_po_id
+            )
+
+            setItemList(active)
+            setPurchaseDialog(true)
           },
         },
         {
@@ -316,8 +344,11 @@ export const Purchase_ordersList = () => {
     )
   }
 
-  // setProductOptions(createProductOptions)
-  console.log("itemlist", itemList)
+  useEffect(() => {
+    const vendorID = purchaseDetails.vendor_vendor_id
+    const filterProducts = productOptions.filter((ele) => ele.vendorID.includes(Number(vendorID)))
+    setFilterProductOptions(filterProducts)
+  }, [purchaseDetails])
   return (
     <div>
       {/* <Dialog
@@ -415,23 +446,6 @@ export const Purchase_ordersList = () => {
             // async
             () => {
               console.log("purchase details", purchaseDetails)
-              // const rfc = await createRFQMutation({ ...rfqDetails })
-              // console.log(" rfc:132 ", rfc)
-              // const many = itemList.map((ele) => {
-              //   return {
-              //     rfq_id: rfc.id,
-              //     price_per_unit: Number(ele.price_per_unit),
-              //     products_product_id: Number(ele.products_product_id),
-              //     quantity: Number(ele.quantity),
-              //   }
-              // })
-              // console.log("many: ", many)
-              // try {
-              //   await createRFQProductMutation(many)
-              // } catch (error: any) {
-              //   console.log("error: ", error)
-              // }
-              // await refetch()
             }
           }
           className="p-fluid"
@@ -454,10 +468,6 @@ export const Purchase_ordersList = () => {
                     vendor_vendor_id: e.target.value,
                     vendor_email: email,
                   })
-                  const filterProducts = productOptions.filter((ele) =>
-                    ele.vendorID.includes(e.value)
-                  )
-                  setFilterProductOptions(filterProducts)
                 }}
                 optionLabel="name"
                 filter
@@ -658,7 +668,9 @@ export const Purchase_ordersList = () => {
               className=" mr-2"
               label="ADD"
               onClick={async (e) => {
-                // console.log(purchaseDetails)
+                if (purchaseDialog) {
+                  console.log(edit)
+                }
                 try {
                   const purchaseOrder = await createPurchaseOrderMutation({
                     vendor_vendor_id: Number(purchaseDetails.vendor_vendor_id),
@@ -849,41 +861,6 @@ export const Purchase_ordersList = () => {
           body={(rowData) => {
             return (
               <div>
-                {/* <Button
-                  // label="Edit"
-                  icon="pi pi-pencil"
-                  className="m-1"
-                  // onClick={() => {
-                  //   setActiveVendor(true)
-                  //   setVendorDetails({ ...rowData })
-                  //   setVendorDialog(true)
-                  // }}
-                /> */}
-                {/* <Button
-                  label="Delete"
-                  icon="pi pi-trash "
-                  className="mb-1 w-8rem"
-                  onClick={async () => {
-                    await deletePurchase_orderParoductMutation({
-                      purchase_order_po_id: rowData.po_id,
-                    })
-                    await deletePurchase_orderMutation({ po_id: rowData.po_id })
-                    await refetch()
-                  }}
-                />
-                <Button
-                  label=" Products"
-                  icon="pi pi-external-link"
-                  className="w-8rem"
-                  onClick={() => {
-                    const active = tableProducts.filter(({ purchase_order_po_id }) => {
-                      return purchase_order_po_id === rowData.po_id
-                    })
-                    console.log("active: ", active)
-                    setActiveProducts(active)
-                    setProductDialog(true)
-                  }}
-                /> */}
                 <Menu model={items} popup ref={menu} id="popup_menu" />
                 <Button
                   // label="Show"

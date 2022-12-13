@@ -28,11 +28,11 @@ const sendEmail = async (data, po) => {
       },
     },
   })
-  const { address, vendor, vendor_id, vendor_city, vendor_contact, vendor_gstin } = vendorDetails
-  console.log(vendorDetails?.address)
+  const { address, vendor, vendor_id, vendor_city, vendor_contact, vendor_gstin, vendor_email } =
+    vendorDetails
   const { po_id, po_code, po_description, from_party, expected_delivery, expiry_date, agreement } =
     po
-  const email = "varunram.66@gmail.com"
+  const email = vendor_email ? vendor_email : "varunram.66@gmail.com"
   mail(
     "care@robocraze.com",
     email,
