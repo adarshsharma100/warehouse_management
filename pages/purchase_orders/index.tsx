@@ -7,6 +7,7 @@ import { useRouter } from "next/router"
 import getPurchase_orders from "app/purchase_orders/queries/getPurchase_orders"
 import Layout from "layouts/Layout"
 import { Column } from "primereact/column"
+import { Divider } from "primereact/divider"
 import { DataTable } from "primereact/datatable"
 import { Button } from "primereact/button"
 import { Dialog } from "primereact/dialog"
@@ -32,6 +33,7 @@ import getProducts from "app/products/queries/getProducts"
 import { ProductsList } from "pages/products"
 import { Chips } from "primereact/chips"
 import { Vendor } from "pages/vendors/[vendorId]"
+import getPrefixes from "app/prefixes/queries/getPrefixes.ts"
 
 const ITEMS_PER_PAGE = 100
 
@@ -73,6 +75,11 @@ export const Purchase_ordersList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
+
+  const [{ prefixes }] = useQuery(getPrefixes, {
+    orderBy: { id: "asc" },
+  })
+  console.log("prefixes:", prefixes)
   const [createPurchaseOrderMutation] = useMutation(createPurchase_order)
   const [createManyPurchaseOrderProductsMutation] = useMutation(createManyPurchase_order_product)
   const [deletePurchase_orderMutation] = useMutation(deletePurchase_order)
@@ -256,7 +263,7 @@ export const Purchase_ordersList = () => {
     const vendorProducts = vendor_products.filter((item) => item.vendor_vendor_id === currentVendor)
     const vpId = vendorProducts.filter(
       (ele) => ele.products_product_id === Number(itemList[i]?.products_product_id)
-    )[0].vp_id
+    )[0]?.vp_id
 
     return vpId
   }
@@ -313,7 +320,7 @@ export const Purchase_ordersList = () => {
   console.log("itemlist", itemList)
   return (
     <div>
-      <Dialog
+      {/* <Dialog
         header="Product List"
         visible={productDialog}
         style={{ width: "60vw" }}
@@ -361,7 +368,7 @@ export const Purchase_ordersList = () => {
             // className="text-center"
           />
         </DataTable>
-      </Dialog>
+      </Dialog> */}
       <h4>Purchase Orders</h4>
       <div className="flex justify-content-end mb-2 ">
         <Button
@@ -392,6 +399,7 @@ export const Purchase_ordersList = () => {
                 received_quantity: 0,
               },
             ])
+            setFilterProductOptions([])
           }}
         ></Button>
       </div>
@@ -561,99 +569,94 @@ export const Purchase_ordersList = () => {
                 </label>
               </div>
             </div>
-            {/* <div className="field col-12 lg:col-4 mt-2">
-              <div style={{ position: "relative" }}>
-                <Chips
-                  // className="lg:col-4"
-                  // style={{ width: "33%" }}
-                  name="email"
-                  value={purchaseDetails.po_email}
-                  placeholder="Email"
-                  onChange={(e) =>
-                    setPurchaseDetails({ ...purchaseDetails, po_email: e.target.value })
-                  }
-                />
-                <p
-                  style={{ position: "absolute", bottom: "-20px", left: "10px" }}
-                  className="text-xs"
-                >
-                  *Press Enter key before Entering next emails.
-                </p>
-              </div>
-            </div> */}
-          </div>
-          <div>Select Products</div>
-          <hr />
+            <div className="col-12 mt-3 mb-3 ">
+              <h6>Select Products</h6>
+              <hr />
+            </div>
+            {itemList.map((ele, i) => (
+              <>
+                <div key={`PO-product-${i}`} className="field col-12 lg:col-7 mt-2">
+                  <Dropdown
+                    // className="mr-2 w-20rem"
+                    name="products_product_id"
+                    // disabled={editState}
+                    filter
+                    showClear
+                    filterBy="name"
+                    placeholder="Select a Product"
+                    optionLabel="name"
+                    value={ele?.products_product_id}
+                    options={filterProductOptions}
+                    onChange={(e) => {
+                      handleFormChange(e, i)
+                      const productPrice = products.filter((item) => item.product_id === e.value)[0]
+                        ?.Price
+                      let data = [...itemList]
+                      e.target
+                        ? (data[i].price_per_unit = productPrice)
+                        : (data[i].price_per_unit = 0)
+                      setItemList(data)
+                      // console.log(findProductVpID(i))
+                    }}
+                  />
+                </div>
 
-          {itemList.map((ele, i) => {
-            return (
-              <div key={i} className="flex justify-content-between  align-items-center mt-2 pt-4 ">
-                <Dropdown
-                  className="mr-2 w-20rem"
-                  name="products_product_id"
-                  // disabled={editState}
-                  filter
-                  showClear
-                  filterBy="name"
-                  placeholder="Select a Product"
-                  optionLabel="name"
-                  value={ele?.products_product_id}
-                  options={filterProductOptions}
-                  onChange={(e) => {
-                    handleFormChange(e, i)
-                    const productPrice = products.filter((item) => item.product_id === e.value)[0]
-                      ?.Price
-                    let data = [...itemList]
-                    e.target
-                      ? (data[i].price_per_unit = productPrice)
-                      : (data[i].price_per_unit = 0)
-                    setItemList(data)
-                    // console.log(findProductVpID(i))
-                  }}
-                />
-                <div className="p-label ">
-                  <label className="mr-2">Price per unit</label>
-                  <InputNumber
-                    name="price_per_unit"
-                    className="mr-2 w-20rem"
-                    value={Number(ele.price_per_unit)}
-                    onChange={(e) => handleFormChange(e, i)}
-                  />
+                <div className="field col-12 lg:col-2 mt-2">
+                  <span className="p-float-label ">
+                    <InputNumber
+                      name="price_per_unit"
+                      // className="mr-2 w-20rem"
+                      value={Number(ele.price_per_unit)}
+                      onChange={(e) => handleFormChange(e, i)}
+                    />
+                    <label>Price per unit</label>
+                  </span>
                 </div>
-                <div className="p-label ">
-                  <label className="mr-2">Quantity</label>
-                  <InputNumber
-                    name="quantity"
-                    value={Number(ele.quantity)}
-                    className="mr-2 w-20rem"
-                    // onChange={(e) => handleFormChange(e, i)}
-                    onChange={(e) => handleFormChange(e, i)}
-                  />
+                <div className="field col-12 lg:col-2 mt-2">
+                  <span className="p-float-label ">
+                    <InputNumber
+                      name="quantity"
+                      value={Number(ele.quantity)}
+                      // className="mr-2 w-20rem"
+                      onChange={(e) => handleFormChange(e, i)}
+                    />
+                    <label className="mr-2">Quantity</label>
+                  </span>
                 </div>
-                <Button
+                <div className="field col-6 lg:col-1 mt-2">
+                  <span className="p-buttonset">
+                    {i === itemList.length - 1 && (
+                      <Button type="button" label="+" onClick={addFields} />
+                    )}
+                    {itemList.length > 1 && (
+                      <Button
+                        type="button"
+                        label="-"
+                        className="p-button-secondary"
+                        onClick={(e) => {
+                          removeFields(i)
+                        }}
+                      />
+                    )}
+                  </span>
+                </div>
+
+                {/* <Button
                   type="button"
                   disabled={itemList.length <= 1}
                   icon="pi pi-minus"
                   className="m-2 p-button-rounded "
                   onClick={() => removeFields(i)}
-                />
-              </div>
-            )
-          })}
-
-          <div className="flex justify-content-end">
-            <Button
-              type="button"
-              icon="pi pi-plus"
-              className="m-2 p-button-rounded "
-              onClick={addFields}
-            />
+                /> */}
+              </>
+            ))}
           </div>
-          <div className="flex ">
+          <Divider />
+          <div className="flex mt-">
             <Button
               type="button"
               className=" mr-2"
-              label="CREATE"
+              label="ADD"
               onClick={async (e) => {
                 // console.log(purchaseDetails)
                 try {
@@ -665,7 +668,7 @@ export const Purchase_ordersList = () => {
                     expected_delivery: new Date(purchaseDetails.expected_delivery),
                     from_party: purchaseDetails.from_party,
                     agreement: purchaseDetails.agreement,
-                    vendor_email: purchaseDetails.vendor_email,
+                    // vendor_email: purchaseDetails.vendor_email,
                     // rfq_id: Number(purchaseDetails.rfq_id) ?? undefined,
                     purchase_order_products: {
                       create: itemList.map((ele) => ({
@@ -770,6 +773,7 @@ export const Purchase_ordersList = () => {
             // className="text-center"
           /> */}
         <Column field="details" header="See More Details" expander={true} />
+        <Column field="po_id" header="ID" body={({ po_id }) => `${prefixes[2].prefix}-${po_id}`} />
 
         <Column
           field="po_description"

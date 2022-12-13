@@ -39,6 +39,8 @@ import axios from "axios"
 import Loading from "components/loading"
 import LoaderFullScreen from "components/LoaderFullScreen"
 
+import getPrefixes from "app/prefixes/queries/getPrefixes.ts"
+
 const ITEMS_PER_PAGE = 100
 
 export const RfqsList = () => {
@@ -75,6 +77,11 @@ export const RfqsList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
+
+  const [{ prefixes }] = useQuery(getPrefixes, {
+    orderBy: { id: "asc" },
+  })
+  console.log("prefixes:", prefixes)
   const [sendDialog, setSendDialog] = useState(false)
   const [createRFQMutation, { isLoading: creatingRfq, error: createRFQMutationError }] =
     useMutation(createRfq)
@@ -1343,7 +1350,7 @@ export const RfqsList = () => {
             </div>
             {itemList.map((ele, i) => (
               <>
-                <div key={`product-${i}`} className="field col-12 lg:col-7 mt-2">
+                <div key={`RFQ-product-${i}`} className="field col-12 lg:col-7 mt-2">
                   <Dropdown
                     name="products_product_id"
                     // disabled={editState}
@@ -1545,7 +1552,8 @@ export const RfqsList = () => {
         <Column
           field="id"
           header="ID"
-          body={({ id }) => `RFQ-${id}`}
+          body={({ id }) => `${prefixes[1].prefix}-${id}`}
+
           // className="text-center"
         />
         <Column
