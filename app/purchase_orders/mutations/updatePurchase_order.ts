@@ -2,10 +2,7 @@ import { resolver } from "@blitzjs/rpc"
 import db from "db"
 import { z } from "zod"
 
-const UpdatePurchase_order = z.object({
-  po_id: z.number(),
-  name: z.string(),
-})
+const UpdatePurchase_order = z.unknown()
 
 export default resolver.pipe(
   resolver.zod(UpdatePurchase_order),

@@ -22,6 +22,7 @@ import getVendor_products from "app/vendor_products/queries/getVendor_products"
 import getRfqs from "app/rfqs/queries/getRfqs"
 import createPurchase_order_product from "app/purchase_order_products/mutations/createPurchase_order_product"
 import createPurchase_order from "app/purchase_orders/mutations/createPurchase_order"
+import updatePurchase_order from "app/purchase_orders/mutations/updatePurchase_order"
 import { date, number, undefined } from "zod"
 import createManyPurchase_order_product from "app/purchase_order_products/mutations/createManyPurchase_order_product"
 import deletePurchase_order from "app/purchase_orders/mutations/deletePurchase_order"
@@ -80,6 +81,8 @@ export const Purchase_ordersList = () => {
     orderBy: { id: "asc" },
   })
   const [createPurchaseOrderMutation] = useMutation(createPurchase_order)
+  const [updatePurchaseOrderMutation] = useMutation(updatePurchase_order)
+
   const [createManyPurchaseOrderProductsMutation] = useMutation(createManyPurchase_order_product)
   const [deletePurchase_orderMutation] = useMutation(deletePurchase_order)
   const [deletePurchase_orderParoductMutation] = useMutation(deletePurchase_order_product)
@@ -112,9 +115,8 @@ export const Purchase_ordersList = () => {
     from_party: "",
     agreement: "",
     rfq_id: "",
-    vendor_email: "",
   })
-  console.log(purchaseDetails)
+  // console.log(purchaseDetails)
   const [activeRow, setActiveRow] = useState({})
   const [poEditState, setPoEditState] = useState(false)
 
@@ -212,21 +214,29 @@ export const Purchase_ordersList = () => {
           icon: "pi pi-pencil",
           command: () => {
             setPoEditState(true)
-            console.log("activeRow", activeRow.expiry_date)
-            const expiry = activeRow.expiry_date
-            // const expected = `${new Date(activeRow.expected_delivery)}`
+            const expiry = new Date(activeRow.expiry_date)
+            const expected = new Date(activeRow.expected_delivery)
+
+            const {
+              vendor_vendor_id,
+              po_code,
+              po_description,
+              expiry_date,
+              expected_delivery,
+              from_party,
+              agreement,
+              rfq_id,
+            } = activeRow
 
             setPurchaseDetails({
-              vendor_vendor_id: activeRow.vendor_vendor_id,
-              po_code: activeRow.po_code,
-              po_description: activeRow.po_description,
-              expiry_date: moment(),
-              // expiry_date: expiry,
-              // expected_delivery: expected,
-              from_party: activeRow.from_party,
-              agreement: activeRow.agreement,
-              rfq_id: activeRow.rfq_id,
-              vendor_email: activeRow.vendor_email ? activeRow.vendor_email : "",
+              vendor_vendor_id: vendor_vendor_id,
+              po_code: po_code,
+              po_description: po_description,
+              expiry_date: moment(expiry_date, "DD-MM-YYYY").toDate(),
+              expected_delivery: moment(expected_delivery, "DD-MM-YYYY").toDate(),
+              from_party: from_party,
+              agreement: agreement,
+              rfq_id: rfq_id,
             })
             const active = tableProducts.filter(
               (ele) => activeRow.po_id === ele.purchase_order_po_id
@@ -349,63 +359,16 @@ export const Purchase_ordersList = () => {
     const filterProducts = productOptions.filter((ele) => ele.vendorID.includes(Number(vendorID)))
     setFilterProductOptions(filterProducts)
   }, [purchaseDetails])
+
   return (
     <div>
-      {/* <Dialog
-        header="Product List"
-        visible={productDialog}
-        style={{ width: "60vw" }}
-        // footer={renderFooter}
-        onHide={() => setProductDialog(false)}
-      >
-        <DataTable
-          value={activeProducts}
-          showGridlines
-          // header={renderHeader}
-          scrollable
-          scrollHeight="60vh"
-          stripedRows
-          className="text-s datatable-responsive"
-          // paginator
-          // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
-          // rows={PAGINATION_VARIABLES.rows}
-          // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
-          // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
-        >
-          <Column
-            field="pop_id"
-            header="ID"
-            // className="text-center"
-          />
-          <Column
-            field="product_sku"
-            header="Product SKU"
-            // className="text-center"
-          />
-          <Column
-            field="product_name"
-            header="Name"
-            // className="text-center"
-          />
-
-          <Column
-            field="price_per_unit"
-            header="Price / Unit"
-            // className="text-center"
-          />
-          <Column
-            field="quantity"
-            header="Quantity"
-            // className="text-center"
-          />
-        </DataTable>
-      </Dialog> */}
       <h4>Purchase Orders</h4>
       <div className="flex justify-content-end mb-2 ">
         <Button
           icon="pi pi-plus"
           label="Create PO"
           onClick={() => {
+            setPoEditState(false)
             setPurchaseDialog(!purchaseDialog)
             setPurchaseDetails({
               vendor_vendor_id: "",
@@ -462,11 +425,9 @@ export const Purchase_ordersList = () => {
                 value={purchaseDetails.vendor_vendor_id}
                 options={vendorOptions}
                 onChange={(e) => {
-                  const email = vendors.filter((ele) => ele.vendor_id === e.value)[0]?.vendor_email
                   setPurchaseDetails({
                     ...purchaseDetails,
                     vendor_vendor_id: e.target.value,
-                    vendor_email: email,
                   })
                 }}
                 optionLabel="name"
@@ -668,37 +629,90 @@ export const Purchase_ordersList = () => {
               className=" mr-2"
               label="ADD"
               onClick={async (e) => {
-                if (purchaseDialog) {
-                  console.log(edit)
-                }
-                try {
-                  const purchaseOrder = await createPurchaseOrderMutation({
-                    vendor_vendor_id: Number(purchaseDetails.vendor_vendor_id),
-                    po_code: purchaseDetails.po_code,
-                    po_description: purchaseDetails.po_description,
-                    expiry_date: new Date(purchaseDetails.expiry_date),
-                    expected_delivery: new Date(purchaseDetails.expected_delivery),
-                    from_party: purchaseDetails.from_party,
-                    agreement: purchaseDetails.agreement,
-                    // vendor_email: purchaseDetails.vendor_email,
-                    // rfq_id: Number(purchaseDetails.rfq_id) ?? undefined,
-                    purchase_order_products: {
-                      create: itemList.map((ele) => ({
-                        quantity: Number(ele.quantity),
-                        price_per_unit: Number(ele.price_per_unit),
-                        received_quantity: 0,
-                        vendor_products: {
-                          connect: {
-                            vp_id: Number(ele.vendor_products_vp_id),
+                console.log("purchaseDetails", purchaseDetails)
+                console.log("activeRow", activeRow)
+                console.log("itemList", itemList)
+                const data = purchase_order_products
+                  .filter((ele) => ele.purchase_order_po_id === activeRow.po_id)
+                  .map((ele) => ele.pop_id)
+                console.log("data", data)
+                // const existingProductsPopIDs = [...itemList.map((ele) => ele.pop_id)]
+                const newProductsPopIDs = itemList.map((ele) => ele.pop_id)
+                // console.log(existingProductsPopIDs)
+                const newProducts = itemList.filter((ele) => !ele.pop_id)
+                const existingProducts = itemList.filter((ele) => ele.pop_id)
+                const deletelist = data.filter((item) => {
+                  const array = itemList.map((ele) => ele.pop_id)
+                  return !array.includes(item)
+                })
+                if (poEditState) {
+                  // updatePurchaseOrderMutation
+
+                  try {
+                    const update = await updatePurchaseOrderMutation({
+                      po_id: activeRow.po_id,
+                      ...purchaseDetails,
+                      purchase_order_products: {
+                        create: newProducts.map((ele) => ({
+                          quantity: Number(ele.quantity),
+                          price_per_unit: Number(ele.price_per_unit),
+                          received_quantity: 0,
+                          vendor_products: {
+                            connect: {
+                              vp_id: Number(ele.vendor_products_vp_id),
+                            },
+                          },
+                        })),
+                        updateMany: existingProducts.map((ele) => ({
+                          where: {
+                            pop_id: ele.pop_id,
+                          },
+                          data: {
+                            price_per_unit: Number(ele.price_per_unit),
+                            quantity: Number(ele.quantity),
+                          },
+                        })),
+                        deleteMany: {
+                          pop_id: {
+                            in: deletelist,
                           },
                         },
-                      })),
-                    },
-                  })
-                  setPurchaseDialog(!purchaseDialog)
-                  console.log("purchaseOrder: ", purchaseOrder)
-                } catch (error) {
-                  console.log("error: ", error)
+                      },
+                    })
+
+                    console.log(update)
+                  } catch (error) {
+                    console.log(error)
+                  }
+                } else {
+                  try {
+                    const purchaseOrder = await createPurchaseOrderMutation({
+                      vendor_vendor_id: Number(purchaseDetails.vendor_vendor_id),
+                      po_code: purchaseDetails.po_code,
+                      po_description: purchaseDetails.po_description,
+                      expiry_date: new Date(purchaseDetails.expiry_date),
+                      expected_delivery: new Date(purchaseDetails.expected_delivery),
+                      from_party: purchaseDetails.from_party,
+                      agreement: purchaseDetails.agreement,
+                      // rfq_id: Number(purchaseDetails.rfq_id) ?? undefined,
+                      purchase_order_products: {
+                        create: itemList.map((ele) => ({
+                          quantity: Number(ele.quantity),
+                          price_per_unit: Number(ele.price_per_unit),
+                          received_quantity: 0,
+                          vendor_products: {
+                            connect: {
+                              vp_id: Number(ele.vendor_products_vp_id),
+                            },
+                          },
+                        })),
+                      },
+                    })
+                    setPurchaseDialog(!purchaseDialog)
+                    console.log("purchaseOrder: ", purchaseOrder)
+                  } catch (error) {
+                    console.log("error: ", error)
+                  }
                 }
 
                 // const many = itemList.map((ele) => {
@@ -727,6 +741,7 @@ export const Purchase_ordersList = () => {
                 //   console.log("error: ", error)
                 // }
                 await refetch()
+                setPurchaseDialog(!purchaseDialog)
               }}
             />
             <Button
