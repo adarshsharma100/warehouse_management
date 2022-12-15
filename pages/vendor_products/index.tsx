@@ -1,8 +1,5 @@
-import { Suspense, useState } from "react"
-import { Routes } from "@blitzjs/next"
-import Head from "next/head"
-import Link from "next/link"
-import { useMutation, usePaginatedQuery } from "@blitzjs/rpc"
+import { Suspense, useRef, useState } from "react"
+import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
 
 import getVendor_products from "app/vendor_products/queries/getVendor_products"
@@ -21,37 +18,39 @@ import { FileUpload } from "primereact/fileupload"
 import Loading from "components/loading"
 import papa from "papaparse"
 import downloadCsv from "download-csv"
+import { Toast } from "primereact/toast"
+import { InputNumber } from "primereact/inputnumber"
 
 const ITEMS_PER_PAGE = 100
 
 export const Vendor_productsList = () => {
   const router = useRouter()
   const page = Number(router.query.page) || 0
-  const [{ vendor_products, hasMore }, { refetch }] = usePaginatedQuery(getVendor_products, {
-    orderBy: { vp_id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-  })
-  const [{ vendors }] = usePaginatedQuery(getVendors, {
-    orderBy: { vendor_id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-  })
-  console.log("vendor_products: ", vendor_products)
 
-  const [{ products }] = usePaginatedQuery(getProducts, {
-    orderBy: { product_id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
+  const [{ vendor_products }, { refetch, isLoading }] = useQuery(getVendor_products, {
+    orderBy: { vp_id: "asc" },
   })
-  console.log("vendors", vendors)
-  console.log("products", products)
+
+  const [{ vendors }, { isLoading: isVendorsLoading }] = useQuery(getVendors, {
+    orderBy: { vendor_id: "asc" },
+  })
+
+  const [{ products }, { isLoading: isProductsLoading }] = useQuery(getProducts, {
+    orderBy: { product_id: "asc" },
+  })
+
+  const toast = useRef(null)
+
+  const [errorProducts, setErrorProducts] = useState([])
   const [vendorDialog, setVendorDialog] = useState(false)
-  const [selectedVendor, setSelectedVendor] = useState("")
-  const [selectedProduct, setSelectedProduct] = useState("")
-  const [unitPrice, setUnitPrice] = useState("")
+  const [newProduct, setNewProduct] = useState({
+    unit_price: 0,
+    vendor_vendor_id: 0,
+    products_product_id: 0,
+    vendor_sku: "",
+  })
+  const { unit_price, vendor_vendor_id, products_product_id, vendor_sku } = newProduct
   const [editState, setEditState] = useState(false)
-  console.log("products: ", products)
   const [createVendorProductMutation] = useMutation(createVendor_product)
   // const [updateVendorMutation] = useMutation(updateVendor)
   const [deleteVendorProductMutation] = useMutation(deleteVendor_product)
@@ -63,6 +62,9 @@ export const Vendor_productsList = () => {
   const vendorOptions = vendors.map(({ vendor, vendor_id }) => {
     return { name: vendor, value: vendor_id }
   })
+
+  if (isLoading || isVendorsLoading || isProductsLoading) return <div>Loading</div>
+
   const renderFooter = () => {
     return (
       <div className="flex justify-content-end">
@@ -71,21 +73,24 @@ export const Vendor_productsList = () => {
           label="ADD"
           onClick={async () => {
             await createVendorProductMutation({
-              unit_price: Number(unitPrice),
-              vendor_vendor_id: Number(selectedVendor),
-              products_product_id: Number(selectedProduct),
+              unit_price,
+              vendor_vendor_id,
+              products_product_id,
+              vendor_sku,
             })
             await refetch()
             setVendorDialog(false)
-            setSelectedVendor("")
-            setSelectedProduct("")
-            setUnitPrice("")
+            setNewProduct({
+              unit_price: 0,
+              vendor_vendor_id: 0,
+              products_product_id: 0,
+              vendor_sku: "",
+            })
           }}
         />
       </div>
     )
   }
-  // console.log("vendors: ", vendors)
   const tableVendorProducts = vendor_products.map(
     ({ products, unit_price, vendor, vp_id, vendor_sku }) => {
       return {
@@ -102,227 +107,53 @@ export const Vendor_productsList = () => {
     }
   )
   const onBasicUpload = async (e) => {
-    // console.log("FileUpload", e)
-    // await papa.parse(e.files[0], (data) => {
-    //   console.log("FileUpload", data)
-    // })
-
-    const csv = []
+    setErrorProducts([])
+    let index = 2
     papa.parse(e.files[0], {
       header: true,
-      step: function (result) {
-        csv.push(result.data)
-      },
-      complete: async function (results, file) {
-        console.log("FileUpload ", csv)
-        const header = csv.pop()
-        const finalResults = csv.map((el) => {
-          const vendor_vendor_id = vendors.filter(({ vendor_code }) => {
-            // console.log("vendor code21", vendor_code, el["Vendor Code"])
-            return vendor_code === el["Vendor Code"]
-          })[0]?.vendor_id
-          const products_product_id = products.filter(({ products_sku }) => {
-            return products_sku === el["Product Sku"]
-          })[0]?.product_id
-          return {
-            vendor_sku: el["Vendor SkuCode"].toString(),
-            priority: Number(el["Priority"]),
-            enabled: Number(el["Enabled"]),
-            unit_price: Number(el["Vendor Price"]),
-            vendor_vendor_id: Number(vendor_vendor_id),
-            products_product_id: Number(products_product_id),
-          }
-        })
+      skipEmptyLines: true,
+      step: async ({ data }, parser) => {
+        const missingKey = ["VENDOR_ID", "PRODUCT_ID", "UNIT_PRICE", "SKU"].find(
+          (key) => !(key in data)
+        )
 
-        console.log("finalResults: ", finalResults)
-        const promises = finalResults.map(async (ele, i) => {
-          // checking if the vendor code exists in the vendor list or not
-          const csvVendorCode = csv.filter((item) => {
-            return item["Vendor SkuCode"] === ele.vendor_sku
-          })[0]?.["Vendor Code"]
-
-          // checking if the products sku exists in the product list or not
-
-          const csvProductSku = csv.filter((item) => {
-            return item["Vendor SkuCode"] === ele.vendor_sku
-          })[0]?.["Product Sku"]
-          console.log("csvProductSku: ", csvProductSku)
-
-          // if the vendor code and their corresponding products sku doesn't exist in the table
-          let vendorAndProduct = true
-          let vendorId = vendor_products.filter(async ({ vendor, products }) => {
-            if (
-              Number(vendor.vendor_id) === Number(ele.vendor_vendor_id) &&
-              products.products_sku?.toString() === csvProductSku?.toString()
-            ) {
-              vendorAndProduct = false
-              return {}
-              // console.log("lol")
-              // throw "vendor with that product already exist"
-            }
-          })
-          vendorId = await Promise.all(vendorId)
-          console.log("vendorId: ", vendorId)
-          if (!vendorAndProduct) {
-            throw "vendor with that product already exist"
-          }
-          try {
-            vendorAndProduct && (await createVendorProductMutation(ele))
-            await refetch()
-            return {}
-          } catch (error) {
-            console.log("error: ", error)
-            let errors = ""
-
-            // check whether this vendor code exist in the vendor table or not
-            let isVendorCodePresent = false
-            let checkVendorCode = vendors.filter((v) => {
-              return v.vendor_code.toString() === csvVendorCode.toString()
-            })
-            console.log("checkVendorCode: ", checkVendorCode)
-            if (Number(checkVendorCode.length) === 0) {
-              isVendorCodePresent = true
-            }
-
-            // check whether this products sku exist in the product table or not
-            let isProductSkuPresent = false
-            let checkProductSku = products.filter((p) => {
-              return p.products_sku?.toString() === csvProductSku?.toString()
-            })
-            if (Number(checkProductSku.length) === 0) {
-              isProductSkuPresent = true
-            }
-
-            // check for null values
-            Object.keys(ele).forEach((item) => {
-              console.log("ele[item]: ", ele[item])
-              if (!ele[item]) {
-                if (`${item}` === "vendor_vendor_id") {
-                  isVendorCodePresent
-                    ? (errors += `Vendor Code does not exist in the table. `)
-                    : `${item}` === "vendor_vendor_id"
-                    ? (errors += `Vendor Code is empty `)
-                    : (errors += `${item} is empty. `)
-                }
-
-                if (`${item}` === "products_product_id") {
-                  isProductSkuPresent
-                    ? (errors += `Products sku does not exist in the table. `)
-                    : `${item}` === "products_product_id"
-                    ? (errors += `Products sku is empty `)
-                    : (errors += `${item} is empty. `)
-                }
-
-                if (`${item}` !== "vendor_vendor_id" && `${item}` === "products_product_id") {
-                  errors += `${item} is empty. `
-                }
-              }
-            })
-
-            // let flag = true
-            let vendorId = vendor_products.filter(async ({ vendor, products }) => {
-              if (
-                Number(vendor.vendor_id) === Number(ele.vendor_vendor_id) &&
-                products.products_sku?.toString() === csvProductSku.toString()
-              ) {
-                // flag &&
-                errors += `${csvVendorCode} vendor code with ${csvProductSku} products sku already exists in the products`
-                return {}
-                // flag = false
-              }
-            })
-            vendorId = await Promise.all(vendorId)
-
-            let a = {
-              "Vendor Code": csv.filter((item) => {
-                return item["Vendor SkuCode"] === ele.vendor_sku
-              })[0]?.["Vendor Code"],
-              unit_price: ele.unit_price,
-              vendor_sku: ele.vendor_sku,
-              enabled: ele.enabled,
-              "Product Sku": csv.filter((item) => {
-                return item["Vendor SkuCode"] === ele.vendor_sku
-              })[0]?.["Product Sku"],
-              priority: ele.priority,
-              errors: errors,
-            }
-
-            return a
-          }
-        })
-        const failedCsv = await Promise.all(promises)
-
-        // const newFailedCsv =
-        // 0failedCsv = failedCsv.map(({enabled, priority, vendor_sku}) => {
-        //   return {
-        //     enabled,
-        //     priority,
-        //     vendor_sku
-        //   }
-        // })
-        // failedCsv.push(header)
-        // const UpdatedfailedCsv = failedCsv.map((item) => {
-        //   return {
-        //     enabled: item["enabled"],
-        //     priority: item["priority"],
-        //     unit_price: item["unit_price"],
-        //     vendor_sku: item["vendor_sku"],
-        //   }
-        // })
-        // console.log("UpdatedfailedCsv: ", UpdatedfailedCsv)
-        console.log("failedCsv: ", failedCsv)
-        failedCsv.forEach((can) => {
-          console.log("enabled", can)
-        })
-        const columns = {
-          "Vendor Code": "Vendor Code",
-          unit_price: "Vendor Price",
-          vendor_sku: "vendor_sku",
-          enabled: "enabled",
-          "Product Sku": "Product Sku",
-          priority: "priority",
-          error: "error",
+        if (missingKey) {
+          setErrorProducts([...errorProducts, { message: `Column ${missingKey} missing.` }])
+          parser.abort()
         }
-        downloadCsv(failedCsv, columns, "failed vendor products")
-        // let csv5 = await new ObjectsToCsv(failedCsv)
-        // console.log("csv5: ", csv5)
-        // var jsonArray = JSON.parse(JSON.stringify(failedCsv))
-        // console.log("jsonArray: ", jsonArray)
-        // console.log("finalResults: ", finalResults)
-        // const csv_2 = papa.unparse(csv)
-        // console.log("csv_2: ", csv_2)
-        // const args = {
-        //   filename: "failedCsv",
-        //   data: failedCsv,
-        // }
-        // const downloadCSV = async (args) => {
-        //   let filename = args.filename || "export.csv"
-        //   let columns = args.columns || null
 
-        //   // let csv = papa.unparse({ data: args.data, fields: columns })
-        //   let csv = new ObjectsToCsv(args.data)
-        //   console.log("csv:", csv)
-        //   if (csv == null) return
-
-        //   var blob = new Blob([csv], { type: "text/csv;charset=UTF-16LE;" })
-        //   if (window.navigator.msSaveOrOpenBlob)
-        //     // IE hack; see http://msdn.microsoft.com/en-us/library/ie/hh779016.aspx
-        //     window.navigator.msSaveBlob(blob, args.filename)
-        //   else {
-        //     var a = window.document.createElement("a")
-        //     a.href = window.URL.createObjectURL(blob)
-        //     a.download = filename
-        //     document.body.appendChild(a)
-        //     a.click() // IE: "Access is denied"; see: https://connect.microsoft.com/IE/feedback/details/797361/ie-10-treats-blob-url-as-cross-origin-and-denies-access
-        //     document.body.removeChild(a)
-        //   }
-        // }
-        // await downloadCSV(args)
+        const result = await createVendorProductMutation(
+          {
+            vendor_vendor_id: Number(data["VENDOR_ID"]),
+            products_product_id: Number(data["PRODUCT_ID"]),
+            unit_price: Number(data["UNIT_PRICE"]),
+            vendor_sku: data["SKU"],
+          },
+          {
+            onSuccess: () => {
+              toast?.current?.show({
+                severity: "success",
+                summary: "Product Created",
+                detail: "Product created successfully.",
+                life: 3000,
+              })
+            },
+            onError: (error) => {
+              console.error("Product failed: ", data)
+              setErrorProducts([
+                ...errorProducts,
+                { ...data, message: error.message, rowNum: index },
+              ])
+            },
+          }
+        )
+        index += 1
       },
     })
   }
   return (
-    <div>
+    <div className="grid">
+      <Toast ref={toast} />
       <Dialog
         header="Add Vendor Product"
         visible={vendorDialog}
@@ -330,222 +161,166 @@ export const Vendor_productsList = () => {
         footer={renderFooter}
         onHide={() => {
           setVendorDialog(false)
-          setSelectedVendor("")
-          setSelectedProduct("")
-          setUnitPrice("")
+          setNewProduct({
+            unit_price: 0,
+            vendor_vendor_id: 0,
+            products_product_id: 0,
+            vendor_sku: "",
+          })
         }}
       >
-        <div className="formgrid grid">
-          <Dropdown
-            className="field col-5 mr-3 "
-            disabled={editState}
-            optionLabel="name"
-            value={selectedVendor}
-            options={vendorOptions}
-            onChange={(e) => setSelectedVendor(e.value)}
-            placeholder="Select Vendor"
-          />
-          <Dropdown
-            className="field col-5"
-            disabled={editState}
-            optionLabel="name"
-            value={selectedProduct}
-            options={productOptions}
-            onChange={(e) => setSelectedProduct(e.value)}
-            placeholder="Select  Product"
-          />
-          <div className="field col-6 mt-4">
+        <div className="grid p-fluid">
+          <div className="field col-12 lg:col-6 mt-3">
+            <Dropdown
+              disabled={editState}
+              optionLabel="name"
+              value={vendor_vendor_id}
+              options={vendorOptions}
+              onChange={(e) => setNewProduct({ ...newProduct, vendor_vendor_id: e.value })}
+              placeholder="Select Vendor"
+            />
+          </div>
+          <div className="field col-12 lg:col-6 mt-3">
+            <Dropdown
+              disabled={editState}
+              optionLabel="name"
+              value={products_product_id}
+              options={productOptions}
+              onChange={(e) => setNewProduct({ ...newProduct, products_product_id: e.value })}
+              placeholder="Select  Product"
+            />
+          </div>
+          <div className="field col-12 lg:col-6 mt-3">
             <span className="p-float-label">
               <InputText
-                // id={ele.field}
-                // name={ele.field}
-                value={unitPrice}
+                value={vendor_sku}
                 onChange={(e) => {
-                  setUnitPrice(e.target.value)
+                  setNewProduct({
+                    ...newProduct,
+                    vendor_sku: e.target.value,
+                  })
                 }}
                 autoFocus
               />
-              <label
-              // htmlFor={ele.field}
-              // className={classNames({ "p-error": isFormFieldValid("name") })}
-              >
-                Unit Price
-              </label>
+              <label>Vendor SKU</label>
+            </span>
+          </div>
+          <div className="field col-12 lg:col-6 mt-3">
+            <span className="p-float-label">
+              <InputNumber
+                value={unit_price}
+                onChange={(e) => {
+                  setNewProduct({
+                    ...newProduct,
+                    unit_price: e.value,
+                  })
+                }}
+                autoFocus
+              />
+              <label>Unit Price</label>
             </span>
           </div>
         </div>
-        {/* <form
-          // onSubmit={formik.handleSubmit}
-          onSubmit={async () => {
-            if (!activeVendor) {
-              await createVendorMutation({
-                ...vendorDetails,
-              })
-            } else {
-              await updateVendorMutation({ ...vendorDetails })
-            }
-            await refetch()
-            setActiveVendor(false)
-          }}
-          className="p-fluid"
-        >
-          <div className="formgrid grid">
-            {[
-              { type: "text", label: "Vendor", field: "vendor" },
-              { type: "text", label: "Vendor Code", field: "vendor_code" },
-              { type: "text", label: "Vendor SKU", field: "vendor_sku" },
-              { type: "email", label: "Vendor Email", field: "vendor_email" },
-              { type: "text", label: "Vendor City", field: "vendor_city" },
-              { type: "text", label: "Vendor Contact", field: "vendor_contact" },
-              { type: "text", label: "Vendor GSTIN", field: "vendor_gstin" },
-            ].map((ele, i) => {
+      </Dialog>
+      <div className="col-12 ">
+        <div className="card flex justify-content-between align-items-center">
+          <h4>Vendor Catalog</h4>
+          <div className="flex">
+            <FileUpload
+              accept=".csv"
+              mode="basic"
+              customUpload
+              maxFileSize={1000000}
+              uploadHandler={(e) => onBasicUpload(e)}
+            />
+            <Button
+              icon="pi pi-plus"
+              className="ml-2"
+              label="Add Vendor Products"
+              onClick={() => setVendorDialog(true)}
+            ></Button>
+          </div>
+        </div>
+      </div>
+      <div
+        className={`col-12 ${
+          errorProducts.length
+            ? "visible scalein animation-duration-200"
+            : "hidden scaleout animation-duration-200"
+        }`}
+      >
+        <div className="card border-primary border-2 bg-primary-reverse">
+          <h6>Following are a list of failed entries: </h6>
+          <ul>
+            {errorProducts.map(({ rowNum, message }, index) => {
+              if (rowNum)
+                return (
+                  <li key={"error-" + index}>
+                    Row Number {rowNum}:{" "}
+                    <ul>
+                      <li>{message}</li>
+                    </ul>
+                  </li>
+                )
               return (
-                <div key={`${ele.field}${i}`} className="field col-6 mt-4">
-                  <span className="p-float-label">
-                    <InputText
-                      id={ele.field}
-                      name={ele.field}
-                      value={vendorDetails[ele.field]}
-                      onChange={(e) => {
-                        setVendorDetails({ ...vendorDetails, [ele.field]: e.target.value })
-                      }}
-
-                      autoFocus
-
-                    />
-                    <label
-                      htmlFor={ele.field}
-                      className={classNames({ "p-error": isFormFieldValid("name") })}
-                    >
-                      {ele.label}
-                    </label>
-                  </span>
-
-                </div>
+                <li key={"error-" + index}>
+                  <li>{message}</li>
+                </li>
               )
             })}
-          </div>
-          <div className="flex justify-content-end">
-            <Button type="submit" className="mr-2 mt-2" label="ADD" />
-          </div>
-        </form> */}
-      </Dialog>
-      <h4>Vendor Catalog</h4>
-      <div className="flex justify-content-end mb-2 ">
-        <FileUpload
-          accept=".csv"
-          mode="basic"
-          customUpload
-          // name="demo[]"
-          // url="https://primefaces.org/primereact/showcase/upload.php"
-          // accept="image/*"
-          maxFileSize={1000000}
-          uploadHandler={(e) => onBasicUpload(e)}
-          // onUpload={(e) => onBasicUpload(e)}
-        />
-        <Button
-          icon="pi pi-plus"
-          label="Add Vendor Products"
-          onClick={() => setVendorDialog(true)}
-        ></Button>
+          </ul>
+        </div>
       </div>
-      <DataTable
-        value={tableVendorProducts}
-        scrollable
-        scrollHeight="60vh"
-        showGridlines
-        // header={renderHeader}
-        stripedRows
-        className="text-s datatable-responsive"
-        // paginator
-        // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
-        // rows={PAGINATION_VARIABLES.rows}
-        // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
-        // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
-      >
-        {/* <Column
-          field="vp_id"
-          header="product ID"
-          // className="text-center"
-        /> */}
-        <Column
-          field="vendor"
-          header="Vendor"
-          // className="text-center"
-        />
-        <Column
-          field="vendor_code"
-          header="Vendor Code"
-          // className="text-center"
-        />
-        <Column
-          field="item_name"
-          header="Item Name"
-          // className="text-center"
-        />
-        <Column
-          field="sku_code"
-          header="SKU code"
-          // className="text-center"
-        />
-        <Column
-          field="vendor_sku"
-          header="Vendor Sku"
-          // className="text-center"
-        />
-        <Column
-          field="unit_price"
-          header="Unit Price"
-          // className="text-center"
-        />
-
-        <Column
-          // field="vendor_gstin"
-          header="Action"
-          body={(rowData) => {
-            console.log("rowData: ", rowData)
-            return (
-              <div>
-                <Button
-                  // label="Edit"
-                  icon="pi pi-pencil"
-                  className="mr-1"
-                  onClick={() => {
-                    // setActiveVendor(true)
-                    setEditState(true)
-                    setVendorDialog(true)
-                    setSelectedVendor(rowData.vendor_id)
-                    setSelectedProduct(rowData.product_id)
-                    setUnitPrice(rowData.unit_price)
-
-                    // setVendorDetails({ ...rowData })
-                    // setVendorDialog(true)
-                  }}
-                />
-                <Button
-                  // label="Delete"
-                  disabled={true}
-                  icon="pi pi-trash"
-                  className="mr-1"
-                  onClick={async () => {
-                    await deleteVendorProductMutation({ vp_id: Number(rowData.vp_id) })
-                    await refetch()
-                  }}
-                />
-                {/* <Button
-                  label="Generate PO"
-                  icon="pi pi-truck"
-                  // onClick={async () => {
-                  //   await deleteVendorProductMutation({ vp_id: Number(rowData.vp_id) })
-                  //   await refetch()
-                  // }}
-                /> */}
-              </div>
-            )
-          }}
-          // className="text-center"
-        />
-      </DataTable>
+      <div className="col-12">
+        <div className="card">
+          <DataTable
+            value={vendor_products}
+            showGridlines
+            stripedRows
+            className="text-s datatable-responsive"
+          >
+            <Column field="vendor.vendor" header="Vendor" />
+            <Column field="vendor.vendor_code" header="Vendor Code" />
+            <Column field="products.name" header="Item Name" />
+            <Column field="products.products_sku" header="SKU" />
+            <Column field="vendor_sku" header="Vendor Sku" />
+            <Column field="unit_price" header="Unit Price" />
+            <Column
+              header="Action"
+              body={(rowData) => {
+                return (
+                  <div>
+                    <Button
+                      icon="pi pi-pencil"
+                      className="mr-1"
+                      onClick={() => {
+                        setEditState(true)
+                        setVendorDialog(true)
+                        setNewProduct({
+                          ...newProduct,
+                          vendor_vendor_id: rowData.vendor.vendor_id,
+                          unit_price: rowData.unit_price,
+                          products_product_id: rowData.products.product_id,
+                          vendor_sku: rowData.vendor_sku,
+                        })
+                      }}
+                    />
+                    <Button
+                      disabled={true}
+                      icon="pi pi-trash"
+                      className="mr-1"
+                      onClick={async () => {
+                        await deleteVendorProductMutation({ vp_id: Number(rowData.vp_id) })
+                        await refetch()
+                      }}
+                    />
+                  </div>
+                )
+              }}
+            />
+          </DataTable>
+        </div>
+      </div>
     </div>
   )
 }

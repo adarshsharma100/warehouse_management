@@ -9,6 +9,7 @@ const CreateRfq = z.object({
   expected_dod: z.string(),
   rfq_products: z.unknown(),
   rfq_sentto: z.unknown(),
+  rfq_sentto: z.unknown(),
 })
 
 const sendEmail = async (data, rfq) => {
@@ -73,6 +74,11 @@ const sendEmail = async (data, rfq) => {
 export default resolver.pipe(resolver.zod(CreateRfq), resolver.authorize(), async (input) => {
   // TODO: in multi-tenant app, you must add validation to ensure correct tenant
   const rfq = await db.rfq.create({ data: input })
+  console.log("rfq: ", rfq)
+  if (input?.rfq_sentto?.create?.length) {
+    console.log("input?.rfq_sentto: ", input?.rfq_sentto?.create)
+    await sendEmail(input, rfq)
+  }
   console.log("rfq: ", rfq)
   if (input?.rfq_sentto?.create?.length) {
     console.log("input?.rfq_sentto: ", input?.rfq_sentto?.create)

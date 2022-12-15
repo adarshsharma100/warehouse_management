@@ -63,13 +63,13 @@ model purchase_order {
   expiry_date                  DateTime                  @db.DateTime(0)
   expected_delivery            DateTime                  @db.DateTime(0)
   agreement                    String                    @db.VarChar(45)
-  purchase_order_status_pos_id Int                       @default(1)
+  purchase_order_status_pos_id Int                       @default(2)
   vendor_vendor_id             Int
   po_description               String                    @db.VarChar(155)
   po_code                      String                    @db.VarChar(45)
   rfq_id                       Int?
-  grn_grn_id                   Int
-  grn                          grn                       @relation(fields: [grn_grn_id], references: [grn_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_grn1")
+  grn_grn_id                   Int?
+  grn                          grn?                      @relation(fields: [grn_grn_id], references: [grn_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_grn1")
   purchase_order_status        purchase_order_status     @relation(fields: [purchase_order_status_pos_id], references: [pos_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_purchase_order_status1")
   rfq                          rfq?                      @relation(fields: [rfq_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_rfq1")
   vendor                       vendor                    @relation(fields: [vendor_vendor_id], references: [vendor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_vendor1")

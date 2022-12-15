@@ -4,10 +4,10 @@ import { z } from "zod"
 
 const UpdateProduct = z.object({
   product_id: z.number(),
-  name: z.string(),
-  description: z.string(),
-  product_type: z.string(),
-  products_sku: z.string(),
+  name: z.string().optional(),
+  description: z.string().optional(),
+  product_type: z.string().optional(),
+  products_sku: z.string().optional(),
 })
 
 export default resolver.pipe(
