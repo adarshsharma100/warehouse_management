@@ -172,6 +172,11 @@ const Layout = ({ children }) => {
           icon: "pi pi-fw pi-shopping-bag",
           to: "/products",
         },
+        {
+          label: "Orders",
+          icon: "pi pi-fw pi-money-bill",
+          to: "/orders",
+        },
       ],
     },
     // {

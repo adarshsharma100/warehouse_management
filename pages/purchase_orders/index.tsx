@@ -20,6 +20,7 @@ import getVendors from "app/vendors/queries/getVendors"
 import { Calendar } from "primereact/calendar"
 import getVendor_products from "app/vendor_products/queries/getVendor_products"
 import getRfqs from "app/rfqs/queries/getRfqs"
+import getGrns from "app/grns/queries/getGrns"
 import createPurchase_order_product from "app/purchase_order_products/mutations/createPurchase_order_product"
 import createPurchase_order from "app/purchase_orders/mutations/createPurchase_order"
 import updatePurchase_order from "app/purchase_orders/mutations/updatePurchase_order"
@@ -34,7 +35,10 @@ import getProducts from "app/products/queries/getProducts"
 import { ProductsList } from "pages/products"
 import { Chips } from "primereact/chips"
 import { Vendor } from "pages/vendors/[vendorId]"
-import getPrefixes from "app/prefixes/queries/getPrefixes.ts"
+import getPrefixes from "app/prefixes/queries/getPrefixes"
+import { TabView, TabPanel } from "primereact/tabview"
+import Grn from "components/Grn"
+import LoaderFullScreen from "components/LoaderFullScreen"
 
 const ITEMS_PER_PAGE = 100
 
@@ -46,11 +50,14 @@ export const Purchase_ordersList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
-  const [{ purchase_order_products }] = usePaginatedQuery(getPurchase_order_products, {
-    orderBy: { pop_id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-  })
+  const [{ purchase_order_products }, { refetch: refetchPoProducts }] = usePaginatedQuery(
+    getPurchase_order_products,
+    {
+      orderBy: { pop_id: "asc" },
+      skip: ITEMS_PER_PAGE * page,
+      take: ITEMS_PER_PAGE,
+    }
+  )
   const [{ vendors }] = usePaginatedQuery(getVendors, {
     orderBy: { vendor_id: "asc" },
     skip: ITEMS_PER_PAGE * page,
@@ -76,12 +83,21 @@ export const Purchase_ordersList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
+  const [{ grns }] = useQuery(getGrns, {
+    orderBy: { grn_id: "asc" },
+    skip: ITEMS_PER_PAGE * page,
+    take: ITEMS_PER_PAGE,
+  })
+
+  console.log(grns)
 
   const [{ prefixes }] = useQuery(getPrefixes, {
     orderBy: { id: "asc" },
   })
-  const [createPurchaseOrderMutation] = useMutation(createPurchase_order)
-  const [updatePurchaseOrderMutation] = useMutation(updatePurchase_order)
+  const [createPurchaseOrderMutation, { isLoading: creatingPO, error: creatingMutationError }] =
+    useMutation(createPurchase_order)
+  const [updatePurchaseOrderMutation, { isLoading: UpdatingPO, error: updatingMutationError }] =
+    useMutation(updatePurchase_order)
 
   const [createManyPurchaseOrderProductsMutation] = useMutation(createManyPurchase_order_product)
   const [deletePurchase_orderMutation] = useMutation(deletePurchase_order)
@@ -119,6 +135,7 @@ export const Purchase_ordersList = () => {
   // console.log(purchaseDetails)
   const [activeRow, setActiveRow] = useState({})
   const [poEditState, setPoEditState] = useState(false)
+  const poError = [updatingMutationError, creatingMutationError]
 
   const menu = useRef<Menu>(null)
 
@@ -307,49 +324,75 @@ export const Purchase_ordersList = () => {
   }
 
   const rowExpansionTemplate = (data) => {
+    // console.log(data)
+    const rowGrnId = data.grn_grn_id
+    const currentGrn = grns?.filter((ele) => ele.grn_id === rowGrnId)[0]
     return (
       <div className="w-full">
-        <h3>Products List:</h3>
-        <DataTable
-          value={data.purchase_order_products}
-          responsiveLayout="scroll"
-          showGridlines
-          // header={renderHeader}
-          stripedRows
-          className="text-s datatable-responsive w-full"
-          // paginator
-          // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
-          // rows={PAGINATION_VARIABLES.rows}
-          // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
-          // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
-        >
-          <Column
-            field="pop_id"
-            header="ID"
-            // className="text-center"
-          />
-          <Column
-            field="vendor_products.products.products_sku"
-            header="Product SKU"
-            // className="text-center"
-          />
+        <TabView>
+          <TabPanel header="Products Lists">
+            <DataTable
+              value={data.purchase_order_products}
+              responsiveLayout="scroll"
+              showGridlines
+              // header={renderHeader}
+              stripedRows
+              className="text-s datatable-responsive w-full mt-5"
+              // paginator
+              // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
+              // rows={PAGINATION_VARIABLES.rows}
+              // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
+              // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
+            >
+              <Column
+                field="pop_id"
+                header="ID"
+                // className="text-center"
+              />
+              <Column
+                field="vendor_products.products.products_sku"
+                header="Product SKU"
+                // className="text-center"
+              />
 
-          <Column
-            field="vendor_products.products.name"
-            header="Name"
-            // className="text-center"
-          />
-          <Column
-            field="price_per_unit"
-            header="Price / Unit"
-            // className="text-center"
-          />
-          <Column
-            field="quantity"
-            header="Quantity"
-            // className="text-center"
-          />
-        </DataTable>
+              <Column
+                field="vendor_products.products.name"
+                header="Name"
+                // className="text-center"
+              />
+              <Column
+                field="price_per_unit"
+                header="Price / Unit"
+                // className="text-center"
+              />
+              <Column
+                field="quantity"
+                header="Quantity"
+                // className="text-center"
+              />
+            </DataTable>
+          </TabPanel>
+          <TabPanel header="GRN">
+            {!currentGrn && (
+              <div className="flex justify-content-center pt-3">
+                <Button
+                  icon="pi pi-plus"
+                  label="Create GRN"
+                  onClick={async () => {
+                    try {
+                      const newgrn = await createGrnMutation({
+                        grn_batch_code: "string",
+                      })
+                    } catch (error) {
+                      console.log(error)
+                    }
+                  }}
+                ></Button>
+              </div>
+            )}
+            {currentGrn && <Grn currentGrn={currentGrn} prefixes={prefixes} poDetails={data} />}
+          </TabPanel>
+        </TabView>
       </div>
     )
   }
@@ -362,6 +405,21 @@ export const Purchase_ordersList = () => {
 
   return (
     <div>
+      {creatingPO && <LoaderFullScreen />}
+      {UpdatingPO && <LoaderFullScreen />}
+      {/* {poError &&
+        poError.map((ele, i) => (
+          <div className="error-card flex" key={i}>
+            <span style={{ width: "fit-content" }}>{ele?.message}</span>
+            <Button
+              icon="pi pi-times"
+              className="p-button-rounded p-button-danger p-button-outlined "
+              aria-label="Cancel"
+              onClick={() => setErrorMsg(false)}
+            />
+          </div>
+        ))} */}
+
       <h4>Purchase Orders</h4>
       <div className="flex justify-content-end mb-2 ">
         <Button
@@ -627,7 +685,7 @@ export const Purchase_ordersList = () => {
             <Button
               type="button"
               className=" mr-2"
-              label="ADD"
+              label={poEditState ? "UPDATE" : "ADD"}
               onClick={async (e) => {
                 console.log("purchaseDetails", purchaseDetails)
                 console.log("activeRow", activeRow)
@@ -741,6 +799,7 @@ export const Purchase_ordersList = () => {
                 //   console.log("error: ", error)
                 // }
                 await refetch()
+                await refetchPoProducts()
                 setPurchaseDialog(!purchaseDialog)
               }}
             />

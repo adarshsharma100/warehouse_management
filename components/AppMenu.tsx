@@ -156,7 +156,7 @@ export const AppMenu = (props) => {
       />
       <a href="https://www.primefaces.org/primeblocks-react" className="block mt-3">
         {/* <img
-          alt="primeblocks"
+          alt="primeblocks" 
           className="w-full"
           src={
             props.layoutColorMode === "light"

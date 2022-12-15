@@ -40,6 +40,7 @@ import Loading from "components/loading"
 import LoaderFullScreen from "components/LoaderFullScreen"
 
 import getPrefixes from "app/prefixes/queries/getPrefixes.ts"
+import ErrorCard from "components/ErrorCard"
 
 const ITEMS_PER_PAGE = 100
 
@@ -81,7 +82,7 @@ export const RfqsList = () => {
   const [{ prefixes }] = useQuery(getPrefixes, {
     orderBy: { id: "asc" },
   })
-  console.log("prefixes:", prefixes)
+  // console.log("prefixes:", prefixes)
   const [sendDialog, setSendDialog] = useState(false)
   const [createRFQMutation, { isLoading: creatingRfq, error: createRFQMutationError }] =
     useMutation(createRfq)
@@ -485,38 +486,53 @@ export const RfqsList = () => {
     setCurrentRfqitemsID([...currentItemsIds])
   }, [rfqDialog])
 
-  const [rfqErrorMsgs, setRfqErrorMsgs] = useState("")
+  const [rfqErrorMsgs, setRfqErrorMsgs] = useState([])
+  console.log("rfqErrorMsgs,", rfqErrorMsgs)
   useEffect(() => {
     const ErrorArray = [updateRFQMutationError, createRFQMutationError, rfqError]
-    // console.log(ErrorArray)
+
+    const msg = []
 
     for (let err of ErrorArray) {
-      if (err) setRfqErrorMsgs(err)
-      // console.log(err)
+      if (err) {
+        msg.push(err)
+      }
     }
+    setRfqErrorMsgs(msg)
   }, [updateRFQMutationError, createRFQMutationError, rfqError])
-
+  console.log("updateRFQMutationError", updateRFQMutationError?.code)
   const allowExpansion = (rowData) => {
     // return rowData.orders.length > 0;
     return true
   }
 
-  console.log("tableRFQ", tableRFQ)
+  // const closeErrorBox = () => setRfqErrorMsgs(false)
+
+  const removeerror = (i) => {
+    const newsd = [...rfqErrorMsgs]
+    newsd.splice(i, 1)
+    setRfqErrorMsgs(newsd)
+  }
+
+  // console.log("tableRFQ", tableRFQ)
   return (
     <div>
       {updatingRfq && <LoaderFullScreen />}
       {creatingRfq && <LoaderFullScreen />}
-      {rfqErrorMsgs && (
+      {/* {rfqErrorMsgs && (
         <div className="error-card flex">
           <span style={{ width: "fit-content" }}>{rfqErrorMsgs?.message}</span>
           <Button
             icon="pi pi-times"
             className="p-button-rounded p-button-danger p-button-outlined "
             aria-label="Cancel"
-            onClick={(e) => setRfqErrorMsgs(false)}
+            onClick={closeErrorBox}
           />
         </div>
-      )}
+      )} */}
+      {rfqErrorMsgs.map((ele, i) => (
+        <ErrorCard rfqErrorMsgs={ele} closeErrorBox={removeerror} value={i} key={i} />
+      ))}
 
       {/* <Button
         // type="submit"

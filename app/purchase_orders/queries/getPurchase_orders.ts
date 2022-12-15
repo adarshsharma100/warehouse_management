@@ -23,13 +23,9 @@ export default resolver.pipe(
           ...paginateArgs,
           where,
           orderBy,
-          select: {
-            agreement: true,
-            approved_on: true,
-            created_at: true,
-            expected_delivery: true,
-            expiry_date: true,
-            from_party: true,
+          include: {
+            vendor: true,
+            purchase_order_status: true,
             purchase_order_products: {
               include: {
                 vendor_products: {
@@ -39,19 +35,6 @@ export default resolver.pipe(
                 },
               },
             },
-            // ordered_qty: true,
-            po_id: true,
-            po_description: true,
-            po_code: true,
-            // rfq_id: true,
-            // po_status: true,
-            po_type: true,
-            // received_qty: true,
-            purchase_order_status: true,
-            purchase_order_status_pos_id: true,
-            updated_on: true,
-            vendor: true,
-            vendor_vendor_id: true,
           },
         }),
     })
