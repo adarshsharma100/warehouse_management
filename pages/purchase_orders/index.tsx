@@ -136,6 +136,7 @@ export const Purchase_ordersList = () => {
   })
   const [activeRow, setActiveRow] = useState({})
   const [poEditState, setPoEditState] = useState(false)
+  const scrollToPo = useRef<HTMLHeadingElement>(null)
   const poError = [updatingMutationError, creatingMutationError]
 
   const menu = useRef<Menu>(null)
@@ -262,6 +263,7 @@ export const Purchase_ordersList = () => {
 
             setItemList(active)
             setPurchaseDialog(true)
+            scrollToPo.current.scrollIntoView()
           },
         },
         // {
@@ -276,31 +278,31 @@ export const Purchase_ordersList = () => {
         //     setProductDialog(true)
         //   },
         // },
-        {
-          label: "Update Status",
-          icon: "pi pi-chevron-circle-up",
-          command: () => {},
-        },
-        {
-          label: "Generate Gatepass",
-          icon: "pi pi-file",
-          command: () => {},
-        },
-        {
-          label: "Generate GRN",
-          icon: "pi pi-file",
-          command: () => {},
-        },
-        {
-          label: "Set as Recurrent",
-          icon: "pi pi-replay",
-          command: () => {},
-        },
-        {
-          label: "Approve",
-          icon: "pi pi-check-circle",
-          command: () => {},
-        },
+        // {
+        //   label: "Update Status",
+        //   icon: "pi pi-chevron-circle-up",
+        //   command: () => {},
+        // },
+        // {
+        //   label: "Generate Gatepass",
+        //   icon: "pi pi-file",
+        //   command: () => {},
+        // },
+        // {
+        //   label: "Generate GRN",
+        //   icon: "pi pi-file",
+        //   command: () => {},
+        // },
+        // {
+        //   label: "Set as Recurrent",
+        //   icon: "pi pi-replay",
+        //   command: () => {},
+        // },
+        // {
+        //   label: "Approve",
+        //   icon: "pi pi-check-circle",
+        //   command: () => {},
+        // },
       ],
     },
   ]
@@ -375,23 +377,30 @@ export const Purchase_ordersList = () => {
           </TabPanel>
           <TabPanel header="GRN">
             {!currentGrn && (
-              <div className="flex justify-content-center pt-3">
+              <div className="flex justify-content-center pt-3 flex-column">
+                <p className="m-auto mb-3 text-xl">
+                  GRN not yet created for this PO yet, you can create it using below button.
+                </p>
                 <Button
+                  className="m-auto mb-3"
                   icon="pi pi-plus"
                   label="Create GRN"
                   onClick={async () => {
                     try {
                       const newgrn = await createGrnMutation({
-                        grn_batch_code: "string",
-                        // purchase_orders: {
-                        //   connect: {
-                        //     po,
-                        //   },
-                        // },
+                        grn_batch_code: `GRN-4-${data.po_code}`,
+                        purchase_order: {
+                          connect: {
+                            po_id: data.po_id,
+                          },
+                        },
                       })
                     } catch (error) {
-                      console.log(error)
+                      console.log("createGrnMutation", error)
                     }
+                    await refetch()
+                    await refetchGrn()
+                    console.log("refeatched")
                   }}
                 ></Button>
               </div>
@@ -507,7 +516,7 @@ export const Purchase_ordersList = () => {
           }
           className="p-fluid"
         >
-          <h5>Create PO</h5>
+          <h5 ref={scrollToPo}>Create PO</h5>
           <div className="formgrid grid">
             <div className="col-12">
               <h6>PO Details:</h6>

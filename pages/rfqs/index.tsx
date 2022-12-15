@@ -131,6 +131,7 @@ export const RfqsList = () => {
       product_id: "",
     },
   ])
+
   const [itemList, setItemList] = useState([
     { products_product_id: "", quantity: "", price_per_unit: "" },
   ])
@@ -152,6 +153,7 @@ export const RfqsList = () => {
     subject: "",
     message: "",
   })
+  const scrollToRfq = useRef<HTMLHeadingElement>(null)
   const tableRfqProducts = rfq_products.map((ele) => {
     return {
       ...ele,
@@ -311,12 +313,8 @@ export const RfqsList = () => {
                 }
               })
             setItemList(active)
-
-            // setActiveRfq(active)
             setRfqDialog(true)
-            // setActiveVendor(true)
-            // setVendorDetails({ ...rowData })
-            // setVendorDialog(true)
+            scrollToRfq.current?.scrollIntoView()
           },
         },
         // {
@@ -405,13 +403,13 @@ export const RfqsList = () => {
             setPurchaseDialog(true)
           },
         },
-        {
-          label: "Send Quotation",
-          icon: "pi pi-send",
-          command: () => {
-            setSendDialog(true)
-          },
-        },
+        // {
+        //   label: "Send Quotation",
+        //   icon: "pi pi-send",
+        //   command: () => {
+        //     setSendDialog(true)
+        //   },
+        // },
         {
           label: "Update-Status",
           icon: "pi pi-refresh",
@@ -1284,7 +1282,7 @@ export const RfqsList = () => {
           }}
           className="p-fluid"
         >
-          <h5>Create RFQ</h5>
+          <h5 ref={scrollToRfq}>Create RFQ</h5>
           <div className="formgrid grid">
             <div className="col-12">
               <h6>RFQ Details:</h6>

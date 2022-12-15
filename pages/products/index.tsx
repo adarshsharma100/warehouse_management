@@ -264,7 +264,7 @@ export const ProductsList = () => {
                 product_id: 21,
                 name: "Watermelon",
                 description:
-                  "Watermelon is a flowering plant species of the Cucurbitaceae family and the name of its edible fruit. A scrambling and trailing vine-like plant, it is a highly cultivated fruit worldwide, with more than 1,000 varieties.",
+                  "Water-melon is a flowering plant species of the Cucurbitaceae family and the name of its edible fruit. A scrambling and trailing vine-like plant, it is a highly cultivated fruit worldwide, with more than 1,000 varieties.",
                 product_type: "Fruit",
               })
             } catch (error) {}

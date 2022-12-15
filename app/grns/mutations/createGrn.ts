@@ -4,6 +4,7 @@ import { z } from "zod"
 
 const CreateGrn = z.object({
   grn_batch_code: z.string(),
+  purchase_order: z.unknown(),
 })
 
 export default resolver.pipe(resolver.zod(CreateGrn), resolver.authorize(), async (input) => {

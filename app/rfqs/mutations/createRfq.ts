@@ -27,6 +27,7 @@ const sendEmail = async (data, rfq) => {
         `
         <section>
         <div>
+        
             <h2>RFQ Details:</h2>
             <p><strong>Doc No.:</strong> RFQ-${rfq.id}</p>
             <p><strong>Description:</strong> ${rfq.rfq_description}</p>
