@@ -7,11 +7,10 @@ import { Column } from "primereact/column"
 import { Button } from "primereact/button"
 import getGrns from "app/grns/queries/getGrns"
 
-function GRN({ currentGrn, prefixes, poDetails }) {
+function GRN({ currentGrn, prefixes, poDetails, refetch }) {
   const [createGrnMutation] = useMutation(createGrn)
   const [updateGrnMutation] = useMutation(updateGrn)
-  console.log("poDetails", poDetails)
-  const [{ grns }, { refetch }] = useQuery(getGrns, {
+  const [{ grns }] = useQuery(getGrns, {
     orderBy: { grn_id: "asc" },
   })
   const { po_code, purchase_order_products } = poDetails
@@ -76,6 +75,7 @@ function GRN({ currentGrn, prefixes, poDetails }) {
           <h5>Items</h5>
           <span>
             <Button
+              className="mr-3"
               label="Start QC"
               onClick={async () => {
                 await updateGrnMutation({

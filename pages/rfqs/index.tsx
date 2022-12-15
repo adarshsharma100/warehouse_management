@@ -487,7 +487,7 @@ export const RfqsList = () => {
   }, [rfqDialog])
 
   const [rfqErrorMsgs, setRfqErrorMsgs] = useState([])
-  console.log("rfqErrorMsgs,", rfqErrorMsgs)
+
   useEffect(() => {
     const ErrorArray = [updateRFQMutationError, createRFQMutationError, rfqError]
 
@@ -500,18 +500,16 @@ export const RfqsList = () => {
     }
     setRfqErrorMsgs(msg)
   }, [updateRFQMutationError, createRFQMutationError, rfqError])
-  console.log("updateRFQMutationError", updateRFQMutationError?.code)
+
   const allowExpansion = (rowData) => {
     // return rowData.orders.length > 0;
     return true
   }
 
-  // const closeErrorBox = () => setRfqErrorMsgs(false)
-
-  const removeerror = (i) => {
-    const newsd = [...rfqErrorMsgs]
-    newsd.splice(i, 1)
-    setRfqErrorMsgs(newsd)
+  const removeErrorBox = (i) => {
+    const msgArray = [...rfqErrorMsgs]
+    msgArray.splice(i, 1)
+    setRfqErrorMsgs(msgArray)
   }
 
   // console.log("tableRFQ", tableRFQ)
@@ -519,19 +517,8 @@ export const RfqsList = () => {
     <div>
       {updatingRfq && <LoaderFullScreen />}
       {creatingRfq && <LoaderFullScreen />}
-      {/* {rfqErrorMsgs && (
-        <div className="error-card flex">
-          <span style={{ width: "fit-content" }}>{rfqErrorMsgs?.message}</span>
-          <Button
-            icon="pi pi-times"
-            className="p-button-rounded p-button-danger p-button-outlined "
-            aria-label="Cancel"
-            onClick={closeErrorBox}
-          />
-        </div>
-      )} */}
       {rfqErrorMsgs.map((ele, i) => (
-        <ErrorCard rfqErrorMsgs={ele} closeErrorBox={removeerror} value={i} key={i} />
+        <ErrorCard rfqErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
       ))}
 
       {/* <Button
@@ -1449,7 +1436,7 @@ export const RfqsList = () => {
             <Button
               // type="submit"
               className="mr-2"
-              label="ADD"
+              label={rfqEditState ? "UPDATE" : "ADD"}
               onClick={async (e) => {
                 e.preventDefault()
                 if (rfqEditState) {

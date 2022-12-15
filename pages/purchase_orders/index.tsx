@@ -39,26 +39,29 @@ import getPrefixes from "app/prefixes/queries/getPrefixes"
 import { TabView, TabPanel } from "primereact/tabview"
 import Grn from "components/Grn"
 import LoaderFullScreen from "components/LoaderFullScreen"
+import ErrorCard from "components/ErrorCard"
+import createGrn from "app/grns/mutations/createGrn"
 
 const ITEMS_PER_PAGE = 100
 
 export const Purchase_ordersList = () => {
   const router = useRouter()
   const page = Number(router.query.page) || 0
-  const [{ purchase_orders, hasMore }, { refetch }] = usePaginatedQuery(getPurchase_orders, {
-    orderBy: { po_id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-  })
-  const [{ purchase_order_products }, { refetch: refetchPoProducts }] = usePaginatedQuery(
-    getPurchase_order_products,
+  const [{ purchase_orders, hasMore }, { error: getPoError, refetch }] = usePaginatedQuery(
+    getPurchase_orders,
     {
-      orderBy: { pop_id: "asc" },
+      orderBy: { po_id: "asc" },
       skip: ITEMS_PER_PAGE * page,
       take: ITEMS_PER_PAGE,
     }
   )
-  const [{ vendors }] = usePaginatedQuery(getVendors, {
+  const [{ purchase_order_products }, { error: getPoProductsError, refetch: refetchPoProducts }] =
+    usePaginatedQuery(getPurchase_order_products, {
+      orderBy: { pop_id: "asc" },
+      skip: ITEMS_PER_PAGE * page,
+      take: ITEMS_PER_PAGE,
+    })
+  const [{ vendors }, { error: getVenorsError }] = usePaginatedQuery(getVendors, {
     orderBy: { vendor_id: "asc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
@@ -83,13 +86,11 @@ export const Purchase_ordersList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
-  const [{ grns }] = useQuery(getGrns, {
+  const [{ grns }, { error: getGrnsError, refetch: refetchGrn }] = useQuery(getGrns, {
     orderBy: { grn_id: "asc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
-
-  console.log(grns)
 
   const [{ prefixes }] = useQuery(getPrefixes, {
     orderBy: { id: "asc" },
@@ -98,6 +99,7 @@ export const Purchase_ordersList = () => {
     useMutation(createPurchase_order)
   const [updatePurchaseOrderMutation, { isLoading: UpdatingPO, error: updatingMutationError }] =
     useMutation(updatePurchase_order)
+  const [createGrnMutation] = useMutation(createGrn)
 
   const [createManyPurchaseOrderProductsMutation] = useMutation(createManyPurchase_order_product)
   const [deletePurchase_orderMutation] = useMutation(deletePurchase_order)
@@ -132,7 +134,6 @@ export const Purchase_ordersList = () => {
     agreement: "",
     rfq_id: "",
   })
-  // console.log(purchaseDetails)
   const [activeRow, setActiveRow] = useState({})
   const [poEditState, setPoEditState] = useState(false)
   const poError = [updatingMutationError, creatingMutationError]
@@ -263,18 +264,18 @@ export const Purchase_ordersList = () => {
             setPurchaseDialog(true)
           },
         },
-        {
-          label: "View Products",
-          icon: "pi pi-external-link",
-          command: () => {
-            const active = tableProducts.filter(({ purchase_order_po_id }) => {
-              return purchase_order_po_id === activeRow.po_id
-            })
-            console.log("active: ", active)
-            setActiveProducts(active)
-            setProductDialog(true)
-          },
-        },
+        // {
+        //   label: "View Products",
+        //   icon: "pi pi-external-link",
+        //   command: () => {
+        //     const active = tableProducts.filter(({ purchase_order_po_id }) => {
+        //       return purchase_order_po_id === activeRow.po_id
+        //     })
+        //     console.log("active: ", active)
+        //     setActiveProducts(active)
+        //     setProductDialog(true)
+        //   },
+        // },
         {
           label: "Update Status",
           icon: "pi pi-chevron-circle-up",
@@ -324,7 +325,7 @@ export const Purchase_ordersList = () => {
   }
 
   const rowExpansionTemplate = (data) => {
-    // console.log(data)
+    console.log(data)
     const rowGrnId = data.grn_grn_id
     const currentGrn = grns?.filter((ele) => ele.grn_id === rowGrnId)[0]
     return (
@@ -382,6 +383,11 @@ export const Purchase_ordersList = () => {
                     try {
                       const newgrn = await createGrnMutation({
                         grn_batch_code: "string",
+                        // purchase_orders: {
+                        //   connect: {
+                        //     po,
+                        //   },
+                        // },
                       })
                     } catch (error) {
                       console.log(error)
@@ -390,7 +396,14 @@ export const Purchase_ordersList = () => {
                 ></Button>
               </div>
             )}
-            {currentGrn && <Grn currentGrn={currentGrn} prefixes={prefixes} poDetails={data} />}
+            {currentGrn && (
+              <Grn
+                currentGrn={currentGrn}
+                prefixes={prefixes}
+                poDetails={data}
+                refetch={refetchGrn}
+              />
+            )}
           </TabPanel>
         </TabView>
       </div>
@@ -403,22 +416,45 @@ export const Purchase_ordersList = () => {
     setFilterProductOptions(filterProducts)
   }, [purchaseDetails])
 
+  const [poErrorMsgs, setPoErrorMsgs] = useState([])
+
+  useEffect(() => {
+    const ErrorArray = [
+      updatingMutationError,
+      creatingMutationError,
+      getGrnsError,
+      getPoError,
+      getPoProductsError,
+    ]
+
+    const msg = []
+
+    for (let err of ErrorArray) {
+      if (err) {
+        msg.push(err)
+      }
+    }
+    setPoErrorMsgs(msg)
+  }, [updatingMutationError, creatingMutationError, getGrnsError, getPoError, getPoProductsError])
+
+  const allowExpansion = (rowData) => {
+    // return rowData.orders.length > 0;
+    return true
+  }
+
+  const removeErrorBox = (i) => {
+    const msgArray = [...poErrorMsgs]
+    msgArray.splice(i, 1)
+    setPoErrorMsgs(msgArray)
+  }
+
   return (
     <div>
       {creatingPO && <LoaderFullScreen />}
       {UpdatingPO && <LoaderFullScreen />}
-      {/* {poError &&
-        poError.map((ele, i) => (
-          <div className="error-card flex" key={i}>
-            <span style={{ width: "fit-content" }}>{ele?.message}</span>
-            <Button
-              icon="pi pi-times"
-              className="p-button-rounded p-button-danger p-button-outlined "
-              aria-label="Cancel"
-              onClick={() => setErrorMsg(false)}
-            />
-          </div>
-        ))} */}
+      {poErrorMsgs.map((ele, i) => (
+        <ErrorCard rfqErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
+      ))}
 
       <h4>Purchase Orders</h4>
       <div className="flex justify-content-end mb-2 ">
