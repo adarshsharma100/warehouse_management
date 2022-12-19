@@ -2,3 +2,7 @@
 .p-datatable .p-datatable-tbody > tr > td {
   padding: 0.3rem 1.5rem !important;
 }
+.expandTable .p-datatable .p-datatable-tbody > tr > td,
+.p-datatable-wrapper .p-datatable-table .p-datatable-tbody > tr > td {
+  padding: 1rem 1rem !important;
+}

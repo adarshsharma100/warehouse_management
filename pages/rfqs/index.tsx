@@ -38,9 +38,12 @@ import { Chips } from "primereact/chips"
 import axios from "axios"
 import Loading from "components/loading"
 import LoaderFullScreen from "components/LoaderFullScreen"
-
-import getPrefixes from "app/prefixes/queries/getPrefixes.ts"
+import getPrefixes from "app/prefixes/queries/getPrefixes"
 import ErrorCard from "components/ErrorCard"
+import { MultiSelect } from "primereact/multiselect"
+import { Checkbox } from "primereact/checkbox"
+import { AutoComplete } from "primereact/autocomplete"
+import sendEmail from "helperFunctions/rfqMail"
 
 const ITEMS_PER_PAGE = 100
 
@@ -95,9 +98,10 @@ export const RfqsList = () => {
   // const [updateManyRfqProductsMutation] = useMutation(updateManyRfq_products)
   const [updateRfqProductMutation] = useMutation(updateRfq_product)
   const [createPurchaseOrderMutation] = useMutation(createPurchase_order)
-  const productOptions = products.map(({ product_id, name }) => {
-    return { name, value: product_id }
+  const productOptions = products.map(({ product_id, name, products_sku }) => {
+    return { name: `${name}-${products_sku}`, value: product_id }
   })
+  // console.log(productOptions)
   const menu = useRef<Menu>(null)
   //
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
@@ -134,7 +138,9 @@ export const RfqsList = () => {
 
   const [itemList, setItemList] = useState([
     { products_product_id: "", quantity: "", price_per_unit: "" },
+    ,
   ])
+  // console.log(itemList)
   const [activeRfq, setActiveRfq] = useState([])
   const [purchaseDetails, setPurchaseDetails] = useState({
     vendor_vendor_id: "",
@@ -212,26 +218,35 @@ export const RfqsList = () => {
       value: vendor_id,
     }
   })
+  const optionsForVendorEmails = vendors.map(({ vendor, vendor_email, vendor_code }) => {
+    return {
+      name: ` ${vendor_code}: ${vendor}`,
+      value: vendor_email,
+    }
+  })
   const rfqOptions = rfqs.map(({ rfq_code, rfq_description, id }) => {
     return {
       name: `${rfq_code}: ${rfq_description}`,
       value: id,
     }
   })
+  const [newRFQCode, setNewRFQCode] = useState("")
+
+  const createNewRFQCode = () => {
+    const rfqPrefix = prefixes.filter((prefix) => prefix.name === "RFQ")[0].name
+    const nextRfqId = rfqs.length + 1
+    setNewRFQCode(`${rfqPrefix}#${nextRfqId}`)
+    // console.log("rfqPrefix", `${rfqPrefix}-${nextRfqId}`)
+  }
 
   const [vendorOptions, setVendorOptions] = useState(options)
+  const [vendorEmailOptions, setVendorEmailOptions] = useState(optionsForVendorEmails)
   const addFields = () => {
     let newfield = { products_product_id: "", quantity: "", price_per_unit: "" }
 
     setItemList([...itemList, newfield])
   }
   const removeFields = (index) => {
-    //
-    //
-    // let data = [...itemList]
-    // data.splice(parseInt(index), 1)
-    //
-    // setItemList(data)
     setItemList(itemList.filter((data, i) => index !== i))
   }
   const addFieldsPurchase = () => {
@@ -403,13 +418,14 @@ export const RfqsList = () => {
             setPurchaseDialog(true)
           },
         },
-        // {
-        //   label: "Send Quotation",
-        //   icon: "pi pi-send",
-        //   command: () => {
-        //     setSendDialog(true)
-        //   },
-        // },
+        {
+          label: "Send Quotation",
+          icon: "pi pi-send",
+          command: () => {
+            setSendDialog(true)
+            setRfqDetails({ ...rfqDetails, rfq_email: [] })
+          },
+        },
         {
           label: "Update-Status",
           icon: "pi pi-refresh",
@@ -431,26 +447,23 @@ export const RfqsList = () => {
     // setActiveRfq(rowProducts)
     console.log("rowdata", { data })
     return (
-      <div className="w-full">
+      <div className="w-full expandTable">
         <h3>Products List:</h3>
+
         <DataTable
           value={data.rfq_products}
           responsiveLayout="scroll"
           showGridlines
           // header={renderHeader}
           stripedRows
-          className="text-s datatable-responsive w-full"
+          className="text-s datatable-responsive"
           // paginator
           // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
           // rows={PAGINATION_VARIABLES.rows}
           // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
           // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
         >
-          <Column
-            field="rfq_products_id"
-            header="ID"
-            // className="text-center"
-          />
+          <Column field="rfq_products_id" header="ID" style={{ paddingTop: "0.5rem" }} />
           <Column
             field="products.products_sku"
             header="Product SKU"
@@ -485,6 +498,7 @@ export const RfqsList = () => {
   }, [rfqDialog])
 
   const [rfqErrorMsgs, setRfqErrorMsgs] = useState([])
+  const [RFQCodechecked, setRFQCodeChecked] = useState<boolean>(true)
 
   useEffect(() => {
     const ErrorArray = [updateRFQMutationError, createRFQMutationError, rfqError]
@@ -509,8 +523,39 @@ export const RfqsList = () => {
     msgArray.splice(i, 1)
     setRfqErrorMsgs(msgArray)
   }
+  useEffect(() => {
+    RFQCodechecked
+      ? setRfqDetails({
+          ...rfqDetails,
+          rfq_code: newRFQCode,
+        })
+      : null
+  }, [RFQCodechecked])
+
+  useEffect(() => {
+    createNewRFQCode()
+  })
 
   // console.log("tableRFQ", tableRFQ)
+
+  // const [filteredVendors, setFilteredVendors] = useState<any>(null)
+  // const [selectedCountry2, setSelectedCountry2] = useState<any>(null)
+
+  // const searchCountry = (event: { query: string }) => {
+  //   setTimeout(() => {
+  //     let _filteredVendors
+  //     if (!event.query.trim().length) {
+  //       _filteredVendors = [...productOptions]
+  //     } else {
+  //       _filteredVendors = productOptions.filter((vendor) => {
+  //         return vendor.name.toLowerCase().includes(event.query.toLowerCase())
+  //       })
+  //     }
+
+  //     setFilteredVendors(_filteredVendors)
+  //   }, 250)
+  // }
+
   return (
     <div>
       {updatingRfq && <LoaderFullScreen />}
@@ -614,27 +659,17 @@ export const RfqsList = () => {
         // footer={renderFooter("displayBasic")}
         onHide={() => setSendDialog(false)}
       >
-        <div className="p-float-label mt-5">
-          {/* <InputText
-            // name=""
-            className="mr-2 w-full"
-            value={purchaseDetails.po_code}
-            onChange={(e) => setPurchaseDetails({ ...purchaseDetails, po_code: e.target.value })}
-          /> */}
-          <Chips
-            className="mr-2 w-full"
-            value={mailDetails.to}
-            onChange={(e) => setMailDetails({ ...mailDetails, to: e.value })}
-          />
+        <MultiSelect
+          style={{ minWidth: "33%" }}
+          value={rfqDetails.rfq_email}
+          options={vendorEmailOptions}
+          onChange={(e) => setRfqDetails({ ...rfqDetails, rfq_email: e.value })}
+          optionLabel="name"
+          placeholder="Select a Vendor"
+          display="chip"
+        />
 
-          <label
-          // htmlFor={ele.field}
-          // className={classNames({ "p-error": isFormFieldValid("name") })}
-          >
-            To
-          </label>
-        </div>
-        <div className="p-float-label mt-5">
+        {/* <div className="p-float-label mt-5">
           <InputText
             // name=""
             className="mr-2 w-full"
@@ -662,41 +697,51 @@ export const RfqsList = () => {
           >
             Message
           </label>
-        </div>
+        </div> */}
         <div className="w-full flex justify-content-end mt-2 pl-2">
           <Button
             icon="pi pi-send"
             label="Send"
-            onClick={() => {
-              const data = JSON.stringify({
-                to: JSON.stringify(mailDetails.to),
-                subject: mailDetails.subject,
-                message: mailDetails.message,
-              })
+            onClick={async () => {
+              const uniquerfq = rfqs.find((ele) => ele.id === activeRow.id)
 
+              // const data = JSON.stringify({
+              //   to: "varunram.66@gmail.com",
+              //   subject: "mailDetails.subject123",
+              //   message: "mailDetails.message",
+              // })
+
+              // var config = {
+              //   method: "post",
+              //   url: "http://localhost:3000/api/rfq",
+              //   headers: {
+              //     "Content-Type": "application/json",
+              //   },
+              //   data: data,
+              // }
+
+              const requestData = JSON.stringify({
+                data: {
+                  rfq_sentto: {
+                    create: rfqDetails?.rfq_email.length
+                      ? rfqDetails?.rfq_email?.map((item, i) => ({ email: item }))
+                      : undefined,
+                  },
+                },
+                rfq: uniquerfq,
+              })
               var config = {
                 method: "post",
                 url: "http://localhost:3000/api/rfq",
                 headers: {
                   "Content-Type": "application/json",
-                  // Cookie:
-                  //   "industrial-poc_sAnonymousSessionToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJibGl0empzIjp7ImlzQW5vbnltb3VzIjp0cnVlLCJoYW5kbGUiOiJqckZqQ2MwblE5UEVvYV92d25teEs3WGU0bjRoeDhySTphand0IiwicHVibGljRGF0YSI6eyJ1c2VySWQiOm51bGx9LCJhbnRpQ1NSRlRva2VuIjoiZGRWaTNNU1M3WE1GLWlBS1E5YTFJRmtkWnJMdThfWlUifSwiaWF0IjoxNjY0NzcyNTk2LCJhdWQiOiJibGl0empzIiwiaXNzIjoiYmxpdHpqcyIsInN1YiI6ImFub255bW91cyJ9.tn2TauSX_KSb4BbavfsXnOkn_m1fe_x0UCx8woCYZdk; industrial-poc_sAntiCsrfToken=ddVi3MSS7XMF-iAKQ9a1IFkdZrLu8_ZU; industrial-poc_sPublicDataToken=eyJ1c2VySWQiOm51bGx9",
                 },
-                data: data,
+                data: requestData,
               }
 
-              axios(config)
-                .then(function (response) {})
-                .catch(function (error) {})
-              // mail(
-              //   "care@robocraze.com",
-              //   mailDetails.to,
-              //   mailDetails.subject,
-              //   mailDetails.message,
-              //   null,
-              //   null,
-              //   null
-              // )
+              await axios(config).then(setSendDialog(false))
+              // .then(function (response) {})
+              // .catch(function (error) {})
             }}
           />
         </div>
@@ -1050,7 +1095,7 @@ export const RfqsList = () => {
         // footer={renderFooter}
         onHide={() => setRfqDialog(false)}
       >
-        <form
+        {/* <form
           onSubmit={async () => {
             if (rfqEditState) {
               await updateRFQMutation({ ...rfqDetails })
@@ -1222,20 +1267,35 @@ export const RfqsList = () => {
               label={rfqEditState ? "UPDATE" : "CREATE"}
             />
           </div>
-        </form>
+        </form> */}
       </Dialog>
-      <h4>Request for Quotations</h4>
-      <div className="flex justify-content-end align-items-center mb-2 ">
-        <Button
-          icon="pi pi-plus"
-          label="Create RFQ"
-          onClick={() => {
-            setRfqEditState(false)
-            setRfqDetails({ rfq_code: "", rfq_description: "", expected_dod: "", rfq_email: "" })
-            setItemList([{ products_product_id: "", quantity: "", price_per_unit: "" }])
-            setRfqDialog(!rfqDialog)
-          }}
-        ></Button>
+      <div className="col-12" style={{ padding: 0 }}>
+        <div className="card flex justify-content-between align-items-center">
+          <h4 className="mb-0">Request for Quotations</h4>
+          <div className="flex justify-content-end align-items-center">
+            <Button
+              icon="pi pi-plus"
+              label="Create RFQ"
+              onClick={() => {
+                setRfqEditState(false)
+                setRfqDetails({
+                  rfq_code: newRFQCode,
+                  rfq_description: "",
+                  expected_dod: "",
+                  rfq_email: "",
+                })
+                setItemList([
+                  { products_product_id: "", quantity: "", price_per_unit: "" },
+                  { products_product_id: "", quantity: "", price_per_unit: "" },
+                  { products_product_id: "", quantity: "", price_per_unit: "" },
+                  { products_product_id: "", quantity: "", price_per_unit: "" },
+                  { products_product_id: "", quantity: "", price_per_unit: "" },
+                ])
+                setRfqDialog(!rfqDialog)
+              }}
+            ></Button>
+          </div>
+        </div>
       </div>
 
       <div
@@ -1287,33 +1347,47 @@ export const RfqsList = () => {
             <div className="col-12">
               <h6>RFQ Details:</h6>
             </div>
-            {[
-              { type: "text", label: "RFQ Code", field: "rfq_code" },
-              // { type: "text", label: "RFQ Name", field: "rfq_name" },
-              // { type: "text", label: "Expected Delivery", field: "expected_dod" },
-              // { type: "email", label: "Email", field: "rfq_email" },
-              { type: "text", label: "RFQ Description", field: "rfq_description" },
-            ].map(({ label, field }, i) => {
-              return (
-                <div key={`${field}${i}`} className="field col-12 lg:col-4 mt-2">
-                  <span className="p-float-label">
-                    <InputText
-                      id={field}
-                      name={field}
-                      value={rfqDetails[field]}
-                      onChange={(e) => setRfqDetails({ ...rfqDetails, [field]: e.target.value })}
-                    />
-                    <label
-                      htmlFor={field}
-                      // className={classNames({ "p-error": isFormFieldValid("name") })}
-                    >
-                      {label}
-                    </label>
-                  </span>
-                  {/* {getFormErrorMessage("name")} */}
-                </div>
-              )
-            })}
+            <div className="field col-12 lg:col-4 mt-2 ">
+              <span className="p-float-label ">
+                <InputText
+                  id="rfq_code"
+                  name="rfq_code"
+                  value={rfqDetails.rfq_code}
+                  onChange={(e) => setRfqDetails({ ...rfqDetails, rfq_code: e.target.value })}
+                  disabled={RFQCodechecked}
+                />
+                <label
+                  htmlFor="rfq_code"
+                  // className={classNames({ "p-error": isFormFieldValid("name") })}
+                >
+                  RFQ Code
+                </label>
+              </span>
+
+              <div className="field-checkbox mt-3">
+                <Checkbox onChange={(e) => setRFQCodeChecked(e.checked)} checked={RFQCodechecked} />
+                <label htmlFor="binary">Un-check to add custom code.</label>
+              </div>
+            </div>
+            <div className="field col-12 lg:col-4 mt-2">
+              <span className="p-float-label">
+                <InputText
+                  id="rfq_description"
+                  name="rfq_description"
+                  value={rfqDetails.rfq_description}
+                  onChange={(e) =>
+                    setRfqDetails({ ...rfqDetails, rfq_description: e.target.value })
+                  }
+                />
+                <label
+                  htmlFor="rfq_description"
+                  // className={classNames({ "p-error": isFormFieldValid("name") })}
+                >
+                  RFQ Description
+                </label>
+              </span>
+            </div>
+
             <div className="field col-12 lg:col-4 mt-2 ">
               <span className="p-float-label">
                 <Calendar
@@ -1333,22 +1407,32 @@ export const RfqsList = () => {
             <div className="col-12">
               <h6>Send To Emails:</h6>
             </div>
-            <div className="col-12" style={{ position: "relative" }}>
-              <Chips
+            {/* <div className="col-12 lg:col-4 mt-2" style={{ position: "relative" }}> */}
+            {/* <Chips
                 // className="lg:col-4"
                 style={{ width: "33%" }}
                 name="email"
                 value={rfqDetails.rfq_email}
                 placeholder="Email"
-                onChange={(e) => setRfqDetails({ ...rfqDetails, rfq_email: e.target.value })}
+                onChange={(e) => setRfqDetails({ ...rfqDetails, rfq_email: e.value })}
               />
               <p
                 style={{ position: "absolute", bottom: "-20px", left: "10px" }}
                 className="text-xs"
               >
                 *Press Enter key before Entering next emails.
-              </p>
-            </div>
+              </p> */}
+            <MultiSelect
+              style={{ minWidth: "33%" }}
+              value={rfqDetails.rfq_email}
+              options={vendorEmailOptions}
+              onChange={(e) => setRfqDetails({ ...rfqDetails, rfq_email: e.value })}
+              optionLabel="name"
+              placeholder="Select a Vendor"
+              display="chip"
+            />
+            {/* </div> */}
+
             <div className="col-12 mt-5">
               <h6>Select Products:</h6>
             </div>
@@ -1375,8 +1459,31 @@ export const RfqsList = () => {
                         : (data[i].price_per_unit = 0)
                       setItemList(data)
                     }}
-                    placeholder="Select  Product"
+                    placeholder="Select Product"
                   />
+                  {/* <AutoComplete
+                    value={ele.products_product_id}
+                    suggestions={filteredVendors}
+                    completeMethod={searchCountry}
+                    field="name"
+                    dropdown
+                    forceSelection
+                    // itemTemplate={itemTemplate}
+                    onChange={async (e) => {
+                      console.log(itemList[0])
+                      await handleFormChange(e, i)
+                      // autoSetProductPrice(e)
+                      const productPrice = products.filter((item) => item.product_id === e.value)[0]
+                        ?.Price
+                      let data = [...itemList]
+                      e.target
+                        ? (data[i].price_per_unit = productPrice)
+                        : (data[i].price_per_unit = 0)
+                      setItemList(data)
+                    }}
+                    aria-label="Countries"
+                    dropdownAriaLabel="Select Country"
+                  /> */}
                 </div>
                 <div className="field col-12 lg:col-2 mt-2">
                   <span className="p-float-label">
@@ -1440,6 +1547,7 @@ export const RfqsList = () => {
               label={rfqEditState ? "UPDATE" : "ADD"}
               onClick={async (e) => {
                 e.preventDefault()
+
                 if (rfqEditState) {
                   const currentProducts = [
                     ...itemList.map(({ rfq_products_id }) => rfq_products_id),
@@ -1488,12 +1596,13 @@ export const RfqsList = () => {
                   await refetch()
                   fetchRfqProducts()
                 } else {
+                  const removeEmptyItems = itemList.filter((prod) => prod?.products_product_id)
                   try {
                     const newRfqData = await createRFQMutation({
                       ...rfqDetails,
                       active: 1,
                       rfq_products: {
-                        create: itemList.map((ele) => ({
+                        create: removeEmptyItems.map((ele) => ({
                           price_per_unit: Number(ele.price_per_unit),
                           quantity: Number(ele.quantity),
                           products: {
@@ -1552,13 +1661,13 @@ export const RfqsList = () => {
         onRowToggle={(e) => setExpandedRows(e.data)}
         rowExpansionTemplate={rowExpansionTemplate}
       >
-        <Column field="details" header="See More Details" expander={allowExpansion} />
-        <Column
+        <Column expander={allowExpansion} style={{ width: "3em" }} />
+        {/* <Column
           field="id"
           header="ID"
           body={({ id }) => `${prefixes[1].prefix}-${id}`}
           // className="text-center"
-        />
+        /> */}
         <Column
           field="rfq_code"
           header="Code"

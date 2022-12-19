@@ -55,10 +55,10 @@ export const LoginForm = (props: LoginFormProps) => {
           type="password"
         />
         <div className="flex align-items-center justify-content-between mb-6">
-          <div className="flex align-items-center">
+          {/* <div className="flex align-items-center">
             <Checkbox inputId="rememberme1" className="mr-2" />
             <label htmlFor="rememberme1">Remember me</label>
-          </div>
+          </div> */}
           <Link href={Routes.ForgotPasswordPage()}>
             <a className="font-medium no-underline ml-2 text-blue-500 text-right cursor-pointer">
               Forgot password?

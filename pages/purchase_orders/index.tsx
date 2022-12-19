@@ -333,47 +333,49 @@ export const Purchase_ordersList = () => {
     return (
       <div className="w-full">
         <TabView>
-          <TabPanel header="Products Lists">
-            <DataTable
-              value={data.purchase_order_products}
-              responsiveLayout="scroll"
-              showGridlines
-              // header={renderHeader}
-              stripedRows
-              className="text-s datatable-responsive w-full mt-5"
-              // paginator
-              // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
-              // rows={PAGINATION_VARIABLES.rows}
-              // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
-              // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
-            >
-              <Column
-                field="pop_id"
-                header="ID"
-                // className="text-center"
-              />
-              <Column
-                field="vendor_products.products.products_sku"
-                header="Product SKU"
-                // className="text-center"
-              />
+          <TabPanel header="Products Lists ">
+            <div className="expandTables">
+              <DataTable
+                value={data.purchase_order_products}
+                responsiveLayout="scroll"
+                showGridlines
+                // header={renderHeader}
+                stripedRows
+                className="text-s datatable-responsive w-full mt-5"
+                // paginator
+                // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
+                // rows={PAGINATION_VARIABLES.rows}
+                // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
+                // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
+              >
+                <Column
+                  field="pop_id"
+                  header="ID"
+                  // className="text-center"
+                />
+                <Column
+                  field="vendor_products.products.products_sku"
+                  header="Product SKU"
+                  // className="text-center"
+                />
 
-              <Column
-                field="vendor_products.products.name"
-                header="Name"
-                // className="text-center"
-              />
-              <Column
-                field="price_per_unit"
-                header="Price / Unit"
-                // className="text-center"
-              />
-              <Column
-                field="quantity"
-                header="Quantity"
-                // className="text-center"
-              />
-            </DataTable>
+                <Column
+                  field="vendor_products.products.name"
+                  header="Name"
+                  // className="text-center"
+                />
+                <Column
+                  field="price_per_unit"
+                  header="Price / Unit"
+                  // className="text-center"
+                />
+                <Column
+                  field="quantity"
+                  header="Quantity"
+                  // className="text-center"
+                />
+              </DataTable>
+            </div>
           </TabPanel>
           <TabPanel header="GRN">
             {!currentGrn && (
@@ -464,42 +466,44 @@ export const Purchase_ordersList = () => {
       {poErrorMsgs.map((ele, i) => (
         <ErrorCard rfqErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
       ))}
-
-      <h4>Purchase Orders</h4>
-      <div className="flex justify-content-end mb-2 ">
-        <Button
-          icon="pi pi-plus"
-          label="Create PO"
-          onClick={() => {
-            setPoEditState(false)
-            setPurchaseDialog(!purchaseDialog)
-            setPurchaseDetails({
-              vendor_vendor_id: "",
-              po_code: "",
-              po_description: "",
-              expiry_date: "",
-              expected_delivery: "",
-              from_party: "",
-              agreement: "",
-              rfq_id: "",
-            })
-            setItemList([
-              {
-                purchase_order_po_id: "",
-                purchase_order_purchase_order_status_pos_id: 1,
-                purchase_order_vendor_vendor_id: "",
-                vendor_products_vp_id: "",
-                vendor_products_vendor_vendor_id: "",
-                vendor_products_products_product_id: "",
-                quantity: "",
-                price_per_unit: "",
-                received_quantity: 0,
-              },
-            ])
-            setFilterProductOptions([])
-          }}
-        ></Button>
+      <div className="col-12 px-0">
+        <div className="card flex justify-content-between align-items-center">
+          <h4 className="mb-0">Purchase Orders</h4>
+          <Button
+            icon="pi pi-plus"
+            label="Create PO"
+            onClick={() => {
+              setPoEditState(false)
+              setPurchaseDialog(!purchaseDialog)
+              setPurchaseDetails({
+                vendor_vendor_id: "",
+                po_code: "",
+                po_description: "",
+                expiry_date: "",
+                expected_delivery: "",
+                from_party: "",
+                agreement: "",
+                rfq_id: "",
+              })
+              setItemList([
+                {
+                  purchase_order_po_id: "",
+                  purchase_order_purchase_order_status_pos_id: 1,
+                  purchase_order_vendor_vendor_id: "",
+                  vendor_products_vp_id: "",
+                  vendor_products_vendor_vendor_id: "",
+                  vendor_products_products_product_id: "",
+                  quantity: "",
+                  price_per_unit: "",
+                  received_quantity: 0,
+                },
+              ])
+              setFilterProductOptions([])
+            }}
+          ></Button>
+        </div>
       </div>
+
       <div
         className={`card ${
           purchaseDialog
@@ -514,7 +518,7 @@ export const Purchase_ordersList = () => {
               console.log("purchase details", purchaseDetails)
             }
           }
-          className="p-fluid"
+          className="p-fluid "
         >
           <h5 ref={scrollToPo}>Create PO</h5>
           <div className="formgrid grid">
@@ -726,7 +730,7 @@ export const Purchase_ordersList = () => {
             ))}
           </div>
           <Divider />
-          <div className="flex mt-">
+          <div className="flex ">
             <Button
               type="button"
               className=" mr-2"
@@ -898,24 +902,27 @@ export const Purchase_ordersList = () => {
         onRowToggle={(e) => setExpandedRows(e.data)}
         rowExpansionTemplate={rowExpansionTemplate}
       >
-        {/* <Column
-            field="po_id"
-            header="ID"
-            // className="text-center"
-          /> */}
-        <Column field="details" header="See More Details" expander={true} />
-        <Column field="po_id" header="ID" body={({ po_id }) => `${prefixes[2].prefix}-${po_id}`} />
-
         <Column
-          field="po_description"
-          header="Description"
-          // className="text-center"
+          field="details"
+          header="Details"
+          expander={true}
+          // className="overflow-hidden"
+          style={{ width: "10px" }}
         />
+        {/* <Column field="po_id" header="ID" body={({ po_id }) => `${prefixes[2].prefix}-${po_id}`} /> */}
         <Column
           field="po_code"
           header="Code"
           // className="text-center"
         />
+
+        <Column
+          field="po_description"
+          header="Description"
+          className="overflow-hidden"
+          // className="text-center"
+        />
+
         <Column
           field="po_type"
           header="Type"
@@ -924,6 +931,7 @@ export const Purchase_ordersList = () => {
         <Column
           field="vendor"
           header="Vendor"
+          className="overflow-hidden"
           // className="text-center"
         />
         <Column
@@ -955,6 +963,7 @@ export const Purchase_ordersList = () => {
         <Column
           field="from_party"
           header="From Party"
+          className="overflow-hidden"
           // className="text-center"
         />
         <Column
@@ -971,7 +980,7 @@ export const Purchase_ordersList = () => {
           field="agreement"
           header="Agreement"
           className="overflow-hidden"
-          style={{ width: "10px" }}
+          // style={{ width: "10px" }}
           // className="text-center"
         />
         <Column

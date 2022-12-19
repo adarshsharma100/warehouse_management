@@ -173,18 +173,23 @@ export const Inventory_productsList = () => {
   }
   return (
     <div>
-      <FileUpload
-        mode="basic"
-        accept=".csv"
-        customUpload
-        // name="demo[]"
-        // url="https://primefaces.org/primereact/showcase/upload.php"
-        // accept="image/*"
-        maxFileSize={1000000}
-        uploadHandler={(e) => onBasicUpload(e)}
-        // onUpload={(e) => onBasicUpload(e)}
-      />
-      <h2>Inventory</h2>
+      <div className="col-12 px-0">
+        <div className="card flex justify-content-between mb-2">
+          <h2 className="mb-0">Inventory</h2>
+          <FileUpload
+            mode="basic"
+            accept=".csv"
+            customUpload
+            // name="demo[]"
+            // url="https://primefaces.org/primereact/showcase/upload.php"
+            // accept="image/*"
+            maxFileSize={1000000}
+            uploadHandler={(e) => onBasicUpload(e)}
+            // onUpload={(e) => onBasicUpload(e)}
+          />
+        </div>
+      </div>
+
       <DataTable
         value={tableInventory}
         showGridlines

@@ -1,6 +1,7 @@
 import { BlitzAPIHandler, BlitzNextApiResponse } from "@blitzjs/next"
 import { PrismaClient } from "@prisma/client"
 import { mail } from "../../../helperFunctions/mail"
+import sendEmail from "helperFunctions/rfqMail"
 const prisma = new PrismaClient()
 
 import { resolver } from "@blitzjs/rpc"
@@ -21,6 +22,7 @@ const handler = async (req, res) => {
   //   asset_name: z.string(),
   //   priority: z.string(),
   // })
+  console.log(res)
 
   console.log("body", req.body)
   if (req.method === "POST") {
@@ -65,10 +67,11 @@ const handler = async (req, res) => {
     // }
 
     console.log("body", req.body)
-    mail("care@robocraze.com", record.to, record.subject, record.message)
+
+    await sendEmail(record.data, record.rfq)
     res.statusCode = 200
     res.setHeader("Content-Type", "application/json")
-    res.end(JSON.stringify({ name: "John Doe" }))
+    // res.end(JSON.stringify({ name: "John Doe" }))
   } else {
     // Handle any other HTTP method
   }

@@ -151,6 +151,28 @@ export const Vendor_productsList = () => {
       },
     })
   }
+
+  const createCSVFormat = () => {
+    const headers = ["Name", "Age", "City"]
+    const csv = headers.join(",") + "\n"
+    const blob = new Blob([csv], { type: "text/csv" })
+    const href = URL.createObjectURL(blob)
+    return href
+
+    // return (
+    //   <a
+    //     href={href}
+    //     style={{ color: "--primary-color-text" }}
+    //     download="catalog-products-format.csv"
+    //   >
+    //     CSV format
+    //   </a>
+    // )
+  }
+
+  let url = createCSVFormat()
+  console.log(url)
+
   return (
     <div className="grid">
       <Toast ref={toast} />
@@ -226,19 +248,29 @@ export const Vendor_productsList = () => {
         <div className="card flex justify-content-between align-items-center">
           <h4>Vendor Catalog</h4>
           <div className="flex">
-            <FileUpload
-              accept=".csv"
-              mode="basic"
-              customUpload
-              maxFileSize={1000000}
-              uploadHandler={(e) => onBasicUpload(e)}
-            />
             <Button
               icon="pi pi-plus"
               className="ml-2"
               label="Add Vendor Products"
               onClick={() => setVendorDialog(true)}
             ></Button>
+            <FileUpload
+              accept=".csv"
+              className="ml-2"
+              mode="basic"
+              customUpload
+              maxFileSize={1000000}
+              uploadHandler={(e) => onBasicUpload(e)}
+            />
+            <Button
+              icon="pi pi-download"
+              className="ml-2"
+              // label="CSV format"
+              onClick={() => createCSVFormat()}
+            >
+              <a href={createCSVFormat()} download="catalog-products-format.csv"></a>
+              {/* {createCSVFormat()} */}
+            </Button>
           </div>
         </div>
       </div>

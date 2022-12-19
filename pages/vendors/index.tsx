@@ -123,7 +123,7 @@ export const VendorsList = () => {
       <Toast ref={toast} />
       <div className="col-12">
         <div className="card flex justify-content-between mb-2 ">
-          <h2>Vendor</h2>
+          <h2 className="mb-0">Vendor</h2>
           <div className="flex">
             <FileUpload
               mode="basic"
@@ -131,6 +131,7 @@ export const VendorsList = () => {
               customUpload
               maxFileSize={1000000}
               uploadHandler={(e) => onBasicUpload(e)}
+              className="mr-1"
             />
             <Button
               icon="pi pi-plus"
