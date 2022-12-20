@@ -13,6 +13,7 @@ import { Dropdown } from "primereact/dropdown"
 import getProducts from "app/products/queries/getProducts"
 import { InputText } from "primereact/inputtext"
 import createVendor_product from "app/vendor_products/mutations/createVendor_product"
+import updateVendor_product from "app/vendor_products/mutations/updateVendor_product"
 import deleteVendor_product from "app/vendor_products/mutations/deleteVendor_product"
 import { FileUpload } from "primereact/fileupload"
 import Loading from "components/loading"
@@ -49,10 +50,11 @@ export const Vendor_productsList = () => {
     products_product_id: 0,
     vendor_sku: "",
   })
+  const [activeRow, setActiveRow] = useState({})
   const { unit_price, vendor_vendor_id, products_product_id, vendor_sku } = newProduct
   const [editState, setEditState] = useState(false)
   const [createVendorProductMutation] = useMutation(createVendor_product)
-  // const [updateVendorMutation] = useMutation(updateVendor)
+  const [updateVendorMutation] = useMutation(updateVendor_product)
   const [deleteVendorProductMutation] = useMutation(deleteVendor_product)
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
   const goToNextPage = () => router.push({ query: { page: page + 1 } })
@@ -70,22 +72,35 @@ export const Vendor_productsList = () => {
       <div className="flex justify-content-end">
         <Button
           className="mr-2"
-          label="ADD"
+          label={editState ? "UPDATE" : "ADD"}
           onClick={async () => {
-            await createVendorProductMutation({
-              unit_price,
-              vendor_vendor_id,
-              products_product_id,
-              vendor_sku,
-            })
-            await refetch()
-            setVendorDialog(false)
-            setNewProduct({
-              unit_price: 0,
-              vendor_vendor_id: 0,
-              products_product_id: 0,
-              vendor_sku: "",
-            })
+            if (editState) {
+              // update
+              console.log("test")
+
+              await updateVendor_product({
+                vp_id: activeRow.vp_id,
+                unit_price: newProduct.unit_price,
+                vendor_sku: newProduct.vendor_sku,
+              })
+              setVendorDialog(false)
+              await refetch()
+            } else {
+              await createVendorProductMutation({
+                unit_price,
+                vendor_vendor_id,
+                products_product_id,
+                vendor_sku,
+              })
+              await refetch()
+              setVendorDialog(false)
+              setNewProduct({
+                unit_price: 0,
+                vendor_vendor_id: 0,
+                products_product_id: 0,
+                vendor_sku: "",
+              })
+            }
           }}
         />
       </div>
@@ -153,25 +168,38 @@ export const Vendor_productsList = () => {
   }
 
   const createCSVFormat = () => {
-    const headers = ["Name", "Age", "City"]
+    const headers = ["VENDOR_ID", "PRODUCT_ID", "UNIT_PRICE", "SKU"]
     const csv = headers.join(",") + "\n"
     const blob = new Blob([csv], { type: "text/csv" })
     const href = URL.createObjectURL(blob)
-    return href
+    // return href
+
+    const postNode = document.createElement("a")
+
+    postNode.setAttribute("download", "Vendor-catalog-format.csv")
+    postNode.setAttribute("href", href)
+    postNode.setAttribute("target", "_blank")
+    document.body.appendChild(postNode)
+    postNode.click()
+    postNode.remove()
 
     // return (
     //   <a
     //     href={href}
-    //     style={{ color: "--primary-color-text" }}
+    //     // style={{ color: "--primary-color-text" }}
     //     download="catalog-products-format.csv"
+    //     style={{ color: "inherit" }}
+    //     target="_blank"
+    //     rel="noreferrer"
     //   >
-    //     CSV format
+    //     <i className="pi pi-download"></i>
     //   </a>
     // )
   }
 
-  let url = createCSVFormat()
-  console.log(url)
+  // let url = createCSVFormat()
+  // console.log(url)
+  console.log(vendor_vendor_id)
 
   return (
     <div className="grid">
@@ -189,6 +217,7 @@ export const Vendor_productsList = () => {
             products_product_id: 0,
             vendor_sku: "",
           })
+          setEditState(false)
         }}
       >
         <div className="grid p-fluid">
@@ -252,7 +281,15 @@ export const Vendor_productsList = () => {
               icon="pi pi-plus"
               className="ml-2"
               label="Add Vendor Products"
-              onClick={() => setVendorDialog(true)}
+              onClick={() => {
+                setVendorDialog(true)
+                setNewProduct({
+                  unit_price: 0,
+                  vendor_vendor_id: 0,
+                  products_product_id: 0,
+                  vendor_sku: "",
+                })
+              }}
             ></Button>
             <FileUpload
               accept=".csv"
@@ -265,12 +302,9 @@ export const Vendor_productsList = () => {
             <Button
               icon="pi pi-download"
               className="ml-2"
-              // label="CSV format"
-              onClick={() => createCSVFormat()}
-            >
-              <a href={createCSVFormat()} download="catalog-products-format.csv"></a>
-              {/* {createCSVFormat()} */}
-            </Button>
+              label="CSV format"
+              onClick={createCSVFormat}
+            />
           </div>
         </div>
       </div>
@@ -326,6 +360,7 @@ export const Vendor_productsList = () => {
                       icon="pi pi-pencil"
                       className="mr-1"
                       onClick={() => {
+                        setActiveRow(rowData)
                         setEditState(true)
                         setVendorDialog(true)
                         setNewProduct({
