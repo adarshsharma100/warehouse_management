@@ -41,6 +41,7 @@ import Grn from "components/Grn"
 import LoaderFullScreen from "components/LoaderFullScreen"
 import ErrorCard from "components/ErrorCard"
 import createGrn from "app/grns/mutations/createGrn"
+import { Checkbox } from "primereact/checkbox"
 
 const ITEMS_PER_PAGE = 100
 
@@ -189,12 +190,6 @@ export const Purchase_ordersList = () => {
     setItemList([...itemList, newfield])
   }
   const removeFields = (index) => {
-    console.log("index12123: ", itemList)
-    // console.log("index12123 ", index)
-    // let data = [...itemList]
-    // const data2 = data.splice(index, 1)
-    // console.log("index12123: ", itemList)
-    // setItemList(data2)
     setItemList(itemList.filter((data, i) => index !== i))
   }
 
@@ -458,6 +453,33 @@ export const Purchase_ordersList = () => {
     msgArray.splice(i, 1)
     setPoErrorMsgs(msgArray)
   }
+  const [newPOCode, setNewPOCode] = useState("")
+  const [poCodeChecked, setPoCodeChecked] = useState<boolean>(true)
+  const createNewPOCode = () => {
+    const poPrefix = prefixes.filter((prefix) => prefix.name === "PO")[0].name
+    const nextPoId = purchase_orders.length + 1
+    setNewPOCode(`${poPrefix}#${nextPoId}`)
+  }
+
+  useEffect(() => {
+    poCodeChecked
+      ? setPurchaseDetails({
+          ...purchaseDetails,
+          po_code: newPOCode,
+        })
+      : null
+  }, [poCodeChecked, newPOCode])
+
+  useEffect(() => {
+    setPurchaseDetails({
+      ...purchaseDetails,
+      po_code: newPOCode,
+    })
+  }, [purchaseDialog])
+
+  useEffect(() => {
+    createNewPOCode()
+  })
 
   return (
     <div>
@@ -546,7 +568,7 @@ export const Purchase_ordersList = () => {
                 // itemTemplate={countryOptionTemplate}
               />
             </div>
-            <div className="field col-12 lg:col-4 mt-2">
+            {/* <div className="field col-12 lg:col-4 mt-2">
               <span className="p-float-label">
                 <InputText
                   id="po_code"
@@ -559,7 +581,7 @@ export const Purchase_ordersList = () => {
                 />
                 <label htmlFor="po_code">PO Code</label>
               </span>
-            </div>
+            </div> */}
             <div className="field col-12 lg:col-4 mt-2">
               <span className="p-float-label">
                 <InputText
@@ -645,6 +667,29 @@ export const Purchase_ordersList = () => {
                 >
                   From Party
                 </label>
+              </div>
+            </div>
+            <div className="field col-12 lg:col-4 mt-2">
+              <span className="p-float-label">
+                <InputText
+                  id="po_code"
+                  name=""
+                  // className="mr-2 w-22rem"
+                  value={purchaseDetails.po_code}
+                  onChange={(e) =>
+                    setPurchaseDetails({ ...purchaseDetails, po_code: e.target.value })
+                  }
+                  disabled={poCodeChecked}
+                />
+                <label htmlFor="po_code">PO Code</label>
+              </span>
+              <div className="field-checkbox mt-3">
+                <Checkbox
+                  id="poCode"
+                  onChange={(e) => setPoCodeChecked(e.checked)}
+                  checked={poCodeChecked}
+                />
+                <label htmlFor="poCode">Un-check to add custom code.</label>
               </div>
             </div>
             <div className="col-12 mt-3 mb-3 ">

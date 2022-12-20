@@ -44,6 +44,7 @@ import { MultiSelect } from "primereact/multiselect"
 import { Checkbox } from "primereact/checkbox"
 import { AutoComplete } from "primereact/autocomplete"
 import sendEmail from "helperFunctions/rfqMail"
+import CreatePo from "components/CreatePo"
 
 const ITEMS_PER_PAGE = 100
 
@@ -98,8 +99,12 @@ export const RfqsList = () => {
   // const [updateManyRfqProductsMutation] = useMutation(updateManyRfq_products)
   const [updateRfqProductMutation] = useMutation(updateRfq_product)
   const [createPurchaseOrderMutation] = useMutation(createPurchase_order)
-  const productOptions = products.map(({ product_id, name, products_sku }) => {
-    return { name: `${name}-${products_sku}`, value: product_id }
+  const productOptions = products.map(({ product_id, name, products_sku, vendor_products }) => {
+    return {
+      name: `${name}-${products_sku}`,
+      value: product_id,
+      vendorID: vendor_products.map((ele) => ele.vendor_vendor_id),
+    }
   })
   // console.log(productOptions)
   const menu = useRef<Menu>(null)
@@ -290,16 +295,23 @@ export const RfqsList = () => {
     e.target ? (data[i][e.target.name] = e.value) : (data[i][e.originalEvent.target.name] = e.value)
     setProductItemList(data)
   }
-  // {
-  //     "id": 1,
-  //     "created_at": "2022-09-30T10:14:46.000Z",
-  //     "updated_at": "2022-09-30T10:14:46.000Z",
-  //     "expected_dod": 4,
-  //     "products_product_id": 1,
-  //     "products_inventory_products_inventory_product_id": 1,
-  //     "quantity": 50,
-  //     "price_per_unit": "400"
-  // }
+
+  const setRfqItemList = () => {
+    const active = tableRfqProducts
+      .filter(({ rfq_id }) => {
+        return rfq_id === activeRow.id
+      })
+      .map(({ products, quantity, price_per_unit, rfq_products_id }) => {
+        return {
+          products_product_id: products.product_id,
+          quantity: quantity,
+          price_per_unit: price_per_unit,
+          rfq_products_id,
+        }
+      })
+    setItemList(active)
+  }
+
   const items = [
     {
       label: "Options",
@@ -357,65 +369,68 @@ export const RfqsList = () => {
           label: "Create PO",
           icon: "pi pi-plus",
           command: () => {
-            const active = tableRfqProducts.filter(({ rfq_id }) => {
-              return rfq_id === activeRow.id
-            })
-            const activeProducts = active.map(({ products }) => {
-              return products.product_id
-            })
-            const activeVendors = vendors
-              .filter(({ vendor_products }) => {
-                const products = vendor_products.map(({ products_product_id }) => {
-                  return products_product_id
-                })
-                return activeProducts.every((ele) => {
-                  return products.includes(ele)
-                })
-                // return products.every((ele) => {
-                //   return activeProducts.includes(ele)
-                // })
-              })
-              .map(({ vendor, vendor_id }) => {
-                return { name: vendor, value: vendor_id }
-              })
+            setPurchaseDialog(true)
+            setRfqItemList()
+            console.log("activeRow", activeRow)
 
-            const activeProductsdetails = vendor_products
+            // const active = tableRfqProducts.filter(({ rfq_id }) => {
+            //   return rfq_id === activeRow.id
+            // })
+            // const activeProducts = active.map(({ products }) => {
+            //   return products.product_id
+            // })
+            // const activeVendors = vendors
+            //   .filter(({ vendor_products }) => {
+            //     const products = vendor_products.map(({ products_product_id }) => {
+            //       return products_product_id
+            //     })
+            //     return activeProducts.every((ele) => {
+            //       return products.includes(ele)
+            //     })
+            //     // return products.every((ele) => {
+            //     //   return activeProducts.includes(ele)
+            //     // })
+            //   })
+            //   .map(({ vendor, vendor_id }) => {
+            //     return { name: vendor, value: vendor_id }
+            //   })
 
-              .filter(({ products, vendor }) => {
-                return (
-                  activeProducts.includes(products.product_id) &&
-                  vendor.vendor_id == activeVendors[0]?.value
-                )
-              })
-              .map((ele) => {
-                return {
-                  purchase_order_po_id: "",
-                  purchase_order_purchase_order_status_pos_id: 1,
-                  purchase_order_vendor_vendor_id: ele.vendor.vendor_id,
-                  vendor_products_vp_id: ele.vp_id,
-                  vendor_products_vendor_vendor_id: ele.vendor.vendor_id,
-                  vendor_products_products_product_id: ele.products.product_id,
-                  quantity: "",
-                  price_per_unit: ele.unit_price,
-                  received_quantity: 0,
-                  product_name: ele.products.name,
-                  vendor_unit_price: ele.unit_price,
-                  product_id: ele.products.product_id,
-                }
-              })
+            // const activeProductsdetails = vendor_products
+
+            //   .filter(({ products, vendor }) => {
+            //     return (
+            //       activeProducts.includes(products.product_id) &&
+            //       vendor.vendor_id == activeVendors[0]?.value
+            //     )
+            //   })
+            //   .map((ele) => {
+            //     return {
+            //       purchase_order_po_id: "",
+            //       purchase_order_purchase_order_status_pos_id: 1,
+            //       purchase_order_vendor_vendor_id: ele.vendor.vendor_id,
+            //       vendor_products_vp_id: ele.vp_id,
+            //       vendor_products_vendor_vendor_id: ele.vendor.vendor_id,
+            //       vendor_products_products_product_id: ele.products.product_id,
+            //       quantity: "",
+            //       price_per_unit: ele.unit_price,
+            //       received_quantity: 0,
+            //       product_name: ele.products.name,
+            //       vendor_unit_price: ele.unit_price,
+            //       product_id: ele.products.product_id,
+            //     }
+            //   })
 
             // TDO take quantity from rfq
-            const activeProductsOptions = activeProductsdetails.map((ele) => {
-              return { name: ele.product_name, value: ele.product_id }
-            })
+            // const activeProductsOptions = activeProductsdetails.map((ele) => {
+            //   return { name: ele.product_name, value: ele.product_id }
+            // })
 
-            setPurchaseProductOption(activeProductsOptions)
-            setVendorOptions(activeVendors)
-            setActiveRfq(active)
-            setActiveRfqId(activeRow.id)
-            setProductItemList(activeProductsdetails)
-            // setActiveRow(rowData)
-            setPurchaseDialog(true)
+            // setPurchaseProductOption(activeProductsOptions)
+            // setVendorOptions(activeVendors)
+            // setActiveRfq(active)
+            // setActiveRfqId(activeRow.id)
+            // setProductItemList(activeProductsdetails)
+            // // setActiveRow(rowData)
           },
         },
         {
@@ -445,7 +460,7 @@ export const RfqsList = () => {
   const rowExpansionTemplate = (data) => {
     // const rowProducts = tableRfqProducts.filter((prod) => data.id === prod.id)
     // setActiveRfq(rowProducts)
-    console.log("rowdata", { data })
+    // console.log("rowdata", { data })
     return (
       <div className="w-full expandTable">
         <h3>Products List:</h3>
@@ -746,298 +761,300 @@ export const RfqsList = () => {
           />
         </div>
       </Dialog>
-      <Dialog
-        header="Create PO "
-        visible={purchaseDialog}
-        style={{ width: "80vw" }}
-        // footer={renderFooter}
-        onHide={() => {
-          setActiveRfq([])
-          setPurchaseProductOption([])
-          setProductItemList([])
-          setPurchaseDialog(false)
-          setPurchaseDetails({
-            vendor_vendor_id: "",
-            po_code: "",
-            po_description: "",
-            expiry_date: "",
-            expected_delivery: "",
-            from_party: "",
-            agreement: "",
-            rfq_id: null,
-          })
-        }}
-      >
-        <form
-          onSubmit={async () => {
-            // const rfc = await createRFQMutation({ ...rfqDetails })
-            //
-            // const many = itemList.map((ele) => {
-            //   return {
-            //     rfq_id: rfc.id,
-            //     price_per_unit: Number(ele.price_per_unit),
-            //     products_product_id: Number(ele.products_product_id),
-            //     quantity: Number(ele.quantity),
-            //   }
-            // })
-            //
-            // try {
-            //   await createRFQProductMutation(many)
-            // } catch (error: any) {
-            //
-            // }
-            // await refetch()
-          }}
-          className="p-fluid"
-        >
-          <div className="flex justify-content-between mt-2 mb-2 pt-4">
-            <Dropdown
-              className="mr-2 w-16rem"
-              name="products_product_id"
-              // disabled={editState}
-              optionLabel="name"
-              value={purchaseDetails.vendor_vendor_id}
-              options={vendorOptions}
-              onChange={(e) => {
-                setPurchaseDetails({ ...purchaseDetails, vendor_vendor_id: e.value })
-                setVendorChangeState(!vendorChangeState)
-              }}
-              placeholder="Select Vendor"
-            />
-            <Dropdown
-              className="mr-2 w-16rem"
-              // name="products_product_id"
-              disabled={true}
-              optionLabel="name"
-              value={purchaseDetails.rfq_id ?? activeRfqId}
-              options={rfqOptions}
-              onChange={(e) => setPurchaseDetails({ ...purchaseDetails, rfq_id: e.value })}
-              // onChange={(e) => handleFormChange(e, i)}
-              placeholder="Select RFQ to prefill values"
-            />
-            <div className="p-float-label">
-              <InputText
-                // name=""
-                className="mr-2 w-16rem"
-                value={purchaseDetails.po_code}
-                onChange={(e) =>
-                  setPurchaseDetails({ ...purchaseDetails, po_code: e.target.value })
-                }
-              />
-              <label
-              // htmlFor={ele.field}
-              // className={classNames({ "p-error": isFormFieldValid("name") })}
-              >
-                PO Code
-              </label>
-            </div>
-
-            <div className="p-float-label">
-              <InputText
-                className="mr-2 w-16rem"
-                value={purchaseDetails.po_description}
-                onChange={(e) =>
-                  setPurchaseDetails({ ...purchaseDetails, po_description: e.target.value })
-                }
-              />
-              <label
-              // htmlFor={ele.field}
-              // className={classNames({ "p-error": isFormFieldValid("name") })}
-              >
-                PO Name
-              </label>
-            </div>
-          </div>
-          <div className="flex justify-content-between mt-2 mb-2 pt-4">
-            <div className="p-float-label">
-              <Calendar
-                className="mr-2 w-16rem"
-                id="basic"
-                value={purchaseDetails.expiry_date}
-                onChange={(e) =>
-                  setPurchaseDetails({
-                    ...purchaseDetails,
-                    expiry_date: e.value,
-                  })
-                }
-              />
-              <label
-              // htmlFor={ele.field}
-              // className={classNames({ "p-error": isFormFieldValid("name") })}
-              >
-                Expiry Date
-              </label>
-            </div>
-            <div className="p-float-label">
-              <Calendar
-                className="mr-2 w-16rem"
-                id="basic"
-                value={purchaseDetails.expected_delivery}
-                onChange={(e) =>
-                  setPurchaseDetails({
-                    ...purchaseDetails,
-                    expected_delivery: e.value,
-                  })
-                }
-              />
-              <label
-              // htmlFor={ele.field}
-              // className={classNames({ "p-error": isFormFieldValid("name") })}
-              >
-                Expected Delivery
-              </label>
-            </div>
-            <div className="p-float-label">
-              <InputText
-                className="mr-2 w-16rem"
-                value={purchaseDetails.agreement}
-                onChange={(e) =>
-                  setPurchaseDetails({ ...purchaseDetails, agreement: e.target.value })
-                }
-              />
-              <label
-              // htmlFor={ele.field}
-              // className={classNames({ "p-error": isFormFieldValid("name") })}
-              >
-                Agreement
-              </label>
-            </div>
-            <div className="p-float-label">
-              <InputText
-                className="mr-2 w-16rem"
-                value={purchaseDetails.from_party}
-                onChange={(e) =>
-                  setPurchaseDetails({ ...purchaseDetails, from_party: e.target.value })
-                }
-              />
-              <label
-              // htmlFor={ele.field}
-              // className={classNames({ "p-error": isFormFieldValid("name") })}
-              >
-                From Party
-              </label>
-            </div>
-          </div>
-          <div>Select Items</div>
-          <hr />
-          {vendorOptions.length > 0 ? (
-            productItemList.map((ele, i) => {
-              return (
-                <div key={i} className="flex justify-content-between align-items-center mt-2 pt-4">
-                  <Dropdown
-                    className="mr-2 w-20rem"
-                    name="products_product_id"
-                    // disabled={editState}
-                    filter
-                    showClear
-                    filterBy="name"
-                    placeholder="Select a Product"
-                    optionLabel="name"
-                    value={ele.product_id}
-                    options={purchaseProductOption}
-                    onChange={(e) => handleProductFormChange(e, i)}
-                  />
-                  <div className="flex-column ">
-                    <div className="p-label ">
-                      <label className="mr-2">Target price per unit</label>
-                      <InputNumber
-                        name="price_per_unit"
-                        className="mr-2 w-20rem"
-                        onChange={(e) => handleProductFormChange(e, i)}
-                      />
-                    </div>
-                    <div className="flex justify-content-around">
-                      {purchaseDetails?.vendor_vendor_id && (
-                        <span className="p-error">
-                          vendor price:{ele?.vendor_unit_price ?? "-"}
-                        </span>
-                      )}
-                      <span className="p-error">
-                        Target price:
-                        {activeRfq.filter(({ products }) => {
-                          return Number(products.product_id) === Number(ele.product_id)
-                        })[0]?.price_per_unit ?? "-"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="p-label ">
-                    <label className="mr-2">Quantity</label>
-                    <InputNumber
-                      name="quantity"
-                      className="mr-2 w-20rem"
-                      value={
-                        activeRfq.filter(({ products }) => {
-                          return Number(products.product_id) === Number(ele.product_id)
-                        })[0]?.quantity ?? ""
-                      }
-                      onChange={(e) => handleProductFormChange(e, i)}
-                      // onChange={(e) => handleFormChange(e, i)}
-                    />
-                  </div>
-                </div>
-              )
-            })
-          ) : (
-            <div className="flex justify-content-center">
-              <div className="p-error">No vendor matches RFQ product List</div>
-            </div>
-          )}
-          {/* <div className="flex justify-content-end">
-            <Button
-              type="button"
-              icon="pi pi-minus"
-              disabled={productItemList.length < 1}
-              className="m-2 p-button-rounded "
-              onClick={removeFieldsPurchase}
-            />
-
-            <Button
-              type="button"
-              icon="pi pi-plus"
-              className="m-2 p-button-rounded "
-              onClick={addFieldsPurchase}
-            />
-          </div> */}
-          <div className="flex justify-content-end mt-2">
-            <Button
-              type="button"
-              className="col-3 mr-2 mt-2"
-              label="CREATE"
-              onClick={async () => {
-                const purchaseOrder = await createPurchaseOrderMutation({
-                  vendor_vendor_id: Number(purchaseDetails.vendor_vendor_id),
-                  po_code: purchaseDetails.po_code,
-                  po_description: purchaseDetails.po_description,
-                  expiry_date: new Date(purchaseDetails.expiry_date),
-                  expected_delivery: new Date(purchaseDetails.expected_delivery),
-                  from_party: purchaseDetails.from_party,
-                  agreement: purchaseDetails.agreement,
-                  rfq_id: Number(activeRfqId) ?? undefined,
-                })
-
-                const list = productItemList.map((ele) => {
-                  return {
-                    purchase_order_po_id: purchaseOrder?.po_id ?? "",
-                    // purchase_order_po_id: 8,
-                    purchase_order_purchase_order_status_pos_id: 1,
-                    purchase_order_vendor_vendor_id: Number(purchaseDetails.vendor_vendor_id),
-                    vendor_products_vp_id: Number(ele.vendor_products_vp_id),
-                    vendor_products_vendor_vendor_id: Number(purchaseDetails.vendor_vendor_id),
-                    vendor_products_products_product_id: Number(ele.product_id),
-                    quantity: Number(ele.quantity),
-                    price_per_unit: Number(ele.price_per_unit),
-                    received_quantity: 0,
-                  }
-                })
-                try {
-                  const result = await createManyPurchaseOrderProductsMutation(list)
-                } catch (error: any) {}
-                await refetch()
-              }}
-            />
-          </div>
-        </form>
-      </Dialog>
+      {
+        // <Dialog
+        //   header="Create PO "
+        //   visible={purchaseDialog}
+        //   style={{ width: "80vw" }}
+        //   // footer={renderFooter}
+        //   onHide={() => {
+        //     setActiveRfq([])
+        //     setPurchaseProductOption([])
+        //     setProductItemList([])
+        //     setPurchaseDialog(false)
+        //     setPurchaseDetails({
+        //       vendor_vendor_id: "",
+        //       po_code: "",
+        //       po_description: "",
+        //       expiry_date: "",
+        //       expected_delivery: "",
+        //       from_party: "",
+        //       agreement: "",
+        //       rfq_id: null,
+        //     })
+        //   }}
+        // >
+        //   <form
+        //     onSubmit={async () => {
+        //       // const rfc = await createRFQMutation({ ...rfqDetails })
+        //       //
+        //       // const many = itemList.map((ele) => {
+        //       //   return {
+        //       //     rfq_id: rfc.id,
+        //       //     price_per_unit: Number(ele.price_per_unit),
+        //       //     products_product_id: Number(ele.products_product_id),
+        //       //     quantity: Number(ele.quantity),
+        //       //   }
+        //       // })
+        //       //
+        //       // try {
+        //       //   await createRFQProductMutation(many)
+        //       // } catch (error: any) {
+        //       //
+        //       // }
+        //       // await refetch()
+        //     }}
+        //     className="p-fluid"
+        //   >
+        //     <div className="flex justify-content-between mt-2 mb-2 pt-4">
+        //       <Dropdown
+        //         className="mr-2 w-16rem"
+        //         name="products_product_id"
+        //         // disabled={editState}
+        //         optionLabel="name"
+        //         value={purchaseDetails.vendor_vendor_id}
+        //         options={vendorOptions}
+        //         onChange={(e) => {
+        //           setPurchaseDetails({ ...purchaseDetails, vendor_vendor_id: e.value })
+        //           setVendorChangeState(!vendorChangeState)
+        //         }}
+        //         placeholder="Select Vendor"
+        //       />
+        //       <Dropdown
+        //         className="mr-2 w-16rem"
+        //         // name="products_product_id"
+        //         disabled={true}
+        //         optionLabel="name"
+        //         value={purchaseDetails.rfq_id ?? activeRfqId}
+        //         options={rfqOptions}
+        //         onChange={(e) => setPurchaseDetails({ ...purchaseDetails, rfq_id: e.value })}
+        //         // onChange={(e) => handleFormChange(e, i)}
+        //         placeholder="Select RFQ to prefill values"
+        //       />
+        //       <div className="p-float-label">
+        //         <InputText
+        //           // name=""
+        //           className="mr-2 w-16rem"
+        //           value={purchaseDetails.po_code}
+        //           onChange={(e) =>
+        //             setPurchaseDetails({ ...purchaseDetails, po_code: e.target.value })
+        //           }
+        //         />
+        //         <label
+        //         // htmlFor={ele.field}
+        //         // className={classNames({ "p-error": isFormFieldValid("name") })}
+        //         >
+        //           PO Code
+        //         </label>
+        //       </div>
+        //       <div className="p-float-label">
+        //         <InputText
+        //           className="mr-2 w-16rem"
+        //           value={purchaseDetails.po_description}
+        //           onChange={(e) =>
+        //             setPurchaseDetails({ ...purchaseDetails, po_description: e.target.value })
+        //           }
+        //         />
+        //         <label
+        //         // htmlFor={ele.field}
+        //         // className={classNames({ "p-error": isFormFieldValid("name") })}
+        //         >
+        //           PO Name
+        //         </label>
+        //       </div>
+        //     </div>
+        //     <div className="flex justify-content-between mt-2 mb-2 pt-4">
+        //       <div className="p-float-label">
+        //         <Calendar
+        //           className="mr-2 w-16rem"
+        //           id="basic"
+        //           value={purchaseDetails.expiry_date}
+        //           onChange={(e) =>
+        //             setPurchaseDetails({
+        //               ...purchaseDetails,
+        //               expiry_date: e.value,
+        //             })
+        //           }
+        //         />
+        //         <label
+        //         // htmlFor={ele.field}
+        //         // className={classNames({ "p-error": isFormFieldValid("name") })}
+        //         >
+        //           Expiry Date
+        //         </label>
+        //       </div>
+        //       <div className="p-float-label">
+        //         <Calendar
+        //           className="mr-2 w-16rem"
+        //           id="basic"
+        //           value={purchaseDetails.expected_delivery}
+        //           onChange={(e) =>
+        //             setPurchaseDetails({
+        //               ...purchaseDetails,
+        //               expected_delivery: e.value,
+        //             })
+        //           }
+        //         />
+        //         <label
+        //         // htmlFor={ele.field}
+        //         // className={classNames({ "p-error": isFormFieldValid("name") })}
+        //         >
+        //           Expected Delivery
+        //         </label>
+        //       </div>
+        //       <div className="p-float-label">
+        //         <InputText
+        //           className="mr-2 w-16rem"
+        //           value={purchaseDetails.agreement}
+        //           onChange={(e) =>
+        //             setPurchaseDetails({ ...purchaseDetails, agreement: e.target.value })
+        //           }
+        //         />
+        //         <label
+        //         // htmlFor={ele.field}
+        //         // className={classNames({ "p-error": isFormFieldValid("name") })}
+        //         >
+        //           Agreement
+        //         </label>
+        //       </div>
+        //       <div className="p-float-label">
+        //         <InputText
+        //           className="mr-2 w-16rem"
+        //           value={purchaseDetails.from_party}
+        //           onChange={(e) =>
+        //             setPurchaseDetails({ ...purchaseDetails, from_party: e.target.value })
+        //           }
+        //         />
+        //         <label
+        //         // htmlFor={ele.field}
+        //         // className={classNames({ "p-error": isFormFieldValid("name") })}
+        //         >
+        //           From Party
+        //         </label>
+        //       </div>
+        //     </div>
+        //     <div>Select Items</div>
+        //     <hr />
+        //     {vendorOptions.length > 0 ? (
+        //       productItemList.map((ele, i) => {
+        //         return (
+        //           <div
+        //             key={i}
+        //             className="flex justify-content-between align-items-center mt-2 pt-4"
+        //           >
+        //             <Dropdown
+        //               className="mr-2 w-20rem"
+        //               name="products_product_id"
+        //               // disabled={editState}
+        //               filter
+        //               showClear
+        //               filterBy="name"
+        //               placeholder="Select a Product"
+        //               optionLabel="name"
+        //               value={ele.product_id}
+        //               options={purchaseProductOption}
+        //               onChange={(e) => handleProductFormChange(e, i)}
+        //             />
+        //             <div className="flex-column ">
+        //               <div className="p-label ">
+        //                 <label className="mr-2">Target price per unit</label>
+        //                 <InputNumber
+        //                   name="price_per_unit"
+        //                   className="mr-2 w-20rem"
+        //                   onChange={(e) => handleProductFormChange(e, i)}
+        //                 />
+        //               </div>
+        //               <div className="flex justify-content-around">
+        //                 {purchaseDetails?.vendor_vendor_id && (
+        //                   <span className="p-error">
+        //                     vendor price:{ele?.vendor_unit_price ?? "-"}
+        //                   </span>
+        //                 )}
+        //                 <span className="p-error">
+        //                   Target price:
+        //                   {activeRfq.filter(({ products }) => {
+        //                     return Number(products.product_id) === Number(ele.product_id)
+        //                   })[0]?.price_per_unit ?? "-"}
+        //                 </span>
+        //               </div>
+        //             </div>
+        //             <div className="p-label ">
+        //               <label className="mr-2">Quantity</label>
+        //               <InputNumber
+        //                 name="quantity"
+        //                 className="mr-2 w-20rem"
+        //                 value={
+        //                   activeRfq.filter(({ products }) => {
+        //                     return Number(products.product_id) === Number(ele.product_id)
+        //                   })[0]?.quantity ?? ""
+        //                 }
+        //                 onChange={(e) => handleProductFormChange(e, i)}
+        //                 // onChange={(e) => handleFormChange(e, i)}
+        //               />
+        //             </div>
+        //           </div>
+        //         )
+        //       })
+        //     ) : (
+        //       <div className="flex justify-content-center">
+        //         <div className="p-error">No vendor matches RFQ product List</div>
+        //       </div>
+        //     )}
+        //     <div className="flex justify-content-end">
+        //       <Button
+        //         type="button"
+        //         icon="pi pi-minus"
+        //         disabled={productItemList.length < 1}
+        //         className="m-2 p-button-rounded "
+        //         onClick={removeFieldsPurchase}
+        //       />
+        //       <Button
+        //         type="button"
+        //         icon="pi pi-plus"
+        //         className="m-2 p-button-rounded "
+        //         onClick={addFieldsPurchase}
+        //       />
+        //     </div>
+        //     <div className="flex justify-content-end mt-2">
+        //       <Button
+        //         type="button"
+        //         className="col-3 mr-2 mt-2"
+        //         label="CREATE"
+        //         onClick={async () => {
+        //           const purchaseOrder = await createPurchaseOrderMutation({
+        //             vendor_vendor_id: Number(purchaseDetails.vendor_vendor_id),
+        //             po_code: purchaseDetails.po_code,
+        //             po_description: purchaseDetails.po_description,
+        //             expiry_date: new Date(purchaseDetails.expiry_date),
+        //             expected_delivery: new Date(purchaseDetails.expected_delivery),
+        //             from_party: purchaseDetails.from_party,
+        //             agreement: purchaseDetails.agreement,
+        //             rfq_id: Number(activeRfqId) ?? undefined,
+        //           })
+        //           const list = productItemList.map((ele) => {
+        //             return {
+        //               purchase_order_po_id: purchaseOrder?.po_id ?? "",
+        //               // purchase_order_po_id: 8,
+        //               purchase_order_purchase_order_status_pos_id: 1,
+        //               purchase_order_vendor_vendor_id: Number(purchaseDetails.vendor_vendor_id),
+        //               vendor_products_vp_id: Number(ele.vendor_products_vp_id),
+        //               vendor_products_vendor_vendor_id: Number(purchaseDetails.vendor_vendor_id),
+        //               vendor_products_products_product_id: Number(ele.product_id),
+        //               quantity: Number(ele.quantity),
+        //               price_per_unit: Number(ele.price_per_unit),
+        //               received_quantity: 0,
+        //             }
+        //           })
+        //           try {
+        //             const result = await createManyPurchaseOrderProductsMutation(list)
+        //           } catch (error: any) {}
+        //           await refetch()
+        //         }}
+        //       />
+        //     </div>
+        //   </form>
+        // </Dialog>
+      }
 
       <Dialog
         header="Product List"
@@ -1644,6 +1661,16 @@ export const RfqsList = () => {
           </div>
         </form>
       </div>
+      <CreatePo
+        rfqData={activeRow}
+        productOptions={productOptions}
+        removeFields={removeFields}
+        vendor_products={vendor_products}
+        products={products}
+        purchaseDialog={purchaseDialog}
+        setPurchaseDialog={setPurchaseDialog}
+        prefixes={prefixes}
+      />
       <DataTable
         value={tableRFQ}
         scrollable
