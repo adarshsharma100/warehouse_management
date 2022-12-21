@@ -42,6 +42,7 @@ import LoaderFullScreen from "components/LoaderFullScreen"
 import ErrorCard from "components/ErrorCard"
 import createGrn from "app/grns/mutations/createGrn"
 import { Checkbox } from "primereact/checkbox"
+import axios from "axios"
 
 const ITEMS_PER_PAGE = 100
 
@@ -135,6 +136,7 @@ export const Purchase_ordersList = () => {
     agreement: "",
     rfq_id: "",
   })
+  const [sendPoDialog, setSendPoDialog] = useState(false)
   const [activeRow, setActiveRow] = useState({})
   const [poEditState, setPoEditState] = useState(false)
   const scrollToPo = useRef<HTMLHeadingElement>(null)
@@ -227,38 +229,47 @@ export const Purchase_ordersList = () => {
           label: "Edit",
           icon: "pi pi-pencil",
           command: () => {
+            scrollToPo?.current?.scrollIntoView()
             setPoEditState(true)
-            const expiry = new Date(activeRow.expiry_date)
-            const expected = new Date(activeRow.expected_delivery)
+            // const expiry = new Date(activeRow.expiry_date)
+            // const expected = new Date(activeRow.expected_delivery)
 
-            const {
-              vendor_vendor_id,
-              po_code,
-              po_description,
-              expiry_date,
-              expected_delivery,
-              from_party,
-              agreement,
-              rfq_id,
-            } = activeRow
+            // const {
+            //   vendor_vendor_id,
+            //   po_code,
+            //   po_description,
+            //   expiry_date,
+            //   expected_delivery,
+            //   from_party,
+            //   agreement,
+            //   rfq_id,
+            // } = activeRow
 
-            setPurchaseDetails({
-              vendor_vendor_id: vendor_vendor_id,
-              po_code: po_code,
-              po_description: po_description,
-              expiry_date: moment(expiry_date, "DD-MM-YYYY").toDate(),
-              expected_delivery: moment(expected_delivery, "DD-MM-YYYY").toDate(),
-              from_party: from_party,
-              agreement: agreement,
-              rfq_id: rfq_id,
-            })
-            const active = tableProducts.filter(
-              (ele) => activeRow.po_id === ele.purchase_order_po_id
-            )
+            // setPurchaseDetails({
+            //   vendor_vendor_id: vendor_vendor_id,
+            //   po_code: po_code,
+            //   po_description: po_description,
+            //   expiry_date: moment(expiry_date, "DD-MM-YYYY").toDate(),
+            //   expected_delivery: moment(expected_delivery, "DD-MM-YYYY").toDate(),
+            //   from_party: from_party,
+            //   agreement: agreement,
+            //   rfq_id: rfq_id,
+            // })
+            // const active = tableProducts.filter(
+            //   (ele) => activeRow.po_id === ele.purchase_order_po_id
+            // )
 
-            setItemList(active)
+            // setItemList(active)
+            setActivePO()
             setPurchaseDialog(true)
-            scrollToPo.current.scrollIntoView()
+          },
+        },
+        {
+          label: "Send mail",
+          icon: "pi pi-send",
+          command: () => {
+            setSendPoDialog(true)
+            setActivePO()
           },
         },
         // {
@@ -416,6 +427,36 @@ export const Purchase_ordersList = () => {
     )
   }
 
+  const setActivePO = () => {
+    const expiry = new Date(activeRow.expiry_date)
+    const expected = new Date(activeRow.expected_delivery)
+
+    const {
+      vendor_vendor_id,
+      po_code,
+      po_description,
+      expiry_date,
+      expected_delivery,
+      from_party,
+      agreement,
+      rfq_id,
+    } = activeRow
+
+    setPurchaseDetails({
+      vendor_vendor_id: vendor_vendor_id,
+      po_code: po_code,
+      po_description: po_description,
+      expiry_date: moment(expiry_date, "DD-MM-YYYY").toDate(),
+      expected_delivery: moment(expected_delivery, "DD-MM-YYYY").toDate(),
+      from_party: from_party,
+      agreement: agreement,
+      rfq_id: rfq_id,
+    })
+    const active = tableProducts.filter((ele) => activeRow.po_id === ele.purchase_order_po_id)
+
+    setItemList(active)
+  }
+
   useEffect(() => {
     const vendorID = purchaseDetails.vendor_vendor_id
     const filterProducts = productOptions.filter((ele) => ele.vendorID.includes(Number(vendorID)))
@@ -488,9 +529,75 @@ export const Purchase_ordersList = () => {
       {poErrorMsgs.map((ele, i) => (
         <ErrorCard rfqErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
       ))}
+
+      <Dialog
+        header="Send PO"
+        visible={sendPoDialog}
+        style={{ width: "50vw" }}
+        onHide={() => setSendPoDialog(false)}
+      >
+        <pre>{JSON.stringify(purchaseDetails, null, 2)}</pre>
+        <pre>{JSON.stringify(activeRow, null, 2)}</pre>
+        <div className="w-full flex justify-content-end mt-2 pl-2">
+          <Button
+            icon="pi pi-send"
+            label="Send"
+            onClick={async () => {
+              // const activePo = purchase_orders.find((ele) => ele.po_id === activeRow.po_id)
+
+              // console.log(activePo)
+
+              // const data = JSON.stringify({
+              //   to: "varunram.66@gmail.com",
+              //   subject: "mailDetails.subject123",
+              //   message: "mailDetails.message",
+              // })
+
+              // var config = {
+              //   method: "post",
+              //   url: "http://localhost:3000/api/rfq",
+              //   headers: {
+              //     "Content-Type": "application/json",
+              //   },
+              //   data: data,
+              // }
+
+              const formatedData = {
+                ...activeRow,
+                expected_delivery: moment(activeRow?.expected_delivery, "DD-MM-YYYY").toDate(),
+                expiry_date: moment(activeRow?.expiry_date, "DD-MM-YYYY").toDate(),
+              }
+              console.log(formatedData)
+
+              const requestData = JSON.stringify({
+                data: {
+                  vendor_vendor_id: activeRow?.vendor_vendor_id,
+                },
+                po: formatedData,
+              })
+              var config = {
+                method: "post",
+                url: "http://localhost:3000/api/po",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                data: requestData,
+              }
+
+              await axios(config)
+                .then(setSendPoDialog(false))
+                // .then(function (response) {})
+                .catch(function (error) {})
+            }}
+          />
+        </div>
+      </Dialog>
+
       <div className="col-12 px-0">
         <div className="card flex justify-content-between align-items-center">
-          <h4 className="mb-0">Purchase Orders</h4>
+          <h4 ref={scrollToPo} className="mb-0">
+            Purchase Orders
+          </h4>
           <Button
             icon="pi pi-plus"
             label="Create PO"
@@ -542,7 +649,7 @@ export const Purchase_ordersList = () => {
           }
           className="p-fluid "
         >
-          <h5 ref={scrollToPo}>Create PO</h5>
+          <h5>Create PO</h5>
           <div className="formgrid grid">
             <div className="col-12">
               <h6>PO Details:</h6>

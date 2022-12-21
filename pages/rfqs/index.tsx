@@ -668,7 +668,7 @@ export const RfqsList = () => {
         }}
       /> */}
       <Dialog
-        header="Send Quotaions"
+        header="Send Quotation"
         visible={sendDialog}
         style={{ width: "50vw" }}
         // footer={renderFooter("displayBasic")}
