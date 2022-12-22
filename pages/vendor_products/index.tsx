@@ -64,6 +64,8 @@ export const Vendor_productsList = () => {
   const vendorOptions = vendors.map(({ vendor, vendor_id }) => {
     return { name: vendor, value: vendor_id }
   })
+  const clearupload = useRef(null)
+  const [clrBtnVisibility, setClrBtnVisibility] = useState(false)
 
   if (isLoading || isVendorsLoading || isProductsLoading) return <div>Loading</div>
 
@@ -121,8 +123,10 @@ export const Vendor_productsList = () => {
       }
     }
   )
+
   const onBasicUpload = async (e) => {
     setErrorProducts([])
+
     let index = 2
     papa.parse(e.files[0], {
       header: true,
@@ -163,6 +167,7 @@ export const Vendor_productsList = () => {
           }
         )
         index += 1
+        await refetch()
       },
     })
   }
@@ -197,9 +202,16 @@ export const Vendor_productsList = () => {
     // )
   }
 
+  const buttonHidden = {
+    borderTopLeftRadius: "0.5rem",
+    borderBottomLeftRadius: "0.5rem",
+    borderTopRightRadius: clrBtnVisibility ? "0" : "0.5rem",
+    borderBottomRightRadius: clrBtnVisibility ? "0" : "0.5rem",
+  }
+
   // let url = createCSVFormat()
   // console.log(url)
-  console.log(vendor_vendor_id)
+  console.log(clrBtnVisibility)
 
   return (
     <div className="grid">
@@ -291,14 +303,38 @@ export const Vendor_productsList = () => {
                 })
               }}
             ></Button>
-            <FileUpload
-              accept=".csv"
-              className="ml-2"
-              mode="basic"
-              customUpload
-              maxFileSize={1000000}
-              uploadHandler={(e) => onBasicUpload(e)}
-            />
+            <span className=" flex justify-content-center align-items-center">
+              <FileUpload
+                accept=".csv"
+                style={{
+                  // borderRadius: "0.5rem",
+                  borderTopRightRadius: clrBtnVisibility ? "0" : "0.5rem",
+                }}
+                // style={buttonHidden}
+                className="ml-2 inline-block "
+                mode="basic"
+                customUpload
+                maxFileSize={1000000}
+                uploadHandler={(e) => onBasicUpload(e)}
+                ref={clearupload}
+                onSelect={() => setClrBtnVisibility(true)}
+                onBeforeSelect={() => setClrBtnVisibility(false)}
+                onClear={() => setClrBtnVisibility(false)}
+              />
+              <Button
+                visible={clrBtnVisibility}
+                style={{ backgroundColor: "var(--red-400)", border: "var(--red-400)" }}
+                icon="pi pi-file-excel                "
+                className=" ml-1 co"
+                onClick={() => {
+                  clearupload?.current.clear()
+                  setErrorProducts([])
+                }}
+                tooltip="Clear the File"
+                tooltipOptions={{ position: "top" }}
+              />
+            </span>
+
             <Button
               icon="pi pi-download"
               className="ml-2"

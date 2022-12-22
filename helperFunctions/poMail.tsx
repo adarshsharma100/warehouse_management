@@ -22,7 +22,7 @@ const sendPoEmail = async (data, po) => {
   mail(
     "care@robocraze.com",
     email,
-    `PO #${po_id}`,
+    `PO #${po_code}`,
     `
       <div style="position: relative;">
     <h1 style="text-align: center; text-decoration: underline double;">Purchase Order</h1>

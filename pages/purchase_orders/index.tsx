@@ -43,6 +43,7 @@ import ErrorCard from "components/ErrorCard"
 import createGrn from "app/grns/mutations/createGrn"
 import { Checkbox } from "primereact/checkbox"
 import axios from "axios"
+import { AutoComplete } from "primereact/autocomplete"
 
 const ITEMS_PER_PAGE = 100
 
@@ -230,6 +231,7 @@ export const Purchase_ordersList = () => {
           icon: "pi pi-pencil",
           command: () => {
             scrollToPo?.current?.scrollIntoView()
+            setPoCodeChecked(false)
             setPoEditState(true)
             // const expiry = new Date(activeRow.expiry_date)
             // const expected = new Date(activeRow.expected_delivery)
@@ -502,8 +504,32 @@ export const Purchase_ordersList = () => {
     setNewPOCode(`${poPrefix}#${nextPoId}`)
   }
 
+  const agreementStatusEnum = ["Approved", "Waiting For Approval"]
+  const agreementStatusOptions = agreementStatusEnum.map((ele) => ({
+    name: ele,
+  }))
+
+  const [filteredSuggestions, setFilteredSuggestions] = useState<any>(null)
+
+  const searchAgreement = (event: { query: string }) => {
+    setTimeout(() => {
+      let _filteredSuggestions
+      if (!event.query.trim().length) {
+        _filteredSuggestions = [...agreementStatusOptions]
+      } else {
+        _filteredSuggestions = agreementStatusOptions.filter((agreement) => {
+          return agreement.name.toLowerCase().startsWith(event.query.toLowerCase())
+        })
+      }
+
+      setFilteredSuggestions(_filteredSuggestions)
+    }, 50)
+  }
+
   useEffect(() => {
-    poCodeChecked
+    poEditState
+      ? null
+      : poCodeChecked
       ? setPurchaseDetails({
           ...purchaseDetails,
           po_code: newPOCode,
@@ -512,10 +538,12 @@ export const Purchase_ordersList = () => {
   }, [poCodeChecked, newPOCode])
 
   useEffect(() => {
-    setPurchaseDetails({
-      ...purchaseDetails,
-      po_code: newPOCode,
-    })
+    poEditState
+      ? null
+      : setPurchaseDetails({
+          ...purchaseDetails,
+          po_code: newPOCode,
+        })
   }, [purchaseDialog])
 
   useEffect(() => {
@@ -602,6 +630,7 @@ export const Purchase_ordersList = () => {
             icon="pi pi-plus"
             label="Create PO"
             onClick={() => {
+              setPoCodeChecked(true)
               setPoEditState(false)
               setPurchaseDialog(!purchaseDialog)
               setPurchaseDetails({
@@ -671,8 +700,6 @@ export const Purchase_ordersList = () => {
                 showClear
                 filterBy="name"
                 placeholder="Select Vendor"
-                // valueTemplate={selectedCountryTemplate}
-                // itemTemplate={countryOptionTemplate}
               />
             </div>
             {/* <div className="field col-12 lg:col-4 mt-2">
@@ -744,13 +771,21 @@ export const Purchase_ordersList = () => {
             </div>
             <div className="field col-12 lg:col-4 mt-2">
               <div className="p-float-label">
-                <InputText
-                  // className="mr-2 w-22rem"
+                <AutoComplete
                   value={purchaseDetails.agreement}
-                  onChange={(e) =>
-                    setPurchaseDetails({ ...purchaseDetails, agreement: e.target.value })
-                  }
+                  suggestions={filteredSuggestions}
+                  completeMethod={searchAgreement}
+                  field="name"
+                  onChange={(e) => {
+                    console.log(typeof e.value)
+                    let agreement = typeof e.value === typeof "s" ? e.value : e.value.name
+                    console.log("agreement", agreement)
+                    setPurchaseDetails({ ...purchaseDetails, agreement })
+                  }}
+                  aria-label="agreementStatusOptions"
+                  dropdownAriaLabel="Select Agreement"
                 />
+
                 <label
                 // htmlFor={ele.field}
                 // className={classNames({ "p-error": isFormFieldValid("name") })}
@@ -799,6 +834,7 @@ export const Purchase_ordersList = () => {
                 <label htmlFor="poCode">Un-check to add custom code.</label>
               </div>
             </div>
+
             <div className="col-12 mt-3 mb-3 ">
               <h6>Select Products</h6>
               <hr />
@@ -945,6 +981,7 @@ export const Purchase_ordersList = () => {
                   }
                 } else {
                   try {
+                    console.log(purchaseDetails)
                     const purchaseOrder = await createPurchaseOrderMutation({
                       vendor_vendor_id: Number(purchaseDetails.vendor_vendor_id),
                       po_code: purchaseDetails.po_code,
@@ -952,7 +989,8 @@ export const Purchase_ordersList = () => {
                       expiry_date: new Date(purchaseDetails.expiry_date),
                       expected_delivery: new Date(purchaseDetails.expected_delivery),
                       from_party: purchaseDetails.from_party,
-                      agreement: purchaseDetails.agreement,
+                      agreement_status: purchaseDetails.agreement.replaceAll(" ", "_"),
+                      // agreement: purchaseDetails.agreement,
                       // rfq_id: Number(purchaseDetails.rfq_id) ?? undefined,
                       purchase_order_products: {
                         create: itemList.map((ele) => ({
@@ -1129,7 +1167,7 @@ export const Purchase_ordersList = () => {
           // className="text-center"
         />
         <Column
-          field="agreement"
+          field="agreement_status"
           header="Agreement"
           className="overflow-hidden"
           // style={{ width: "10px" }}

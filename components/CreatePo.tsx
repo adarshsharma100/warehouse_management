@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "@blitzjs/rpc"
 import createPurchase_order from "app/purchase_orders/mutations/createPurchase_order"
 import getPurchase_orders from "app/purchase_orders/queries/getPurchase_orders"
 import getVendors from "app/vendors/queries/getVendors"
+import { AutoComplete } from "primereact/autocomplete"
 import { Button } from "primereact/button"
 import { Calendar } from "primereact/calendar"
 import { Checkbox } from "primereact/checkbox"
@@ -72,6 +73,27 @@ const CreatePo = (props) => {
     const poPrefix = prefixes.filter((prefix) => prefix.name === "PO")[0].name
     const nextPoId = purchase_orders.length + 1
     setNewPOCode(`${poPrefix}#${nextPoId}`)
+  }
+
+  const agreementStatusEnum = ["Approved", "Waiting For Approval"]
+  const agreementStatusOptions = agreementStatusEnum.map((ele) => ({
+    name: ele,
+  }))
+
+  const [filteredSuggestions, setFilteredSuggestions] = useState<any>(null)
+  const searchAgreement = (event: { query: string }) => {
+    setTimeout(() => {
+      let _filteredSuggestions
+      if (!event.query.trim().length) {
+        _filteredSuggestions = [...agreementStatusOptions]
+      } else {
+        _filteredSuggestions = agreementStatusOptions.filter((agreement) => {
+          return agreement.name.toLowerCase().startsWith(event.query.toLowerCase())
+        })
+      }
+
+      setFilteredSuggestions(_filteredSuggestions)
+    }, 50)
   }
 
   useEffect(() => {
@@ -262,7 +284,7 @@ const CreatePo = (props) => {
             </div>
           </div>
           <div className="field col-12 lg:col-4 mt-2">
-            <div className="p-float-label">
+            {/* <div className="p-float-label">
               <InputText
                 // className="mr-2 w-22rem"
                 value={purchaseDetails.agreement}
@@ -270,6 +292,29 @@ const CreatePo = (props) => {
                   setPurchaseDetails({ ...purchaseDetails, agreement: e.target.value })
                 }
               />
+              <label
+              // htmlFor={ele.field}
+              // className={classNames({ "p-error": isFormFieldValid("name") })}
+              >
+                Agreement
+              </label>
+            </div> */}
+            <div className="p-float-label">
+              <AutoComplete
+                value={purchaseDetails.agreement}
+                suggestions={filteredSuggestions}
+                completeMethod={searchAgreement}
+                field="name"
+                onChange={(e) => {
+                  console.log(typeof e.value)
+                  let agreement = typeof e.value === typeof "s" ? e.value : e.value.name
+                  console.log("agreement", agreement)
+                  setPurchaseDetails({ ...purchaseDetails, agreement })
+                }}
+                aria-label="agreementStatusOptions"
+                dropdownAriaLabel="Select Agreement"
+              />
+
               <label
               // htmlFor={ele.field}
               // className={classNames({ "p-error": isFormFieldValid("name") })}
@@ -445,7 +490,7 @@ const CreatePo = (props) => {
                     expiry_date: new Date(purchaseDetails.expiry_date),
                     expected_delivery: new Date(purchaseDetails.expected_delivery),
                     from_party: purchaseDetails.from_party,
-                    agreement: purchaseDetails.agreement,
+                    agreement_status: purchaseDetails.agreement.replaceAll(" ", "_"),
                     rfq_id: Number(purchaseDetails.rfq_id),
                     purchase_order_products: {
                       create: itemList.map((ele, i) => ({

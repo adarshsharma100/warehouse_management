@@ -10,9 +10,10 @@ const CreatePurchase_order = z.object({
   expiry_date: z.date(),
   expected_delivery: z.date(),
   from_party: z.string(),
-  agreement: z.string(),
+  agreement: z.string().optional(),
   rfq_id: z.number().optional(),
   purchase_order_products: z.unknown(),
+  agreement_status: z.string(),
 })
 
 const sendEmail = async (data, po) => {

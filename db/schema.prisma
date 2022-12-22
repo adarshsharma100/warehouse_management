@@ -62,7 +62,7 @@ model purchase_order {
   from_party                   String                           @db.VarChar(45)
   expiry_date                  DateTime                         @db.DateTime(0)
   expected_delivery            DateTime                         @db.DateTime(0)
-  agreement                    String                           @db.VarChar(45)
+  agreement                    String?                          @db.VarChar(45)
   purchase_order_status_pos_id Int                              @default(2)
   vendor_vendor_id             Int
   po_description               String                           @db.VarChar(155)
