@@ -23,6 +23,7 @@ import { Toast } from "primereact/toast"
 import { InputNumber } from "primereact/inputnumber"
 import ErrorCard from "components/ErrorCard"
 import { createCSVFormat } from "app/constants"
+import { FALSE } from "sass"
 
 const ITEMS_PER_PAGE = 100
 
@@ -43,6 +44,7 @@ export const Vendor_productsList = () => {
   })
 
   const toast = useRef(null)
+  const scrolToTop = useRef<HTMLDivElement>(null)
 
   const [errorProducts, setErrorProducts] = useState([])
   const [vendorDialog, setVendorDialog] = useState(false)
@@ -92,45 +94,46 @@ export const Vendor_productsList = () => {
 
   if (isLoading || isVendorsLoading || isProductsLoading) return <div>Loading</div>
 
-  const renderFooter = () => {
-    return (
-      <div className="flex justify-content-end">
-        <Button
-          className="mr-2"
-          label={editState ? "UPDATE" : "ADD"}
-          onClick={async () => {
-            if (editState) {
-              // update
-              console.log("test")
+  // const renderFooter = () => {
+  //   return (
+  //     <div className="flex justify-content-end">
+  //       <Button
+  //         className="mr-2"
+  //         label={editState ? "UPDATE" : "ADD"}
+  //         onClick={async () => {
+  //           if (editState) {
+  //             // update
+  //             console.log("test")
 
-              await updateVendorMutation({
-                vp_id: activeRow?.vp_id,
-                unit_price: newProduct.unit_price,
-                vendor_sku: newProduct.vendor_sku,
-              })
-              setVendorDialog(false)
-              await refetch()
-            } else {
-              await createVendorProductMutation({
-                unit_price,
-                vendor_vendor_id,
-                products_product_id,
-                vendor_sku,
-              })
-              await refetch()
-              setVendorDialog(false)
-              setNewProduct({
-                unit_price: 0,
-                vendor_vendor_id: 0,
-                products_product_id: 0,
-                vendor_sku: "",
-              })
-            }
-          }}
-        />
-      </div>
-    )
-  }
+  //             await updateVendorMutation({
+  //               vp_id: activeRow?.vp_id,
+  //               unit_price: newProduct.unit_price,
+  //               vendor_sku: newProduct.vendor_sku,
+  //             })
+  //             setVendorDialog(false)
+  //             await refetch()
+  //           } else {
+  //             await createVendorProductMutation({
+  //               unit_price,
+  //               vendor_vendor_id,
+  //               products_product_id,
+  //               vendor_sku,
+  //             })
+  //             await refetch()
+  //             setVendorDialog(false)
+  //             setNewProduct({
+  //               unit_price: 0,
+  //               vendor_vendor_id: 0,
+  //               products_product_id: 0,
+  //               vendor_sku: "",
+  //             })
+  //           }
+  //         }}
+  //       />
+  //     </div>
+  //   )
+  // }
+
   const tableVendorProducts = vendor_products.map(
     ({ products, unit_price, vendor, vp_id, vendor_sku }) => {
       return {
@@ -203,12 +206,12 @@ export const Vendor_productsList = () => {
   console.log(btnVisibility)
 
   return (
-    <div className="grid w-full">
+    <div className="grid w-full" ref={scrolToTop}>
       <Toast ref={toast} />
 
-      <Dialog
+      {/* <Dialog
         header="Add Vendor Product"
-        visible={vendorDialog}
+        visible={editState}
         style={{ width: "50vw" }}
         footer={renderFooter}
         onHide={() => {
@@ -274,7 +277,7 @@ export const Vendor_productsList = () => {
             </span>
           </div>
         </div>
-      </Dialog>
+      </Dialog> */}
       <div className="col-12 ">
         {!errorProducts.length &&
           ErrorMsgs.map((ele, i) => (
@@ -314,7 +317,7 @@ export const Vendor_productsList = () => {
                 visible={btnVisibility}
                 style={{ backgroundColor: "var(--red-400)", border: "var(--red-400)" }}
                 icon="pi pi-file-excel                "
-                className=" ml-1 co"
+                className=" ml-2"
                 onClick={() => {
                   clearupload?.current.clear()
                   setErrorProducts([])
@@ -333,6 +336,131 @@ export const Vendor_productsList = () => {
             />
           </div>
         </div>
+      </div>
+      <div
+        style={{ width: "99%" }}
+        className={`col-12 card ${
+          vendorDialog
+            ? "visible scalein animation-duration-200"
+            : "hidden scaleout animation-duration-200"
+        } ml-2`}
+      >
+        <form
+          className="p-fluid p-5"
+          onSubmit={async (e) => {
+            e.preventDefault()
+            if (editState) {
+              await updateVendorMutation({
+                vp_id: activeRow?.vp_id,
+                unit_price: newProduct.unit_price,
+                vendor_sku: newProduct.vendor_sku,
+              })
+              setVendorDialog(false)
+              await refetch()
+            } else {
+              await createVendorProductMutation({
+                unit_price,
+                vendor_vendor_id,
+                products_product_id,
+                vendor_sku,
+              })
+              await refetch()
+              setVendorDialog(false)
+              setNewProduct({
+                unit_price: 0,
+                vendor_vendor_id: 0,
+                products_product_id: 0,
+                vendor_sku: "",
+              })
+            }
+          }}
+        >
+          <h4 className="mb-3">{editState ? "Update " : "Create "}Vendor Catalog</h4>
+          <div className="formgrid grid justify-content-around">
+            {/* <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                <span className="p-float-label">
+                  <InputText
+                    id={ele.field}
+                    name={ele.field}
+                    value={vendorDetails[ele.field]}
+                    onChange={(e) => {
+                      setVendorDetails({ ...vendorDetails, [ele.field]: e.target.value })
+                    }}
+                  />
+                  <label htmlFor={ele.field}>{ele.label}</label>
+                </span>
+              </div> */}
+            <div className="field col-12 md:col-3 lg:col-3 mt-4">
+              <Dropdown
+                disabled={editState}
+                optionLabel="name"
+                value={vendor_vendor_id}
+                options={vendorOptions}
+                onChange={(e) => setNewProduct({ ...newProduct, vendor_vendor_id: e.value })}
+                placeholder="Select Vendor"
+              />
+            </div>
+            <div className="field col-12 md:col-3 lg:col-3 mt-4">
+              <Dropdown
+                disabled={editState}
+                optionLabel="name"
+                value={products_product_id}
+                options={productOptions}
+                onChange={(e) => setNewProduct({ ...newProduct, products_product_id: e.value })}
+                placeholder="Select  Product"
+              />
+            </div>
+            <div className="field col-12 md:col-3 lg:col-3 mt-4">
+              <span className="p-float-label">
+                <InputText
+                  value={vendor_sku}
+                  onChange={(e) => {
+                    setNewProduct({
+                      ...newProduct,
+                      vendor_sku: e.target.value,
+                    })
+                  }}
+                  autoFocus
+                />
+                <label>Vendor SKU</label>
+              </span>
+            </div>
+            <div className="field col-12 md:col-3 lg:col-3 mt-4">
+              <span className="p-float-label">
+                <InputNumber
+                  value={unit_price}
+                  onChange={(e) => {
+                    setNewProduct({
+                      ...newProduct,
+                      unit_price: e.value,
+                    })
+                  }}
+                  autoFocus
+                />
+                <label>Unit Price</label>
+              </span>
+            </div>
+          </div>
+          <div className="flex justify-content-end mt-3">
+            <Button type="submit" className="mr-2" label={editState ? "UPDATE" : "ADD"} />
+            <Button
+              className="p-button-secondary"
+              type="button"
+              label="Cancel"
+              onClick={() => {
+                // ONHIDE
+                setVendorDialog(false)
+                setNewProduct({
+                  unit_price: 0,
+                  vendor_vendor_id: 0,
+                  products_product_id: 0,
+                  vendor_sku: "",
+                })
+                setEditState(false)
+              }}
+            />
+          </div>
+        </form>
       </div>
       <div
         className={`col-12 ${
@@ -386,6 +514,7 @@ export const Vendor_productsList = () => {
                       icon="pi pi-pencil"
                       className="mr-1"
                       onClick={() => {
+                        scrolToTop.current?.scrollIntoView()
                         setActiveRow(rowData)
                         setEditState(true)
                         setVendorDialog(true)

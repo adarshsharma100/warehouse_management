@@ -39,21 +39,24 @@ export const VendorsList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
-  const [createVendorMutation, { error: vendorCreationError }] = useMutation(createVendor)
-  const [updateVendorMutation, { error: vendorUpdationError }] = useMutation(updateVendor)
-  const [deleteVendorMutation] = useMutation(deleteVendor)
-  const [vendorDialog, setVendorDialog] = useState(false)
-  const [vendorDetails, setVendorDetails] = useState({
+  const initialVendorState = {
     vendor_code: "",
     vendor_email: "",
     vendor_city: "",
+    vendor_state: "",
     vendor_contact: "",
     vendor_gstin: "",
     vendor: "",
     address: "",
     credit_period: "",
     lead_time: "",
-  })
+  }
+
+  const [createVendorMutation, { error: vendorCreationError }] = useMutation(createVendor)
+  const [updateVendorMutation, { error: vendorUpdationError }] = useMutation(updateVendor)
+  const [deleteVendorMutation] = useMutation(deleteVendor)
+  const [vendorDialog, setVendorDialog] = useState(false)
+  const [vendorDetails, setVendorDetails] = useState(initialVendorState)
   const [errorProducts, setErrorProducts] = useState([])
   const [activeVendor, setActiveVendor] = useState(false)
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
@@ -73,6 +76,7 @@ export const VendorsList = () => {
       "CODE",
       "EMAIL",
       "CITY",
+      "STATE",
       "CONTACT",
       "GSTIN",
       "NAME",
@@ -96,6 +100,7 @@ export const VendorsList = () => {
           "CODE",
           "EMAIL",
           "CITY",
+          "STATE",
           "CONTACT",
           "GSTIN",
           "NAME",
@@ -112,6 +117,7 @@ export const VendorsList = () => {
             vendor_code: data["CODE"],
             vendor_email: data["EMAIL"],
             vendor_city: data["CITY"],
+            vendor_state: data["STATE"],
             vendor_contact: data["CONTACT"],
             vendor_gstin: data["GSTIN"],
             vendor: data["NAME"],
@@ -161,7 +167,7 @@ export const VendorsList = () => {
   }
   const [ErrorMsgs, setErrorMsgs] = useState([])
   useEffect(() => {
-    const ErrorArray = [vendorUpdationError, vendorUpdationError]
+    const ErrorArray = [vendorCreationError, vendorUpdationError]
 
     const msg = []
 
@@ -191,17 +197,7 @@ export const VendorsList = () => {
               label="Add Vendors"
               className="ml-1"
               onClick={() => {
-                setVendorDetails({
-                  vendor_code: "",
-                  vendor_email: "",
-                  vendor_city: "",
-                  vendor_contact: "",
-                  vendor_gstin: "",
-                  vendor: "",
-                  address: "",
-                  credit_period: "",
-                  lead_time: "",
-                })
+                setVendorDetails(initialVendorState)
                 setVendorDialog(true)
               }}
             ></Button>
@@ -222,7 +218,7 @@ export const VendorsList = () => {
                 visible={btnVisibility}
                 style={{ backgroundColor: "var(--red-400)", border: "var(--red-400)" }}
                 icon="pi pi-file-excel                "
-                className=" ml-1 co"
+                className=" ml-2"
                 onClick={() => {
                   clearUpload?.current.clear()
                   setErrorProducts([])
@@ -328,7 +324,8 @@ export const VendorsList = () => {
                     field="city"
                     onChange={(e) => {
                       let vendor_city = typeof e.value === typeof "s" ? e.value : e.value.city
-                      setVendorDetails({ ...vendorDetails, vendor_city })
+                      let vendor_state = typeof e.value === typeof "s" ? " " : e.value.state
+                      setVendorDetails({ ...vendorDetails, vendor_city, vendor_state })
                     }}
                     aria-label="cities"
                     dropdownAriaLabel="Select City"
@@ -342,6 +339,19 @@ export const VendorsList = () => {
                   </label>
                 </div>
               </div>
+              <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                <span className="p-float-label">
+                  <InputText
+                    id="state"
+                    name="state"
+                    value={vendorDetails.vendor_state}
+                    onChange={(e) => {
+                      setVendorDetails({ ...vendorDetails, vendor_state: e.value })
+                    }}
+                  />
+                  <label htmlFor="state">State</label>
+                </span>
+              </div>
             </div>
             <div className="flex justify-content-end">
               <Button type="submit" className="mr-2" label={activeVendor ? "UPDATE" : "ADD"} />
@@ -352,6 +362,7 @@ export const VendorsList = () => {
                 onClick={() => {
                   setActiveVendor(false)
                   setVendorDialog(false)
+                  setVendorDetails(initialVendorState)
                 }}
               />
             </div>
@@ -432,6 +443,11 @@ export const VendorsList = () => {
             <Column
               field="vendor_city"
               header="Vendor City"
+              // className="text-center"
+            />
+            <Column
+              field="vendor_state"
+              header="Vendor State"
               // className="text-center"
             />
             <Column

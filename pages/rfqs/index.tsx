@@ -86,7 +86,6 @@ export const RfqsList = () => {
   const [{ prefixes }] = useQuery(getPrefixes, {
     orderBy: { id: "asc" },
   })
-  // console.log("prefixes:", prefixes)
   const [sendDialog, setSendDialog] = useState(false)
   const [createRFQMutation, { isLoading: creatingRfq, error: createRFQMutationError }] =
     useMutation(createRfq)
@@ -106,9 +105,7 @@ export const RfqsList = () => {
       vendorID: vendor_products.map((ele) => ele.vendor_vendor_id),
     }
   })
-  // console.log(productOptions)
   const menu = useRef<Menu>(null)
-  //
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
   const goToNextPage = () => router.push({ query: { page: page + 1 } })
   const [rfqDialog, setRfqDialog] = useState(false)
@@ -145,7 +142,7 @@ export const RfqsList = () => {
     { products_product_id: "", quantity: "", price_per_unit: "" },
     ,
   ])
-  // console.log(itemList)
+
   const [activeRfq, setActiveRfq] = useState([])
   const [purchaseDetails, setPurchaseDetails] = useState({
     vendor_vendor_id: "",
@@ -180,7 +177,7 @@ export const RfqsList = () => {
     const activeProducts = active.map(({ products }) => {
       return products.product_id
     })
-    console.log("vendor_products", vendor_products)
+
     const activeProductsdetails = vendor_products
 
       .filter(({ products, vendor }) => {
@@ -242,7 +239,6 @@ export const RfqsList = () => {
     const rfqPrefix = prefixes?.filter((prefix) => prefix.name === "RFQ")[0].name
     const nextRfqId = rfqs.length + 1
     setNewRFQCode(`${rfqPrefix}#${nextRfqId}`)
-    // console.log("rfqPrefix", `${rfqPrefix}-${nextRfqId}`)
   }
 
   const [vendorOptions, setVendorOptions] = useState(options)
@@ -372,7 +368,6 @@ export const RfqsList = () => {
           command: () => {
             setPurchaseDialog(true)
             setRfqItemList()
-            console.log("activeRow", activeRow)
 
             // const active = tableRfqProducts.filter(({ rfq_id }) => {
             //   return rfq_id === activeRow.id
@@ -459,9 +454,6 @@ export const RfqsList = () => {
   const [expandedRows, setExpandedRows] = useState(null)
 
   const rowExpansionTemplate = (data) => {
-    // const rowProducts = tableRfqProducts.filter((prod) => data.id === prod.id)
-    // setActiveRfq(rowProducts)
-    // console.log("rowdata", { data })
     return (
       <div className="w-full expandTable">
         <h3>Products List:</h3>
@@ -551,8 +543,6 @@ export const RfqsList = () => {
   useEffect(() => {
     createNewRFQCode()
   })
-
-  // console.log("tableRFQ", tableRFQ)
 
   // const [filteredVendors, setFilteredVendors] = useState<any>(null)
   // const [selectedCountry2, setSelectedCountry2] = useState<any>(null)
@@ -1570,7 +1560,7 @@ export const RfqsList = () => {
                   const currentProducts = [
                     ...itemList.map(({ rfq_products_id }) => rfq_products_id),
                   ]
-                  console.log("Array", currentProducts)
+
                   const newProductList = itemList.filter((item) => !item.rfq_products_id)
 
                   const removemail = { ...rfqDetails }
@@ -1757,6 +1747,7 @@ export const RfqsList = () => {
                   // label="Show"
                   icon="pi pi-ellipsis-v"
                   onClick={(event) => {
+                    console.log("event", event)
                     setActiveRow(rowData)
                     menu.current.toggle(event)
                   }}

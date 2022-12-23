@@ -12,6 +12,7 @@ const CreateVendor = z.object({
   vendor_code: z.string(),
   vendor_email: z.string(),
   vendor_city: z.string(),
+  vendor_state: z.string(),
   vendor_contact: z.string(),
   vendor_gstin: z.string(),
   vendor: z.string(),

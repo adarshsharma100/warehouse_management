@@ -97,6 +97,7 @@ model vendor {
   vendor_email    String            @unique(map: "vendor_email_UNIQUE") @db.VarChar(45)
   vendor_city     String            @db.VarChar(45)
   vendor_contact  String            @db.VarChar(45)
+  vendor_state    String            @db.VarChar(45)
   vendor_gstin    String            @unique(map: "vendor_gstin_UNIQUE") @db.VarChar(45)
   vendor          String            @db.VarChar(45)
   address         String            @db.VarChar(145)
