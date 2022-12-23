@@ -1,4 +1,4 @@
-import { Suspense, useRef, useState } from "react"
+import { Suspense, useEffect, useRef, useState } from "react"
 import { Routes } from "@blitzjs/next"
 import Head from "next/head"
 import Link from "next/link"
@@ -24,6 +24,11 @@ import Loading from "components/loading"
 import nodemailer from "nodemailer"
 import { mail } from "helperFunctions/mail"
 import axios from "axios"
+
+import { cities } from "app/constants"
+import { createCSVFormat } from "app/constants"
+import { AutoComplete } from "primereact/autocomplete"
+import ErrorCard from "components/ErrorCard"
 const ITEMS_PER_PAGE = 100
 
 export const VendorsList = () => {
@@ -34,8 +39,8 @@ export const VendorsList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
-  const [createVendorMutation] = useMutation(createVendor)
-  const [updateVendorMutation] = useMutation(updateVendor)
+  const [createVendorMutation, { error: vendorCreationError }] = useMutation(createVendor)
+  const [updateVendorMutation, { error: vendorUpdationError }] = useMutation(updateVendor)
   const [deleteVendorMutation] = useMutation(deleteVendor)
   const [vendorDialog, setVendorDialog] = useState(false)
   const [vendorDetails, setVendorDetails] = useState({
@@ -61,6 +66,24 @@ export const VendorsList = () => {
     )
   }
   const toast = useRef(null)
+  const scrollToTop = useRef<HTMLDivElement>(null)
+
+  const vCsvFormatDetails = {
+    headers: [
+      "CODE",
+      "EMAIL",
+      "CITY",
+      "CONTACT",
+      "GSTIN",
+      "NAME",
+      "ADDRESS",
+      "CREDIT_PERIOD",
+      "LEAD_TIME",
+    ],
+    name: "Vendor-format.csv",
+  }
+  const [btnVisibility, setBtnVisibility] = useState(false)
+  const clearUpload = useRef<FileUpload>(null)
   const onBasicUpload = async (e) => {
     const csv = [] // this will contain all the data of imported csv file
     papa.parse(e.files[0], {
@@ -115,24 +138,54 @@ export const VendorsList = () => {
             },
           }
         )
+        await refetch()
       },
     })
   }
+
+  const [filteredSuggestions, setFilteredSuggestions] = useState<any>(null)
+
+  const searchCities = (event: { query: string }) => {
+    setTimeout(() => {
+      let _filteredSuggestions
+      if (!event.query.trim().length) {
+        _filteredSuggestions = [...cities]
+      } else {
+        _filteredSuggestions = cities.filter((element) => {
+          return element.city.toLowerCase().startsWith(event.query.toLowerCase())
+        })
+      }
+
+      setFilteredSuggestions(_filteredSuggestions)
+    }, 50)
+  }
+  const [ErrorMsgs, setErrorMsgs] = useState([])
+  useEffect(() => {
+    const ErrorArray = [vendorUpdationError, vendorUpdationError]
+
+    const msg = []
+
+    for (let err of ErrorArray) {
+      if (err) {
+        msg.push(err)
+      }
+    }
+    setErrorMsgs(msg)
+  }, [vendorUpdationError, vendorCreationError])
+
+  const removeErrorBox = (i) => {
+    const msgArray = [...ErrorMsgs]
+    msgArray.splice(i, 1)
+    setErrorMsgs(msgArray)
+  }
+
   return (
-    <div className="grid">
+    <div className="grid w-full mr-0" ref={scrollToTop}>
       <Toast ref={toast} />
       <div className="col-12">
-        <div className="card flex justify-content-between mb-2 ">
+        <div className="card flex justify-content-between mb-2  ">
           <h2 className="mb-0">Vendor</h2>
           <div className="flex">
-            <FileUpload
-              mode="basic"
-              accept=".csv"
-              customUpload
-              maxFileSize={1000000}
-              uploadHandler={(e) => onBasicUpload(e)}
-              className="mr-1"
-            />
             <Button
               icon="pi pi-plus"
               label="Add Vendors"
@@ -152,8 +205,61 @@ export const VendorsList = () => {
                 setVendorDialog(true)
               }}
             ></Button>
+            <span className=" flex justify-content-center align-items-center">
+              <FileUpload
+                className="ml-2 inline-block "
+                mode="basic"
+                accept=".csv"
+                customUpload
+                maxFileSize={1000000}
+                uploadHandler={(e) => onBasicUpload(e)}
+                ref={clearUpload}
+                onSelect={() => setBtnVisibility(true)}
+                onBeforeSelect={() => setBtnVisibility(false)}
+                onClear={() => setBtnVisibility(false)}
+              />
+              <Button
+                visible={btnVisibility}
+                style={{ backgroundColor: "var(--red-400)", border: "var(--red-400)" }}
+                icon="pi pi-file-excel                "
+                className=" ml-1 co"
+                onClick={() => {
+                  clearUpload?.current.clear()
+                  setErrorProducts([])
+                  // setErrorMsgs([])
+                }}
+                tooltip="Clear the File"
+                tooltipOptions={{ position: "top" }}
+              />
+            </span>
+            <Button
+              icon="pi pi-download"
+              className="ml-2"
+              label="CSV format"
+              onClick={() => createCSVFormat(vCsvFormatDetails)}
+            />
+            {/* <span className=" flex justify-content-center align-items-center">
+              <FileUpload
+                accept=".csv"
+                
+                className="ml-2 inline-block "
+                mode="basic"
+                customUpload
+                maxFileSize={1000000}
+                uploadHandler={(e) => onBasicUpload(e)}
+                ref={clearupload}
+                onSelect={() => setClrBtnVisibility(true)}
+                onBeforeSelect={() => setClrBtnVisibility(false)}
+                onClear={() => setClrBtnVisibility(false)}
+              />
+              
+            </span> */}
           </div>
         </div>
+        {!errorProducts.length &&
+          ErrorMsgs.map((ele, i) => (
+            <ErrorCard ErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
+          ))}
       </div>
       <div
         className={`col-12 card ${
@@ -165,7 +271,8 @@ export const VendorsList = () => {
         <div className="card">
           <form
             className="p-fluid"
-            onSubmit={async () => {
+            onSubmit={async (e) => {
+              e.preventDefault()
               console.log(vendorDetails)
               console.log("vendorDetails: ", vendorDetails)
               if (!activeVendor) {
@@ -177,6 +284,7 @@ export const VendorsList = () => {
               }
               await refetch()
               setActiveVendor(false)
+              setVendorDialog(false)
             }}
           >
             <h4 className="mb-3">{activeVendor ? "Update " : "Create "}Vendor</h4>
@@ -185,12 +293,12 @@ export const VendorsList = () => {
                 { type: "text", label: "Name", field: "vendor" },
                 { type: "text", label: "Code", field: "vendor_code" },
                 { type: "email", label: "Email", field: "vendor_email" },
-                { type: "text", label: "City", field: "vendor_city" },
+                // { type: "text", label: "City", field: "vendor_city" },
                 { type: "text", label: "Contact Number", field: "vendor_contact" },
                 { type: "text", label: "GSTIN", field: "vendor_gstin" },
-                { type: "text", label: "Address", field: "address" },
                 { type: "text", label: "Credit Period", field: "credit_period" },
                 { type: "text", label: "Lead Time", field: "lead_time" },
+                { type: "text", label: "Address", field: "address" },
               ].map((ele, i) => {
                 return (
                   <div
@@ -211,6 +319,29 @@ export const VendorsList = () => {
                   </div>
                 )
               })}
+              <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                <div className="p-float-label">
+                  <AutoComplete
+                    value={vendorDetails.vendor_city}
+                    suggestions={filteredSuggestions}
+                    completeMethod={searchCities}
+                    field="city"
+                    onChange={(e) => {
+                      let vendor_city = typeof e.value === typeof "s" ? e.value : e.value.city
+                      setVendorDetails({ ...vendorDetails, vendor_city })
+                    }}
+                    aria-label="cities"
+                    dropdownAriaLabel="Select City"
+                  />
+
+                  <label
+                  // htmlFor={ele.field}
+                  // className={classNames({ "p-error": isFormFieldValid("name") })}
+                  >
+                    City
+                  </label>
+                </div>
+              </div>
             </div>
             <div className="flex justify-content-end">
               <Button type="submit" className="mr-2" label={activeVendor ? "UPDATE" : "ADD"} />
@@ -281,10 +412,11 @@ export const VendorsList = () => {
               field="vendor"
               header="Vendor"
               // className="text-center"
+              // className="hidden"
             />
             <Column
               field="vendor_code"
-              header="Vendor Code"
+              header="Code"
               // className="text-center"
             />
             {/* <Column
@@ -328,6 +460,19 @@ export const VendorsList = () => {
               // className="text-center"
             />
             <Column
+              field="status"
+              header="Status"
+              body={(rowData) => {
+                // console.log(`${rowData.vendor_code}`, rowData)
+                return (
+                  <span className={`badge status-${rowData.status ? "active" : "inactive"}`}>
+                    {rowData.status ? "Active" : "Inactive"}
+                  </span>
+                )
+              }}
+              // className="text-center"
+            />
+            <Column
               // field="vendor_gstin"
               header="Action"
               body={(rowData) => {
@@ -341,15 +486,32 @@ export const VendorsList = () => {
                         setActiveVendor(true)
                         setVendorDetails({ ...rowData })
                         setVendorDialog(true)
+                        scrollToTop?.current.scrollIntoView()
                       }}
                     />
-                    <Button
+                    {/* <Button
                       // label="Delete"
                       disabled={false}
                       icon="pi pi-trash"
                       className="m-1"
                       onClick={async () => {
                         await deleteVendorMutation({ vendor_id: rowData.vendor_id })
+                        await refetch()
+                      }}
+                    /> */}
+                    <Button
+                      // label="Delete"
+                      disabled={false}
+                      icon="pi pi-info-circle"
+                      className="m-1"
+                      onClick={async () => {
+                        console.log("rowData", rowData)
+
+                        await updateVendorMutation({
+                          vendor_id: rowData.vendor_id,
+                          status: rowData.status === false ? true : false,
+                        })
+
                         await refetch()
                       }}
                     />

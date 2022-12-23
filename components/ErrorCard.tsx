@@ -1,11 +1,11 @@
 import { Button } from "primereact/button"
 import React from "react"
 
-function ErrorCard({ closeErrorBox, rfqErrorMsgs, value }) {
+function ErrorCard({ closeErrorBox, ErrorMsgs, value }) {
   return (
-    <div className="error-card flex">
-      <span style={{ width: "fit-content" }}>
-        {rfqErrorMsgs?.message}
+    <div className="error-card flex justify-content-center align-items-center">
+      <span style={{ width: "fit-content" }} className="flex-grow-1">
+        {ErrorMsgs?.message}
         {`${value}`}
       </span>
       <Button

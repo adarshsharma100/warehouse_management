@@ -1,4 +1,4 @@
-import { Suspense, useRef, useState } from "react"
+import { Suspense, useEffect, useRef, useState } from "react"
 import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
 
@@ -21,6 +21,8 @@ import papa from "papaparse"
 import downloadCsv from "download-csv"
 import { Toast } from "primereact/toast"
 import { InputNumber } from "primereact/inputnumber"
+import ErrorCard from "components/ErrorCard"
+import { createCSVFormat } from "app/constants"
 
 const ITEMS_PER_PAGE = 100
 
@@ -53,8 +55,9 @@ export const Vendor_productsList = () => {
   const [activeRow, setActiveRow] = useState({})
   const { unit_price, vendor_vendor_id, products_product_id, vendor_sku } = newProduct
   const [editState, setEditState] = useState(false)
-  const [createVendorProductMutation] = useMutation(createVendor_product)
-  const [updateVendorMutation] = useMutation(updateVendor_product)
+  const [createVendorProductMutation, { error: createVpMutationError }] =
+    useMutation(createVendor_product)
+  const [updateVendorMutation, { error: updateVpMutationError }] = useMutation(updateVendor_product)
   const [deleteVendorProductMutation] = useMutation(deleteVendor_product)
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
   const goToNextPage = () => router.push({ query: { page: page + 1 } })
@@ -65,7 +68,27 @@ export const Vendor_productsList = () => {
     return { name: vendor, value: vendor_id }
   })
   const clearupload = useRef(null)
-  const [clrBtnVisibility, setClrBtnVisibility] = useState(false)
+  const [btnVisibility, setBtnVisibility] = useState(false)
+
+  const [ErrorMsgs, setErrorMsgs] = useState([])
+  useEffect(() => {
+    const ErrorArray = [createVpMutationError, updateVpMutationError]
+
+    const msg = []
+
+    for (let err of ErrorArray) {
+      if (err) {
+        msg.push(err)
+      }
+    }
+    setErrorMsgs(msg)
+  }, [createVpMutationError, updateVpMutationError])
+
+  const removeErrorBox = (i) => {
+    const msgArray = [...ErrorMsgs]
+    msgArray.splice(i, 1)
+    setErrorMsgs(msgArray)
+  }
 
   if (isLoading || isVendorsLoading || isProductsLoading) return <div>Loading</div>
 
@@ -80,8 +103,8 @@ export const Vendor_productsList = () => {
               // update
               console.log("test")
 
-              await updateVendor_product({
-                vp_id: activeRow.vp_id,
+              await updateVendorMutation({
+                vp_id: activeRow?.vp_id,
                 unit_price: newProduct.unit_price,
                 vendor_sku: newProduct.vendor_sku,
               })
@@ -172,50 +195,17 @@ export const Vendor_productsList = () => {
     })
   }
 
-  const createCSVFormat = () => {
-    const headers = ["VENDOR_ID", "PRODUCT_ID", "UNIT_PRICE", "SKU"]
-    const csv = headers.join(",") + "\n"
-    const blob = new Blob([csv], { type: "text/csv" })
-    const href = URL.createObjectURL(blob)
-    // return href
-
-    const postNode = document.createElement("a")
-
-    postNode.setAttribute("download", "Vendor-catalog-format.csv")
-    postNode.setAttribute("href", href)
-    postNode.setAttribute("target", "_blank")
-    document.body.appendChild(postNode)
-    postNode.click()
-    postNode.remove()
-
-    // return (
-    //   <a
-    //     href={href}
-    //     // style={{ color: "--primary-color-text" }}
-    //     download="catalog-products-format.csv"
-    //     style={{ color: "inherit" }}
-    //     target="_blank"
-    //     rel="noreferrer"
-    //   >
-    //     <i className="pi pi-download"></i>
-    //   </a>
-    // )
+  const vpCsvFormatDetails = {
+    headers: ["VENDOR_ID", "PRODUCT_ID", "UNIT_PRICE", "SKU"],
+    name: "Vendor-catalog-format.csv",
   }
 
-  const buttonHidden = {
-    borderTopLeftRadius: "0.5rem",
-    borderBottomLeftRadius: "0.5rem",
-    borderTopRightRadius: clrBtnVisibility ? "0" : "0.5rem",
-    borderBottomRightRadius: clrBtnVisibility ? "0" : "0.5rem",
-  }
-
-  // let url = createCSVFormat()
-  // console.log(url)
-  console.log(clrBtnVisibility)
+  console.log(btnVisibility)
 
   return (
-    <div className="grid">
+    <div className="grid w-full">
       <Toast ref={toast} />
+
       <Dialog
         header="Add Vendor Product"
         visible={vendorDialog}
@@ -286,8 +276,12 @@ export const Vendor_productsList = () => {
         </div>
       </Dialog>
       <div className="col-12 ">
+        {!errorProducts.length &&
+          ErrorMsgs.map((ele, i) => (
+            <ErrorCard ErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
+          ))}
         <div className="card flex justify-content-between align-items-center">
-          <h4>Vendor Catalog</h4>
+          <h4 className="mb-0">Vendor Catalog</h4>
           <div className="flex">
             <Button
               icon="pi pi-plus"
@@ -306,29 +300,25 @@ export const Vendor_productsList = () => {
             <span className=" flex justify-content-center align-items-center">
               <FileUpload
                 accept=".csv"
-                style={{
-                  // borderRadius: "0.5rem",
-                  borderTopRightRadius: clrBtnVisibility ? "0" : "0.5rem",
-                }}
-                // style={buttonHidden}
                 className="ml-2 inline-block "
                 mode="basic"
                 customUpload
                 maxFileSize={1000000}
                 uploadHandler={(e) => onBasicUpload(e)}
                 ref={clearupload}
-                onSelect={() => setClrBtnVisibility(true)}
-                onBeforeSelect={() => setClrBtnVisibility(false)}
-                onClear={() => setClrBtnVisibility(false)}
+                onSelect={() => setBtnVisibility(true)}
+                onBeforeSelect={() => setBtnVisibility(false)}
+                onClear={() => setBtnVisibility(false)}
               />
               <Button
-                visible={clrBtnVisibility}
+                visible={btnVisibility}
                 style={{ backgroundColor: "var(--red-400)", border: "var(--red-400)" }}
                 icon="pi pi-file-excel                "
                 className=" ml-1 co"
                 onClick={() => {
                   clearupload?.current.clear()
                   setErrorProducts([])
+                  setErrorMsgs([])
                 }}
                 tooltip="Clear the File"
                 tooltipOptions={{ position: "top" }}
@@ -339,7 +329,7 @@ export const Vendor_productsList = () => {
               icon="pi pi-download"
               className="ml-2"
               label="CSV format"
-              onClick={createCSVFormat}
+              onClick={() => createCSVFormat(vpCsvFormatDetails)}
             />
           </div>
         </div>

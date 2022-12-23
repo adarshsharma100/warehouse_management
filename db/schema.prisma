@@ -102,6 +102,7 @@ model vendor {
   address         String            @db.VarChar(145)
   credit_period   String            @db.VarChar(45)
   lead_time       String            @db.VarChar(45)
+  status          Boolean?          @default(true)
   purchase_order  purchase_order[]
   vendor_products vendor_products[]
 }

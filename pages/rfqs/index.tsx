@@ -165,6 +165,7 @@ export const RfqsList = () => {
     message: "",
   })
   const scrollToRfq = useRef<HTMLHeadingElement>(null)
+  const scrollToError = useRef<Element>(null)
   const tableRfqProducts = rfq_products.map((ele) => {
     return {
       ...ele,
@@ -238,7 +239,7 @@ export const RfqsList = () => {
   const [newRFQCode, setNewRFQCode] = useState("")
 
   const createNewRFQCode = () => {
-    const rfqPrefix = prefixes.filter((prefix) => prefix.name === "RFQ")[0].name
+    const rfqPrefix = prefixes?.filter((prefix) => prefix.name === "RFQ")[0].name
     const nextRfqId = rfqs.length + 1
     setNewRFQCode(`${rfqPrefix}#${nextRfqId}`)
     // console.log("rfqPrefix", `${rfqPrefix}-${nextRfqId}`)
@@ -576,7 +577,7 @@ export const RfqsList = () => {
       {updatingRfq && <LoaderFullScreen />}
       {creatingRfq && <LoaderFullScreen />}
       {rfqErrorMsgs.map((ele, i) => (
-        <ErrorCard rfqErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
+        <ErrorCard ErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
       ))}
 
       {/* <Button
@@ -1614,6 +1615,17 @@ export const RfqsList = () => {
                   fetchRfqProducts()
                 } else {
                   const removeEmptyItems = itemList.filter((prod) => prod?.products_product_id)
+                  if (removeEmptyItems.length === 0) {
+                    setRfqErrorMsgs([
+                      ...rfqErrorMsgs,
+                      {
+                        message:
+                          "You should at least select 1 product from the select products List ",
+                      },
+                    ])
+                    return
+                  }
+
                   try {
                     const newRfqData = await createRFQMutation({
                       ...rfqDetails,
@@ -1637,7 +1649,7 @@ export const RfqsList = () => {
                     })
                     setRfqDialog(!rfqDialog)
                     await refetch()
-                    fetchRfqProducts()
+                    await fetchRfqProducts()
                   } catch (error) {
                     console.log(error)
                   }
