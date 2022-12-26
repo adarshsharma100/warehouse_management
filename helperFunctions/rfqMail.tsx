@@ -1,22 +1,33 @@
 import db from "db"
 import { mail } from "./mail"
 
-const sendEmail = async (data, rfq) => {
+const sendEmail = async (data, rfq, additionalInfo) => {
   const products = await db.rfq_products.findMany({
     where: { rfq_id: rfq?.id },
     include: { products: true },
   })
+  const sentmails = await db.rfq_sentto.findMany({
+    where: { rfq_id: additionalInfo.id },
+  })
+
+  const emailLists = data?.rfq_sentto?.create?.length
+    ? data?.rfq_sentto?.create.map(({ email }) => email)
+    : sentmails?.map(({ email }) => email)
+
+  // const emailLists = additionalInfo.creation
+  //   ? data?.rfq_sentto?.create.map(({ email }) => email)
+  //   : sentmails?.map(({ email }) => email)
 
   await Promise.all(
-    data?.rfq_sentto?.create.map(({ email }) => {
+    emailLists.map((email) => {
       mail(
         "care@robocraze.com",
         email,
-        `${rfq.rfq_code}`,
+        `${rfq.rfq_code}${additionalInfo.creation ? "" : "-Amended"}`,
         `
           <section>
-          <div>
-  
+          <div>  
+          
               <h2>RFQ Details:</h2>
               <p><strong>Doc No.:</strong>${rfq.rfq_code}</p>
               <p><strong>Description:</strong> ${rfq.rfq_description}</p>

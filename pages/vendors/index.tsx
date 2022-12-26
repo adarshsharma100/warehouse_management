@@ -379,8 +379,8 @@ export const VendorsList = () => {
                     completeMethod={searchCities}
                     field="city"
                     onChange={async (e) => {
-                      let vendor_city = typeof e.value === typeof "s" ? e.value : e.value.city
-                      let vendor_state = typeof e.value === typeof "s" ? " " : e.value.state
+                      let vendor_city = typeof e.value === "string" ? e.value : e.value.city
+                      let vendor_state = typeof e.value === "string" ? " " : e.value.state
                       // setVendorDetails({ ...vendorDetails, vendor_city, vendor_state })
                       await formik.setValues({ ...formik.values, vendor_city, vendor_state })
                       // formik.values = { ...formik.values, vendor_city, vendor_state }

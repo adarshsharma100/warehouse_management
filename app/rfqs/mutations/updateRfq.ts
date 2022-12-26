@@ -1,5 +1,6 @@
 import { resolver } from "@blitzjs/rpc"
 import db from "db"
+import sendEmail from "helperFunctions/rfqMail"
 import { z } from "zod"
 
 const UpdateRfq = z.unknown()
@@ -10,6 +11,8 @@ export default resolver.pipe(
   async ({ id, ...data }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const rfq = await db.rfq.update({ where: { id }, data })
+
+    await sendEmail(data, rfq, { id })
 
     return rfq
   }

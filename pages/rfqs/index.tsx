@@ -24,6 +24,7 @@ import deleteRfq_product from "app/rfq_products/mutations/deleteRfq_product"
 import deleteRfq from "app/rfqs/mutations/deleteRfq"
 import getVendors from "app/vendors/queries/getVendors"
 import getVendor_products from "app/vendor_products/queries/getVendor_products"
+
 import { Calendar } from "primereact/calendar"
 import createManyPurchase_order_product from "app/purchase_order_products/mutations/createManyPurchase_order_product"
 import createPurchase_order from "app/purchase_orders/mutations/createPurchase_order"
@@ -45,6 +46,7 @@ import { Checkbox } from "primereact/checkbox"
 import { AutoComplete } from "primereact/autocomplete"
 import sendEmail from "helperFunctions/rfqMail"
 import CreatePo from "components/CreatePo"
+import getRfq_senttos from "app/rfq_senttos/queries/getRfq_senttos"
 
 const ITEMS_PER_PAGE = 100
 
@@ -85,7 +87,13 @@ export const RfqsList = () => {
 
   const [{ prefixes }] = useQuery(getPrefixes, {
     orderBy: { id: "asc" },
+    skip: ITEMS_PER_PAGE * page,
+    take: ITEMS_PER_PAGE,
   })
+  const [{ rfq_senttos }] = useQuery(getRfq_senttos, {
+    orderBy: { id: "asc" },
+  })
+  console.log(rfq_senttos)
   const [sendDialog, setSendDialog] = useState(false)
   const [createRFQMutation, { isLoading: creatingRfq, error: createRFQMutationError }] =
     useMutation(createRfq)
@@ -675,40 +683,27 @@ export const RfqsList = () => {
           display="chip"
         />
 
-        {/* <div className="p-float-label mt-5">
-          <InputText
-            // name=""
-            className="mr-2 w-full"
-            value={mailDetails.subject}
-            onChange={(e) => setMailDetails({ ...mailDetails, subject: e.target.value })}
-          />
-          <label
-          // htmlFor={ele.field}
-          // className={classNames({ "p-error": isFormFieldValid("name") })}
-          >
-            Subject
-          </label>
-        </div>
-        <div className="p-float-label mt-5">
-          <InputTextarea
-            // name=""
-            rows={15}
-            className="mr-2 w-full"
-            value={mailDetails.message}
-            onChange={(e) => setMailDetails({ ...mailDetails, message: e.target.value })}
-          />
-          <label
-          // htmlFor={ele.field}
-          // className={classNames({ "p-error": isFormFieldValid("name") })}
-          >
-            Message
-          </label>
-        </div> */}
         <div className="w-full flex justify-content-end mt-2 pl-2">
           <Button
             icon="pi pi-send"
             label="Send"
             onClick={async () => {
+              const newMailsIDs = rfqDetails.rfq_email
+              const existingMailIDs = rfq_senttos
+                .filter((item) => item.rfq_id === activeRow.id)
+                .map((item) => item.email)
+              const filteredEmailIds = newMailsIDs.filter(
+                (email) => !existingMailIDs.includes(email)
+              )
+              await updateRFQMutation({
+                id: activeRow.id,
+
+                rfq_sentto: {
+                  create: filteredEmailIds?.length
+                    ? filteredEmailIds?.map((email) => ({ email }))
+                    : undefined,
+                },
+              })
               const uniquerfq = rfqs.find((ele) => ele.id === activeRow.id)
 
               // const data = JSON.stringify({
@@ -745,7 +740,9 @@ export const RfqsList = () => {
                 data: requestData,
               }
 
-              await axios(config).then(setSendDialog(false))
+              await axios(config)
+                .then(setSendDialog(false))
+                .catch((error) => console.log(error?.response?.data))
               // .then(function (response) {})
               // .catch(function (error) {})
             }}
@@ -1314,40 +1311,40 @@ export const RfqsList = () => {
         }`}
       >
         <form
-          onSubmit={async () => {
-            if (rfqEditState) {
-              await updateRFQMutation({ ...rfqDetails })
-              try {
-                itemList.forEach(async (ele) => {
-                  await updateRfqProductMutation({
-                    rfq_id: Number(rfqDetails.id),
-                    price_per_unit: Number(ele.price_per_unit),
-                    products_product_id: Number(ele.products_product_id),
-                    quantity: Number(ele.quantity),
-                    rfq_products_id: Number(ele.rfq_products_id),
-                  })
-                })
-              } catch (error: any) {}
-            } else {
-              const rfq = await createRFQMutation({ ...rfqDetails })
-              //
+          // onSubmit={async () => {
+          //   if (rfqEditState) {
+          //     await updateRFQMutation({ ...rfqDetails })
+          //     try {
+          //       itemList.forEach(async (ele) => {
+          //         await updateRfqProductMutation({
+          //           rfq_id: Number(rfqDetails.id),
+          //           price_per_unit: Number(ele.price_per_unit),
+          //           products_product_id: Number(ele.products_product_id),
+          //           quantity: Number(ele.quantity),
+          //           rfq_products_id: Number(ele.rfq_products_id),
+          //         })
+          //       })
+          //     } catch (error: any) {}
+          //   } else {
+          //     const rfq = await createRFQMutation({ ...rfqDetails })
+          //     //
 
-              const many = itemList.map((ele) => {
-                return {
-                  rfq_id: rfq.id,
-                  price_per_unit: Number(ele.price_per_unit),
-                  products_product_id: Number(ele.products_product_id),
-                  quantity: Number(ele.quantity),
-                }
-              })
+          //     const many = itemList.map((ele) => {
+          //       return {
+          //         rfq_id: rfq.id,
+          //         price_per_unit: Number(ele.price_per_unit),
+          //         products_product_id: Number(ele.products_product_id),
+          //         quantity: Number(ele.quantity),
+          //       }
+          //     })
 
-              try {
-                await createRFQProductMutation(many)
-              } catch (error: any) {}
-            }
+          //     try {
+          //       await createRFQProductMutation(many)
+          //     } catch (error: any) {}
+          //   }
 
-            await refetch()
-          }}
+          //   await refetch()
+          // }}
           className="p-fluid"
         >
           <h5 ref={scrollToRfq}>Create RFQ</h5>
@@ -1569,6 +1566,7 @@ export const RfqsList = () => {
                   )
 
                   delete removemail.rfq_email
+
                   const data = await updateRFQMutation({
                     ...removemail,
                     // expected_dod: rfqDetails.expected_dod.toString(),
@@ -1597,6 +1595,11 @@ export const RfqsList = () => {
                           in: delProductList,
                         },
                       },
+                    },
+                    rfq_sentto: {
+                      create: rfqDetails?.rfq_email?.length
+                        ? rfqDetails?.rfq_email?.map((item, i) => ({ email: item }))
+                        : undefined,
                     },
                   })
                   console.log(data)
