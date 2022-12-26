@@ -29,6 +29,8 @@ import { cities } from "app/constants"
 import { createCSVFormat } from "app/constants"
 import { AutoComplete } from "primereact/autocomplete"
 import ErrorCard from "components/ErrorCard"
+import { useFormik } from "formik"
+import * as Yup from "yup"
 const ITEMS_PER_PAGE = 100
 
 export const VendorsList = () => {
@@ -40,16 +42,16 @@ export const VendorsList = () => {
     take: ITEMS_PER_PAGE,
   })
   const initialVendorState = {
+    vendor: "",
     vendor_code: "",
     vendor_email: "",
-    vendor_city: "",
-    vendor_state: "",
     vendor_contact: "",
     vendor_gstin: "",
-    vendor: "",
-    address: "",
     credit_period: "",
     lead_time: "",
+    address: "",
+    vendor_city: "",
+    vendor_state: "",
   }
 
   const [createVendorMutation, { error: vendorCreationError }] = useMutation(createVendor)
@@ -184,6 +186,48 @@ export const VendorsList = () => {
     msgArray.splice(i, 1)
     setErrorMsgs(msgArray)
   }
+  const formik = useFormik({
+    initialValues: vendorDetails,
+    validationSchema: Yup.object().shape({
+      vendor: Yup.string().required("*Required"),
+      vendor_code: Yup.string().required("*Required"),
+      vendor_email: Yup.string().email("Enter valid email").required("*Required"),
+      vendor_contact: Yup.string()
+        .min(10, "Enter Valid Number")
+        .max(10, "Enter Valid Number")
+        .required("*Required"),
+      vendor_gstin: Yup.string()
+        .min(15, "Enter correct GST No. ")
+        .max(15, "Enter correct GST No.")
+        .required("*Required"),
+      credit_period: Yup.string(),
+      lead_time: Yup.string(),
+      address: Yup.string(),
+    }),
+    onSubmit: async (data) => {
+      console.log("data", data)
+
+      if (!activeVendor) {
+        await createVendorMutation({
+          ...data,
+        })
+      } else {
+        await updateVendorMutation({ ...data })
+      }
+      await refetch()
+      setActiveVendor(false)
+      setVendorDialog(false)
+      formik.resetForm()
+    },
+  })
+
+  const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
+  const getFormErrorMessage = (name) => {
+    return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
+  }
+
+  console.log("vendorDetails", vendorDetails)
+  console.log("formik", formik.values)
 
   return (
     <div className="grid w-full mr-0" ref={scrollToTop}>
@@ -267,21 +311,22 @@ export const VendorsList = () => {
         <div className="card">
           <form
             className="p-fluid"
-            onSubmit={async (e) => {
-              e.preventDefault()
-              console.log(vendorDetails)
-              console.log("vendorDetails: ", vendorDetails)
-              if (!activeVendor) {
-                await createVendorMutation({
-                  ...vendorDetails,
-                })
-              } else {
-                await updateVendorMutation({ ...vendorDetails })
-              }
-              await refetch()
-              setActiveVendor(false)
-              setVendorDialog(false)
-            }}
+            onSubmit={formik.handleSubmit}
+            // onSubmit={async (e) => {
+            //   e.preventDefault()
+            //   console.log(vendorDetails)
+            //   console.log("vendorDetails: ", vendorDetails)
+            //   if (!activeVendor) {
+            //     await createVendorMutation({
+            //       ...vendorDetails,
+            //     })
+            //   } else {
+            //     await updateVendorMutation({ ...vendorDetails })
+            //   }
+            //   await refetch()
+            //   setActiveVendor(false)
+            //   setVendorDialog(false)
+            // }}
           >
             <h4 className="mb-3">{activeVendor ? "Update " : "Create "}Vendor</h4>
             <div className="formgrid grid">
@@ -305,27 +350,40 @@ export const VendorsList = () => {
                       <InputText
                         id={ele.field}
                         name={ele.field}
-                        value={vendorDetails[ele.field]}
-                        onChange={(e) => {
-                          setVendorDetails({ ...vendorDetails, [ele.field]: e.target.value })
-                        }}
+                        // value={vendorDetails[ele.field]}
+                        // onChange={(e) => {
+                        //   setVendorDetails({ ...vendorDetails, [ele.field]: e.target.value })
+                        // }}
+                        value={formik.values[ele.field]}
+                        onChange={formik.handleChange}
+                        autoFocus
+                        className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
                       />
-                      <label htmlFor={ele.field}>{ele.label}</label>
+                      <label
+                        htmlFor={ele.field}
+                        className={classNames({ "p-error": isFormFieldValid(ele.field) })}
+                      >
+                        {ele.label}
+                      </label>
                     </span>
+                    {getFormErrorMessage(ele.field)}
                   </div>
                 )
               })}
               <div className="field col-12 md:col-3 lg:col-2 mt-4">
                 <div className="p-float-label">
                   <AutoComplete
-                    value={vendorDetails.vendor_city}
+                    // value={vendorDetails.vendor_city}
+                    value={formik.values.vendor_city}
                     suggestions={filteredSuggestions}
                     completeMethod={searchCities}
                     field="city"
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       let vendor_city = typeof e.value === typeof "s" ? e.value : e.value.city
                       let vendor_state = typeof e.value === typeof "s" ? " " : e.value.state
-                      setVendorDetails({ ...vendorDetails, vendor_city, vendor_state })
+                      // setVendorDetails({ ...vendorDetails, vendor_city, vendor_state })
+                      await formik.setValues({ ...formik.values, vendor_city, vendor_state })
+                      // formik.values = { ...formik.values, vendor_city, vendor_state }
                     }}
                     aria-label="cities"
                     dropdownAriaLabel="Select City"
@@ -344,9 +402,9 @@ export const VendorsList = () => {
                   <InputText
                     id="state"
                     name="state"
-                    value={vendorDetails.vendor_state}
+                    value={formik.values.vendor_state}
                     onChange={(e) => {
-                      setVendorDetails({ ...vendorDetails, vendor_state: e.value })
+                      // setVendorDetails({ ...vendorDetails, vendor_state: e.value })
                     }}
                   />
                   <label htmlFor="state">State</label>
@@ -360,6 +418,7 @@ export const VendorsList = () => {
                 type="button"
                 label="Cancel"
                 onClick={() => {
+                  formik.resetForm()
                   setActiveVendor(false)
                   setVendorDialog(false)
                   setVendorDetails(initialVendorState)
@@ -498,9 +557,10 @@ export const VendorsList = () => {
                       // label="Edit"
                       icon="pi pi-pencil"
                       className="m-1"
-                      onClick={() => {
+                      onClick={async () => {
                         setActiveVendor(true)
-                        setVendorDetails({ ...rowData })
+                        // setVendorDetails({ ...rowData })
+                        await formik.setValues({ ...rowData })
                         setVendorDialog(true)
                         scrollToTop?.current.scrollIntoView()
                       }}
@@ -554,5 +614,111 @@ const VendorsPage = () => {
     </div>
   )
 }
+// *-----------------------------------------------------*
+// Vendor form befor Formik
+{
+  /* <div className="card">
+  <form
+    className="p-fluid"
+    onSubmit={async (e) => {
+      e.preventDefault()
+      console.log(vendorDetails)
+      console.log("vendorDetails: ", vendorDetails)
+      if (!activeVendor) {
+        await createVendorMutation({
+          ...vendorDetails,
+        })
+      } else {
+        await updateVendorMutation({ ...vendorDetails })
+      }
+      await refetch()
+      setActiveVendor(false)
+      setVendorDialog(false)
+    }}
+  >
+    <h4 className="mb-3">{activeVendor ? "Update " : "Create "}Vendor</h4>
+    <div className="formgrid grid">
+      {[
+        { type: "text", label: "Name", field: "vendor" },
+        { type: "text", label: "Code", field: "vendor_code" },
+        { type: "email", label: "Email", field: "vendor_email" },
+        // { type: "text", label: "City", field: "vendor_city" },
+        { type: "text", label: "Contact Number", field: "vendor_contact" },
+        { type: "text", label: "GSTIN", field: "vendor_gstin" },
+        { type: "text", label: "Credit Period", field: "credit_period" },
+        { type: "text", label: "Lead Time", field: "lead_time" },
+        { type: "text", label: "Address", field: "address" },
+      ].map((ele, i) => {
+        return (
+          <div key={`create-${ele.field}-${i}`} className="field col-12 md:col-3 lg:col-2 mt-4">
+            <span className="p-float-label">
+              <InputText
+                id={ele.field}
+                name={ele.field}
+                value={vendorDetails[ele.field]}
+                onChange={(e) => {
+                  setVendorDetails({ ...vendorDetails, [ele.field]: e.target.value })
+                }}
+              />
+              <label htmlFor={ele.field}>{ele.label}</label>
+            </span>
+          </div>
+        )
+      })}
+      <div className="field col-12 md:col-3 lg:col-2 mt-4">
+        <div className="p-float-label">
+          <AutoComplete
+            value={vendorDetails.vendor_city}
+            suggestions={filteredSuggestions}
+            completeMethod={searchCities}
+            field="city"
+            onChange={(e) => {
+              let vendor_city = typeof e.value === typeof "s" ? e.value : e.value.city
+              let vendor_state = typeof e.value === typeof "s" ? " " : e.value.state
+              setVendorDetails({ ...vendorDetails, vendor_city, vendor_state })
+            }}
+            aria-label="cities"
+            dropdownAriaLabel="Select City"
+          />
+
+          <label
+          // htmlFor={ele.field}
+          // className={classNames({ "p-error": isFormFieldValid("name") })}
+          >
+            City
+          </label>
+        </div>
+      </div>
+      <div className="field col-12 md:col-3 lg:col-2 mt-4">
+        <span className="p-float-label">
+          <InputText
+            id="state"
+            name="state"
+            value={vendorDetails.vendor_state}
+            onChange={(e) => {
+              setVendorDetails({ ...vendorDetails, vendor_state: e.value })
+            }}
+          />
+          <label htmlFor="state">State</label>
+        </span>
+      </div>
+    </div>
+    <div className="flex justify-content-end">
+      <Button type="submit" className="mr-2" label={activeVendor ? "UPDATE" : "ADD"} />
+      <Button
+        className="p-button-secondary"
+        type="button"
+        label="Cancel"
+        onClick={() => {
+          setActiveVendor(false)
+          setVendorDialog(false)
+          setVendorDetails(initialVendorState)
+        }}
+      />
+    </div>
+  </form>
+</div> */
+}
+// *-----------------------------------------------------*
 
 export default VendorsPage
