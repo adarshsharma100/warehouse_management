@@ -181,8 +181,8 @@ export const Inventory_productsList = () => {
     initialValues: productDetails,
     validationSchema: Yup.object().shape({
       name: Yup.string().required("*Required"),
-      price: Yup.number().required("*Required"),
-      quantity: Yup.number().required("*Required"),
+      price: Yup.number().required("*Required").typeError("Must be a Number"),
+      quantity: Yup.number().required("*Required").typeError("Must be a Number"),
     }),
     onSubmit: async (data) => {
       console.log("data", data)
@@ -419,6 +419,7 @@ export const Inventory_productsList = () => {
                     Price
                   </label>
                 </span>
+                {getFormErrorMessage("price")}
               </div>
 
               <div className="field col-12 md:col-3 lg:col-3 mt-4">
