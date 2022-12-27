@@ -203,8 +203,6 @@ export const ProductsList = () => {
     setErrorMsgs(msgArray)
   }
 
-  // console.log(formik.values)
-
   return (
     <div className="grid w-full mr-0">
       <Toast ref={toast} />
