@@ -270,5 +270,5 @@ model grn_status {
 
 enum purchase_order_agreement_status {
   Approved
-  Waiting_For_Approval  @map("Waiting For Approval")
+  Waiting_For_Approval @map("Waiting For Approval")
 }

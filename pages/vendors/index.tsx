@@ -467,6 +467,7 @@ export const VendorsList = () => {
             // header={renderHeader}
             stripedRows
             className="text-s datatable-responsive"
+            responsiveLayout="scroll"
             // paginator
             // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
             // rows={PAGINATION_VARIABLES.rows}

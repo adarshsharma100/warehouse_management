@@ -375,7 +375,7 @@ export const Vendor_productsList = () => {
             }
           }}
         >
-          <h4 className="mb-3">{editState ? "Update " : "Create "}Vendor Catalog</h4>
+          <h4 className="mb-3">{editState ? "Update " : "Create "}Vendor Product</h4>
           <div className="formgrid grid justify-content-around">
             {/* <div className="field col-12 md:col-3 lg:col-2 mt-4">
                 <span className="p-float-label">

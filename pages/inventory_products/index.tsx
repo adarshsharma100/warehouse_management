@@ -1,4 +1,4 @@
-import { Suspense } from "react"
+import { Suspense, useRef, useState } from "react"
 import { Routes } from "@blitzjs/next"
 import Head from "next/head"
 import Link from "next/link"
@@ -14,19 +14,31 @@ import { FileUpload } from "primereact/fileupload"
 import papa from "papaparse"
 import downloadCsv from "download-csv"
 import createInventory_product from "app/inventory_products/mutations/createInventory_product"
+import updateInventory_product from "app/inventory_products/mutations/updateInventory_product"
 import createNotifications_sent from "app/notifications_sents/mutations/createNotifications_sent"
 import getProducts from "app/products/queries/getProducts"
 import deleteInventory_product from "app/inventory_products/mutations/deleteInventory_product"
 import axios from "axios"
+import { Dropdown } from "primereact/dropdown"
+import { InputText } from "primereact/inputtext"
+import { InputNumber } from "primereact/inputnumber"
+import { useFormik } from "formik"
+import * as Yup from "yup"
+import classNames from "classnames"
+import { AutoComplete } from "primereact/autocomplete"
+import { createCSVFormat } from "app/constants"
+import { Toast } from "primereact/toast"
 
 const ITEMS_PER_PAGE = 100
 
 export const Inventory_productsList = () => {
   const [createInventory_productMutation] = useMutation(createInventory_product)
+  const [updateInventory_productMutation] = useMutation(updateInventory_product)
   const [deleteInventory_productsMutation] = useMutation(deleteInventory_product)
   const [createNotifications_sentMutation] = useMutation(createNotifications_sent)
 
   const router = useRouter()
+
   const page = Number(router.query.page) || 0
   const [{ inventory_products, hasMore }, { refetch }] = usePaginatedQuery(getInventory_products, {
     orderBy: { inventory_product_id: "asc" },
@@ -34,245 +46,600 @@ export const Inventory_productsList = () => {
     take: ITEMS_PER_PAGE,
   })
 
+  // console.log("inventory_products", inventory_products)
+
   const [{ products }] = usePaginatedQuery(getProducts, {
     orderBy: { product_id: "asc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
-  console.log("products: ", products)
+
+  const productInitialState = {
+    name: "",
+    price: "",
+    quantity: "",
+    products_product_id: "",
+    product_description: "",
+  }
+
+  const [productForm, setProductForm] = useState<boolean>(false)
+  const [productEditState, setProductEditState] = useState(false)
+  const [filteredSuggestions, setFilteredSuggestions] = useState<any>(null)
+  const [productDetails, setProductDetails] = useState(productInitialState)
+  const [activeRowData, setActiveRowData] = useState({})
+  const [btnVisibility, setBtnVisibility] = useState(false)
+  const [errorProducts, setErrorProducts] = useState([])
+
+  const clearUpload = useRef<FileUpload>(null)
+  const toast = useRef(null)
+  // console.log("activeRowData", activeRowData)
+
+  // const productsList =  products.map
+  // console.log(products)
+
+  const searchCities = (event: { query: string }) => {
+    setTimeout(() => {
+      let _filteredSuggestions
+      if (!event.query.trim().length) {
+        _filteredSuggestions = [...products]
+      } else {
+        _filteredSuggestions = products.filter((element) => {
+          return element.name.toLowerCase().startsWith(event.query.toLowerCase())
+        })
+      }
+
+      setFilteredSuggestions(_filteredSuggestions)
+    }, 50)
+  }
+  // console.log("products: ", products)
+  // console.log("inventory_products", inventory_products)
 
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
   const goToNextPage = () => router.push({ query: { page: page + 1 } })
-  const tableInventory = inventory_products.map(({ quantity, products }) => {
-    return {
-      products_sku: products.products_sku,
-      name: products.name,
-      product_type: products.product_type,
-      quantity,
+  const tableInventory = inventory_products.map(
+    ({ quantity, products, price, inventory_product_id }) => {
+      return {
+        products_sku: products?.products_sku,
+        name: products?.name,
+        product_type: products?.product_type,
+        quantity,
+        price,
+        inventory_product_id,
+      }
     }
-  })
+  )
+  // const onBasicUpload = async (e) => {
+  //   console.log("FileUpload", e)
+  //   const csv = [] // this will contain all the data of imported csv file
+  //   papa.parse(e.files[0], {
+  //     header: true,
+  //     step: function (result) {
+  //       csv.push(result.data)
+  //     },
+  //     complete: async function (results, file) {
+  //       console.log("Complete", csv.length, "records.  ", results, "csvVendor", csv)
+  //       csv.pop() // to remove the last index value from csv (empty object)
+  //       const finalResults = csv.map(async (el) => {
+  //         console.log("testing", el)
+  //         const productSku = el["products_sku"]
+  //         console.log("productSku: ", productSku)
+
+  //         // checking for null values
+  //         let flag = true // flag true means we are ready to call vendor mutation and vice-versa
+  //         let a = {}
+
+  //         const productId = products.filter(({ products_sku }) => {
+  //           return products_sku === productSku
+  //         })
+
+  //         console.log("productId: ", productId)
+  //         // function to validate the csv file
+  //         const checkError = () => {
+  //           let errors = " " // this will contain all the error
+
+  //           if (productId.length < 1) {
+  //             flag = false
+  //             errors += `${productSku} doesn't exists`
+  //           } else {
+  //             inventory_products.forEach(({ products_product_id }) => {
+  //               if (Number(products_product_id) == Number(productId[0]?.product_id)) {
+  //                 flag = false
+  //                 console.log("flag: ", flag)
+  //                 errors += `inventory products already exists`
+  //               }
+  //             })
+  //           }
+
+  //           // checking for null values
+  //           Object.keys(el).forEach((e) => {
+  //             if (!el[e]) {
+  //               errors += `${e} is empty. `
+  //             }
+  //           })
+
+  //           // destructuring el
+  //           const { product_description, price, quantity } = el
+
+  //           let a = {
+  //             product_description,
+  //             price,
+  //             quantity,
+  //             products_sku: productSku,
+  //             error: errors,
+  //           }
+
+  //           return a
+  //         }
+
+  //         if (productId.length < 1) {
+  //           flag = false
+  //           return checkError()
+  //         } else {
+  //           inventory_products.forEach(({ products_product_id }) => {
+  //             if (Number(products_product_id) == Number(productId[0]?.product_id)) {
+  //               flag = false
+  //               a = checkError()
+  //             }
+  //           })
+  //         }
+
+  //         // if any of the column is empty in csv file
+  //         Object.keys(el).forEach((e) => {
+  //           if (!el[e]) {
+  //             flag = false
+  //             a = checkError()
+  //           }
+  //         })
+
+  //         try {
+  //           // flag && const adminsEmails = await createVendorMutation(el)
+  //           if (flag) {
+  //             const userAndInventory = await createInventory_productMutation({
+  //               product_description: el["product_description"],
+  //               price: Number(el["price"]),
+  //               quantity: Number(el["quantity"]),
+  //               products_product_id: Number(productId[0]?.product_id),
+  //             })
+  //           }
+  //           flag && (await refetch())
+  //           return a
+  //         } catch (error) {
+  //           console.log("error: ", error)
+  //           return checkError()
+  //         }
+  //       })
+  //       let failedCsv = await Promise.all(finalResults)
+  //       console.log("failedCsv: ", failedCsv)
+
+  //       // removing the empty object from failedCsv
+  //       failedCsv = failedCsv.filter((ele) => {
+  //         return Object.getOwnPropertyNames(ele).length !== 0
+  //       })
+
+  //       // exporting failed csv file as downloadable
+  //       const columns = {
+  //         product_description: "product_description",
+  //         price: "price",
+  //         quantity: "quantity",
+  //         products_sku: "products_sku",
+  //         error: "error",
+  //       }
+  //       await downloadCsv(failedCsv, columns, "failed inventory products")
+  //     },
+  //   })
+  // }
   const onBasicUpload = async (e) => {
-    console.log("FileUpload", e)
     const csv = [] // this will contain all the data of imported csv file
+
+    setErrorProducts([])
+    let index = 2
     papa.parse(e.files[0], {
       header: true,
-      step: function (result) {
-        csv.push(result.data)
-      },
-      complete: async function (results, file) {
-        console.log("Complete", csv.length, "records.  ", results, "csvVendor", csv)
-        csv.pop() // to remove the last index value from csv (empty object)
-        const finalResults = csv.map(async (el) => {
-          console.log("testing", el)
-          const productSku = el["products_sku"]
-          console.log("productSku: ", productSku)
-
-          // checking for null values
-          let flag = true // flag true means we are ready to call vendor mutation and vice-versa
-          let a = {}
-
-          const productId = products.filter(({ products_sku }) => {
-            return products_sku === productSku
-          })
-
-          console.log("productId: ", productId)
-          // function to validate the csv file
-          const checkError = () => {
-            let errors = " " // this will contain all the error
-
-            if (productId.length < 1) {
-              flag = false
-              errors += `${productSku} doesn't exists`
-            } else {
-              inventory_products.forEach(({ products_product_id }) => {
-                if (Number(products_product_id) == Number(productId[0]?.product_id)) {
-                  flag = false
-                  console.log("flag: ", flag)
-                  errors += `inventory products already exists`
-                }
-              })
-            }
-
-            // checking for null values
-            Object.keys(el).forEach((e) => {
-              if (!el[e]) {
-                errors += `${e} is empty. `
-              }
-            })
-
-            // destructuring el
-            const { product_description, price, quantity } = el
-
-            let a = {
-              product_description,
-              price,
-              quantity,
-              products_sku: productSku,
-              error: errors,
-            }
-
-            return a
-          }
-
-          if (productId.length < 1) {
-            flag = false
-            return checkError()
-          } else {
-            inventory_products.forEach(({ products_product_id }) => {
-              if (Number(products_product_id) == Number(productId[0]?.product_id)) {
-                flag = false
-                a = checkError()
-              }
-            })
-          }
-
-          // if any of the column is empty in csv file
-          Object.keys(el).forEach((e) => {
-            if (!el[e]) {
-              flag = false
-              a = checkError()
-            }
-          })
-
-          try {
-            // flag && const adminsEmails = await createVendorMutation(el)
-            if (flag) {
-              const userAndInventory = await createInventory_productMutation({
-                product_description: el["product_description"],
-                price: Number(el["price"]),
-                quantity: Number(el["quantity"]),
-                products_product_id: Number(productId[0]?.product_id),
-              })
-            }
-            flag && (await refetch())
-            return a
-          } catch (error) {
-            console.log("error: ", error)
-            return checkError()
-          }
-        })
-        let failedCsv = await Promise.all(finalResults)
-        console.log("failedCsv: ", failedCsv)
-
-        // removing the empty object from failedCsv
-        failedCsv = failedCsv.filter((ele) => {
-          return Object.getOwnPropertyNames(ele).length !== 0
-        })
-
-        // exporting failed csv file as downloadable
-        const columns = {
-          product_description: "product_description",
-          price: "price",
-          quantity: "quantity",
-          products_sku: "products_sku",
-          error: "error",
+      skipEmptyLines: true,
+      step: async ({ data }, parser) => {
+        console.log("data", data)
+        const missingKey = ["PRODUCT_ID", "PRICE", "QUANTITY", "DESCRIPTION"].find(
+          (key) => !(key in data)
+        )
+        if (missingKey) {
+          setErrorProducts([...errorProducts, { message: `Column ${missingKey} missing.` }])
+          parser.abort()
         }
-        await downloadCsv(failedCsv, columns, "failed inventory products")
+        try {
+          const result = await createInventory_productMutation(
+            {
+              price: Number(data["PRICE"]),
+              quantity: Number(data["QUANTITY"]),
+              products_product_id: Number(data["PRODUCT_ID"]),
+              product_description: data["DESCRIPTION"],
+            },
+            {
+              onSuccess: () => {
+                toast?.current?.show({
+                  severity: "success",
+                  summary: "Product Created",
+                  detail: "Product created successfully.",
+                  life: 3000,
+                })
+              },
+              onError: (error) => {
+                console.log("Product failed: ", data)
+                console.log("error: ", error)
+                setErrorProducts([
+                  ...errorProducts,
+                  { ...data, message: error.message, rowNum: index },
+                ])
+              },
+            }
+          )
+          index += 1
+          console.log(result)
+        } catch (error) {
+          console.log(error)
+        }
+        await refetch()
       },
     })
   }
+
+  console.log("error-products", errorProducts)
+  const pCsvFormatDetails = {
+    headers: ["PRODUCT_ID", "PRICE", "QUANTITY", "DESCRIPTION"],
+    name: "Product-format.csv",
+  }
+
+  const formik = useFormik({
+    initialValues: productDetails,
+    validationSchema: Yup.object().shape({
+      name: Yup.string().required("*Required"),
+      price: Yup.number().required("*Required"),
+      quantity: Yup.number().required("*Required"),
+    }),
+    onSubmit: async (data) => {
+      console.log("data", data)
+
+      const { name, price, quantity, products_product_id, product_description } = data
+
+      if (!productEditState) {
+        try {
+          await createInventory_productMutation({
+            product_description: product_description,
+            price: Number(price),
+            quantity: Number(quantity),
+            products_product_id: Number(products_product_id),
+          })
+        } catch (error) {
+          console.log("Creatiion", error)
+        }
+      } else {
+        const inventory_product_id = activeRowData.inventory_product_id
+
+        try {
+          await updateInventory_productMutation({
+            inventory_product_id,
+            price: Number(price),
+            quantity: Number(quantity),
+          })
+        } catch (error) {
+          console.log("Updation", error)
+        }
+      }
+      await refetch()
+      setProductEditState(false)
+      setProductForm(false)
+      formik.resetForm()
+    },
+  })
+  // console.log(formik.values)
+
+  const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
+  const getFormErrorMessage = (name) => {
+    return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
+  }
+
+  // console.log("productDetails", productDetails)
   return (
     <div>
+      <Toast ref={toast} />
       <div className="col-12 px-0">
-        <div className="card flex justify-content-between mb-2">
+        <div className="card flex justify-content-between align-items-center">
           <h2 className="mb-0">Inventory</h2>
-          <FileUpload
-            mode="basic"
-            accept=".csv"
-            customUpload
-            // name="demo[]"
-            // url="https://primefaces.org/primereact/showcase/upload.php"
-            // accept="image/*"
-            maxFileSize={1000000}
-            uploadHandler={(e) => onBasicUpload(e)}
-            // onUpload={(e) => onBasicUpload(e)}
-          />
+          <div className="flex">
+            <Button
+              icon="pi pi-plus"
+              className="ml-2"
+              label="Add Products"
+              onClick={() => {
+                setProductForm(true)
+              }}
+            ></Button>
+            <span className=" flex justify-content-center align-items-center">
+              <FileUpload
+                className="ml-2 inline-block "
+                mode="basic"
+                accept=".csv"
+                customUpload
+                maxFileSize={1000000}
+                uploadHandler={(e) => onBasicUpload(e)}
+                ref={clearUpload}
+                onSelect={() => setBtnVisibility(true)}
+                onBeforeSelect={() => setBtnVisibility(false)}
+                onClear={() => setBtnVisibility(false)}
+              />
+              <Button
+                visible={btnVisibility}
+                style={{ backgroundColor: "var(--red-400)", border: "var(--red-400)" }}
+                icon="pi pi-file-excel                "
+                className=" ml-2"
+                onClick={() => {
+                  clearUpload?.current.clear()
+                  setErrorProducts([])
+                  // setErrorMsgs([])
+                }}
+                tooltip="Clear the File"
+                tooltipOptions={{ position: "top" }}
+              />
+            </span>
+            <Button
+              icon="pi pi-download"
+              className="ml-2"
+              label="CSV format"
+              onClick={() => createCSVFormat(pCsvFormatDetails)}
+            />
+          </div>
+        </div>
+      </div>
+      <div
+        className={`col-12 ${
+          errorProducts.length
+            ? "visible scalein animation-duration-200"
+            : "hidden scaleout animation-duration-200"
+        }`}
+      >
+        <div className="card border-primary border-2 bg-primary-reverse">
+          <h6>Following are a list of failed entries: </h6>
+          <ul>
+            {errorProducts.map(({ rowNum, message }, index) => {
+              if (rowNum)
+                return (
+                  <li key={"error-" + index}>
+                    Row Number {rowNum}:{" "}
+                    <ul>
+                      <li>{message}</li>
+                    </ul>
+                  </li>
+                )
+              return (
+                <li key={"error-" + index}>
+                  <li>{message}</li>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      </div>
+      <div
+        className={`col-12 card ${
+          productForm
+            ? "visible scalein animation-duration-200"
+            : "hidden scaleout animation-duration-200"
+        }`}
+      >
+        <div className="card">
+          <form
+            className="p-fluid"
+            onSubmit={formik.handleSubmit}
+            // onSubmit={async (e) => {
+            //   e.preventDefault()
+            //   console.log(vendorDetails)
+            //   console.log("vendorDetails: ", vendorDetails)
+            //   if (!productEditState) {
+            //     await createVendorMutation({
+            //       ...vendorDetails,
+            //     })
+            //   } else {
+            //     await updateVendorMutation({ ...vendorDetails })
+            //   }
+            //   await refetch()
+            //   setProductEditState(false)
+            //   setVendorDialog(false)
+            // }}
+          >
+            <h4 className="mb-3">{productEditState ? "Update " : "Create "}Products</h4>
+            <div className="formgrid grid justify-content-around">
+              <div className="field col-12 md:col-3 lg:col-3 mt-4">
+                <div className="p-float-label">
+                  <AutoComplete
+                    id="name"
+                    value={formik.values.name}
+                    suggestions={filteredSuggestions}
+                    completeMethod={searchCities}
+                    disabled={productEditState}
+                    field="name"
+                    onChange={async (e) => {
+                      console.log(e.value)
+                      let name = typeof e.value === "string" ? e.value : e.value.name
+                      let products_product_id = e.value.product_id
+                      let product_description = e.value.description
+
+                      // createInventory_productMutation({
+                      //   product_description: el["product_description"],
+                      //   price: Number(el["price"]),
+                      //   quantity: Number(el["quantity"]),
+                      //   products_product_id: Number(productId[0]?.product_id),
+                      // })
+                      await formik.setValues({
+                        ...formik.values,
+                        name,
+                        products_product_id,
+                        product_description,
+                      })
+                      // formik.values = { ...formik.values, vendor_city, vendor_state }
+                    }}
+                    aria-label="products"
+                    dropdownAriaLabel="Select Product"
+                    className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                  />
+
+                  <label
+                    htmlFor="name"
+                    className={classNames({ "p-error": isFormFieldValid("name") })}
+                  >
+                    Select Product
+                  </label>
+                </div>
+                {getFormErrorMessage("quantity")}
+              </div>
+              <div className="field col-12 md:col-3 lg:col-3 mt-4">
+                <span className="p-float-label">
+                  <InputText
+                    id="price"
+                    name="price"
+                    value={formik.values.price}
+                    onChange={formik.handleChange}
+                    autoFocus
+                    className={classNames({ "p-invalid": isFormFieldValid("price") })}
+                  />
+                  <label
+                    htmlFor="price"
+                    className={classNames({ "p-error": isFormFieldValid("price") })}
+                  >
+                    Price
+                  </label>
+                </span>
+                {getFormErrorMessage("price")}
+              </div>
+
+              <div className="field col-12 md:col-3 lg:col-3 mt-4">
+                <span className="p-float-label">
+                  <InputText
+                    id="quantity"
+                    name="quantity"
+                    value={formik.values.quantity}
+                    onChange={formik.handleChange}
+                    autoFocus
+                    className={classNames({ "p-invalid": isFormFieldValid("quantity") })}
+                  />
+                  <label
+                    htmlFor="quantity"
+                    className={classNames({ "p-error": isFormFieldValid("quantity") })}
+                  >
+                    Quantity
+                  </label>
+                </span>
+                {getFormErrorMessage("quantity")}
+              </div>
+            </div>
+            <div className="flex mt-4">
+              <Button type="submit" className="mr-2" label={productEditState ? "UPDATE" : "ADD"} />
+              <Button
+                className="p-button-secondary"
+                type="button"
+                label="Cancel"
+                onClick={() => {
+                  formik.resetForm()
+                  setProductEditState(false)
+                  setProductForm(false)
+                  // setVendorDetails(initialVendorState)
+                }}
+              />
+            </div>
+          </form>
         </div>
       </div>
 
-      <DataTable
-        value={tableInventory}
-        showGridlines
-        // header={renderHeader}
-        scrollable
-        scrollHeight="60vh"
-        stripedRows
-        className="text-s datatable-responsive"
-      >
-        {/* <Column
+      <div className="card">
+        <DataTable
+          value={tableInventory}
+          showGridlines
+          // header={renderHeader}
+          // scrollable
+          // scrollHeight="60vh"
+          stripedRows
+          className="text-s datatable-responsive"
+        >
+          {/* <Column
           field="vendor_id"
           header="Vendor ID"
           // className="text-center"
         /> */}
-        <Column
-          field="products_sku"
-          header="SKU"
-          // className="text-center"
-        />
-        <Column
-          field="name"
-          header="Name"
-          // className="text-center"
-        />
-        <Column
-          field="product_type"
-          header="Type"
-          // className="text-center"
-        />
-        {/* <Column
+          <Column
+            field="products_sku"
+            header="SKU"
+            // className="text-center"
+          />
+          <Column
+            field="name"
+            header="Name"
+            // className="text-center"
+          />
+          <Column
+            field="price"
+            header="Price"
+            // className="text-center"
+          />
+          <Column
+            field="product_type"
+            header="Type"
+            // className="text-center"
+          />
+          {/* <Column
           field="vendor_sku"
           header="Vendor Sku"
           // className="text-center"
         /> */}
-        <Column
-          field="quantity"
-          header="Quantity"
-          // className="text-center"
-        />
+          <Column
+            field="quantity"
+            header="Quantity"
+            // className="text-center"
+          />
 
-        <Column
-          // field="vendor_gstin"
-          header="Action"
-          body={(rowData) => {
-            // console.log("rowData: ", rowData)
-            return (
-              <div>
-                <Button
-                  // label="Edit"
-                  icon="pi pi-pencil"
-                  className="m-1"
-                  onClick={() => {
-                    // setActiveVendor(true)
-                    // setVendorDetails({ ...rowData })
-                    // setVendorDialog(true)
-                  }}
-                />
-                <Button
-                  // label="Delete"
-                  disabled={true}
-                  icon="pi pi-trash"
-                  className="m-1"
-                  onClick={async () => {
-                    console.log("rowData: ", rowData.products_sku)
-                    const productSku = await rowData.products_sku
-                    console.log("productSku: ", productSku)
-                    const inventoryProductId = inventory_products.filter(({ products }) => {
-                      return products.products_sku === productSku
-                    })
-                    console.log("inventoryProductId: ", inventoryProductId)
+          <Column
+            // field="vendor_gstin"
+            header="Action"
+            body={(rowData) => {
+              // console.log("rowData: ", rowData)
+              return (
+                <div>
+                  <Button
+                    // label="Edit"
+                    icon="pi pi-pencil"
+                    className="m-1"
+                    onClick={async () => {
+                      console.log("rowData", rowData)
+                      setActiveRowData({ ...rowData })
+                      setProductEditState(true)
+                      setProductForm(true)
+                      await formik.setValues({ ...rowData })
+                    }}
+                  />
+                  <Button
+                    // label="Delete"
+                    disabled={true}
+                    icon="pi pi-trash"
+                    className="m-1"
+                    onClick={async () => {
+                      console.log("rowData: ", rowData.products_sku)
+                      const productSku = await rowData.products_sku
+                      console.log("productSku: ", productSku)
+                      const inventoryProductId = inventory_products.filter(({ products }) => {
+                        return products.products_sku === productSku
+                      })
+                      console.log("inventoryProductId: ", inventoryProductId)
 
-                    await deleteInventory_productsMutation({
-                      inventory_product_id: Number(inventoryProductId[0]?.inventory_product_id),
-                    })
-                    await refetch()
-                  }}
-                />
-              </div>
-            )
-          }}
-          // className="text-center"
-        />
-      </DataTable>
+                      await deleteInventory_productsMutation({
+                        inventory_product_id: Number(inventoryProductId[0]?.inventory_product_id),
+                      })
+                      await refetch()
+                    }}
+                  />
+                </div>
+              )
+            }}
+            // className="text-center"
+          />
+        </DataTable>
+      </div>
     </div>
   )
 }

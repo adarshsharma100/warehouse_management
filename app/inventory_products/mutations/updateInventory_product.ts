@@ -2,14 +2,7 @@ import { resolver } from "@blitzjs/rpc"
 import db from "db"
 import { z } from "zod"
 
-const UpdateInventory_product = z.object({
-  inventory_product_id: z.number(),
-  name: z.string(),
-  product_description: z.string(),
-  price: z.number(),
-  quantity: z.number(),
-  products_product_id: z.number(),
-})
+const UpdateInventory_product = z.unknown()
 
 export default resolver.pipe(
   resolver.zod(UpdateInventory_product),
