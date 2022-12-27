@@ -48,6 +48,7 @@ model products {
   product_type       String               @db.VarChar(45)
   products_sku       String?              @unique(map: "products_sku_UNIQUE") @db.VarChar(45)
   Price              Int?                 @default(0)
+  product_unit       String?              @db.VarChar(15)
   inventory_products inventory_products[]
   rfq_products       rfq_products[]
   vendor_products    vendor_products[]
@@ -270,5 +271,5 @@ model grn_status {
 
 enum purchase_order_agreement_status {
   Approved
-  Waiting_For_Approval @map("Waiting For Approval")
+  Waiting_For_Approval  @map("Waiting For Approval")
 }

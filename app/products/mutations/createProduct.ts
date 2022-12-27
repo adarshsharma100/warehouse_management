@@ -7,6 +7,7 @@ const CreateProduct = z.object({
   description: z.string(),
   product_type: z.string(),
   products_sku: z.string(),
+  product_unit: z.string(),
 })
 
 export default resolver.pipe(resolver.zod(CreateProduct), resolver.authorize(), async (input) => {

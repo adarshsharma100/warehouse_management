@@ -85,7 +85,7 @@ export const Inventory_productsList = () => {
   // const productsList =  products.map
   // console.log(products)
 
-  const searchCities = (event: { query: string }) => {
+  const searchProducts = (event: { query: string }) => {
     setTimeout(() => {
       let _filteredSuggestions
       if (!event.query.trim().length) {
@@ -172,9 +172,9 @@ export const Inventory_productsList = () => {
   }
 
   console.log("error-products", errorProducts)
-  const pCsvFormatDetails = {
+  const vpCsvFormatDetails = {
     headers: ["PRODUCT_ID", "PRICE", "QUANTITY", "DESCRIPTION"],
-    name: "Product-format.csv",
+    name: "Vendor-Product-format.csv",
   }
 
   const formik = useFormik({
@@ -303,7 +303,7 @@ export const Inventory_productsList = () => {
                 onClick={() => {
                   clearUpload?.current.clear()
                   setErrorProducts([])
-                  // setErrorMsgs([])
+                  setErrorMsgs([])
                 }}
                 tooltip="Clear the File"
                 tooltipOptions={{ position: "top" }}
@@ -313,7 +313,7 @@ export const Inventory_productsList = () => {
               icon="pi pi-download"
               className="ml-2"
               label="CSV format"
-              onClick={() => createCSVFormat(pCsvFormatDetails)}
+              onClick={() => createCSVFormat(vpCsvFormatDetails)}
             />
           </div>
         </div>
@@ -364,7 +364,7 @@ export const Inventory_productsList = () => {
                     id="name"
                     value={formik.values.name}
                     suggestions={filteredSuggestions}
-                    completeMethod={searchCities}
+                    completeMethod={searchProducts}
                     disabled={productEditState}
                     field="name"
                     onChange={async (e) => {
@@ -419,7 +419,6 @@ export const Inventory_productsList = () => {
                     Price
                   </label>
                 </span>
-                {getFormErrorMessage("price")}
               </div>
 
               <div className="field col-12 md:col-3 lg:col-3 mt-4">
