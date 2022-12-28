@@ -1499,6 +1499,15 @@ export const createCSVFormat = (fileData) => {
   postNode.remove()
 }
 
+export const tsuccess = (summary, detail) => {
+  return {
+    severity: "success",
+    summary: summary ? summary : "Created",
+    detail: detail,
+    life: 3000,
+  }
+}
+
 // export const sendPoEmail = async (data, po) => {
 //   // const vendorDetails = await db.vendor.findUnique({
 //   //   where: { vendor_id: data.vendor_vendor_id },

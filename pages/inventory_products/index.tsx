@@ -92,7 +92,7 @@ export const Inventory_productsList = () => {
         _filteredSuggestions = [...products]
       } else {
         _filteredSuggestions = products.filter((element) => {
-          return element.name.toLowerCase().startsWith(event.query.toLowerCase())
+          return element.name.toLowerCase().includes(event.query.toLowerCase())
         })
       }
 
@@ -373,12 +373,6 @@ export const Inventory_productsList = () => {
                       let products_product_id = e.value.product_id
                       let product_description = e.value.description
 
-                      // createInventory_productMutation({
-                      //   product_description: el["product_description"],
-                      //   price: Number(el["price"]),
-                      //   quantity: Number(el["quantity"]),
-                      //   products_product_id: Number(productId[0]?.product_id),
-                      // })
                       await formik.setValues({
                         ...formik.values,
                         name,

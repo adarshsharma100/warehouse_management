@@ -1,8 +1,15 @@
 import sendPoEmail from "helperFunctions/poMail"
+import { getSession } from "@blitzjs/auth"
+import { getAntiCSRFToken } from "@blitzjs/auth"
 
-const poMailHandler = async (req, res) => {
+const PoMailHandler = async (req, res) => {
+  const antiCSRFToken = getAntiCSRFToken()
+
+  const session = await getSession(req, res)
+  console.log("User ID:", session)
+  console.log("auth:", session.$isAuthorized)
   //   console.log(res)
-  //   console.log("body", req.body)
+  console.log("body", req.header)
 
   if (req.method === "POST") {
     const record = req.body
@@ -12,9 +19,9 @@ const poMailHandler = async (req, res) => {
     await sendPoEmail(record.data, record.po)
     res.statusCode = 200
     res.setHeader("Content-Type", "application/json")
-    // res.end(JSON.stringify({ name: "John Doe" }))
+    res.end(JSON.stringify({ name: "John Doe" }))
   } else {
     // Handle any other HTTP method
   }
 }
-export default poMailHandler
+export default PoMailHandler

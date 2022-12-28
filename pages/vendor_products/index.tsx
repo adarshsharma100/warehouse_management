@@ -22,8 +22,14 @@ import downloadCsv from "download-csv"
 import { Toast } from "primereact/toast"
 import { InputNumber } from "primereact/inputnumber"
 import ErrorCard from "components/ErrorCard"
-import { createCSVFormat } from "app/constants"
+import { createCSVFormat, tsuccess } from "app/constants"
 import { FALSE } from "sass"
+import { useFormik } from "formik"
+import * as Yup from "yup"
+import classNames from "classnames"
+import { AutoComplete } from "primereact/autocomplete"
+import { devNull } from "os"
+import LoaderFullScreen from "components/LoaderFullScreen"
 
 const ITEMS_PER_PAGE = 100
 
@@ -35,31 +41,40 @@ export const Vendor_productsList = () => {
     orderBy: { vp_id: "asc" },
   })
 
-  const [{ vendors }, { isLoading: isVendorsLoading }] = useQuery(getVendors, {
-    orderBy: { vendor_id: "asc" },
-  })
+  const [{ vendors }, { error: vp_VendorFetchingError, isLoading: isVendorsLoading }] = useQuery(
+    getVendors,
+    {
+      orderBy: { vendor_id: "asc" },
+    }
+  )
 
-  const [{ products }, { isLoading: isProductsLoading }] = useQuery(getProducts, {
-    orderBy: { product_id: "asc" },
-  })
+  const [{ products }, { error: vp_ProductsFetchingError, isLoading: isProductsLoading }] =
+    useQuery(getProducts, {
+      orderBy: { product_id: "asc" },
+    })
 
   const toast = useRef(null)
   const scrolToTop = useRef<HTMLDivElement>(null)
 
   const [errorProducts, setErrorProducts] = useState([])
   const [vendorDialog, setVendorDialog] = useState(false)
-  const [newProduct, setNewProduct] = useState({
-    unit_price: 0,
-    vendor_vendor_id: 0,
-    products_product_id: 0,
+  const initialProductState = {
+    unit_price: null,
+    vendor_vendor_id: null,
+    products_product_id: null,
     vendor_sku: "",
-  })
+    name: "",
+    vendor: "",
+  }
+  const [newProduct, setNewProduct] = useState(initialProductState)
+  console.log("newProduct", newProduct)
   const [activeRow, setActiveRow] = useState({})
   const { unit_price, vendor_vendor_id, products_product_id, vendor_sku } = newProduct
   const [editState, setEditState] = useState(false)
-  const [createVendorProductMutation, { error: createVpMutationError }] =
+  const [createVendorProductMutation, { error: createVpMutationError, isLoading: vp_Creating }] =
     useMutation(createVendor_product)
-  const [updateVendorMutation, { error: updateVpMutationError }] = useMutation(updateVendor_product)
+  const [updateVendorMutation, { error: updateVpMutationError, isLoading: vp_Updating }] =
+    useMutation(updateVendor_product)
   const [deleteVendorProductMutation] = useMutation(deleteVendor_product)
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
   const goToNextPage = () => router.push({ query: { page: page + 1 } })
@@ -67,14 +82,53 @@ export const Vendor_productsList = () => {
     return { name, value: product_id }
   })
   const vendorOptions = vendors.map(({ vendor, vendor_id }) => {
-    return { name: vendor, value: vendor_id }
+    return { name: vendor, vendor_id }
   })
   const clearupload = useRef(null)
   const [btnVisibility, setBtnVisibility] = useState(false)
-
+  const [filteredSuggestions, setFilteredSuggestions] = useState<any>(null)
+  const [vendorSuggestions, setVendorSuggestions] = useState<any>(null)
   const [ErrorMsgs, setErrorMsgs] = useState([])
+
+  const createSearchProductsFunction = (products, setFilteredSuggestions) => {
+    return function search(event) {
+      setTimeout(() => {
+        let _filteredSuggestions
+        if (!event.query.trim().length) {
+          _filteredSuggestions = [...products]
+        } else {
+          _filteredSuggestions = products.filter((element) => {
+            return element.name.toLowerCase().includes(event.query.toLowerCase())
+          })
+        }
+        setFilteredSuggestions(_filteredSuggestions)
+      }, 50)
+    }
+  }
+  const searchProducts = createSearchProductsFunction(products, setFilteredSuggestions)
+  const searchVendor = createSearchProductsFunction(vendorOptions, setVendorSuggestions)
+
+  // const searchProducts = (event: { query: string }) => {
+  //   setTimeout(() => {
+  //     let _filteredSuggestions
+  //     if (!event.query.trim().length) {
+  //       _filteredSuggestions = [...products]
+  //     } else {
+  //       _filteredSuggestions = products.filter((element) => {
+  //         return element.name.toLowerCase().includes(event.query.toLowerCase())
+  //       })
+  //     }
+
+  //     setFilteredSuggestions(_filteredSuggestions)
+  //   }, 50)
+  // }
   useEffect(() => {
-    const ErrorArray = [createVpMutationError, updateVpMutationError]
+    const ErrorArray = [
+      createVpMutationError,
+      updateVpMutationError,
+      vp_ProductsFetchingError,
+      vp_VendorFetchingError,
+    ]
 
     const msg = []
 
@@ -84,7 +138,12 @@ export const Vendor_productsList = () => {
       }
     }
     setErrorMsgs(msg)
-  }, [createVpMutationError, updateVpMutationError])
+  }, [
+    createVpMutationError,
+    updateVpMutationError,
+    vp_ProductsFetchingError,
+    vp_VendorFetchingError,
+  ])
 
   const removeErrorBox = (i) => {
     const msgArray = [...ErrorMsgs]
@@ -93,46 +152,6 @@ export const Vendor_productsList = () => {
   }
 
   if (isLoading || isVendorsLoading || isProductsLoading) return <div>Loading</div>
-
-  // const renderFooter = () => {
-  //   return (
-  //     <div className="flex justify-content-end">
-  //       <Button
-  //         className="mr-2"
-  //         label={editState ? "UPDATE" : "ADD"}
-  //         onClick={async () => {
-  //           if (editState) {
-  //             // update
-  //             console.log("test")
-
-  //             await updateVendorMutation({
-  //               vp_id: activeRow?.vp_id,
-  //               unit_price: newProduct.unit_price,
-  //               vendor_sku: newProduct.vendor_sku,
-  //             })
-  //             setVendorDialog(false)
-  //             await refetch()
-  //           } else {
-  //             await createVendorProductMutation({
-  //               unit_price,
-  //               vendor_vendor_id,
-  //               products_product_id,
-  //               vendor_sku,
-  //             })
-  //             await refetch()
-  //             setVendorDialog(false)
-  //             setNewProduct({
-  //               unit_price: 0,
-  //               vendor_vendor_id: 0,
-  //               products_product_id: 0,
-  //               vendor_sku: "",
-  //             })
-  //           }
-  //         }}
-  //       />
-  //     </div>
-  //   )
-  // }
 
   const tableVendorProducts = vendor_products.map(
     ({ products, unit_price, vendor, vp_id, vendor_sku }) => {
@@ -176,12 +195,7 @@ export const Vendor_productsList = () => {
           },
           {
             onSuccess: () => {
-              toast?.current?.show({
-                severity: "success",
-                summary: "Product Created",
-                detail: "Product created successfully.",
-                life: 3000,
-              })
+              toast?.current?.show(tsuccess(null, "Product created successfully."))
             },
             onError: (error) => {
               console.error("Product failed: ", data)
@@ -203,81 +217,60 @@ export const Vendor_productsList = () => {
     name: "Vendor-catalog-format.csv",
   }
 
-  console.log(btnVisibility)
+  // console.log(btnVisibility)
+  const formik = useFormik({
+    initialValues: newProduct,
+    validationSchema: Yup.object().shape({
+      unit_price: Yup.number().required("*Required").typeError("Must be a Number"),
+      vendor_vendor_id: Yup.string().required("*Required").typeError("*Required"),
+      name: Yup.string().required("*Required").typeError("*Required"),
+      vendor_sku: Yup.string().required("*Required"),
+    }),
+    onSubmit: async (data) => {
+      const { unit_price, vendor_sku } = data
+      if (editState) {
+        await updateVendorMutation(
+          {
+            vp_id: activeRow?.vp_id,
+            unit_price,
+            vendor_sku,
+          },
+          {
+            onSuccess: () => {
+              toast?.current?.show(tsuccess("Updated", "Vendor Product updated successfully"))
+            },
+          }
+        )
+        setVendorDialog(false)
+      } else {
+        await createVendorProductMutation(
+          { ...data },
+          {
+            onSuccess: () => {
+              toast?.current?.show(tsuccess(null, "Vendor Product created successfully"))
+            },
+          }
+        )
+      }
+      await refetch()
+      setVendorDialog(false)
+      setNewProduct(initialProductState)
+      formik.resetForm()
+    },
+  })
+
+  const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
+  const getFormErrorMessage = (name) => {
+    return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
+  }
+
+  console.log("Form Data", formik.values)
 
   return (
     <div className="grid w-full" ref={scrolToTop}>
       <Toast ref={toast} />
+      {(vp_Creating || vp_Updating) && <LoaderFullScreen />}
 
-      {/* <Dialog
-        header="Add Vendor Product"
-        visible={editState}
-        style={{ width: "50vw" }}
-        footer={renderFooter}
-        onHide={() => {
-          setVendorDialog(false)
-          setNewProduct({
-            unit_price: 0,
-            vendor_vendor_id: 0,
-            products_product_id: 0,
-            vendor_sku: "",
-          })
-          setEditState(false)
-        }}
-      >
-        <div className="grid p-fluid">
-          <div className="field col-12 lg:col-6 mt-3">
-            <Dropdown
-              disabled={editState}
-              optionLabel="name"
-              value={vendor_vendor_id}
-              options={vendorOptions}
-              onChange={(e) => setNewProduct({ ...newProduct, vendor_vendor_id: e.value })}
-              placeholder="Select Vendor"
-            />
-          </div>
-          <div className="field col-12 lg:col-6 mt-3">
-            <Dropdown
-              disabled={editState}
-              optionLabel="name"
-              value={products_product_id}
-              options={productOptions}
-              onChange={(e) => setNewProduct({ ...newProduct, products_product_id: e.value })}
-              placeholder="Select  Product"
-            />
-          </div>
-          <div className="field col-12 lg:col-6 mt-3">
-            <span className="p-float-label">
-              <InputText
-                value={vendor_sku}
-                onChange={(e) => {
-                  setNewProduct({
-                    ...newProduct,
-                    vendor_sku: e.target.value,
-                  })
-                }}
-                autoFocus
-              />
-              <label>Vendor SKU</label>
-            </span>
-          </div>
-          <div className="field col-12 lg:col-6 mt-3">
-            <span className="p-float-label">
-              <InputNumber
-                value={unit_price}
-                onChange={(e) => {
-                  setNewProduct({
-                    ...newProduct,
-                    unit_price: e.value,
-                  })
-                }}
-                autoFocus
-              />
-              <label>Unit Price</label>
-            </span>
-          </div>
-        </div>
-      </Dialog> */}
       <div className="col-12 ">
         {!errorProducts.length &&
           ErrorMsgs.map((ele, i) => (
@@ -292,12 +285,7 @@ export const Vendor_productsList = () => {
               label="Add Vendor Products"
               onClick={() => {
                 setVendorDialog(true)
-                setNewProduct({
-                  unit_price: 0,
-                  vendor_vendor_id: 0,
-                  products_product_id: 0,
-                  vendor_sku: "",
-                })
+                setNewProduct(initialProductState)
               }}
             ></Button>
             <span className=" flex justify-content-center align-items-center">
@@ -345,102 +333,120 @@ export const Vendor_productsList = () => {
             : "hidden scaleout animation-duration-200"
         } ml-2`}
       >
-        <form
-          className="p-fluid p-5"
-          onSubmit={async (e) => {
-            e.preventDefault()
-            if (editState) {
-              await updateVendorMutation({
-                vp_id: activeRow?.vp_id,
-                unit_price: newProduct.unit_price,
-                vendor_sku: newProduct.vendor_sku,
-              })
-              setVendorDialog(false)
-              await refetch()
-            } else {
-              await createVendorProductMutation({
-                unit_price,
-                vendor_vendor_id,
-                products_product_id,
-                vendor_sku,
-              })
-              await refetch()
-              setVendorDialog(false)
-              setNewProduct({
-                unit_price: 0,
-                vendor_vendor_id: 0,
-                products_product_id: 0,
-                vendor_sku: "",
-              })
-            }
-          }}
-        >
+        <form className="p-fluid p-5" onSubmit={formik.handleSubmit}>
           <h4 className="mb-3">{editState ? "Update " : "Create "}Vendor Product</h4>
           <div className="formgrid grid justify-content-around">
-            {/* <div className="field col-12 md:col-3 lg:col-2 mt-4">
-                <span className="p-float-label">
-                  <InputText
-                    id={ele.field}
-                    name={ele.field}
-                    value={vendorDetails[ele.field]}
-                    onChange={(e) => {
-                      setVendorDetails({ ...vendorDetails, [ele.field]: e.target.value })
-                    }}
-                  />
-                  <label htmlFor={ele.field}>{ele.label}</label>
-                </span>
-              </div> */}
             <div className="field col-12 md:col-3 lg:col-3 mt-4">
-              <Dropdown
-                disabled={editState}
-                optionLabel="name"
-                value={vendor_vendor_id}
-                options={vendorOptions}
-                onChange={(e) => setNewProduct({ ...newProduct, vendor_vendor_id: e.value })}
-                placeholder="Select Vendor"
-              />
+              <div className="p-float-label">
+                <AutoComplete
+                  id="vendor_vendor_id"
+                  disabled={editState}
+                  value={formik.values.vendor}
+                  suggestions={vendorSuggestions}
+                  completeMethod={searchVendor}
+                  field="name"
+                  onChange={async (e) => {
+                    console.log(e.value)
+                    let vendor_vendor_id = typeof e.value === "string" ? e.value : e.value.vendor_id
+                    let vendor = typeof e.value === "string" ? e.value : e.value.name
+
+                    await formik.setValues({
+                      ...formik.values,
+                      vendor_vendor_id,
+                      vendor,
+                    })
+                    // formik.values = { ...formik.values, vendor_city, vendor_state }
+                  }}
+                  aria-label="products"
+                  dropdownAriaLabel="Select Product"
+                  className={classNames({ "p-invalid": isFormFieldValid("vendor_vendor_id") })}
+                />
+
+                <label
+                  htmlFor="vendor_vendor_id"
+                  className={classNames({ "p-error": isFormFieldValid("vendor_vendor_id") })}
+                >
+                  Select Vendor
+                </label>
+              </div>
+              {getFormErrorMessage("vendor_vendor_id")}
             </div>
+
             <div className="field col-12 md:col-3 lg:col-3 mt-4">
-              <Dropdown
-                disabled={editState}
-                optionLabel="name"
-                value={products_product_id}
-                options={productOptions}
-                onChange={(e) => setNewProduct({ ...newProduct, products_product_id: e.value })}
-                placeholder="Select  Product"
-              />
+              <div className="p-float-label">
+                <AutoComplete
+                  id="name"
+                  disabled={editState}
+                  value={formik.values.name}
+                  suggestions={filteredSuggestions}
+                  completeMethod={searchProducts}
+                  field="name"
+                  onChange={async (e) => {
+                    console.log(e.value)
+                    let products_product_id =
+                      typeof e.value === "string" ? e.value : e.value.product_id
+                    let name = typeof e.value === "string" ? e.value : e.value.name
+
+                    await formik.setValues({
+                      ...formik.values,
+                      products_product_id,
+                      name,
+                    })
+                  }}
+                  aria-label="products"
+                  dropdownAriaLabel="Select Product"
+                  className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                />
+
+                <label
+                  htmlFor="name"
+                  className={classNames({ "p-error": isFormFieldValid("name") })}
+                >
+                  Select Product
+                </label>
+              </div>
+              {getFormErrorMessage("name")}
             </div>
             <div className="field col-12 md:col-3 lg:col-3 mt-4">
               <span className="p-float-label">
                 <InputText
-                  value={vendor_sku}
-                  onChange={(e) => {
-                    setNewProduct({
-                      ...newProduct,
-                      vendor_sku: e.target.value,
-                    })
-                  }}
+                  id="vendor_sku"
+                  name="vendor_sku"
+                  value={formik.values.vendor_sku}
+                  onChange={formik.handleChange}
                   autoFocus
+                  className={classNames({ "p-invalid": isFormFieldValid("vendor_sku") })}
                 />
-                <label>Vendor SKU</label>
+                <label
+                  htmlFor="vendor_sku"
+                  className={classNames({ "p-error": isFormFieldValid("vendor_sku") })}
+                >
+                  Vendor SKU
+                </label>
               </span>
+              {getFormErrorMessage("vendor_sku")}
             </div>
             <div className="field col-12 md:col-3 lg:col-3 mt-4">
               <span className="p-float-label">
                 <InputNumber
-                  value={unit_price}
-                  onChange={(e) => {
-                    setNewProduct({
-                      ...newProduct,
-                      unit_price: e.value,
-                    })
-                  }}
+                  id="unit_price"
+                  name="unit_price"
+                  value={formik.values.unit_price}
+                  onChange={(e) => formik.setValues({ ...formik.values, unit_price: e.value })}
                   autoFocus
+                  className={classNames({ "p-invalid": isFormFieldValid("unit_price") })}
                 />
-                <label>Unit Price</label>
+                <label
+                  htmlFor="unit_price"
+                  className={classNames({ "p-error": isFormFieldValid("unit_price") })}
+                >
+                  Unit Price
+                </label>
               </span>
+              {getFormErrorMessage("unit_price")}
             </div>
           </div>
+
           <div className="flex justify-content-end mt-3">
             <Button type="submit" className="mr-2" label={editState ? "UPDATE" : "ADD"} />
             <Button
@@ -449,13 +455,9 @@ export const Vendor_productsList = () => {
               label="Cancel"
               onClick={() => {
                 // ONHIDE
+                formik.resetForm()
                 setVendorDialog(false)
-                setNewProduct({
-                  unit_price: 0,
-                  vendor_vendor_id: 0,
-                  products_product_id: 0,
-                  vendor_sku: "",
-                })
+                setNewProduct(initialProductState)
                 setEditState(false)
               }}
             />
@@ -513,17 +515,29 @@ export const Vendor_productsList = () => {
                     <Button
                       icon="pi pi-pencil"
                       className="mr-1"
-                      onClick={() => {
+                      onClick={async () => {
+                        console.log("rowData", rowData)
+                        const {
+                          vendor_vendor_id,
+                          vendor_sku,
+                          unit_price,
+                          products_product_id,
+                          products: { name },
+                          vendor: { vendor },
+                        } = rowData
+
                         scrolToTop.current?.scrollIntoView()
                         setActiveRow(rowData)
                         setEditState(true)
                         setVendorDialog(true)
-                        setNewProduct({
-                          ...newProduct,
-                          vendor_vendor_id: rowData.vendor.vendor_id,
-                          unit_price: rowData.unit_price,
-                          products_product_id: rowData.products.product_id,
-                          vendor_sku: rowData.vendor_sku,
+
+                        await formik.setValues({
+                          unit_price,
+                          vendor_vendor_id,
+                          products_product_id,
+                          vendor_sku,
+                          name,
+                          vendor,
                         })
                       }}
                     />

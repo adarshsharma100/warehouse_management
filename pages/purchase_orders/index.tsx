@@ -44,11 +44,14 @@ import createGrn from "app/grns/mutations/createGrn"
 import { Checkbox } from "primereact/checkbox"
 import axios from "axios"
 import { AutoComplete } from "primereact/autocomplete"
+import { getAntiCSRFToken } from "@blitzjs/auth"
 
 const ITEMS_PER_PAGE = 100
 
 export const Purchase_ordersList = () => {
   const router = useRouter()
+  const antiCSRFToken = getAntiCSRFToken()
+
   const page = Number(router.query.page) || 0
   const [{ purchase_orders, hasMore }, { error: getPoError, refetch }] = usePaginatedQuery(
     getPurchase_orders,
@@ -550,6 +553,8 @@ export const Purchase_ordersList = () => {
     createNewPOCode()
   })
 
+  console.log("antiCSRFToken", antiCSRFToken)
+
   return (
     <div>
       {creatingPO && <LoaderFullScreen />}
@@ -608,6 +613,7 @@ export const Purchase_ordersList = () => {
                 url: "http://localhost:3000/api/po",
                 headers: {
                   "Content-Type": "application/json",
+                  ["anti-csrf"]: antiCSRFToken,
                 },
                 data: requestData,
               }

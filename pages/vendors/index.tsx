@@ -25,7 +25,7 @@ import nodemailer from "nodemailer"
 import { mail } from "helperFunctions/mail"
 import axios from "axios"
 
-import { cities } from "app/constants"
+import { cities, tsuccess } from "app/constants"
 import { createCSVFormat } from "app/constants"
 import { AutoComplete } from "primereact/autocomplete"
 import ErrorCard from "components/ErrorCard"
@@ -221,12 +221,7 @@ export const VendorsList = () => {
           { ...data },
           {
             onSuccess: () => {
-              toast?.current?.show({
-                severity: "success",
-                summary: "Vendor Created",
-                detail: "Vendor created successfully.",
-                life: 3000,
-              })
+              toast?.current?.show(tsuccess(null, "Vendor Created successfully"))
             },
           }
         )
@@ -236,12 +231,7 @@ export const VendorsList = () => {
           { ...data },
           {
             onSuccess: () => {
-              toast?.current?.show({
-                severity: "success",
-                summary: "Vendor Updated",
-                detail: "Vendor Updated successfully.",
-                life: 3000,
-              })
+              toast?.current?.show(tsuccess("Updated", "Vendor updated successfully"))
             },
           }
         )
@@ -322,7 +312,7 @@ export const VendorsList = () => {
             : "hidden scaleout animation-duration-200"
         }`}
       >
-        <div className="card p-4">
+        <div className="card p-4 mb-2 ">
           <form className="p-fluid" onSubmit={formik.handleSubmit}>
             <h4 className="mb-3">{activeVendor ? "Update " : "Create "}Vendor</h4>
             <div className="formgrid grid">
