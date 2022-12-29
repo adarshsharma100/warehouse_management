@@ -1508,6 +1508,26 @@ export const tsuccess = (summary, detail) => {
   }
 }
 
+export const createSearchFunction = (Options, setFilteredSuggestions) => {
+  return function search(event) {
+    setTimeout(() => {
+      let _filteredSuggestions
+      if (!event.query.trim().length) {
+        _filteredSuggestions = [...Options]
+      } else {
+        _filteredSuggestions = Options.filter((element) => {
+          return element.name.toLowerCase().includes(event.query.toLowerCase())
+        })
+      }
+      setFilteredSuggestions(_filteredSuggestions)
+    }, 50)
+  }
+}
+
+export const filterExistingValues = (newList: any[], oldList: any[]): any[] => {
+  return newList.filter((element) => !oldList.includes(element))
+}
+
 // export const sendPoEmail = async (data, po) => {
 //   // const vendorDetails = await db.vendor.findUnique({
 //   //   where: { vendor_id: data.vendor_vendor_id },

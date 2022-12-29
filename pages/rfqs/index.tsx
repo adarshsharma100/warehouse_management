@@ -47,6 +47,12 @@ import { AutoComplete } from "primereact/autocomplete"
 import sendEmail from "helperFunctions/rfqMail"
 import CreatePo from "components/CreatePo"
 import getRfq_senttos from "app/rfq_senttos/queries/getRfq_senttos"
+import { useFormik } from "formik"
+import * as Yup from "yup"
+import classNames from "classnames"
+import { createSearchFunction, filterExistingValues, tsuccess } from "app/constants"
+import getMutation_admin_mail from "app/mutation_admin_mails/queries/getMutation_admin_mail"
+import { Toast } from "primereact/toast"
 
 const ITEMS_PER_PAGE = 100
 
@@ -60,40 +66,49 @@ export const RfqsList = () => {
   // })
   const [{ rfqs }, { error: rfqError, refetch }] = useQuery(getRfqs, {
     orderBy: { id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
   })
 
-  const [{ products }] = usePaginatedQuery(getProducts, {
+  const [{ products }, { error: productsError }] = usePaginatedQuery(getProducts, {
     orderBy: { product_id: "asc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
-  const [{ rfq_products }, { refetch: fetchRfqProducts }] = usePaginatedQuery(getRfq_products, {
-    orderBy: { rfq_products_id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-  })
-  const [{ vendors }] = usePaginatedQuery(getVendors, {
+  // const [{ rfq_products }, { refetch: fetchRfqProducts }] = usePaginatedQuery(getRfq_products, {
+  //   orderBy: { rfq_products_id: "asc" },
+  //   skip: ITEMS_PER_PAGE * page,
+  //   take: ITEMS_PER_PAGE,
+  // })
+  const [{ rfq_products }, { refetch: fetchRfqProducts, error: getRfq_productsError }] = useQuery(
+    getRfq_products,
+    {
+      orderBy: { rfq_products_id: "asc" },
+      skip: 0,
+      take: ITEMS_PER_PAGE,
+    }
+  )
+  const [{ vendors }, { error: getVendorsError }] = usePaginatedQuery(getVendors, {
     orderBy: { vendor_id: "asc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
-  const [{ vendor_products }] = usePaginatedQuery(getVendor_products, {
-    orderBy: { vp_id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-  })
+  const [{ vendor_products }, { error: getVendorsProductsError }] = usePaginatedQuery(
+    getVendor_products,
+    {
+      orderBy: { vp_id: "asc" },
+      skip: ITEMS_PER_PAGE * page,
+      take: ITEMS_PER_PAGE,
+    }
+  )
 
-  const [{ prefixes }] = useQuery(getPrefixes, {
+  const [{ prefixes }, { error: getPrefixesError }] = useQuery(getPrefixes, {
     orderBy: { id: "asc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
-  const [{ rfq_senttos }] = useQuery(getRfq_senttos, {
+  const [{ rfq_senttos }, { error: getRfq_senttosError }] = useQuery(getRfq_senttos, {
     orderBy: { id: "asc" },
   })
-  console.log(rfq_senttos)
+  // console.log(rfq_senttos)
   const [sendDialog, setSendDialog] = useState(false)
   const [createRFQMutation, { isLoading: creatingRfq, error: createRFQMutationError }] =
     useMutation(createRfq)
@@ -114,6 +129,8 @@ export const RfqsList = () => {
     }
   })
   const menu = useRef<Menu>(null)
+  const toast = useRef(null)
+
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
   const goToNextPage = () => router.push({ query: { page: page + 1 } })
   const [rfqDialog, setRfqDialog] = useState(false)
@@ -121,12 +138,15 @@ export const RfqsList = () => {
   const [purchaseDialog, setPurchaseDialog] = useState(false)
   const [purchaseProductOption, setPurchaseProductOption] = useState([])
   const [vendorChangeState, setVendorChangeState] = useState(false)
-  const [rfqDetails, setRfqDetails] = useState({
-    rfq_code: "",
+  const [newRFQCode, setNewRFQCode] = useState("")
+  const initialRfqState = {
+    rfq_code: newRFQCode,
     rfq_description: "",
     expected_dod: "",
-    rfq_email: [],
-  })
+    rfq_email: null,
+    itemsLength: false,
+  }
+  const [rfqDetails, setRfqDetails] = useState(initialRfqState)
   const [rfqEditState, setRfqEditState] = useState(false)
   const [activeRfqId, setActiveRfqId] = useState("")
   const [productItemList, setProductItemList] = useState([
@@ -148,7 +168,6 @@ export const RfqsList = () => {
 
   const [itemList, setItemList] = useState([
     { products_product_id: "", quantity: "", price_per_unit: "" },
-    ,
   ])
 
   const [activeRfq, setActiveRfq] = useState([])
@@ -169,8 +188,12 @@ export const RfqsList = () => {
     subject: "",
     message: "",
   })
+  const [expandedRows, setExpandedRows] = useState(null)
+  const [currentRfqitemsID, setCurrentRfqitemsID] = useState([])
+  const [rfqErrorMsgs, setRfqErrorMsgs] = useState([])
+  const [RFQCodechecked, setRFQCodeChecked] = useState<boolean>(true)
   const scrollToRfq = useRef<HTMLHeadingElement>(null)
-  const scrollToError = useRef<Element>(null)
+
   const tableRfqProducts = rfq_products.map((ele) => {
     return {
       ...ele,
@@ -178,6 +201,7 @@ export const RfqsList = () => {
       product_sku: ele.products.products_sku,
     }
   })
+
   useEffect(() => {
     const active = tableRfqProducts.filter(({ rfq_id }) => {
       return Number(rfq_id) === Number(activeRfqId)
@@ -241,7 +265,6 @@ export const RfqsList = () => {
       value: id,
     }
   })
-  const [newRFQCode, setNewRFQCode] = useState("")
 
   const createNewRFQCode = () => {
     const rfqPrefix = prefixes?.filter((prefix) => prefix.name === "RFQ")[0].name
@@ -251,6 +274,7 @@ export const RfqsList = () => {
 
   const [vendorOptions, setVendorOptions] = useState(options)
   const [vendorEmailOptions, setVendorEmailOptions] = useState(optionsForVendorEmails)
+  const [vendorEmailSuggestions, setVendorEmailSuggestions] = useState<any>(null)
   const addFields = () => {
     let newfield = { products_product_id: "", quantity: "", price_per_unit: "" }
 
@@ -259,6 +283,7 @@ export const RfqsList = () => {
   const removeFields = (index) => {
     setItemList(itemList.filter((data, i) => index !== i))
   }
+  const [itemsList, setItemsList] = useState<any>(null)
   const addFieldsPurchase = () => {
     let newfield = {
       purchase_order_po_id: "",
@@ -289,12 +314,6 @@ export const RfqsList = () => {
     setItemList(data)
   }
 
-  const autoSetProductPrice = () => {
-    const productPrice = products.filter((item) => item.product_id === e.value)[0]?.Price
-    let data = [...itemList]
-    e.target ? (data[i].price_per_unit = productPrice) : (data[i].price_per_unit = 0)
-    setItemList(data)
-  }
   const handleProductFormChange = (e: any, i: number) => {
     let data = [...productItemList]
     e.target ? (data[i][e.target.name] = e.value) : (data[i][e.originalEvent.target.name] = e.value)
@@ -317,6 +336,8 @@ export const RfqsList = () => {
     setItemList(active)
   }
 
+  // console.log("formik.errors",)
+
   const items = [
     {
       label: "Options",
@@ -324,14 +345,22 @@ export const RfqsList = () => {
         {
           label: "Edit",
           icon: "pi pi-pencil",
-          command: () => {
+          command: async () => {
+            const expected_dod = new Date(activeRow.expected_dod)
             setRfqEditState(true)
-            setRfqDetails({
+            await formik.setValues({
               rfq_code: activeRow.rfq_code,
               rfq_description: activeRow.rfq_description,
-              expected_dod: activeRow.expected_dod,
+              expected_dod,
               id: activeRow.id,
+              itemsLength: true,
             })
+            // setRfqDetails({
+            //   rfq_code: activeRow.rfq_code,
+            //   rfq_description: activeRow.rfq_description,
+            //   expected_dod: activeRow.expected_dod,
+            //   id: activeRow.id,
+            // })
             const active = tableRfqProducts
               .filter(({ rfq_id }) => {
                 return rfq_id === activeRow.id
@@ -344,6 +373,8 @@ export const RfqsList = () => {
                   rfq_products_id,
                 }
               })
+            console.log("tableRfqProducts", tableRfqProducts)
+            console.log("active item list", active)
             setItemList(active)
             setRfqDialog(true)
             scrollToRfq.current?.scrollIntoView()
@@ -376,65 +407,6 @@ export const RfqsList = () => {
           command: () => {
             setPurchaseDialog(true)
             setRfqItemList()
-
-            // const active = tableRfqProducts.filter(({ rfq_id }) => {
-            //   return rfq_id === activeRow.id
-            // })
-            // const activeProducts = active.map(({ products }) => {
-            //   return products.product_id
-            // })
-            // const activeVendors = vendors
-            //   .filter(({ vendor_products }) => {
-            //     const products = vendor_products.map(({ products_product_id }) => {
-            //       return products_product_id
-            //     })
-            //     return activeProducts.every((ele) => {
-            //       return products.includes(ele)
-            //     })
-            //     // return products.every((ele) => {
-            //     //   return activeProducts.includes(ele)
-            //     // })
-            //   })
-            //   .map(({ vendor, vendor_id }) => {
-            //     return { name: vendor, value: vendor_id }
-            //   })
-
-            // const activeProductsdetails = vendor_products
-
-            //   .filter(({ products, vendor }) => {
-            //     return (
-            //       activeProducts.includes(products.product_id) &&
-            //       vendor.vendor_id == activeVendors[0]?.value
-            //     )
-            //   })
-            //   .map((ele) => {
-            //     return {
-            //       purchase_order_po_id: "",
-            //       purchase_order_purchase_order_status_pos_id: 1,
-            //       purchase_order_vendor_vendor_id: ele.vendor.vendor_id,
-            //       vendor_products_vp_id: ele.vp_id,
-            //       vendor_products_vendor_vendor_id: ele.vendor.vendor_id,
-            //       vendor_products_products_product_id: ele.products.product_id,
-            //       quantity: "",
-            //       price_per_unit: ele.unit_price,
-            //       received_quantity: 0,
-            //       product_name: ele.products.name,
-            //       vendor_unit_price: ele.unit_price,
-            //       product_id: ele.products.product_id,
-            //     }
-            //   })
-
-            // TDO take quantity from rfq
-            // const activeProductsOptions = activeProductsdetails.map((ele) => {
-            //   return { name: ele.product_name, value: ele.product_id }
-            // })
-
-            // setPurchaseProductOption(activeProductsOptions)
-            // setVendorOptions(activeVendors)
-            // setActiveRfq(active)
-            // setActiveRfqId(activeRow.id)
-            // setProductItemList(activeProductsdetails)
-            // // setActiveRow(rowData)
           },
         },
         {
@@ -449,17 +421,29 @@ export const RfqsList = () => {
           label: "Update-Status",
           icon: "pi pi-refresh",
           command: async (e) => {
-            await updateRFQMutation({
-              id: activeRow.id,
-              active: activeRow.active === 0 ? 1 : 0,
-            })
+            const active = activeRow.active === 0 ? 1 : 0
+            await updateRFQMutation(
+              {
+                id: activeRow.id,
+                active,
+              },
+              {
+                onSuccess: () => {
+                  toast?.current.show(
+                    tsuccess(
+                      "Updated",
+                      `${activeRow.rfq_code} is now ${active ? "Active" : "Inactive"}`
+                    )
+                  )
+                },
+              }
+            )
             await refetch()
           },
         },
       ],
     },
   ]
-  const [expandedRows, setExpandedRows] = useState(null)
 
   const rowExpansionTemplate = (data) => {
     return (
@@ -506,18 +490,160 @@ export const RfqsList = () => {
     )
   }
 
-  const [currentRfqitemsID, setCurrentRfqitemsID] = useState([])
+  const formik = useFormik({
+    initialValues: rfqDetails,
+    validationSchema: Yup.object().shape({
+      rfq_code: Yup.string().required("*Required"),
+      rfq_description: Yup.string().required("*Required"),
+      expected_dod: Yup.mixed().required("*Required"),
+      itemsLength: Yup.boolean().equals([true], "⚠ Please select atleast one product").required(),
+    }),
+    onSubmit: async (data) => {
+      // console.log("data", data)
+      // console.log("activeRow", activeRow)
+      const { rfq_code, rfq_description, rfq_email, expected_dod } = data
+      const dateToString = expected_dod.toString()
+      const sentoEmails = rfq_email?.length
+        ? rfq_email?.map((item, i) => ({ email: item.value }))
+        : undefined
+
+      if (rfqEditState) {
+        // const currentProducts = [...itemList.map(({ rfq_products_id }) => rfq_products_id)]
+        const newProductList = itemList.filter((item) => !item.rfq_products_id)
+        const removemail = { ...rfqDetails }
+        const delProductList = currentRfqitemsID.filter(
+          (x) => !itemList.map(({ rfq_products_id }) => rfq_products_id).includes(x)
+        )
+        delete removemail.rfq_email
+        const update = await updateRFQMutation(
+          {
+            id: activeRow.id,
+            rfq_code,
+            rfq_description,
+            expected_dod,
+            active: 1,
+            rfq_products: {
+              create: newProductList.map((ele) => ({
+                price_per_unit: Number(ele.price_per_unit),
+                quantity: Number(ele.quantity),
+                products: {
+                  connect: {
+                    product_id: Number(ele.products_product_id),
+                  },
+                },
+              })),
+              updateMany: itemList.map((ele) => ({
+                where: {
+                  rfq_products_id: ele.rfq_products_id,
+                },
+                data: {
+                  price_per_unit: Number(ele.price_per_unit),
+                  quantity: Number(ele.quantity),
+                },
+              })),
+              deleteMany: {
+                rfq_products_id: {
+                  in: delProductList,
+                },
+              },
+            },
+            rfq_sentto: {
+              create: sentoEmails,
+            },
+          },
+          {
+            onSuccess: () => {
+              toast?.current.show(
+                tsuccess("Updated", `${activeRow.rfq_code} is now updated sucessfully`)
+              )
+            },
+          }
+        )
+        console.log(data)
+        setRfqDialog(false)
+        formik.resetForm()
+      } else {
+        const removeEmptyItems = itemList.filter((prod) => prod?.products_product_id)
+
+        if (removeEmptyItems.length === 0) {
+          const msg = {
+            message: "You should at least select 1 product from the select products List ",
+          }
+          setRfqErrorMsgs([...rfqErrorMsgs, msg])
+          return
+        }
+        try {
+          const newRfqData = await createRFQMutation(
+            {
+              ...data,
+              expected_dod: dateToString,
+              active: 1,
+              rfq_products: {
+                create: removeEmptyItems.map((ele) => ({
+                  price_per_unit: Number(ele.price_per_unit),
+                  quantity: Number(ele.quantity),
+                  products: {
+                    connect: {
+                      product_id: Number(ele.products_product_id),
+                    },
+                  },
+                })),
+              },
+              rfq_sentto: {
+                create: sentoEmails,
+              },
+            },
+            {
+              onSuccess: () => {
+                toast?.current?.show(tsuccess(null, "RFQ created successfully."))
+              },
+            }
+          )
+          setRfqDialog(false)
+          formik.resetForm()
+        } catch (error) {
+          console.log(error)
+        }
+      }
+      await refetch()
+      await fetchRfqProducts()
+    },
+  })
+  // console.log(formik.values)
+
+  const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
+  const getFormErrorMessage = (name) => {
+    return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
+  }
+
+  const emailsuggestions = createSearchFunction(optionsForVendorEmails, setVendorEmailSuggestions)
 
   useEffect(() => {
     const currentItemsIds = itemList.map(({ rfq_products_id }) => rfq_products_id)
     setCurrentRfqitemsID([...currentItemsIds])
   }, [rfqDialog])
 
-  const [rfqErrorMsgs, setRfqErrorMsgs] = useState([])
-  const [RFQCodechecked, setRFQCodeChecked] = useState<boolean>(true)
+  useEffect(() => {
+    //to rerender from while working with item list
+    ;(async () => {
+      await formik.setValues({ ...formik.values })
+    })()
+      // .then((res) => console.log(res))
+      .catch((error) => console.log(error))
+  }, [itemList, rfqDialog])
 
   useEffect(() => {
-    const ErrorArray = [updateRFQMutationError, createRFQMutationError, rfqError]
+    const ErrorArray = [
+      updateRFQMutationError,
+      createRFQMutationError,
+      rfqError,
+      productsError,
+      getRfq_senttosError,
+      getPrefixesError,
+      getVendorsProductsError,
+      getVendorsError,
+      getRfq_productsError,
+    ]
 
     const msg = []
 
@@ -527,7 +653,17 @@ export const RfqsList = () => {
       }
     }
     setRfqErrorMsgs(msg)
-  }, [updateRFQMutationError, createRFQMutationError, rfqError])
+  }, [
+    updateRFQMutationError,
+    createRFQMutationError,
+    rfqError,
+    productsError,
+    getRfq_senttosError,
+    getPrefixesError,
+    getVendorsProductsError,
+    getVendorsError,
+    getRfq_productsError,
+  ])
 
   const allowExpansion = (rowData) => {
     // return rowData.orders.length > 0;
@@ -540,137 +676,45 @@ export const RfqsList = () => {
     setRfqErrorMsgs(msgArray)
   }
   useEffect(() => {
-    RFQCodechecked
-      ? setRfqDetails({
-          ...rfqDetails,
-          rfq_code: newRFQCode,
+    if (RFQCodechecked && !rfqDialog) {
+      updateFormValues()
+        // .then((res) => console.log("newCode", res))
+        .catch((error) => {
+          console.log("From updateFormValues", error)
         })
-      : null
+    }
   }, [RFQCodechecked])
+
+  const updateFormValues = async () => {
+    await formik.setValues({ ...formik.values, rfq_code: newRFQCode })
+  }
+
+  // useEffect(() => {
+  //   // RFQCodechecked
+  //   //   ? setRfqDetails({
+  //   //       ...rfqDetails,
+  //   //       rfq_code: newRFQCode,
+  //   //     })
+  //   //   : null
+  // }, [RFQCodechecked])
 
   useEffect(() => {
     createNewRFQCode()
   })
 
-  // const [filteredVendors, setFilteredVendors] = useState<any>(null)
-  // const [selectedCountry2, setSelectedCountry2] = useState<any>(null)
+  // console.log("values", typeof new Date())
 
-  // const searchCountry = (event: { query: string }) => {
-  //   setTimeout(() => {
-  //     let _filteredVendors
-  //     if (!event.query.trim().length) {
-  //       _filteredVendors = [...productOptions]
-  //     } else {
-  //       _filteredVendors = productOptions.filter((vendor) => {
-  //         return vendor.name.toLowerCase().includes(event.query.toLowerCase())
-  //       })
-  //     }
-
-  //     setFilteredVendors(_filteredVendors)
-  //   }, 250)
-  // }
+  // console.log("newcode", newRFQCode)
 
   return (
-    <div>
-      {updatingRfq && <LoaderFullScreen />}
-      {creatingRfq && <LoaderFullScreen />}
-      {rfqErrorMsgs.map((ele, i) => (
-        <ErrorCard ErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
-      ))}
+    <div ref={scrollToRfq} className="grid w-full mr-0">
+      <Toast ref={toast} />
+      {(updatingRfq || creatingRfq) && <LoaderFullScreen />}
 
-      {/* <Button
-        // type="submit"
-        className="mr-2"
-        label="ADD"
-        onClick={async () => {
-          try {
-            const data = await createRFQMutation({
-              rfq_code: "TEST",
-              rfq_description: "TEST",
-              expected_dod: "tomorrow",
-              rfq_sentto: {
-                create: [{ email: "dylan.p@tiflabs.in" }],
-              },
-              rfq_products: {
-                create: [
-                  {
-                    price_per_unit: 10,
-                    quantity: 10,
-                    products_product_id: 1,
-                  },
-                ].map((ele) => ({
-                  price_per_unit: Number(ele.price_per_unit),
-                  quantity: Number(ele.quantity),
-                  products: {
-                    connect: {
-                      product_id: Number(ele.products_product_id),
-                    },
-                  },
-                })),
-              },
-            })
-            // setRfqEditState(false)
-          } catch (error) {
-            console.log(error)
-          }
-        }}
-      />
-      <Button
-        // type="submit"
-        className="mr-2"
-        label="Edit"
-        onClick={async () => {
-          try {
-            const data = await updateRFQMutation({
-              id: 161,
-              rfq_code: "TEST",
-              rfq_description: "TEST UPDATED",
-              expected_dod: "tomorrow after tomorrow",
-              rfq_products: {
-                create: [
-                  {
-                    price_per_unit: 10,
-                    quantity: 10,
-                    products_product_id: 2,
-                  },
-                ].map((ele) => ({
-                  price_per_unit: Number(ele.price_per_unit),
-                  quantity: Number(ele.quantity),
-                  products: {
-                    connect: {
-                      product_id: Number(ele.products_product_id),
-                    },
-                  },
-                })),
-                updateMany: [
-                  {
-                    id: 110,
-                    price_per_unit: 12,
-                    quantity: 13,
-                    products_product_id: 1,
-                  },
-                ].map((ele) => ({
-                  where: {
-                    rfq_products_id: ele.id,
-                  },
-                  data: {
-                    price_per_unit: Number(ele.price_per_unit),
-                    quantity: Number(ele.quantity),
-                  },
-                })),
-              },
-            })
-            console.log("data : ", data)
-          } catch (error) {
-            console.log("error: ", error)
-          }
-        }}
-      /> */}
       <Dialog
         header="Send Quotation"
         visible={sendDialog}
         style={{ width: "50vw" }}
-        // footer={renderFooter("displayBasic")}
         onHide={() => setSendDialog(false)}
       >
         <MultiSelect
@@ -688,22 +732,22 @@ export const RfqsList = () => {
             icon="pi pi-send"
             label="Send"
             onClick={async () => {
-              const newMailsIDs = rfqDetails.rfq_email
-              const existingMailIDs = rfq_senttos
+              const existingEmails = rfq_senttos
                 .filter((item) => item.rfq_id === activeRow.id)
                 .map((item) => item.email)
-              const filteredEmailIds = newMailsIDs.filter(
-                (email) => !existingMailIDs.includes(email)
-              )
-              await updateRFQMutation({
+
+              const newEmails = rfqDetails?.rfq_email
+
+              const mails = filterExistingValues(newEmails, existingEmails)
+
+              const update = await updateRFQMutation({
                 id: activeRow.id,
 
                 rfq_sentto: {
-                  create: filteredEmailIds?.length
-                    ? filteredEmailIds?.map((email) => ({ email }))
-                    : undefined,
+                  create: mails?.length ? mails?.map((email) => ({ email })) : undefined,
                 },
               })
+
               const uniquerfq = rfqs.find((ele) => ele.id === activeRow.id)
 
               // const data = JSON.stringify({
@@ -749,546 +793,30 @@ export const RfqsList = () => {
           />
         </div>
       </Dialog>
-      {
-        // <Dialog
-        //   header="Create PO "
-        //   visible={purchaseDialog}
-        //   style={{ width: "80vw" }}
-        //   // footer={renderFooter}
-        //   onHide={() => {
-        //     setActiveRfq([])
-        //     setPurchaseProductOption([])
-        //     setProductItemList([])
-        //     setPurchaseDialog(false)
-        //     setPurchaseDetails({
-        //       vendor_vendor_id: "",
-        //       po_code: "",
-        //       po_description: "",
-        //       expiry_date: "",
-        //       expected_delivery: "",
-        //       from_party: "",
-        //       agreement: "",
-        //       rfq_id: null,
-        //     })
-        //   }}
-        // >
-        //   <form
-        //     onSubmit={async () => {
-        //       // const rfc = await createRFQMutation({ ...rfqDetails })
-        //       //
-        //       // const many = itemList.map((ele) => {
-        //       //   return {
-        //       //     rfq_id: rfc.id,
-        //       //     price_per_unit: Number(ele.price_per_unit),
-        //       //     products_product_id: Number(ele.products_product_id),
-        //       //     quantity: Number(ele.quantity),
-        //       //   }
-        //       // })
-        //       //
-        //       // try {
-        //       //   await createRFQProductMutation(many)
-        //       // } catch (error: any) {
-        //       //
-        //       // }
-        //       // await refetch()
-        //     }}
-        //     className="p-fluid"
-        //   >
-        //     <div className="flex justify-content-between mt-2 mb-2 pt-4">
-        //       <Dropdown
-        //         className="mr-2 w-16rem"
-        //         name="products_product_id"
-        //         // disabled={editState}
-        //         optionLabel="name"
-        //         value={purchaseDetails.vendor_vendor_id}
-        //         options={vendorOptions}
-        //         onChange={(e) => {
-        //           setPurchaseDetails({ ...purchaseDetails, vendor_vendor_id: e.value })
-        //           setVendorChangeState(!vendorChangeState)
-        //         }}
-        //         placeholder="Select Vendor"
-        //       />
-        //       <Dropdown
-        //         className="mr-2 w-16rem"
-        //         // name="products_product_id"
-        //         disabled={true}
-        //         optionLabel="name"
-        //         value={purchaseDetails.rfq_id ?? activeRfqId}
-        //         options={rfqOptions}
-        //         onChange={(e) => setPurchaseDetails({ ...purchaseDetails, rfq_id: e.value })}
-        //         // onChange={(e) => handleFormChange(e, i)}
-        //         placeholder="Select RFQ to prefill values"
-        //       />
-        //       <div className="p-float-label">
-        //         <InputText
-        //           // name=""
-        //           className="mr-2 w-16rem"
-        //           value={purchaseDetails.po_code}
-        //           onChange={(e) =>
-        //             setPurchaseDetails({ ...purchaseDetails, po_code: e.target.value })
-        //           }
-        //         />
-        //         <label
-        //         // htmlFor={ele.field}
-        //         // className={classNames({ "p-error": isFormFieldValid("name") })}
-        //         >
-        //           PO Code
-        //         </label>
-        //       </div>
-        //       <div className="p-float-label">
-        //         <InputText
-        //           className="mr-2 w-16rem"
-        //           value={purchaseDetails.po_description}
-        //           onChange={(e) =>
-        //             setPurchaseDetails({ ...purchaseDetails, po_description: e.target.value })
-        //           }
-        //         />
-        //         <label
-        //         // htmlFor={ele.field}
-        //         // className={classNames({ "p-error": isFormFieldValid("name") })}
-        //         >
-        //           PO Name
-        //         </label>
-        //       </div>
-        //     </div>
-        //     <div className="flex justify-content-between mt-2 mb-2 pt-4">
-        //       <div className="p-float-label">
-        //         <Calendar
-        //           className="mr-2 w-16rem"
-        //           id="basic"
-        //           value={purchaseDetails.expiry_date}
-        //           onChange={(e) =>
-        //             setPurchaseDetails({
-        //               ...purchaseDetails,
-        //               expiry_date: e.value,
-        //             })
-        //           }
-        //         />
-        //         <label
-        //         // htmlFor={ele.field}
-        //         // className={classNames({ "p-error": isFormFieldValid("name") })}
-        //         >
-        //           Expiry Date
-        //         </label>
-        //       </div>
-        //       <div className="p-float-label">
-        //         <Calendar
-        //           className="mr-2 w-16rem"
-        //           id="basic"
-        //           value={purchaseDetails.expected_delivery}
-        //           onChange={(e) =>
-        //             setPurchaseDetails({
-        //               ...purchaseDetails,
-        //               expected_delivery: e.value,
-        //             })
-        //           }
-        //         />
-        //         <label
-        //         // htmlFor={ele.field}
-        //         // className={classNames({ "p-error": isFormFieldValid("name") })}
-        //         >
-        //           Expected Delivery
-        //         </label>
-        //       </div>
-        //       <div className="p-float-label">
-        //         <InputText
-        //           className="mr-2 w-16rem"
-        //           value={purchaseDetails.agreement}
-        //           onChange={(e) =>
-        //             setPurchaseDetails({ ...purchaseDetails, agreement: e.target.value })
-        //           }
-        //         />
-        //         <label
-        //         // htmlFor={ele.field}
-        //         // className={classNames({ "p-error": isFormFieldValid("name") })}
-        //         >
-        //           Agreement
-        //         </label>
-        //       </div>
-        //       <div className="p-float-label">
-        //         <InputText
-        //           className="mr-2 w-16rem"
-        //           value={purchaseDetails.from_party}
-        //           onChange={(e) =>
-        //             setPurchaseDetails({ ...purchaseDetails, from_party: e.target.value })
-        //           }
-        //         />
-        //         <label
-        //         // htmlFor={ele.field}
-        //         // className={classNames({ "p-error": isFormFieldValid("name") })}
-        //         >
-        //           From Party
-        //         </label>
-        //       </div>
-        //     </div>
-        //     <div>Select Items</div>
-        //     <hr />
-        //     {vendorOptions.length > 0 ? (
-        //       productItemList.map((ele, i) => {
-        //         return (
-        //           <div
-        //             key={i}
-        //             className="flex justify-content-between align-items-center mt-2 pt-4"
-        //           >
-        //             <Dropdown
-        //               className="mr-2 w-20rem"
-        //               name="products_product_id"
-        //               // disabled={editState}
-        //               filter
-        //               showClear
-        //               filterBy="name"
-        //               placeholder="Select a Product"
-        //               optionLabel="name"
-        //               value={ele.product_id}
-        //               options={purchaseProductOption}
-        //               onChange={(e) => handleProductFormChange(e, i)}
-        //             />
-        //             <div className="flex-column ">
-        //               <div className="p-label ">
-        //                 <label className="mr-2">Target price per unit</label>
-        //                 <InputNumber
-        //                   name="price_per_unit"
-        //                   className="mr-2 w-20rem"
-        //                   onChange={(e) => handleProductFormChange(e, i)}
-        //                 />
-        //               </div>
-        //               <div className="flex justify-content-around">
-        //                 {purchaseDetails?.vendor_vendor_id && (
-        //                   <span className="p-error">
-        //                     vendor price:{ele?.vendor_unit_price ?? "-"}
-        //                   </span>
-        //                 )}
-        //                 <span className="p-error">
-        //                   Target price:
-        //                   {activeRfq.filter(({ products }) => {
-        //                     return Number(products.product_id) === Number(ele.product_id)
-        //                   })[0]?.price_per_unit ?? "-"}
-        //                 </span>
-        //               </div>
-        //             </div>
-        //             <div className="p-label ">
-        //               <label className="mr-2">Quantity</label>
-        //               <InputNumber
-        //                 name="quantity"
-        //                 className="mr-2 w-20rem"
-        //                 value={
-        //                   activeRfq.filter(({ products }) => {
-        //                     return Number(products.product_id) === Number(ele.product_id)
-        //                   })[0]?.quantity ?? ""
-        //                 }
-        //                 onChange={(e) => handleProductFormChange(e, i)}
-        //                 // onChange={(e) => handleFormChange(e, i)}
-        //               />
-        //             </div>
-        //           </div>
-        //         )
-        //       })
-        //     ) : (
-        //       <div className="flex justify-content-center">
-        //         <div className="p-error">No vendor matches RFQ product List</div>
-        //       </div>
-        //     )}
-        //     <div className="flex justify-content-end">
-        //       <Button
-        //         type="button"
-        //         icon="pi pi-minus"
-        //         disabled={productItemList.length < 1}
-        //         className="m-2 p-button-rounded "
-        //         onClick={removeFieldsPurchase}
-        //       />
-        //       <Button
-        //         type="button"
-        //         icon="pi pi-plus"
-        //         className="m-2 p-button-rounded "
-        //         onClick={addFieldsPurchase}
-        //       />
-        //     </div>
-        //     <div className="flex justify-content-end mt-2">
-        //       <Button
-        //         type="button"
-        //         className="col-3 mr-2 mt-2"
-        //         label="CREATE"
-        //         onClick={async () => {
-        //           const purchaseOrder = await createPurchaseOrderMutation({
-        //             vendor_vendor_id: Number(purchaseDetails.vendor_vendor_id),
-        //             po_code: purchaseDetails.po_code,
-        //             po_description: purchaseDetails.po_description,
-        //             expiry_date: new Date(purchaseDetails.expiry_date),
-        //             expected_delivery: new Date(purchaseDetails.expected_delivery),
-        //             from_party: purchaseDetails.from_party,
-        //             agreement: purchaseDetails.agreement,
-        //             rfq_id: Number(activeRfqId) ?? undefined,
-        //           })
-        //           const list = productItemList.map((ele) => {
-        //             return {
-        //               purchase_order_po_id: purchaseOrder?.po_id ?? "",
-        //               // purchase_order_po_id: 8,
-        //               purchase_order_purchase_order_status_pos_id: 1,
-        //               purchase_order_vendor_vendor_id: Number(purchaseDetails.vendor_vendor_id),
-        //               vendor_products_vp_id: Number(ele.vendor_products_vp_id),
-        //               vendor_products_vendor_vendor_id: Number(purchaseDetails.vendor_vendor_id),
-        //               vendor_products_products_product_id: Number(ele.product_id),
-        //               quantity: Number(ele.quantity),
-        //               price_per_unit: Number(ele.price_per_unit),
-        //               received_quantity: 0,
-        //             }
-        //           })
-        //           try {
-        //             const result = await createManyPurchaseOrderProductsMutation(list)
-        //           } catch (error: any) {}
-        //           await refetch()
-        //         }}
-        //       />
-        //     </div>
-        //   </form>
-        // </Dialog>
-      }
 
-      <Dialog
-        header="Product List"
-        visible={productDialog}
-        style={{ width: "60vw" }}
-        // footer={renderFooter}
-        onHide={() => setProductDialog(false)}
-      >
-        <DataTable
-          value={activeRfq}
-          showGridlines
-          // header={renderHeader}
-
-          stripedRows
-          className="text-s datatable-responsive"
-          // paginator
-          // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
-          // rows={PAGINATION_VARIABLES.rows}
-          // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
-          // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
-        >
-          <Column
-            field="rfq_products_id"
-            header="ID600"
-            // className="text-center"
-          />
-          <Column
-            field="product_sku"
-            header="Product SKU"
-            // className="text-center"
-          />
-
-          <Column
-            field="product_name"
-            header="Name"
-            // className="text-center"
-          />
-          <Column
-            field="price_per_unit"
-            header="Price / Unit"
-            // className="text-center"
-          />
-          <Column
-            field="quantity"
-            header="Quantity"
-            // className="text-center"
-          />
-        </DataTable>
-      </Dialog>
-
-      <Dialog
-        header="Create RFQ"
-        // visible={rfqDialog}
-        style={{ width: "60vw" }}
-        // footer={renderFooter}
-        onHide={() => setRfqDialog(false)}
-      >
-        {/* <form
-          onSubmit={async () => {
-            if (rfqEditState) {
-              await updateRFQMutation({ ...rfqDetails })
-              try {
-                itemList.forEach(async (ele) => {
-                  await updateRfqProductMutation({
-                    rfq_id: Number(rfqDetails.id),
-                    price_per_unit: Number(ele.price_per_unit),
-                    products_product_id: Number(ele.products_product_id),
-                    quantity: Number(ele.quantity),
-                    rfq_products_id: Number(ele.rfq_products_id),
-                  })
-                })
-              } catch (error: any) {}
-            } else {
-              // const rfq = await createRFQMutation({ ...rfqDetails })
-              await createRFQMutation({
-                ...rfqDetails,
-                rfq_products: {
-                  create: itemList.map((ele) => ({
-                    price_per_unit: Number(ele.price_per_unit),
-                    quantity: Number(ele.quantity),
-                    products: {
-                      connect: Number(ele.products_product_id),
-                    },
-                  })),
-                },
-              })
-
-              // try {
-              //   // const result = await createRFQProductMutation(many)
-              //
-              // } catch (error: any) {
-              //
-              // }
-            }
-
-            await refetch()
-          }}
-          className="p-fluid"
-        >
-          <div className="flex justify-content-between mt-2 mb-2 pt-4">
-            <div className="p-float-label">
-              <InputText
-                name=""
-                className="mr-2"
-                value={rfqDetails.rfq_code}
-                onChange={(e) => setRfqDetails({ ...rfqDetails, rfq_code: e.target.value })}
-              />
-              <label
-              // htmlFor={ele.field}
-              // className={classNames({ "p-error": isFormFieldValid("name") })}
-              >
-                RFQ Code
-              </label>
-            </div>
-
-            <div className="p-float-label">
-              <InputText
-                className="mr-2"
-                value={rfqDetails.rfq_description}
-                onChange={(e) => setRfqDetails({ ...rfqDetails, rfq_description: e.target.value })}
-              />
-              <label
-              // htmlFor={ele.field}
-              // className={classNames({ "p-error": isFormFieldValid("name") })}
-              >
-                RFQ Description
-              </label>
-            </div>
-            <div className="p-float-label">
-              <InputText
-                className="mr-2"
-                value={rfqDetails.expected_dod}
-                onChange={(e) => setRfqDetails({ ...rfqDetails, expected_dod: e.target.value })}
-              />
-              <label
-              // htmlFor={ele.field}
-              // className={classNames({ "p-error": isFormFieldValid("name") })}
-              >
-                Expected Delivery
-              </label>
-            </div>
-          </div>
-          <div>Select Items</div>
-          <hr />
-          {itemList.map((ele, i) => {
-            return (
-              <div key={i} className="flex justify-content-between align-items-center mt-2 pt-4">
-                <Dropdown
-                  className="mr-2 w-15rem"
-                  name="products_product_id"
-                  value={ele.products_product_id}
-                  options={productOptions}
-                  onChange={(e) => {
-                    handleFormChange(e, i)
-                  }}
-                  optionLabel="name"
-                  filter
-                  showClear
-                  filterBy="name"
-                  placeholder="Select a Products"
-                  // disabled={editState}
-                />
-                <div className="p-label ">
-                  <label
-                    className="mr-2"
-                    // htmlFor={ele.field}
-                    // className={classNames({ "p-error": isFormFieldValid("name") })}
-                  >
-                    Price per unit
-                  </label>
-                  <InputNumber
-                    name="price_per_unit"
-                    value={Number(ele.price_per_unit)}
-                    className="mr-2 w-12rem"
-                    onChange={(e) => handleFormChange(e, i)}
-                  />
-                </div>
-                <div className="p-label ">
-                  <label
-                    className="mr-2"
-                    // htmlFor={ele.field}
-                    // className={classNames({ "p-error": isFormFieldValid("name") })}
-                  >
-                    Quantity
-                  </label>
-                  <InputNumber
-                    name="quantity"
-                    value={Number(ele.quantity)}
-                    className="mr-2 w-12rem"
-                    onChange={(e) => handleFormChange(e, i)}
-                    // onChange={(e) => handleFormChange(e, i)}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  disabled={itemList.length <= 1}
-                  icon="pi pi-minus"
-                  className="m-2 p-button-rounded "
-                  onClick={() => removeFields(i)}
-                  // onClick={}
-                />
-              </div>
-            )
-          })}
-          <div className="flex justify-content-end">
-            <Button
-              type="button"
-              icon="pi pi-plus"
-              className="m-2 p-button-rounded "
-              onClick={addFields}
-            />
-          </div>
-          <div className="flex justify-content-end">
-            <Button
-              type="submit"
-              onClick={async () => {
-                // const many =
-                //
-                // try {
-                //   const error = await updateManyRfqProductsMutation(many)
-                //
-                // } catch (error: any) {
-                //
-                // }
-              }}
-              className="col-3 mr-2 mt-2"
-              label={rfqEditState ? "UPDATE" : "CREATE"}
-            />
-          </div>
-        </form> */}
-      </Dialog>
-      <div className="col-12" style={{ padding: 0 }}>
-        <div className="card flex justify-content-between align-items-center">
+      <div className="col-12">
+        <div className="card flex justify-content-between align-items-center mb-2">
           <h4 className="mb-0">Request for Quotations</h4>
           <div className="flex justify-content-end align-items-center">
             <Button
               icon="pi pi-plus"
               label="Create RFQ"
-              onClick={() => {
+              onClick={async () => {
+                // const itemListWithEmptyList = Array(5).fill({
+                //   products_product_id: "",
+                //   quantity: "",
+                //   price_per_unit: "",
+                // })
                 setRfqEditState(false)
-                setRfqDetails({
-                  rfq_code: newRFQCode,
-                  rfq_description: "",
-                  expected_dod: "",
-                  rfq_email: "",
-                })
+
+                // setRfqDetails({
+                //   rfq_code: newRFQCode,
+                //   rfq_description: "",
+                //   expected_dod: "",
+                //   rfq_email: "",
+                // })
+
+                await formik.setValues({ ...initialRfqState })
                 setItemList([
                   { products_product_id: "", quantity: "", price_per_unit: "" },
                   { products_product_id: "", quantity: "", price_per_unit: "" },
@@ -1296,375 +824,356 @@ export const RfqsList = () => {
                   { products_product_id: "", quantity: "", price_per_unit: "" },
                   { products_product_id: "", quantity: "", price_per_unit: "" },
                 ])
-                setRfqDialog(!rfqDialog)
+                setRfqDialog(true)
+                setRFQCodeChecked(true)
               }}
             ></Button>
           </div>
         </div>
+        {rfqErrorMsgs.map((ele, i) => (
+          <ErrorCard ErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
+        ))}
       </div>
 
       <div
-        className={`card ${
+        className={`col-12 ${
           rfqDialog
             ? "visible scalein animation-duration-200"
             : "hidden scaleout animation-duration-200"
-        }`}
+        } `}
       >
-        <form
-          // onSubmit={async () => {
-          //   if (rfqEditState) {
-          //     await updateRFQMutation({ ...rfqDetails })
-          //     try {
-          //       itemList.forEach(async (ele) => {
-          //         await updateRfqProductMutation({
-          //           rfq_id: Number(rfqDetails.id),
-          //           price_per_unit: Number(ele.price_per_unit),
-          //           products_product_id: Number(ele.products_product_id),
-          //           quantity: Number(ele.quantity),
-          //           rfq_products_id: Number(ele.rfq_products_id),
-          //         })
-          //       })
-          //     } catch (error: any) {}
-          //   } else {
-          //     const rfq = await createRFQMutation({ ...rfqDetails })
-          //     //
-
-          //     const many = itemList.map((ele) => {
-          //       return {
-          //         rfq_id: rfq.id,
-          //         price_per_unit: Number(ele.price_per_unit),
-          //         products_product_id: Number(ele.products_product_id),
-          //         quantity: Number(ele.quantity),
-          //       }
-          //     })
-
-          //     try {
-          //       await createRFQProductMutation(many)
-          //     } catch (error: any) {}
-          //   }
-
-          //   await refetch()
-          // }}
-          className="p-fluid"
-        >
-          <h5 ref={scrollToRfq}>Create RFQ</h5>
-          <div className="formgrid grid">
-            <div className="col-12">
-              <h6>RFQ Details:</h6>
-            </div>
-            <div className="field col-12 lg:col-4 mt-2 ">
-              <span className="p-float-label ">
-                <InputText
-                  id="rfq_code"
-                  name="rfq_code"
-                  value={rfqDetails.rfq_code}
-                  onChange={(e) => setRfqDetails({ ...rfqDetails, rfq_code: e.target.value })}
-                  disabled={RFQCodechecked}
-                />
-                <label
-                  htmlFor="rfq_code"
-                  // className={classNames({ "p-error": isFormFieldValid("name") })}
-                >
-                  RFQ Code
-                </label>
-              </span>
-
-              <div className="field-checkbox mt-3">
-                <Checkbox onChange={(e) => setRFQCodeChecked(e.checked)} checked={RFQCodechecked} />
-                <label htmlFor="binary">Un-check to add custom code.</label>
+        <div className={` card `}>
+          <form className="p-fluid" onSubmit={formik.handleSubmit}>
+            <h5 className="mb-3">Create RFQ</h5>
+            <div className="formgrid grid p-4">
+              <div className="col-12">
+                <h6>RFQ Details:</h6>
               </div>
-            </div>
-            <div className="field col-12 lg:col-4 mt-2">
-              <span className="p-float-label">
-                <InputText
-                  id="rfq_description"
-                  name="rfq_description"
-                  value={rfqDetails.rfq_description}
-                  onChange={(e) =>
-                    setRfqDetails({ ...rfqDetails, rfq_description: e.target.value })
-                  }
-                />
-                <label
-                  htmlFor="rfq_description"
-                  // className={classNames({ "p-error": isFormFieldValid("name") })}
-                >
-                  RFQ Description
-                </label>
-              </span>
-            </div>
-
-            <div className="field col-12 lg:col-4 mt-2 ">
-              <span className="p-float-label">
-                <Calendar
-                  id="expected_dod"
-                  minDate={new Date()}
-                  // value={new Date(rfqDetails.expected_dod)}
-                  onChange={(e) =>
-                    setRfqDetails({ ...rfqDetails, expected_dod: e.target.value?.toString() })
-                  }
-                />
-                <label style={{ zIndex: 10 }} htmlFor="expected_dod">
-                  Expected Delivery
-                </label>
-              </span>
-            </div>
-
-            <div className="col-12">
-              <h6>Send To Emails:</h6>
-            </div>
-            {/* <div className="col-12 lg:col-4 mt-2" style={{ position: "relative" }}> */}
-            {/* <Chips
-                // className="lg:col-4"
-                style={{ width: "33%" }}
-                name="email"
-                value={rfqDetails.rfq_email}
-                placeholder="Email"
-                onChange={(e) => setRfqDetails({ ...rfqDetails, rfq_email: e.value })}
-              />
-              <p
-                style={{ position: "absolute", bottom: "-20px", left: "10px" }}
-                className="text-xs"
-              >
-                *Press Enter key before Entering next emails.
-              </p> */}
-            <MultiSelect
-              style={{ minWidth: "33%" }}
-              value={rfqDetails.rfq_email}
-              options={vendorEmailOptions}
-              onChange={(e) => setRfqDetails({ ...rfqDetails, rfq_email: e.value })}
-              optionLabel="name"
-              placeholder="Select a Vendor"
-              display="chip"
-            />
-            {/* </div> */}
-
-            <div className="col-12 mt-5">
-              <h6>Select Products:</h6>
-            </div>
-            {itemList.map((ele, i) => (
-              <>
-                <div key={`RFQ-product-${i}`} className="field col-12 lg:col-7 mt-2">
-                  <Dropdown
-                    name="products_product_id"
-                    // disabled={editState}
-                    optionLabel="name"
-                    filter
-                    showClear
-                    filterBy="name"
-                    value={ele.products_product_id}
-                    options={productOptions}
-                    onChange={async (e) => {
-                      await handleFormChange(e, i)
-                      // autoSetProductPrice(e)
-                      const productPrice = products.filter((item) => item.product_id === e.value)[0]
-                        ?.Price
-                      let data = [...itemList]
-                      e.target
-                        ? (data[i].price_per_unit = productPrice)
-                        : (data[i].price_per_unit = 0)
-                      setItemList(data)
-                    }}
-                    placeholder="Select Product"
+              <div className="field col-12 lg:col-4 mt-2 ">
+                <span className="p-float-label ">
+                  <InputText
+                    id="rfq_code"
+                    name="rfq_code"
+                    value={formik.values.rfq_code}
+                    onChange={formik.handleChange}
+                    disabled={RFQCodechecked}
+                    autoFocus
+                    className={classNames({ "p-invalid": isFormFieldValid("rfq_code") })}
                   />
-                  {/* <AutoComplete
-                    value={ele.products_product_id}
-                    suggestions={filteredVendors}
-                    completeMethod={searchCountry}
-                    field="name"
-                    dropdown
-                    forceSelection
-                    // itemTemplate={itemTemplate}
+                  <label
+                    htmlFor="rfq_code"
+                    className={classNames({ "p-error": isFormFieldValid("rfq_code") })}
+                  >
+                    RFQ Code
+                  </label>
+                </span>
+                {getFormErrorMessage("rfq_code")}
+
+                <div className="field-checkbox my-2">
+                  <Checkbox
+                    // style={{ width: "0.1rem", height: "0rem" }}
+                    onChange={(e) => setRFQCodeChecked(e.checked)}
+                    checked={RFQCodechecked}
+                    disabled={rfqEditState}
+                  />
+                  <label
+                    htmlFor="binary"
+                    className="
+                  text-sm	"
+                  >
+                    Un-check to add custom code.
+                  </label>
+                </div>
+              </div>
+              <div className="field col-12 lg:col-4 my-2">
+                <span className="p-float-label">
+                  <InputText
+                    id="rfq_description"
+                    name="rfq_description"
+                    value={formik.values.rfq_description}
+                    onChange={formik.handleChange}
+                    className={classNames({ "p-invalid": isFormFieldValid("rfq_description") })}
+                    autoFocus
+                  />
+                  <label
+                    htmlFor="rfq_description"
+                    className={classNames({ "p-error": isFormFieldValid("rfq_description") })}
+                  >
+                    RFQ Description
+                  </label>
+                </span>
+                {getFormErrorMessage("rfq_description")}
+              </div>
+              <div className="field col-12 lg:col-4 mt-2 ">
+                <span className="p-float-label">
+                  <Calendar
+                    id="expected_dod"
+                    minDate={new Date()}
+                    // // value={(rfqDetails.expected_dod)}
+                    // onChange={(e) =>
+                    //   setRfqDetails({ ...rfqDetails, expected_dod: e.target.value?.toString() })
+                    value={formik.values.expected_dod}
                     onChange={async (e) => {
-                      console.log(itemList[0])
-                      await handleFormChange(e, i)
-                      // autoSetProductPrice(e)
-                      const productPrice = products.filter((item) => item.product_id === e.value)[0]
-                        ?.Price
-                      let data = [...itemList]
-                      e.target
-                        ? (data[i].price_per_unit = productPrice)
-                        : (data[i].price_per_unit = 0)
-                      setItemList(data)
+                      await formik.setValues({
+                        ...formik.values,
+                        expected_dod: e.value,
+                      })
                     }}
-                    aria-label="Countries"
-                    dropdownAriaLabel="Select Country"
-                  /> */}
-                </div>
-                <div className="field col-12 lg:col-2 mt-2">
-                  <span className="p-float-label">
-                    <InputNumber
-                      id={`product-prixe-${i}`}
-                      name="price_per_unit"
-                      value={Number(ele.price_per_unit)}
-                      onChange={(e) => handleFormChange(e, i)}
-                      // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                    className={classNames({ "p-invalid": isFormFieldValid("expected_dod") })}
+                  />
+                  <label
+                    style={{ zIndex: 10 }}
+                    htmlFor="expected_dod"
+                    className={classNames({ "p-error": isFormFieldValid("expected_dod") })}
+                  >
+                    Expected Delivery
+                  </label>
+                </span>
+                {getFormErrorMessage("expected_dod")}
+              </div>
+
+              <div className="col-12">
+                <h6 className="mb-4">Send To Emails:</h6>
+              </div>
+
+              {/* <MultiSelect
+                style={{ minWidth: "33%" }}
+                value={rfqDetails.rfq_email}
+                options={vendorEmailOptions}
+                onChange={(e) => setRfqDetails({ ...rfqDetails, rfq_email: e.value })}
+                optionLabel="name"
+                placeholder="Select a Vendor"
+                display="chip"
+              /> */}
+
+              <span className="p-float-label w-full">
+                <AutoComplete
+                  // className="w-4"
+                  style={{ minWidth: "33%" }}
+                  value={formik.values.rfq_email}
+                  suggestions={vendorEmailSuggestions}
+                  completeMethod={emailsuggestions}
+                  field="name"
+                  multiple
+                  onChange={async (e) => {
+                    await formik.setValues({ ...formik.values, rfq_email: e.value })
+                  }}
+                  aria-label="Vendor-Emails"
+                  dropdownAriaLabel="Select Email"
+                />
+                <label htmlFor="autocomplete">Emails</label>
+              </span>
+
+              <div className="col-12 mt-5">
+                <h6>Select Products:</h6>
+              </div>
+              {itemList.map((ele, i) => (
+                <>
+                  <div key={`RFQ-product-${i}`} className="field col-12 lg:col-7 mt-2">
+                    <Dropdown
+                      name="products_product_id"
+                      // disabled={editState}
+                      optionLabel="name"
+                      filter
+                      showClear
+                      filterBy="name"
+                      value={ele.products_product_id}
+                      options={productOptions}
+                      onChange={async (e) => {
+                        await handleFormChange(e, i)
+                        const productPrice = products.filter(
+                          (item) => item.product_id === e.value
+                        )[0]?.Price
+                        let data = [...itemList]
+                        e.target
+                          ? (data[i].price_per_unit = productPrice)
+                          : (data[i].price_per_unit = 0)
+                        if (i === 0) {
+                          await setItemList(data)
+                          const itemsLength = e.value ? true : false
+                          await formik.setValues({ ...formik.values, itemsLength })
+                        }
+                      }}
+                      placeholder="Select Product"
                     />
-                    <label
-                    // className={classNames({ "p-error": isFormFieldValid("name") })}
-                    >
-                      Target price per unit
-                    </label>
-                  </span>
-                  {/* {getFormErrorMessage("name")} */}
-                </div>
-                <div className="field col-12 lg:col-2 mt-2">
-                  <span className="p-float-label">
-                    <InputNumber
-                      id={`product-qty-${i}`}
-                      name="quantity"
-                      value={Number(ele.quantity)}
-                      onChange={(e) => handleFormChange(e, i)}
-                      // className={classNames({ "p-invalid": isFormFieldValid("name") })}
-                    />
-                    <label
-                    // className={classNames({ "p-error": isFormFieldValid("name") })}
-                    >
-                      Quantity
-                    </label>
-                  </span>
-                  {/* {getFormErrorMessage("name")} */}
-                </div>
-                <div className="field col-6 lg:col-1 mt-2">
-                  <span className="p-buttonset">
-                    {i === itemList.length - 1 && (
-                      <Button type="button" label="+" onClick={addFields} />
-                    )}
-                    {itemList.length > 1 && (
-                      <Button
-                        type="button"
-                        label="-"
-                        className="p-button-secondary"
-                        onClick={(e) => {
-                          removeFields(i)
-                        }}
+                  </div>
+                  <div className="field col-12 lg:col-2 mt-2">
+                    <span className="p-float-label">
+                      <InputNumber
+                        id={`product-prixe-${i}`}
+                        name="price_per_unit"
+                        value={Number(ele.price_per_unit)}
+                        onChange={(e) => handleFormChange(e, i)}
+                        // className={classNames({ "p-invalid": isFormFieldValid("name") })}
                       />
-                    )}
-                  </span>
-                </div>
-              </>
-            ))}
-          </div>
-          <Divider />
-          <div className="flex">
-            <Button
-              // type="submit"
-              className="mr-2"
-              label={rfqEditState ? "UPDATE" : "ADD"}
-              onClick={async (e) => {
-                e.preventDefault()
+                      <label
+                      // className={classNames({ "p-error": isFormFieldValid("name") })}
+                      >
+                        Target price per unit
+                      </label>
+                    </span>
+                    {/* {getFormErrorMessage("name")} */}
+                  </div>
+                  <div className="field col-12 lg:col-2 mt-2">
+                    <span className="p-float-label">
+                      <InputNumber
+                        id={`product-qty-${i}`}
+                        name="quantity"
+                        value={Number(ele.quantity)}
+                        onChange={(e) => handleFormChange(e, i)}
+                        // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                      />
+                      <label
+                      // className={classNames({ "p-error": isFormFieldValid("name") })}
+                      >
+                        Quantity
+                      </label>
+                    </span>
+                    {/* {getFormErrorMessage("name")} */}
+                  </div>
+                  <div className="field col-6 lg:col-1 mt-2">
+                    <span className="p-buttonset">
+                      {i === itemList.length - 1 && (
+                        <Button type="button" label="+" onClick={addFields} />
+                      )}
+                      {itemList.length > 1 && (
+                        <Button
+                          type="button"
+                          label="-"
+                          className="p-button-secondary"
+                          onClick={(e) => {
+                            removeFields(i)
+                          }}
+                        />
+                      )}
+                    </span>
+                  </div>
+                </>
+              ))}
+              <div className="m-auto text-2xl">{getFormErrorMessage("itemsLength")}</div>
+            </div>
 
-                if (rfqEditState) {
-                  const currentProducts = [
-                    ...itemList.map(({ rfq_products_id }) => rfq_products_id),
-                  ]
-
-                  const newProductList = itemList.filter((item) => !item.rfq_products_id)
-
-                  const removemail = { ...rfqDetails }
-                  const delProductList = currentRfqitemsID.filter(
-                    (x) => !itemList.map(({ rfq_products_id }) => rfq_products_id).includes(x)
-                  )
-
-                  delete removemail.rfq_email
-
-                  const data = await updateRFQMutation({
-                    ...removemail,
-                    // expected_dod: rfqDetails.expected_dod.toString(),
-                    active: 1,
-                    rfq_products: {
-                      create: newProductList.map((ele) => ({
-                        price_per_unit: Number(ele.price_per_unit),
-                        quantity: Number(ele.quantity),
-                        products: {
-                          connect: {
-                            product_id: Number(ele.products_product_id),
-                          },
-                        },
-                      })),
-                      updateMany: itemList.map((ele) => ({
-                        where: {
-                          rfq_products_id: ele.rfq_products_id,
-                        },
-                        data: {
-                          price_per_unit: Number(ele.price_per_unit),
-                          quantity: Number(ele.quantity),
-                        },
-                      })),
-                      deleteMany: {
-                        rfq_products_id: {
-                          in: delProductList,
-                        },
-                      },
-                    },
-                    rfq_sentto: {
-                      create: rfqDetails?.rfq_email?.length
-                        ? rfqDetails?.rfq_email?.map((item, i) => ({ email: item }))
-                        : undefined,
-                    },
+            <div className="flex mx-4 ">
+              <Button
+                type="submit"
+                className="mr-2"
+                label={rfqEditState ? "UPDATE" : "ADD"}
+                onClick={async (e) => {
+                  // const removeEmptyItems = itemList.filter((prod) => prod?.products_product_id)
+                  // const itemsList = removeEmptyItems.length ? true : false
+                  // await formik.setValues({ ...formik.values, itemsList })
+                  //   e.preventDefault()
+                  //   if (rfqEditState) {
+                  //     const currentProducts = [
+                  //       ...itemList.map(({ rfq_products_id }) => rfq_products_id),
+                  //     ]
+                  //     const newProductList = itemList.filter((item) => !item.rfq_products_id)
+                  //     const removemail = { ...rfqDetails }
+                  //     const delProductList = currentRfqitemsID.filter(
+                  //       (x) => !itemList.map(({ rfq_products_id }) => rfq_products_id).includes(x)
+                  //     )
+                  //     delete removemail.rfq_email
+                  //     const data = await updateRFQMutation({
+                  //       ...removemail,
+                  //       // expected_dod: rfqDetails.expected_dod.toString(),
+                  //       active: 1,
+                  //       rfq_products: {
+                  //         create: newProductList.map((ele) => ({
+                  //           price_per_unit: Number(ele.price_per_unit),
+                  //           quantity: Number(ele.quantity),
+                  //           products: {
+                  //             connect: {
+                  //               product_id: Number(ele.products_product_id),
+                  //             },
+                  //           },
+                  //         })),
+                  //         updateMany: itemList.map((ele) => ({
+                  //           where: {
+                  //             rfq_products_id: ele.rfq_products_id,
+                  //           },
+                  //           data: {
+                  //             price_per_unit: Number(ele.price_per_unit),
+                  //             quantity: Number(ele.quantity),
+                  //           },
+                  //         })),
+                  //         deleteMany: {
+                  //           rfq_products_id: {
+                  //             in: delProductList,
+                  //           },
+                  //         },
+                  //       },
+                  //       rfq_sentto: {
+                  //         create: rfqDetails?.rfq_email?.length
+                  //           ? rfqDetails?.rfq_email?.map((item, i) => ({ email: item }))
+                  //           : undefined,
+                  //       },
+                  //     })
+                  //     console.log(data)
+                  //     setRfqDialog(!rfqDialog)
+                  //     await refetch()
+                  //     fetchRfqProducts()
+                  //   } else {
+                  //     const removeEmptyItems = itemList.filter((prod) => prod?.products_product_id)
+                  //     if (removeEmptyItems.length === 0) {
+                  //       setRfqErrorMsgs([
+                  //         ...rfqErrorMsgs,
+                  //         {
+                  //           message:
+                  //             "You should at least select 1 product from the select products List ",
+                  //         },
+                  //       ])
+                  //       return
+                  //     }
+                  //     try {
+                  //       const newRfqData = await createRFQMutation({
+                  //         ...rfqDetails,
+                  //         active: 1,
+                  //         rfq_products: {
+                  //           create: removeEmptyItems.map((ele) => ({
+                  //             price_per_unit: Number(ele.price_per_unit),
+                  //             quantity: Number(ele.quantity),
+                  //             products: {
+                  //               connect: {
+                  //                 product_id: Number(ele.products_product_id),
+                  //               },
+                  //             },
+                  //           })),
+                  //         },
+                  //         rfq_sentto: {
+                  //           create: rfqDetails?.rfq_email.length
+                  //             ? rfqDetails?.rfq_email?.map((item, i) => ({ email: item }))
+                  //             : undefined,
+                  //         },
+                  //       })
+                  //       setRfqDialog(!rfqDialog)
+                  //       await refetch()
+                  //       await fetchRfqProducts()
+                  //     } catch (error) {
+                  //       console.log(error)
+                  //     }
+                  //   }
+                }}
+              />
+              <Button
+                className="mr-2 p-button-secondary"
+                label="Cancel"
+                onClick={(e) => {
+                  e.preventDefault()
+                  setRfqDialog(false)
+                  setRfqEditState(false)
+                  setRfqDetails({
+                    rfq_code: "",
+                    rfq_description: "",
+                    expected_dod: "",
+                    rfq_email: [],
                   })
-                  console.log(data)
-                  setRfqDialog(!rfqDialog)
-                  await refetch()
-                  fetchRfqProducts()
-                } else {
-                  const removeEmptyItems = itemList.filter((prod) => prod?.products_product_id)
-                  if (removeEmptyItems.length === 0) {
-                    setRfqErrorMsgs([
-                      ...rfqErrorMsgs,
-                      {
-                        message:
-                          "You should at least select 1 product from the select products List ",
-                      },
-                    ])
-                    return
-                  }
 
-                  try {
-                    const newRfqData = await createRFQMutation({
-                      ...rfqDetails,
-                      active: 1,
-                      rfq_products: {
-                        create: removeEmptyItems.map((ele) => ({
-                          price_per_unit: Number(ele.price_per_unit),
-                          quantity: Number(ele.quantity),
-                          products: {
-                            connect: {
-                              product_id: Number(ele.products_product_id),
-                            },
-                          },
-                        })),
-                      },
-                      rfq_sentto: {
-                        create: rfqDetails?.rfq_email.length
-                          ? rfqDetails?.rfq_email?.map((item, i) => ({ email: item }))
-                          : undefined,
-                      },
-                    })
-                    setRfqDialog(!rfqDialog)
-                    await refetch()
-                    await fetchRfqProducts()
-                  } catch (error) {
-                    console.log(error)
-                  }
-                }
-              }}
-            />
-            <Button
-              className="mr-2 p-button-secondary"
-              label="Cancel"
-              onClick={(e) => {
-                e.preventDefault()
-                setRfqDialog(!rfqDialog)
-                setRfqDetails({
-                  rfq_code: "",
-                  rfq_description: "",
-                  expected_dod: "",
-                  rfq_email: [],
-                })
-              }}
-            />
-          </div>
-        </form>
+                  formik.resetForm()
+                }}
+              />
+            </div>
+          </form>
+        </div>
       </div>
       <CreatePo
         rfqData={activeRow}
@@ -1676,93 +1185,97 @@ export const RfqsList = () => {
         setPurchaseDialog={setPurchaseDialog}
         prefixes={prefixes}
       />
-      <DataTable
-        value={tableRFQ}
-        scrollable
-        scrollHeight="60vh"
-        showGridlines
-        // header={renderHeader}
-        stripedRows
-        className="text-s datatable-responsive"
-        // paginator
-        // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
-        // rows={PAGINATION_VARIABLES.rows}
-        // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
-        // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
-        expandedRows={expandedRows}
-        onRowToggle={(e) => setExpandedRows(e.data)}
-        rowExpansionTemplate={rowExpansionTemplate}
-      >
-        <Column expander={allowExpansion} style={{ width: "3em" }} />
-        {/* <Column
+      <div className="col-12">
+        <div className="card">
+          <DataTable
+            value={tableRFQ}
+            // scrollable
+            // scrollHeight="60vh"
+            showGridlines
+            // header={renderHeader}
+            stripedRows
+            className="text-s datatable-responsive"
+            // paginator
+            // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
+            // rows={PAGINATION_VARIABLES.rows}
+            // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
+            // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
+            expandedRows={expandedRows}
+            onRowToggle={(e) => setExpandedRows(e.data)}
+            rowExpansionTemplate={rowExpansionTemplate}
+          >
+            <Column expander={allowExpansion} style={{ width: "3em" }} />
+            {/* <Column
           field="id"
           header="ID"
           body={({ id }) => `${prefixes[1].prefix}-${id}`}
           // className="text-center"
         /> */}
-        <Column
-          field="rfq_code"
-          header="Code"
-          // className="text-center"
-        />
-        <Column
-          field="rfq_description"
-          header="Description"
-          // className="text-center"
-        />
-        <Column
-          field="expected_dod"
-          header="Delivery date"
-          body={(tableRFQ) => new Date(tableRFQ.expected_dod).toLocaleDateString()}
+            <Column
+              field="rfq_code"
+              header="Code"
+              // className="text-center"
+            />
+            <Column
+              field="rfq_description"
+              header="Description"
+              // className="text-center"
+            />
+            <Column
+              field="expected_dod"
+              header="Delivery date"
+              body={(tableRFQ) => new Date(tableRFQ.expected_dod).toLocaleDateString()}
 
-          // className="text-center"
-        />
+              // className="text-center"
+            />
 
-        <Column
-          field="created_at"
-          header="Created at"
-          // className="text-center"
-        />
-        {/* <Column
+            <Column
+              field="created_at"
+              header="Created at"
+              // className="text-center"
+            />
+            {/* <Column
           field="updated_at"
           header="Updated at"
           // className="text-center"
         /> */}
-        <Column
-          field="active"
-          header="Status"
-          body={(rowData) => {
-            return (
-              <span className={`badge status-${rowData.active ? "active" : "inactive"}`}>
-                {rowData.active ? "Active" : "Inactive"}
-              </span>
-            )
-          }}
-        />
-        <Column
-          // field="vendor_gstin"
-          header="Action"
-          body={(rowData) => {
-            return (
-              <div>
-                <Menu model={items} popup ref={menu} id="popup_menu" />
-                <Button
-                  // label="Show"
-                  icon="pi pi-ellipsis-v"
-                  onClick={(event) => {
-                    console.log("event", event)
-                    setActiveRow(rowData)
-                    menu.current.toggle(event)
-                  }}
-                  aria-controls="popup_menu"
-                  aria-haspopup
-                />
-              </div>
-            )
-          }}
-          // className="text-center"
-        />
-      </DataTable>
+            <Column
+              field="active"
+              header="Status"
+              body={(rowData) => {
+                return (
+                  <span className={`badge status-${rowData.active ? "active" : "inactive"}`}>
+                    {rowData.active ? "Active" : "Inactive"}
+                  </span>
+                )
+              }}
+            />
+            <Column
+              // field="vendor_gstin"
+              header="Action"
+              body={(rowData) => {
+                return (
+                  <div>
+                    <Menu model={items} popup ref={menu} id="popup_menu" />
+                    <Button
+                      // label="Show"
+                      icon="pi pi-ellipsis-v"
+                      onClick={(event) => {
+                        // console.log("event", event)
+                        setActiveRow(rowData)
+                        menu.current.toggle(event)
+                      }}
+                      aria-controls="popup_menu"
+                      aria-haspopup
+                    />
+                  </div>
+                )
+              }}
+              // className="text-center"
+            />
+          </DataTable>
+        </div>
+      </div>
     </div>
   )
 }

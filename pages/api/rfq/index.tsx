@@ -68,7 +68,7 @@ const handler = async (req, res) => {
 
     console.log("body", req.body)
 
-    await sendEmail(record.data, record.rfq, { creation: true })
+    await sendEmail(record.data, record.rfq, {})
     res.statusCode = 200
     res.setHeader("Content-Type", "application/json")
     // res.end(JSON.stringify({ name: "John Doe" }))

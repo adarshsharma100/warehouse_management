@@ -1,13 +1,13 @@
 import db from "db"
 import { mail } from "./mail"
 
-const sendEmail = async (data, rfq, additionalInfo) => {
+const sendEmail = async (data, rfq, info) => {
   const products = await db.rfq_products.findMany({
     where: { rfq_id: rfq?.id },
     include: { products: true },
   })
   const sentmails = await db.rfq_sentto.findMany({
-    where: { rfq_id: additionalInfo.id },
+    where: { rfq_id: info.id },
   })
 
   const emailLists = data?.rfq_sentto?.create?.length
@@ -23,10 +23,10 @@ const sendEmail = async (data, rfq, additionalInfo) => {
       mail(
         "care@robocraze.com",
         email,
-        `${rfq.rfq_code}${additionalInfo.creation ? "" : "-Amended"}`,
+        `${rfq.rfq_code}${info?.class ? info.class : ""}`,
         `
           <section>
-          <div>  
+          <div>
           
               <h2>RFQ Details:</h2>
               <p><strong>Doc No.:</strong>${rfq.rfq_code}</p>
