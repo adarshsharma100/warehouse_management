@@ -34,9 +34,11 @@ const Layout = ({ children }) => {
 
   useEffect(() => {
     if (mobileMenuActive) {
-      addClass(document.body, "body-overflow-hidden")
+      // addClass(document.body, "body-overflow-hidden")
+      addClass(document.querySelector(".layout-sidebar"), "layout-sidebar-inactive")
     } else {
-      removeClass(document.body, "body-overflow-hidden")
+      // removeClass(document.body, "body-overflow-hidden")
+      removeClass(document.querySelector(".layout-sidebar"), "layout-sidebar-inactive")
     }
   }, [mobileMenuActive])
 

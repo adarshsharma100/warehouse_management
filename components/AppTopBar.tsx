@@ -7,7 +7,7 @@ import { useRouter } from "next/router"
 import { Routes } from "@blitzjs/next"
 // import logo from "../Assets/Images/tif.png"
 // import Image from "next/image"
-
+import { ConfirmPopup } from "primereact/confirmpopup"
 import { Badge } from "primereact/badge"
 
 export const AppTopbar = (props) => {
@@ -16,6 +16,7 @@ export const AppTopbar = (props) => {
   // const [newAlerts, setNewAlerts] = useState(1)
   const [oldAlerts, setOldAlerts] = useState(0)
   const [alertCount, setAlertCount] = useState(0)
+  const [visible, setVisible] = useState<boolean>(false)
 
   const router = useRouter()
   return (
@@ -73,12 +74,19 @@ export const AppTopbar = (props) => {
             }}
           > */}
           <div className="flex justify-content end align-items-center">
+            <ConfirmPopup
+              target={document.querySelector(".pi-bell")}
+              visible={visible}
+              onHide={() => setVisible((prev) => !prev)}
+              message="Alert Message"
+              icon="pi pi-exclamation-triangle"
+            />
             <i
               className="  pi pi-bell mr-4 p-text-secondary p-overlay-badge"
-              onClick={async () => {
-                setAlertCount(0)
-                await router.push("/alerts")
-              }}
+              onClick={() => setVisible((prev) => !prev)} // {async () => {
+              //   setAlertCount(0)
+              //   await router.push("/alerts")
+              // }}
               style={{ fontSize: "1.5rem", cursor: "pointer" }}
             >
               {alertCount !== 0 && <Badge value={alertCount} severity="danger"></Badge>}
