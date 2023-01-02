@@ -1,7 +1,7 @@
 import db from "db"
 import { mail } from "./mail"
 
-const sendPoEmail = async (data, po) => {
+const sendPoEmail = async (data, po, info) => {
   const vendorDetails = await db.vendor.findUnique({
     where: { vendor_id: data.vendor_vendor_id },
   })
@@ -22,7 +22,7 @@ const sendPoEmail = async (data, po) => {
   mail(
     "care@robocraze.com",
     email,
-    `PO #${po_code}`,
+    `${po_code}${info?.class ? info.class : ""}`,
     `
       <div style="position: relative;">
     <h1 style="text-align: center; text-decoration: underline double;">Purchase Order</h1>

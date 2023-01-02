@@ -53,11 +53,15 @@ import classNames from "classnames"
 import { createSearchFunction, filterExistingValues, tsuccess } from "app/constants"
 import getMutation_admin_mail from "app/mutation_admin_mails/queries/getMutation_admin_mail"
 import { Toast } from "primereact/toast"
+import ScannedProducts from "components/ScannedProducts"
+import { getAntiCSRFToken } from "@blitzjs/auth"
 
 const ITEMS_PER_PAGE = 100
 
 export const RfqsList = () => {
   const router = useRouter()
+  const antiCSRFToken = getAntiCSRFToken()
+
   const page = Number(router.query.page) || 0
   // const [{ rfqs, hasMore }, { refetch }] = usePaginatedQuery(getRfqs, {
   //   orderBy: { id: "asc" },
@@ -192,6 +196,7 @@ export const RfqsList = () => {
   const [currentRfqitemsID, setCurrentRfqitemsID] = useState([])
   const [rfqErrorMsgs, setRfqErrorMsgs] = useState([])
   const [RFQCodechecked, setRFQCodeChecked] = useState<boolean>(true)
+  const [scanner, setScanner] = useState<boolean>(false)
   const scrollToRfq = useRef<HTMLHeadingElement>(null)
 
   const tableRfqProducts = rfq_products.map((ele) => {
@@ -312,12 +317,6 @@ export const RfqsList = () => {
     let data = [...itemList]
     e.target ? (data[i][e.target.name] = e.value) : (data[i][e.originalEvent.target.name] = e.value)
     setItemList(data)
-  }
-
-  const handleProductFormChange = (e: any, i: number) => {
-    let data = [...productItemList]
-    e.target ? (data[i][e.target.name] = e.value) : (data[i][e.originalEvent.target.name] = e.value)
-    setProductItemList(data)
   }
 
   const setRfqItemList = () => {
@@ -676,14 +675,14 @@ export const RfqsList = () => {
     setRfqErrorMsgs(msgArray)
   }
   useEffect(() => {
-    if (RFQCodechecked && !rfqDialog) {
+    if (RFQCodechecked && rfqDialog) {
       updateFormValues()
         // .then((res) => console.log("newCode", res))
         .catch((error) => {
           console.log("From updateFormValues", error)
         })
     }
-  }, [RFQCodechecked])
+  }, [RFQCodechecked, scanner])
 
   const updateFormValues = async () => {
     await formik.setValues({ ...formik.values, rfq_code: newRFQCode })
@@ -780,6 +779,7 @@ export const RfqsList = () => {
                 url: "http://localhost:3000/api/rfq",
                 headers: {
                   "Content-Type": "application/json",
+                  ["anti-csrf"]: antiCSRFToken,
                 },
                 data: requestData,
               }
@@ -826,6 +826,14 @@ export const RfqsList = () => {
                 ])
                 setRfqDialog(true)
                 setRFQCodeChecked(true)
+              }}
+            ></Button>
+            <Button
+              className="ml-2"
+              icon="pi pi-qrcode"
+              label="Scane Mode"
+              onClick={(e) => {
+                setScanner(!scanner)
               }}
             ></Button>
           </div>
@@ -877,9 +885,8 @@ export const RfqsList = () => {
                     disabled={rfqEditState}
                   />
                   <label
-                    htmlFor="binary"
-                    className="
-                  text-sm	"
+                    // htmlFor="binary"
+                    className="text-sm	"
                   >
                     Un-check to add custom code.
                   </label>
@@ -988,8 +995,8 @@ export const RfqsList = () => {
                         e.target
                           ? (data[i].price_per_unit = productPrice)
                           : (data[i].price_per_unit = 0)
+                        setItemList(data)
                         if (i === 0) {
-                          await setItemList(data)
                           const itemsLength = e.value ? true : false
                           await formik.setValues({ ...formik.values, itemsLength })
                         }
@@ -1175,6 +1182,16 @@ export const RfqsList = () => {
           </form>
         </div>
       </div>
+      <ScannedProducts
+        products={products}
+        scanner={scanner}
+        setScanner={setScanner}
+        setItemList={setItemList}
+        setRfqDialog={setRfqDialog}
+        newRFQCode={newRFQCode}
+        setRfqDetails={setRfqDetails}
+        rfqDetails={rfqDetails}
+      />
       <CreatePo
         rfqData={activeRow}
         productOptions={productOptions}

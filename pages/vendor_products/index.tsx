@@ -22,7 +22,7 @@ import downloadCsv from "download-csv"
 import { Toast } from "primereact/toast"
 import { InputNumber } from "primereact/inputnumber"
 import ErrorCard from "components/ErrorCard"
-import { createCSVFormat, tsuccess } from "app/constants"
+import { createCSVFormat, createSearchFunction, tsuccess } from "app/constants"
 import { FALSE } from "sass"
 import { useFormik } from "formik"
 import * as Yup from "yup"
@@ -90,23 +90,24 @@ export const Vendor_productsList = () => {
   const [vendorSuggestions, setVendorSuggestions] = useState<any>(null)
   const [ErrorMsgs, setErrorMsgs] = useState([])
 
-  const createSearchProductsFunction = (products, setFilteredSuggestions) => {
-    return function search(event) {
-      setTimeout(() => {
-        let _filteredSuggestions
-        if (!event.query.trim().length) {
-          _filteredSuggestions = [...products]
-        } else {
-          _filteredSuggestions = products.filter((element) => {
-            return element.name.toLowerCase().includes(event.query.toLowerCase())
-          })
-        }
-        setFilteredSuggestions(_filteredSuggestions)
-      }, 50)
-    }
-  }
-  const searchProducts = createSearchProductsFunction(products, setFilteredSuggestions)
-  const searchVendor = createSearchProductsFunction(vendorOptions, setVendorSuggestions)
+  // const createSearchProductsFunction = (products, setFilteredSuggestions) => {
+  //   return function search(event) {
+  //     setTimeout(() => {
+  //       let _filteredSuggestions
+  //       if (!event.query.trim().length) {
+  //         _filteredSuggestions = [...products]
+  //       } else {
+  //         _filteredSuggestions = products.filter((element) => {
+  //           return element.name.toLowerCase().includes(event.query.toLowerCase())
+  //         })
+  //       }
+  //       setFilteredSuggestions(_filteredSuggestions)
+  //     }, 50)
+  //   }
+  // }
+
+  const searchProducts = createSearchFunction(products, setFilteredSuggestions)
+  const searchVendor = createSearchFunction(vendorOptions, setVendorSuggestions)
 
   // const searchProducts = (event: { query: string }) => {
   //   setTimeout(() => {

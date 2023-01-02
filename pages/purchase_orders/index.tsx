@@ -45,6 +45,12 @@ import { Checkbox } from "primereact/checkbox"
 import axios from "axios"
 import { AutoComplete } from "primereact/autocomplete"
 import { getAntiCSRFToken } from "@blitzjs/auth"
+import { useFormik } from "formik"
+import * as Yup from "yup"
+import classNames from "classnames"
+import { arrayFillCopy, createSearchFunction, filterExistingValues, tsuccess } from "app/constants"
+import { Toast } from "primereact/toast"
+import Invoice from "components/Invoice"
 
 const ITEMS_PER_PAGE = 100
 
@@ -72,22 +78,25 @@ export const Purchase_ordersList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
-  const [{ vendor_products }] = usePaginatedQuery(getVendor_products, {
-    orderBy: { vp_id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-  })
-  const [{ rfqs }] = usePaginatedQuery(getRfqs, {
+  const [{ vendor_products }, { error: getVendorProductsError }] = usePaginatedQuery(
+    getVendor_products,
+    {
+      orderBy: { vp_id: "asc" },
+      skip: ITEMS_PER_PAGE * page,
+      take: ITEMS_PER_PAGE,
+    }
+  )
+  const [{ rfqs }, { error: getRfqError }] = usePaginatedQuery(getRfqs, {
     orderBy: { id: "asc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
-  const [{ rfq_products }] = usePaginatedQuery(getRfq_products, {
+  const [{ rfq_products }, { error: getRfqProductsError }] = usePaginatedQuery(getRfq_products, {
     orderBy: { rfq_products_id: "asc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
-  const [{ products }] = useQuery(getProducts, {
+  const [{ products }, { error: getProductsError }] = useQuery(getProducts, {
     orderBy: { product_id: "asc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
@@ -98,14 +107,14 @@ export const Purchase_ordersList = () => {
     take: ITEMS_PER_PAGE,
   })
 
-  const [{ prefixes }] = useQuery(getPrefixes, {
+  const [{ prefixes }, { error: getPrefixesError }] = useQuery(getPrefixes, {
     orderBy: { id: "asc" },
   })
   const [createPurchaseOrderMutation, { isLoading: creatingPO, error: creatingMutationError }] =
     useMutation(createPurchase_order)
   const [updatePurchaseOrderMutation, { isLoading: UpdatingPO, error: updatingMutationError }] =
     useMutation(updatePurchase_order)
-  const [createGrnMutation] = useMutation(createGrn)
+  const [createGrnMutation, { error: grnCreationError }] = useMutation(createGrn)
 
   const [createManyPurchaseOrderProductsMutation] = useMutation(createManyPurchase_order_product)
   const [deletePurchase_orderMutation] = useMutation(deletePurchase_order)
@@ -116,21 +125,21 @@ export const Purchase_ordersList = () => {
   const [productDialog, setProductDialog] = useState(false)
   const [activeProducts, setActiveProducts] = useState([])
   const [filterProductOptions, setFilterProductOptions] = useState([])
-  const [itemList, setItemList] = useState([
-    {
-      purchase_order_po_id: "",
-      purchase_order_purchase_order_status_pos_id: 1,
-      purchase_order_vendor_vendor_id: "",
-      vendor_products_vp_id: "",
-      vendor_products_vendor_vendor_id: "",
-      vendor_products_products_product_id: "",
-      quantity: "",
-      price_per_unit: "",
-      received_quantity: 0,
-      products_product_id: "",
-    },
-  ])
-  const [purchaseDetails, setPurchaseDetails] = useState({
+  const initialItemState = {
+    purchase_order_po_id: "",
+    purchase_order_purchase_order_status_pos_id: 1,
+    purchase_order_vendor_vendor_id: "",
+    vendor_products_vp_id: "",
+    vendor_products_vendor_vendor_id: "",
+    vendor_products_products_product_id: "",
+    quantity: "",
+    price_per_unit: "",
+    received_quantity: 0,
+    products_product_id: "",
+    product_name: "",
+  }
+  const [itemList, setItemList] = useState([initialItemState])
+  const initialPurchaseState = {
     vendor_vendor_id: "",
     po_code: "",
     po_description: "",
@@ -139,14 +148,19 @@ export const Purchase_ordersList = () => {
     from_party: "",
     agreement: "",
     rfq_id: "",
-  })
+    itemsLength: false,
+  }
+
+  const [purchaseDetails, setPurchaseDetails] = useState(initialPurchaseState)
   const [sendPoDialog, setSendPoDialog] = useState(false)
   const [activeRow, setActiveRow] = useState({})
   const [poEditState, setPoEditState] = useState(false)
   const scrollToPo = useRef<HTMLHeadingElement>(null)
   const poError = [updatingMutationError, creatingMutationError]
+  const [vendorSuggestions, setVendorSuggestions] = useState<any>(null)
 
   const menu = useRef<Menu>(null)
+  const toast = useRef(null)
 
   const rfqOptions = rfqs.map(({ id, rfq_description, rfq_code }) => {
     return { name: `${rfq_code}:${rfq_description}`, value: id }
@@ -154,9 +168,26 @@ export const Purchase_ordersList = () => {
   const vendorOptions = vendors.map(({ vendor, vendor_id, vendor_code }) => {
     return {
       name: ` ${vendor_code}: ${vendor}`,
-      value: vendor_id,
+      vendor_id,
     }
   })
+  // console.log("filterProductOptions", filterProductOptions)
+  // console.log("products", products)
+  const [ProductsSuggestions, setProductsSuggestions] = useState<any>(null)
+  const searchProducts = createSearchFunction(filterProductOptions, setProductsSuggestions)
+  const searchVendor = createSearchFunction(vendorOptions, setVendorSuggestions)
+  const [fetchGrn, setFetchGrn] = useState(false)
+
+  useEffect(() => {
+    if (fetchGrn) {
+      triggerRefetch(refetchGrn).catch((error) => setPoErrorMsgs([...poErrorMsgs, ...[error]]))
+      setFetchGrn(false)
+    }
+  }, [fetchGrn])
+
+  const triggerRefetch = async (refetchGrn) => {
+    return await refetchGrn()
+  }
 
   const tablePurchaseOrders = purchase_orders.map((ele) => {
     return {
@@ -206,7 +237,7 @@ export const Purchase_ordersList = () => {
 
     if (e.target) {
       data[i][e.target.name] = e.value
-      data[i].vendor_products_vp_id = findProductVpID(i)
+      // data[i].vendor_products_vp_id = findProductVpID(i)
     } else {
       data[i][e.originalEvent.target.name] = e.value
     }
@@ -232,23 +263,39 @@ export const Purchase_ordersList = () => {
         {
           label: "Edit",
           icon: "pi pi-pencil",
-          command: () => {
+          command: async () => {
             scrollToPo?.current?.scrollIntoView()
-            setPoCodeChecked(false)
+            setPoCodeChecked(true)
             setPoEditState(true)
-            // const expiry = new Date(activeRow.expiry_date)
-            // const expected = new Date(activeRow.expected_delivery)
+            console.log(activeRow)
 
-            // const {
-            //   vendor_vendor_id,
-            //   po_code,
-            //   po_description,
-            //   expiry_date,
-            //   expected_delivery,
-            //   from_party,
-            //   agreement,
-            //   rfq_id,
-            // } = activeRow
+            const {
+              vendor,
+              vendor_vendor_id,
+              po_code,
+              po_description,
+              expiry_date,
+              expected_delivery,
+              from_party,
+              agreement,
+              rfq_id,
+              po_status,
+            } = activeRow
+
+            const expiry = moment(expiry_date, "DD-MM-YYYY").toDate()
+            const expected = moment(expected_delivery, "DD-MM-YYYY").toDate()
+            await formik.setValues({
+              vendor,
+              vendor_vendor_id,
+              po_code,
+              po_description,
+              expiry_date: expiry,
+              expected_delivery: expected,
+              from_party,
+              agreement: po_status.replaceAll("_", " "),
+              rfq_id,
+              itemsLength: true,
+            })
 
             // setPurchaseDetails({
             //   vendor_vendor_id: vendor_vendor_id,
@@ -260,11 +307,11 @@ export const Purchase_ordersList = () => {
             //   agreement: agreement,
             //   rfq_id: rfq_id,
             // })
-            // const active = tableProducts.filter(
-            //   (ele) => activeRow.po_id === ele.purchase_order_po_id
-            // )
+            const active = tableProducts.filter(
+              (ele) => activeRow.po_id === ele.purchase_order_po_id
+            )
 
-            // setItemList(active)
+            setItemList(active)
             setActivePO()
             setPurchaseDialog(true)
           },
@@ -317,28 +364,29 @@ export const Purchase_ordersList = () => {
       ],
     },
   ]
-  const productOptions = products.map(({ product_id, name, vendor_products }) => {
+  const productOptions = products.map(({ product_id, name, vendor_products, Price }) => {
     return {
       name,
-      value: product_id,
+      product_id,
       vendorID: vendor_products.map((ele) => ele.vendor_vendor_id),
+      Price,
     }
   })
 
   const [expandedRows, setExpandedRows] = useState(null)
 
-  const findProductVpID = (i) => {
-    const currentVendor = Number(purchaseDetails.vendor_vendor_id)
+  const findProductVpID = (i, list) => {
+    const currentVendor = Number(formik.values.vendor_vendor_id)
     const vendorProducts = vendor_products.filter((item) => item.vendor_vendor_id === currentVendor)
     const vpId = vendorProducts.filter(
-      (ele) => ele.products_product_id === Number(itemList[i]?.products_product_id)
+      (ele) => ele.products_product_id === Number(list[i]?.products_product_id)
     )[0]?.vp_id
 
     return vpId
   }
 
   const rowExpansionTemplate = (data) => {
-    console.log(data)
+    // console.log(data)
     const rowGrnId = data.grn_grn_id
     const currentGrn = grns?.filter((ele) => ele.grn_id === rowGrnId)[0]
     return (
@@ -387,6 +435,15 @@ export const Purchase_ordersList = () => {
                 />
               </DataTable>
             </div>
+          </TabPanel>
+          <TabPanel header="  Invoice">
+            <Invoice
+              currentGrn={currentGrn}
+              prefixes={prefixes}
+              poDetails={data}
+              refetch={refetchGrn}
+              setFetchGrn={setFetchGrn}
+            />
           </TabPanel>
           <TabPanel header="GRN">
             {!currentGrn && (
@@ -462,12 +519,6 @@ export const Purchase_ordersList = () => {
     setItemList(active)
   }
 
-  useEffect(() => {
-    const vendorID = purchaseDetails.vendor_vendor_id
-    const filterProducts = productOptions.filter((ele) => ele.vendorID.includes(Number(vendorID)))
-    setFilterProductOptions(filterProducts)
-  }, [purchaseDetails])
-
   const [poErrorMsgs, setPoErrorMsgs] = useState([])
 
   useEffect(() => {
@@ -477,6 +528,12 @@ export const Purchase_ordersList = () => {
       getGrnsError,
       getPoError,
       getPoProductsError,
+      getVenorsError,
+      getVendorProductsError,
+      getRfqError,
+      getProductsError,
+      getPrefixesError,
+      grnCreationError,
     ]
 
     const msg = []
@@ -487,7 +544,19 @@ export const Purchase_ordersList = () => {
       }
     }
     setPoErrorMsgs(msg)
-  }, [updatingMutationError, creatingMutationError, getGrnsError, getPoError, getPoProductsError])
+  }, [
+    updatingMutationError,
+    creatingMutationError,
+    getGrnsError,
+    getPoError,
+    getPoProductsError,
+    getVenorsError,
+    getVendorProductsError,
+    getRfqError,
+    getProductsError,
+    getPrefixesError,
+    grnCreationError,
+  ])
 
   const allowExpansion = (rowData) => {
     // return rowData.orders.length > 0;
@@ -529,52 +598,247 @@ export const Purchase_ordersList = () => {
     }, 50)
   }
 
-  useEffect(() => {
-    poEditState
-      ? null
-      : poCodeChecked
-      ? setPurchaseDetails({
-          ...purchaseDetails,
-          po_code: newPOCode,
-        })
-      : null
-  }, [poCodeChecked, newPOCode])
+  const formik = useFormik({
+    initialValues: purchaseDetails,
+    validationSchema: Yup.object().shape({
+      vendor_vendor_id: Yup.string().required("*Required"),
+      po_code: Yup.string().required("*Required"),
+      po_description: Yup.string().required("*Required"),
+      expiry_date: Yup.string().required("*Required"),
+      expected_delivery: Yup.string().required("*Required"),
+      from_party: Yup.string().required("*Required"),
+      agreement: Yup.string().required("*Required"),
+      vendor: Yup.string().required("*Required"),
+      itemsLength: Yup.boolean().equals([true], "⚠ Please select atleast one product").required(),
+    }),
+    onSubmit: async (data) => {
+      const itemsData = itemList.filter((ele, i) => {
+        return ele.products_product_id
+      }).length
 
+      if (!itemsData) {
+        formik.setErrors({ itemsLength: "⚠ Please select atleast one product" })
+        return
+      }
+      console.log("data", data)
+      // console.log("purchaseDetails", purchaseDetails)
+      // console.log("activeRow", activeRow)
+      // console.log("itemList", itemList)
+      console.log("poEditState", poEditState)
+
+      const removeEmptyItems = itemList.filter((ele, i) => ele.products_product_id)
+      console.log(removeEmptyItems)
+
+      const {
+        vendor_vendor_id,
+        po_code,
+        expiry_date,
+        expected_delivery,
+        po_description,
+        from_party,
+        agreement,
+      } = data
+      const activePoProducts = purchase_order_products
+        .filter((ele) => ele.purchase_order_po_id === activeRow.po_id)
+        .map((ele) => ele.pop_id)
+
+      // const existingProductsPopIDs = [...itemList.map((ele) => ele.pop_id)]
+      const newProductsPopIDs = itemList.map((ele) => ele.pop_id)
+      // console.log(existingProductsPopIDs)
+      const newProducts = itemList.filter((ele) => !ele.pop_id)
+      const existingProducts = itemList.filter((ele) => ele.pop_id)
+      const deletelist = activePoProducts.filter((item) => {
+        const array = itemList.map((ele) => ele.pop_id)
+        return !array.includes(item)
+      })
+      if (poEditState) {
+        console.log("itemList", itemList)
+        // updatePurchaseOrderMutation
+        try {
+          const update = await updatePurchaseOrderMutation(
+            {
+              vendor_vendor_id: activeRow?.vendor_vendor_id,
+              po_id: activeRow?.po_id,
+              agreement: agreement.replaceAll(" ", "_"),
+              po_description,
+              from_party,
+              expiry_date: new Date(expiry_date),
+              expected_delivery: new Date(expected_delivery),
+              purchase_order_products: {
+                create: newProducts.map((ele, i) => ({
+                  quantity: Number(ele.quantity),
+                  price_per_unit: Number(ele.price_per_unit),
+                  received_quantity: 0,
+                  vendor_products: {
+                    connect: {
+                      vp_id: Number(findProductVpID(i, newProducts)),
+                    },
+                  },
+                })),
+                updateMany: existingProducts.map((ele) => ({
+                  where: {
+                    pop_id: ele.pop_id,
+                  },
+                  data: {
+                    price_per_unit: Number(ele.price_per_unit),
+                    quantity: Number(ele.quantity),
+                  },
+                })),
+                deleteMany: {
+                  pop_id: {
+                    in: deletelist,
+                  },
+                },
+              },
+            },
+            {
+              onSuccess: () => {
+                toast?.current.show(tsuccess("Updated", `${po_code} is upadted successfully`))
+              },
+            }
+          )
+          console.log("Update log", update)
+          setPurchaseDialog(false)
+          formik.resetForm()
+        } catch (error) {
+          console.log("updation error , ", error)
+        }
+      } else {
+        try {
+          console.log("purchaseDetails", purchaseDetails)
+          console.log("itemList", itemList)
+          const purchaseOrder = await createPurchaseOrderMutation(
+            {
+              vendor_vendor_id: Number(vendor_vendor_id),
+              po_code,
+              po_description,
+              expiry_date: new Date(expiry_date),
+              expected_delivery: new Date(expected_delivery),
+              from_party,
+              agreement_status: agreement.replaceAll(" ", "_"),
+              purchase_order_products: {
+                create: removeEmptyItems.map((ele, i) => ({
+                  quantity: Number(ele.quantity),
+                  price_per_unit: Number(ele.price_per_unit),
+                  received_quantity: 0,
+                  vendor_products: {
+                    connect: {
+                      vp_id: Number(findProductVpID(i, removeEmptyItems)),
+                    },
+                  },
+                })),
+              },
+            },
+            {
+              onSuccess: () => {
+                toast?.current.show(tsuccess(null, "PO Created Successfully"))
+              },
+            }
+          )
+          // setPurchaseDialog(!purchaseDialog)
+          console.log("purchaseOrder: ", purchaseOrder)
+          setPurchaseDialog(false)
+          formik.resetForm()
+        } catch (error) {
+          console.log("error: ", error)
+        }
+      }
+
+      await refetch()
+      await refetchPoProducts()
+    },
+  })
+  console.log("formik.errors", formik.errors)
+  // console.log("formik.values", formik.values)
+
+  const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
+  const getFormErrorMessage = (name) => {
+    return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
+  }
   useEffect(() => {
-    poEditState
-      ? null
-      : setPurchaseDetails({
-          ...purchaseDetails,
-          po_code: newPOCode,
+    const vendorID = formik.values.vendor_vendor_id
+    const filterProducts = productOptions.filter((ele) => ele.vendorID.includes(Number(vendorID)))
+    setFilterProductOptions(filterProducts)
+    if (!poEditState) {
+      // const itemListIds = itemList.map((ele) => ele.product_id)
+      const vendorProductsIds = filterProducts.map((ele) => ele.product_id)
+
+      const values = itemList.filter((ele, i) =>
+        vendorProductsIds.includes(ele.products_product_id)
+      )
+
+      const initialState = values?.length || 5
+      let count = initialState >= 5 ? 5 : 5 - values.length
+
+      const emptyFields = arrayFillCopy(count, initialItemState)
+
+      // let filteredItemList = itemList.filter(
+      //   (ele) => ele.vendor_products_vendor_vendor_id === vendorID
+      // )
+      setItemList([...values, ...emptyFields])
+    }
+  }, [formik?.values.vendor_vendor_id])
+
+  // console.log("itemList", itemList.length)
+  useEffect(() => {
+    if (poCodeChecked && purchaseDialog && !poEditState) {
+      updateFormValues({ po_code: newPOCode })
+        // .then((res) => console.log("newCode", res))
+        .catch((error) => {
+          console.log("From updateFormValues", error)
         })
-  }, [purchaseDialog])
+    }
+  }, [poCodeChecked, purchaseDialog])
+
+  const updateFormValues = async (fields) => {
+    await formik.setValues({ ...formik.values, ...fields })
+  }
+
+  // useEffect(() => {
+  //   poEditState
+  //     ? null
+  //     : poCodeChecked
+  //     ? setPurchaseDetails({
+  //         ...purchaseDetails,
+  //         po_code: newPOCode,
+  //       })
+  //     : null
+  // }, [poCodeChecked, newPOCode])
+
+  // useEffect(() => {
+  //   poEditState
+  //     ? null
+  //     : setPurchaseDetails({
+  //         ...purchaseDetails,
+  //         po_code: newPOCode,
+  //       })
+  // }, [purchaseDialog])
 
   useEffect(() => {
     createNewPOCode()
+    // console.log("New render", formik.values)
+    // console.log("item render", itemList)
   })
 
-  console.log("antiCSRFToken", antiCSRFToken)
+  // console.log("antiCSRFToken", antiCSRFToken)
+  // console.log("formik.values", formik.values)
 
   return (
-    <div>
+    <div className="grid w-full mr-0">
+      <Toast ref={toast} />
       {creatingPO && <LoaderFullScreen />}
       {UpdatingPO && <LoaderFullScreen />}
-      {poErrorMsgs.map((ele, i) => (
-        <ErrorCard rfqErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
-      ))}
-
       <Dialog
         header="Send PO"
         visible={sendPoDialog}
         style={{ width: "50vw" }}
         onHide={() => setSendPoDialog(false)}
       >
-        <pre>{JSON.stringify(purchaseDetails, null, 2)}</pre>
-        <pre>{JSON.stringify(activeRow, null, 2)}</pre>
+        <p>{`You are about to send PO to ${activeRow?.vendor}`}</p>
         <div className="w-full flex justify-content-end mt-2 pl-2">
           <Button
             icon="pi pi-send"
-            label="Send"
+            label="Confirm"
             onClick={async () => {
               // const activePo = purchase_orders.find((ele) => ele.po_id === activeRow.po_id)
 
@@ -600,11 +864,12 @@ export const Purchase_ordersList = () => {
                 expected_delivery: moment(activeRow?.expected_delivery, "DD-MM-YYYY").toDate(),
                 expiry_date: moment(activeRow?.expiry_date, "DD-MM-YYYY").toDate(),
               }
-              console.log(formatedData)
+              console.log("antiCSRFToken", antiCSRFToken)
 
               const requestData = JSON.stringify({
                 data: {
                   vendor_vendor_id: activeRow?.vendor_vendor_id,
+                  // csrf: antiCSRFToken,
                 },
                 po: formatedData,
               })
@@ -627,7 +892,7 @@ export const Purchase_ordersList = () => {
         </div>
       </Dialog>
 
-      <div className="col-12 px-0">
+      <div className="col-12">
         <div className="card flex justify-content-between align-items-center">
           <h4 ref={scrollToPo} className="mb-0">
             Purchase Orders
@@ -636,6 +901,10 @@ export const Purchase_ordersList = () => {
             icon="pi pi-plus"
             label="Create PO"
             onClick={() => {
+              // const fiveFields = new Array(5).fill(initialItemState)
+              // const deepCopy = fiveFields.map((ele, i) => ({ ...ele }))
+              const fiveFields = arrayFillCopy(5, initialItemState)
+              // console.log(fiveFields)
               setPoCodeChecked(true)
               setPoEditState(false)
               setPurchaseDialog(!purchaseDialog)
@@ -649,48 +918,133 @@ export const Purchase_ordersList = () => {
                 agreement: "",
                 rfq_id: "",
               })
-              setItemList([
-                {
-                  purchase_order_po_id: "",
-                  purchase_order_purchase_order_status_pos_id: 1,
-                  purchase_order_vendor_vendor_id: "",
-                  vendor_products_vp_id: "",
-                  vendor_products_vendor_vendor_id: "",
-                  vendor_products_products_product_id: "",
-                  quantity: "",
-                  price_per_unit: "",
-                  received_quantity: 0,
-                },
-              ])
+              setItemList(fiveFields)
+              // setItemList([
+              //   {
+              //     purchase_order_po_id: "",
+              //     purchase_order_purchase_order_status_pos_id: 1,
+              //     purchase_order_vendor_vendor_id: "",
+              //     vendor_products_vp_id: "",
+              //     vendor_products_vendor_vendor_id: "",
+              //     vendor_products_products_product_id: "",
+              //     quantity: "",
+              //     price_per_unit: "",
+              //     received_quantity: 0,
+              //     products_product_id: "",
+              //   },
+              //   {
+              //     purchase_order_po_id: "",
+              //     purchase_order_purchase_order_status_pos_id: 1,
+              //     purchase_order_vendor_vendor_id: "",
+              //     vendor_products_vp_id: "",
+              //     vendor_products_vendor_vendor_id: "",
+              //     vendor_products_products_product_id: "",
+              //     quantity: "",
+              //     price_per_unit: "",
+              //     received_quantity: 0,
+              //     products_product_id: "",
+              //   },
+              //   {
+              //     purchase_order_po_id: "",
+              //     purchase_order_purchase_order_status_pos_id: 1,
+              //     purchase_order_vendor_vendor_id: "",
+              //     vendor_products_vp_id: "",
+              //     vendor_products_vendor_vendor_id: "",
+              //     vendor_products_products_product_id: "",
+              //     quantity: "",
+              //     price_per_unit: "",
+              //     received_quantity: 0,
+              //     products_product_id: "",
+              //   },
+              //   {
+              //     purchase_order_po_id: "",
+              //     purchase_order_purchase_order_status_pos_id: 1,
+              //     purchase_order_vendor_vendor_id: "",
+              //     vendor_products_vp_id: "",
+              //     vendor_products_vendor_vendor_id: "",
+              //     vendor_products_products_product_id: "",
+              //     quantity: "",
+              //     price_per_unit: "",
+              //     received_quantity: 0,
+              //     products_product_id: "",
+              //   },
+              //   {
+              //     purchase_order_po_id: "",
+              //     purchase_order_purchase_order_status_pos_id: 1,
+              //     purchase_order_vendor_vendor_id: "",
+              //     vendor_products_vp_id: "",
+              //     vendor_products_vendor_vendor_id: "",
+              //     vendor_products_products_product_id: "",
+              //     quantity: "",
+              //     price_per_unit: "",
+              //     received_quantity: 0,
+              //     products_product_id: "",
+              //   },
+              // ])
               setFilterProductOptions([])
             }}
           ></Button>
         </div>
+        {poErrorMsgs.map((ele, i) => (
+          <ErrorCard ErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
+        ))}
       </div>
 
       <div
-        className={`card ${
+        className={`col-12 ${
           purchaseDialog
             ? "visible scalein animation-duration-200"
             : "hidden scaleout animation-duration-200"
         }`}
       >
-        <form
-          onSubmit={
-            // async
-            () => {
-              console.log("purchase details", purchaseDetails)
-            }
-          }
-          className="p-fluid "
-        >
-          <h5>Create PO</h5>
-          <div className="formgrid grid">
-            <div className="col-12">
-              <h6>PO Details:</h6>
-              <hr />
-            </div>
-            <div className="field col-12 lg:col-4 mt-2">
+        <div className={`card`}>
+          <form onSubmit={formik.handleSubmit} className="p-fluid ">
+            <h5>Create PO</h5>
+            <div className="formgrid grid">
+              <div className="col-12">
+                <h6>PO Details:</h6>
+                <hr />
+              </div>
+
+              <div className="field col-12 md:col-3 lg:col-4  mt-2 ">
+                <div className="p-float-label">
+                  <AutoComplete
+                    id="vendor_vendor_id"
+                    // disabled={editState}
+                    value={formik.values.vendor}
+                    dropdown
+                    forceSelection
+                    suggestions={vendorSuggestions}
+                    completeMethod={searchVendor}
+                    field="name"
+                    onChange={async (e) => {
+                      // console.log("name", e.value)
+
+                      let vendor_vendor_id =
+                        typeof e.value === "string" ? e.value : e.value?.vendor_id
+                      let vendor = typeof e.value === "string" ? e.value : e.value?.name
+
+                      await formik.setValues({
+                        ...formik.values,
+                        vendor_vendor_id,
+                        vendor,
+                      })
+                    }}
+                    aria-label="products"
+                    dropdownAriaLabel="Select Product"
+                    className={classNames({ "p-invalid": isFormFieldValid("vendor_vendor_id") })}
+                  />
+
+                  <label
+                    htmlFor="vendor_vendor_id"
+                    className={classNames({ "p-error": isFormFieldValid("vendor_vendor_id") })}
+                  >
+                    Select Vendor
+                  </label>
+                </div>
+                {getFormErrorMessage("vendor_vendor_id")}
+              </div>
+              {/* <div className="field col-12 lg:col-4 mt-2">
               <Dropdown
                 // className="mr-2 w-22rem"
                 value={purchaseDetails.vendor_vendor_id}
@@ -707,435 +1061,446 @@ export const Purchase_ordersList = () => {
                 filterBy="name"
                 placeholder="Select Vendor"
               />
-            </div>
-            {/* <div className="field col-12 lg:col-4 mt-2">
-              <span className="p-float-label">
-                <InputText
-                  id="po_code"
-                  name=""
-                  // className="mr-2 w-22rem"
-                  value={purchaseDetails.po_code}
-                  onChange={(e) =>
-                    setPurchaseDetails({ ...purchaseDetails, po_code: e.target.value })
-                  }
-                />
-                <label htmlFor="po_code">PO Code</label>
-              </span>
             </div> */}
-            <div className="field col-12 lg:col-4 mt-2">
-              <span className="p-float-label">
-                <InputText
-                  id="po_description"
-                  // className="mr-2 w-22rem"
-                  value={purchaseDetails.po_description}
-                  onChange={(e) =>
-                    setPurchaseDetails({ ...purchaseDetails, po_description: e.target.value })
-                  }
-                />
-                <label htmlFor="po_description">PO Description</label>
-              </span>
-            </div>
-            <div className="field col-12 lg:col-4 mt-2">
-              <div className="p-float-label">
-                <Calendar
-                  id="expiry_date"
-                  minDate={new Date()}
-                  // className="mr-2 w-22rem"
-                  // id="basic"
-                  value={purchaseDetails.expiry_date}
-                  onChange={(e) =>
-                    setPurchaseDetails({
-                      ...purchaseDetails,
-                      expiry_date: e.value,
-                    })
-                  }
-                />
-                <label htmlFor="expiry_date">Expiry Date</label>
-              </div>
-            </div>
-            <div className="field col-12 lg:col-4 mt-2">
-              <div className="p-float-label">
-                <Calendar
-                  minDate={new Date()}
-                  // className="mr-2 w-22rem"
-                  // id="basic"
-                  value={purchaseDetails.expected_delivery}
-                  onChange={(e) =>
-                    setPurchaseDetails({
-                      ...purchaseDetails,
-                      expected_delivery: e.value,
-                    })
-                  }
-                />
-                <label
-                // htmlFor={ele.field}
-                // className={classNames({ "p-error": isFormFieldValid("name") })}
-                >
-                  Expected Delivery
-                </label>
-              </div>
-            </div>
-            <div className="field col-12 lg:col-4 mt-2">
-              <div className="p-float-label">
-                <AutoComplete
-                  value={purchaseDetails.agreement}
-                  suggestions={filteredSuggestions}
-                  completeMethod={searchAgreement}
-                  field="name"
-                  onChange={(e) => {
-                    console.log(typeof e.value)
-                    let agreement = typeof e.value === typeof "s" ? e.value : e.value.name
-                    console.log("agreement", agreement)
-                    setPurchaseDetails({ ...purchaseDetails, agreement })
-                  }}
-                  aria-label="agreementStatusOptions"
-                  dropdownAriaLabel="Select Agreement"
-                />
 
-                <label
-                // htmlFor={ele.field}
-                // className={classNames({ "p-error": isFormFieldValid("name") })}
-                >
-                  Agreement
-                </label>
-              </div>
-            </div>
-            <div className="field col-12 lg:col-4 mt-2">
-              <div className="p-float-label">
-                <InputText
-                  // className="mr-2 w-22rem"
-                  value={purchaseDetails.from_party}
-                  onChange={(e) =>
-                    setPurchaseDetails({ ...purchaseDetails, from_party: e.target.value })
-                  }
-                />
-                <label
-                // htmlFor={ele.field}
-                // className={classNames({ "p-error": isFormFieldValid("name") })}
-                >
-                  From Party
-                </label>
-              </div>
-            </div>
-            <div className="field col-12 lg:col-4 mt-2">
-              <span className="p-float-label">
-                <InputText
-                  id="po_code"
-                  name=""
-                  // className="mr-2 w-22rem"
-                  value={purchaseDetails.po_code}
-                  onChange={(e) =>
-                    setPurchaseDetails({ ...purchaseDetails, po_code: e.target.value })
-                  }
-                  disabled={poCodeChecked}
-                />
-                <label htmlFor="po_code">PO Code</label>
-              </span>
-              <div className="field-checkbox mt-3">
-                <Checkbox
-                  id="poCode"
-                  onChange={(e) => setPoCodeChecked(e.checked)}
-                  checked={poCodeChecked}
-                />
-                <label htmlFor="poCode">Un-check to add custom code.</label>
-              </div>
-            </div>
-
-            <div className="col-12 mt-3 mb-3 ">
-              <h6>Select Products</h6>
-              <hr />
-            </div>
-            {itemList.map((ele, i) => (
-              <>
-                <div key={`PO-product-${i}`} className="field col-12 lg:col-7 mt-2">
-                  <Dropdown
-                    // className="mr-2 w-20rem"
-                    name="products_product_id"
-                    // disabled={editState}
-                    filter
-                    showClear
-                    filterBy="name"
-                    placeholder="Select a Product"
-                    optionLabel="name"
-                    value={ele?.products_product_id}
-                    options={filterProductOptions}
-                    onChange={(e) => {
-                      handleFormChange(e, i)
-                      const productPrice = products.filter((item) => item.product_id === e.value)[0]
-                        ?.Price
-                      let data = [...itemList]
-                      e.target
-                        ? (data[i].price_per_unit = productPrice)
-                        : (data[i].price_per_unit = 0)
-                      setItemList(data)
-                      // console.log(findProductVpID(i))
-                    }}
+              <div className="field col-12 lg:col-4 mt-2">
+                <span className="p-float-label">
+                  <InputText
+                    id="po_description"
+                    value={formik.values.po_description}
+                    onChange={formik.handleChange}
+                    className={classNames({ "p-invalid": isFormFieldValid("po_description") })}
+                    autoFocus
                   />
+                  <label
+                    htmlFor="po_description"
+                    className={classNames({ "p-error": isFormFieldValid("po_description") })}
+                  >
+                    PO Description
+                  </label>
+                </span>
+                {getFormErrorMessage("po_description")}
+              </div>
+              <div className="field col-12 lg:col-4 mt-2">
+                <div className="p-float-label">
+                  <Calendar
+                    id="expiry_date"
+                    minDate={new Date()}
+                    // id="basic"
+                    value={formik.values.expiry_date}
+                    onChange={formik.handleChange}
+                    className={classNames({ "p-invalid": isFormFieldValid("expiry_date") })}
+                  />
+                  <label
+                    htmlFor="expiry_date"
+                    className={classNames({ "p-error": isFormFieldValid("expiry_date") })}
+                  >
+                    Expiry Date
+                  </label>
                 </div>
+                {getFormErrorMessage("expiry_date")}
+              </div>
+              <div className="field col-12 lg:col-4 mt-2">
+                <div className="p-float-label">
+                  <Calendar
+                    minDate={new Date()}
+                    // className="mr-2 w-22rem"
+                    id="expected_delivery"
+                    value={formik.values.expected_delivery}
+                    onChange={formik.handleChange}
+                    className={classNames({ "p-invalid": isFormFieldValid("expected_delivery") })}
+                  />
+                  <label
+                    htmlFor="expected_delivery"
+                    className={classNames({ "p-error": isFormFieldValid("expected_delivery") })}
+                  >
+                    Expected Delivery
+                  </label>
+                </div>
+                {getFormErrorMessage("expected_delivery")}
+              </div>
+              <div className="field col-12 lg:col-4 mt-2">
+                <div className="p-float-label">
+                  <AutoComplete
+                    value={formik.values.agreement}
+                    suggestions={filteredSuggestions}
+                    completeMethod={searchAgreement}
+                    dropdown
+                    field="name"
+                    // onChange={(e) => {
+                    //   let agreement = typeof e.value === "string" ? e.value : e.value.name
+                    //   // console.log("agreement", agreement)
+                    //   setPurchaseDetails({ ...purchaseDetails, agreement })
+                    // }}
+                    onChange={async (e) => {
+                      let agreement = typeof e.value === "string" ? e.value : e.value.name
 
-                <div className="field col-12 lg:col-2 mt-2">
-                  <span className="p-float-label ">
-                    <InputNumber
-                      name="price_per_unit"
-                      // className="mr-2 w-20rem"
-                      value={Number(ele.price_per_unit)}
-                      onChange={(e) => handleFormChange(e, i)}
-                    />
-                    <label>Price per unit</label>
-                  </span>
+                      await formik.setValues({
+                        ...formik.values,
+                        agreement,
+                      })
+                    }}
+                    aria-label="agreementStatusOptions"
+                    dropdownAriaLabel="Select Agreement"
+                    className={classNames({ "p-invalid": isFormFieldValid("agreement") })}
+                  />
+
+                  <label
+                    htmlFor="agreement"
+                    className={classNames({ "p-error": isFormFieldValid("agreement") })}
+                  >
+                    Agreement
+                  </label>
                 </div>
-                <div className="field col-12 lg:col-2 mt-2">
-                  <span className="p-float-label ">
-                    <InputNumber
-                      name="quantity"
-                      value={Number(ele.quantity)}
-                      // className="mr-2 w-20rem"
-                      onChange={(e) => handleFormChange(e, i)}
-                    />
-                    <label className="mr-2">Quantity</label>
-                  </span>
+                {getFormErrorMessage("agreement")}
+              </div>
+              <div className="field col-12 lg:col-4 mt-2">
+                <div className="p-float-label">
+                  <InputText
+                    id="from_party"
+                    value={formik.values.from_party}
+                    onChange={formik.handleChange}
+                    className={classNames({ "p-invalid": isFormFieldValid("from_party") })}
+                    autoFocus
+                  />
+                  <label
+                    htmlFor="from_party"
+                    className={classNames({ "p-error": isFormFieldValid("from_party") })}
+                  >
+                    From Party
+                  </label>
                 </div>
-                <div className="field col-6 lg:col-1 mt-2">
-                  <span className="p-buttonset">
-                    {i === itemList.length - 1 && (
-                      <Button type="button" label="+" onClick={addFields} />
-                    )}
-                    {itemList.length > 1 && (
-                      <Button
-                        type="button"
-                        label="-"
-                        className="p-button-secondary"
-                        onClick={(e) => {
-                          removeFields(i)
+                {getFormErrorMessage("from_party")}
+              </div>
+              <div className="field col-12 lg:col-4 mt-2">
+                <span className="p-float-label">
+                  <InputText
+                    id="po_code"
+                    name=""
+                    // className="mr-2 w-22rem"
+                    value={formik.values.po_code}
+                    onChange={formik.handleChange}
+                    disabled={poCodeChecked}
+                    className={classNames({ "p-invalid": isFormFieldValid("po_code") })}
+                  />
+                  <label
+                    htmlFor="po_code"
+                    className={classNames({ "p-error": isFormFieldValid("po_code") })}
+                  >
+                    PO Code
+                  </label>
+                </span>
+                {getFormErrorMessage("po_code")}
+                <div className="field-checkbox mt-3">
+                  <Checkbox
+                    id="poCode"
+                    onChange={(e) => setPoCodeChecked(e.checked)}
+                    checked={poCodeChecked}
+                    disabled={poEditState}
+                  />
+                  <label htmlFor="poCode">Un-check to add custom code.</label>
+                </div>
+              </div>
+
+              <div className="col-12 mt-3 mb-3 ">
+                <h6>Select Products</h6>
+                <hr />
+              </div>
+              {itemList.map((ele, i) => (
+                <div key={`PO-product-${i} `} className="field grid col-12  mt-2">
+                  <div className="field col-12 lg:col-7 mt-2">
+                    <div className="p-float-label">
+                      <AutoComplete
+                        id="name"
+                        name="name"
+                        value={ele.product_name}
+                        suggestions={ProductsSuggestions}
+                        completeMethod={searchProducts}
+                        forceSelection
+                        dropdown
+                        field="name"
+                        onChange={async (e) => {
+                          console.log("event understand", e)
+                          let product_id = typeof e.value === "string" ? "" : e.value?.product_id
+                          let name = typeof e.value === "string" ? e.value : e.value?.name
+                          let price_per_unit =
+                            typeof e.value === "string" ? e.value : e.value?.Price
+                          let data = [...itemList]
+
+                          data[i].product_name = name
+                          data[i].products_product_id = product_id
+                          data[i].price_per_unit = price_per_unit
+
+                          // if (!e.value.name) {
+                          //   await formik.setValues({ ...formik.values, itemsLength: false })
+                          // } else {
+                          //   await formik.setValues({ ...formik.values, itemsLength: true })
+                          // }
+                          let itemsLength = !e.value?.name ? false : true
+                          await formik.setValues({ ...formik.values, itemsLength })
+
+                          setItemList(data)
                         }}
+                        aria-label="products"
+                        dropdownAriaLabel="Select Product"
+                        //   className={classNames({ "p-invalid": isFormFieldValid("name") })}
                       />
-                    )}
-                  </span>
-                </div>
 
-                {/* <Button
+                      <label
+                        htmlFor="name"
+                        //   className={classNames({ "p-error": isFormFieldValid("name") })}
+                      >
+                        Select Product
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="field col-12 lg:col-2 mt-2">
+                    <span className="p-float-label ">
+                      <InputNumber
+                        name="price_per_unit"
+                        // className="mr-2 w-20rem"
+                        value={Number(ele.price_per_unit)}
+                        onChange={(e) => handleFormChange(e, i)}
+                      />
+                      <label>Price per unit</label>
+                    </span>
+                  </div>
+                  <div className="field col-12 lg:col-2 mt-2">
+                    <span className="p-float-label ">
+                      <InputNumber
+                        name="quantity"
+                        value={Number(ele.quantity)}
+                        // className="mr-2 w-20rem"
+                        onChange={(e) => handleFormChange(e, i)}
+                      />
+                      <label className="mr-2">Quantity</label>
+                    </span>
+                  </div>
+                  <div className="field col-6 lg:col-1 mt-2">
+                    <span className="p-buttonset">
+                      {i === itemList.length - 1 && (
+                        <Button type="button" label="+" onClick={addFields} />
+                      )}
+                      {itemList.length > 1 && (
+                        <Button
+                          type="button"
+                          label="-"
+                          className="p-button-secondary"
+                          onClick={(e) => {
+                            removeFields(i)
+                          }}
+                        />
+                      )}
+                    </span>
+                  </div>
+
+                  {/* <Button
                   type="button"
                   disabled={itemList.length <= 1}
                   icon="pi pi-minus"
                   className="m-2 p-button-rounded "
                   onClick={() => removeFields(i)}
                 /> */}
-              </>
-            ))}
-          </div>
-          <Divider />
-          <div className="flex ">
-            <Button
-              type="button"
-              className=" mr-2"
-              label={poEditState ? "UPDATE" : "ADD"}
-              onClick={async (e) => {
-                console.log("purchaseDetails", purchaseDetails)
-                console.log("activeRow", activeRow)
-                console.log("itemList", itemList)
-                const data = purchase_order_products
-                  .filter((ele) => ele.purchase_order_po_id === activeRow.po_id)
-                  .map((ele) => ele.pop_id)
-                console.log("data", data)
-                // const existingProductsPopIDs = [...itemList.map((ele) => ele.pop_id)]
-                const newProductsPopIDs = itemList.map((ele) => ele.pop_id)
-                // console.log(existingProductsPopIDs)
-                const newProducts = itemList.filter((ele) => !ele.pop_id)
-                const existingProducts = itemList.filter((ele) => ele.pop_id)
-                const deletelist = data.filter((item) => {
-                  const array = itemList.map((ele) => ele.pop_id)
-                  return !array.includes(item)
-                })
-                if (poEditState) {
-                  // updatePurchaseOrderMutation
+                </div>
+              ))}
+              <div className="m-auto text-2xl">{getFormErrorMessage("itemsLength")}</div>
+            </div>
+            <Divider />
+            <div className="flex ">
+              <Button
+                type="submit"
+                className=" mr-2"
+                label={poEditState ? "UPDATE" : "ADD"}
+                onClick={() => console.log("asda")}
+                // onClick={async (e) => {
+                //   console.log("purchaseDetails", purchaseDetails)
+                //   console.log("activeRow", activeRow)
+                //   console.log("itemList", itemList)
+                //   const data = purchase_order_products
+                //     .filter((ele) => ele.purchase_order_po_id === activeRow.po_id)
+                //     .map((ele) => ele.pop_id)
+                //   console.log("data", data)
+                //   // const existingProductsPopIDs = [...itemList.map((ele) => ele.pop_id)]
+                //   const newProductsPopIDs = itemList.map((ele) => ele.pop_id)
+                //   // console.log(existingProductsPopIDs)
+                //   const newProducts = itemList.filter((ele) => !ele.pop_id)
+                //   const existingProducts = itemList.filter((ele) => ele.pop_id)
+                //   const deletelist = data.filter((item) => {
+                //     const array = itemList.map((ele) => ele.pop_id)
+                //     return !array.includes(item)
+                //   })
+                //   if (poEditState) {
+                //     // updatePurchaseOrderMutation
 
-                  try {
-                    const update = await updatePurchaseOrderMutation({
-                      po_id: activeRow.po_id,
-                      ...purchaseDetails,
-                      purchase_order_products: {
-                        create: newProducts.map((ele) => ({
-                          quantity: Number(ele.quantity),
-                          price_per_unit: Number(ele.price_per_unit),
-                          received_quantity: 0,
-                          vendor_products: {
-                            connect: {
-                              vp_id: Number(ele.vendor_products_vp_id),
-                            },
-                          },
-                        })),
-                        updateMany: existingProducts.map((ele) => ({
-                          where: {
-                            pop_id: ele.pop_id,
-                          },
-                          data: {
-                            price_per_unit: Number(ele.price_per_unit),
-                            quantity: Number(ele.quantity),
-                          },
-                        })),
-                        deleteMany: {
-                          pop_id: {
-                            in: deletelist,
-                          },
-                        },
-                      },
-                    })
+                //     try {
+                //       const update = await updatePurchaseOrderMutation({
+                //         po_id: activeRow.po_id,
+                //         ...purchaseDetails,
+                //         purchase_order_products: {
+                //           create: newProducts.map((ele) => ({
+                //             quantity: Number(ele.quantity),
+                //             price_per_unit: Number(ele.price_per_unit),
+                //             received_quantity: 0,
+                //             vendor_products: {
+                //               connect: {
+                //                 vp_id: Number(ele.vendor_products_vp_id),
+                //               },
+                //             },
+                //           })),
+                //           updateMany: existingProducts.map((ele) => ({
+                //             where: {
+                //               pop_id: ele.pop_id,
+                //             },
+                //             data: {
+                //               price_per_unit: Number(ele.price_per_unit),
+                //               quantity: Number(ele.quantity),
+                //             },
+                //           })),
+                //           deleteMany: {
+                //             pop_id: {
+                //               in: deletelist,
+                //             },
+                //           },
+                //         },
+                //       })
 
-                    console.log(update)
-                  } catch (error) {
-                    console.log(error)
-                  }
-                } else {
-                  try {
-                    console.log(purchaseDetails)
-                    const purchaseOrder = await createPurchaseOrderMutation({
-                      vendor_vendor_id: Number(purchaseDetails.vendor_vendor_id),
-                      po_code: purchaseDetails.po_code,
-                      po_description: purchaseDetails.po_description,
-                      expiry_date: new Date(purchaseDetails.expiry_date),
-                      expected_delivery: new Date(purchaseDetails.expected_delivery),
-                      from_party: purchaseDetails.from_party,
-                      agreement_status: purchaseDetails.agreement.replaceAll(" ", "_"),
-                      // agreement: purchaseDetails.agreement,
-                      // rfq_id: Number(purchaseDetails.rfq_id) ?? undefined,
-                      purchase_order_products: {
-                        create: itemList.map((ele) => ({
-                          quantity: Number(ele.quantity),
-                          price_per_unit: Number(ele.price_per_unit),
-                          received_quantity: 0,
-                          vendor_products: {
-                            connect: {
-                              vp_id: Number(ele.vendor_products_vp_id),
-                            },
-                          },
-                        })),
-                      },
-                    })
-                    setPurchaseDialog(!purchaseDialog)
-                    console.log("purchaseOrder: ", purchaseOrder)
-                  } catch (error) {
-                    console.log("error: ", error)
-                  }
-                }
-
-                // const many = itemList.map((ele) => {
-                //   const product_id = vendor_products.filter((item) => {
-                //     return Number(ele.vendor_products_vp_id) === Number(item.vp_id)
-                //   })[0].products_product_id
-                //   console.log("many", ele)
-                //   return {
-                //     purchase_order_po_id: purchaseOrder?.po_id ?? "",
-                //     // purchase_order_po_id: 1,
-                //     purchase_order_purchase_order_status_pos_id: 1,
-                //     purchase_order_vendor_vendor_id: Number(purchaseDetails.vendor_vendor_id),
-                //     vendor_products_vp_id: Number(ele.vendor_products_vp_id),
-                //     vendor_products_vendor_vendor_id: Number(purchaseDetails.vendor_vendor_id),
-                //     vendor_products_products_product_id: Number(product_id),
-                //     quantity: Number(ele.quantity),
-                //     price_per_unit: Number(ele.price_per_unit),
-                //     received_quantity: 0,
+                //       console.log(update)
+                //     } catch (error) {
+                //       console.log(error)
+                //     }
+                //   } else {
+                //     try {
+                //       console.log("purchaseDetails", purchaseDetails)
+                //       console.log("itemList", itemList)
+                //       const purchaseOrder = await createPurchaseOrderMutation({
+                //         vendor_vendor_id: Number(purchaseDetails.vendor_vendor_id),
+                //         po_code: purchaseDetails.po_code,
+                //         po_description: purchaseDetails.po_description,
+                //         expiry_date: new Date(purchaseDetails.expiry_date),
+                //         expected_delivery: new Date(purchaseDetails.expected_delivery),
+                //         from_party: purchaseDetails.from_party,
+                //         agreement_status: purchaseDetails.agreement.replaceAll(" ", "_"),
+                //         // agreement: purchaseDetails.agreement,
+                //         // rfq_id: Number(purchaseDetails.rfq_id) ?? undefined,
+                //         purchase_order_products: {
+                //           create: itemList.map((ele) => ({
+                //             quantity: Number(ele.quantity),
+                //             price_per_unit: Number(ele.price_per_unit),
+                //             received_quantity: 0,
+                //             vendor_products: {
+                //               connect: {
+                //                 vp_id: Number(ele.vendor_products_vp_id),
+                //               },
+                //             },
+                //           })),
+                //         },
+                //       })
+                //       setPurchaseDialog(!purchaseDialog)
+                //       console.log("purchaseOrder: ", purchaseOrder)
+                //     } catch (error) {
+                //       console.log("error: ", error)
+                //     }
                 //   }
-                // })
-                // console.log("many: ", many)
-                // try {
-                //   const result = await createManyPurchaseOrderProductsMutation(many)
-                //   console.log("error: ", result)
-                // } catch (error: any) {
-                //   console.log("error: ", error)
-                // }
-                await refetch()
-                await refetchPoProducts()
-                setPurchaseDialog(!purchaseDialog)
-              }}
-            />
-            <Button
-              className="mr-2 p-button-secondary"
-              label="Cancel"
-              onClick={(e) => {
-                e.preventDefault()
-                setPurchaseDialog(!purchaseDialog)
-                setPurchaseDetails({
-                  vendor_vendor_id: "",
-                  po_code: "",
-                  po_description: "",
-                  expiry_date: "",
-                  expected_delivery: "",
-                  from_party: "",
-                  agreement: "",
-                  rfq_id: "",
-                })
-                setItemList([
-                  {
-                    purchase_order_po_id: "",
-                    purchase_order_purchase_order_status_pos_id: 1,
-                    purchase_order_vendor_vendor_id: "",
-                    vendor_products_vp_id: "",
-                    vendor_products_vendor_vendor_id: "",
-                    vendor_products_products_product_id: "",
-                    quantity: "",
-                    price_per_unit: "",
-                    received_quantity: 0,
-                  },
-                ])
-              }}
-            />
-          </div>
-        </form>
+
+                //   await refetch()
+                //   await refetchPoProducts()
+                //   setPurchaseDialog(!purchaseDialog)
+                // }}
+              />
+              <Button
+                className="mr-2 p-button-secondary"
+                label="Cancel"
+                onClick={(e) => {
+                  e.preventDefault()
+                  setPurchaseDialog(!purchaseDialog)
+                  setPurchaseDetails({
+                    vendor_vendor_id: "",
+                    po_code: "",
+                    po_description: "",
+                    expiry_date: "",
+                    expected_delivery: "",
+                    from_party: "",
+                    agreement: "",
+                    rfq_id: "",
+                  })
+                  setItemList([
+                    {
+                      purchase_order_po_id: "",
+                      purchase_order_purchase_order_status_pos_id: 1,
+                      purchase_order_vendor_vendor_id: "",
+                      vendor_products_vp_id: "",
+                      vendor_products_vendor_vendor_id: "",
+                      vendor_products_products_product_id: "",
+                      quantity: "",
+                      price_per_unit: "",
+                      received_quantity: 0,
+                    },
+                  ])
+
+                  formik.resetForm()
+                }}
+              />
+            </div>
+          </form>
+        </div>
       </div>
-      <DataTable
-        value={tablePurchaseOrders}
-        showGridlines
-        scrollable
-        // header={renderHeader}
-        stripedRows
-        className="text-s datatable-responsive"
-        // paginator
-        // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
-        // rows={PAGINATION_VARIABLES.rows}
-        // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
-        // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
-        expandedRows={expandedRows}
-        onRowToggle={(e) => setExpandedRows(e.data)}
-        rowExpansionTemplate={rowExpansionTemplate}
-      >
-        <Column
-          field="details"
-          header="Details"
-          expander={true}
-          // className="overflow-hidden"
-          style={{ width: "10px" }}
-        />
-        {/* <Column field="po_id" header="ID" body={({ po_id }) => `${prefixes[2].prefix}-${po_id}`} /> */}
-        <Column
-          field="po_code"
-          header="Code"
-          // className="text-center"
-        />
+      <div className="col-12">
+        <div className="card">
+          <DataTable
+            value={tablePurchaseOrders}
+            showGridlines
+            scrollable
+            // header={renderHeader}
+            stripedRows
+            className="text-s datatable-responsive"
+            // paginator
+            // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
+            // rows={PAGINATION_VARIABLES.rows}
+            // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
+            // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
+            expandedRows={expandedRows}
+            onRowToggle={(e) => setExpandedRows(e.data)}
+            rowExpansionTemplate={rowExpansionTemplate}
+          >
+            <Column
+              field="details"
+              header="Details"
+              expander={true}
+              // className="overflow-hidden"
+              style={{ width: "10px" }}
+            />
+            {/* <Column field="po_id" header="ID" body={({ po_id }) => `${prefixes[2].prefix}-${po_id}`} /> */}
+            <Column
+              field="po_code"
+              header="Code"
+              // className="text-center"
+            />
 
-        <Column
-          field="po_description"
-          header="Description"
-          className="overflow-hidden"
-          // className="text-center"
-        />
+            <Column
+              field="po_description"
+              header="Description"
+              className="overflow-hidden"
+              // className="text-center"
+            />
 
-        <Column
-          field="po_type"
-          header="Type"
-          // className="text-center"
-        />
-        <Column
-          field="vendor"
-          header="Vendor"
-          className="overflow-hidden"
-          // className="text-center"
-        />
-        <Column
-          field="po_status"
-          header="Status"
-          // className="text-center"
-        />
-        {/* <Column
+            <Column
+              field="po_type"
+              header="Type"
+              // className="text-center"
+            />
+            <Column
+              field="vendor"
+              header="Vendor"
+              className="overflow-hidden"
+              // className="text-center"
+            />
+            <Column
+              field="po_status"
+              header="Status"
+              // className="text-center"
+            />
+            {/* <Column
           field="ordered_qty"
           header="Ordered Quantity"
           // className="text-center"
@@ -1151,57 +1516,59 @@ export const Purchase_ordersList = () => {
           header="Total Value"
           // className="text-center"
         /> */}
-        <Column
-          field="updated_on"
-          header="Updated on"
-          // className="text-center"
-        />
-        <Column
-          field="from_party"
-          header="From Party"
-          className="overflow-hidden"
-          // className="text-center"
-        />
-        <Column
-          field="expiry_date"
-          header="Expiry Date"
-          // className="text-center"
-        />
-        <Column
-          field="expected_delivery"
-          header="Expected Delivery"
-          // className="text-center"
-        />
-        <Column
-          field="agreement_status"
-          header="Agreement"
-          className="overflow-hidden"
-          // style={{ width: "10px" }}
-          // className="text-center"
-        />
-        <Column
-          // field="vendor_gstin"
-          header="Action"
-          body={(rowData) => {
-            return (
-              <div>
-                <Menu model={items} popup ref={menu} id="popup_menu" />
-                <Button
-                  // label="Show"
-                  icon="pi pi-ellipsis-v"
-                  onClick={(event) => {
-                    setActiveRow(rowData)
-                    menu.current.toggle(event)
-                  }}
-                  aria-controls="popup_menu"
-                  aria-haspopup
-                />
-              </div>
-            )
-          }}
-          // className="text-center"
-        />
-      </DataTable>
+            <Column
+              field="updated_on"
+              header="Updated on"
+              // className="text-center"
+            />
+            <Column
+              field="from_party"
+              header="From Party"
+              className="overflow-hidden"
+              // className="text-center"
+            />
+            <Column
+              field="expiry_date"
+              header="Expiry Date"
+              // className="text-center"
+            />
+            <Column
+              field="expected_delivery"
+              header="Expected Delivery"
+              // className="text-center"
+            />
+            <Column
+              field="agreement_status"
+              header="Agreement"
+              className="overflow-hidden"
+              // style={{ width: "10px" }}
+              // className="text-center"
+            />
+            <Column
+              // field="vendor_gstin"
+              header="Action"
+              body={(rowData) => {
+                return (
+                  <div>
+                    <Menu model={items} popup ref={menu} id="popup_menu" />
+                    <Button
+                      // label="Show"
+                      icon="pi pi-ellipsis-v"
+                      onClick={(event) => {
+                        setActiveRow(rowData)
+                        menu.current.toggle(event)
+                      }}
+                      aria-controls="popup_menu"
+                      aria-haspopup
+                    />
+                  </div>
+                )
+              }}
+              // className="text-center"
+            />
+          </DataTable>
+        </div>
+      </div>
     </div>
   )
 }

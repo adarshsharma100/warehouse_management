@@ -1528,6 +1528,12 @@ export const filterExistingValues = (newList: any[], oldList: any[]): any[] => {
   return newList.filter((element) => !oldList.includes(element))
 }
 
+export const arrayFillCopy = (count, obj) => {
+  const fields = new Array(count).fill(obj)
+  const copy = fields.map((ele, i) => ({ ...ele }))
+  return copy
+}
+
 // export const sendPoEmail = async (data, po) => {
 //   // const vendorDetails = await db.vendor.findUnique({
 //   //   where: { vendor_id: data.vendor_vendor_id },
