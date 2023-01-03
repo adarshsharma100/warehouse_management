@@ -26,7 +26,7 @@ import { useFormik } from "formik"
 import * as Yup from "yup"
 import classNames from "classnames"
 import { AutoComplete } from "primereact/autocomplete"
-import { createCSVFormat } from "app/constants"
+import { createCSVFormat, filterExistingValues, tsuccess } from "app/constants"
 import { Toast } from "primereact/toast"
 import ErrorCard from "components/ErrorCard"
 import LoaderFullScreen from "components/LoaderFullScreen"
@@ -80,18 +80,28 @@ export const Inventory_productsList = () => {
 
   const clearUpload = useRef<FileUpload>(null)
   const toast = useRef(null)
+  const scroolToTop = useRef<HTMLDivElement>(null)
   // console.log("activeRowData", activeRowData)
 
   // const productsList =  products.map
   // console.log(products)
 
+  const productsId = products.map((ele, i) => ele.product_id)
+  const inventoryProductsId = inventory_products.map((ele, i) => ele.products_product_id)
+  // console.log("inventoryProductsId", inventoryProductsId)
+  // console.log("productsId", productsId)
+  const avilableProductsID = filterExistingValues(productsId, inventoryProductsId)
+
+  const avilableProducts = products.filter((ele, i) => avilableProductsID.includes(ele.product_id))
+  // console.log("avilableProducts", avilableProducts)
+
   const searchProducts = (event: { query: string }) => {
     setTimeout(() => {
       let _filteredSuggestions
       if (!event.query.trim().length) {
-        _filteredSuggestions = [...products]
+        _filteredSuggestions = [...avilableProducts]
       } else {
-        _filteredSuggestions = products.filter((element) => {
+        _filteredSuggestions = avilableProducts.filter((element) => {
           return element.name.toLowerCase().includes(event.query.toLowerCase())
         })
       }
@@ -126,10 +136,11 @@ export const Inventory_productsList = () => {
       header: true,
       skipEmptyLines: true,
       step: async ({ data }, parser) => {
-        console.log("data", data)
+        console.log(`${index}-data`, data)
         const missingKey = ["PRODUCT_ID", "PRICE", "QUANTITY", "DESCRIPTION"].find(
           (key) => !(key in data)
         )
+        console.log("missingKey", missingKey)
         if (missingKey) {
           setErrorProducts([...errorProducts, { message: `Column ${missingKey} missing.` }])
           parser.abort()
@@ -143,13 +154,8 @@ export const Inventory_productsList = () => {
               product_description: data["DESCRIPTION"],
             },
             {
-              onSuccess: () => {
-                toast?.current?.show({
-                  severity: "success",
-                  summary: "Product Created",
-                  detail: "Product created successfully.",
-                  life: 3000,
-                })
+              onSuccess: (data) => {
+                toast?.current?.show(tsuccess("Products Created", `Products created successfully.`))
               },
               onError: (error) => {
                 console.log("Product failed: ", data)
@@ -162,7 +168,7 @@ export const Inventory_productsList = () => {
             }
           )
           index += 1
-          console.log(result)
+          // console.log(result)
         } catch (error) {
           console.log(error)
         }
@@ -171,10 +177,10 @@ export const Inventory_productsList = () => {
     })
   }
 
-  console.log("error-products", errorProducts)
+  // console.log("error-products", errorProducts)
   const vpCsvFormatDetails = {
     headers: ["PRODUCT_ID", "PRICE", "QUANTITY", "DESCRIPTION"],
-    name: "Vendor-Product-format.csv",
+    name: "Inventory-Product-format.csv",
   }
 
   const formik = useFormik({
@@ -185,7 +191,7 @@ export const Inventory_productsList = () => {
       quantity: Yup.number().required("*Required").typeError("Must be a Number"),
     }),
     onSubmit: async (data) => {
-      console.log("data", data)
+      // console.log("data", data)
 
       const { name, price, quantity, products_product_id, product_description } = data
 
@@ -200,12 +206,9 @@ export const Inventory_productsList = () => {
             },
             {
               onSuccess: () => {
-                toast?.current?.show({
-                  severity: "success",
-                  summary: "Product Created",
-                  detail: "Product created successfully.",
-                  life: 3000,
-                })
+                toast?.current?.show(
+                  tsuccess("Product Created", `${data.name} created successfully.`)
+                )
               },
             }
           )
@@ -217,11 +220,20 @@ export const Inventory_productsList = () => {
         const inventory_product_id = activeRowData.inventory_product_id
 
         try {
-          await updateInventory_productMutation({
-            inventory_product_id,
-            price: Number(price),
-            quantity: Number(quantity),
-          })
+          await updateInventory_productMutation(
+            {
+              inventory_product_id,
+              price: Number(price),
+              quantity: Number(quantity),
+            },
+            {
+              onSuccess: () => {
+                toast?.current?.show(
+                  tsuccess("Product Updated", `${data.name} updated successfully.`)
+                )
+              },
+            }
+          )
         } catch (error) {
           console.log("Updation", error)
         }
@@ -259,9 +271,8 @@ export const Inventory_productsList = () => {
     setErrorMsgs(msgArray)
   }
 
-  console.log("formik", formik.values)
   return (
-    <div className="grid w-full mr-0">
+    <div className="grid w-full mr-0" ref={scroolToTop}>
       {creatingInventory && <LoaderFullScreen />}
       {updatingInventory && <LoaderFullScreen />}
       <Toast ref={toast} />
@@ -366,12 +377,14 @@ export const Inventory_productsList = () => {
                     suggestions={filteredSuggestions}
                     completeMethod={searchProducts}
                     disabled={productEditState}
+                    dropdown
+                    forceSelection
                     field="name"
                     onChange={async (e) => {
-                      console.log(e.value)
-                      let name = typeof e.value === "string" ? e.value : e.value.name
-                      let products_product_id = e.value.product_id
-                      let product_description = e.value.description
+                      // console.log(e.value)
+                      let name = typeof e.value === "string" ? e.value : e.value?.name
+                      let products_product_id = e.value?.product_id
+                      let product_description = e.value?.description
 
                       await formik.setValues({
                         ...formik.values,
@@ -520,6 +533,7 @@ export const Inventory_productsList = () => {
                         setProductEditState(true)
                         setProductForm(true)
                         await formik.setValues({ ...rowData })
+                        scroolToTop?.current?.scrollIntoView()
                       }}
                     />
                     <Button
@@ -528,13 +542,13 @@ export const Inventory_productsList = () => {
                       icon="pi pi-trash"
                       className="m-1"
                       onClick={async () => {
-                        console.log("rowData: ", rowData.products_sku)
+                        // console.log("rowData: ", rowData.products_sku)
                         const productSku = await rowData.products_sku
-                        console.log("productSku: ", productSku)
+                        // console.log("productSku: ", productSku)
                         const inventoryProductId = inventory_products.filter(({ products }) => {
                           return products.products_sku === productSku
                         })
-                        console.log("inventoryProductId: ", inventoryProductId)
+                        // console.log("inventoryProductId: ", inventoryProductId)
 
                         await deleteInventory_productsMutation({
                           inventory_product_id: Number(inventoryProductId[0]?.inventory_product_id),
