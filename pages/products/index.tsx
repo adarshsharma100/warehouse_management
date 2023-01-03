@@ -26,7 +26,7 @@ import { InputNumber } from "primereact/inputnumber"
 import * as Yup from "yup"
 import classNames from "classnames"
 import { AutoComplete } from "primereact/autocomplete"
-import { createCSVFormat } from "app/constants"
+import { createCSVFormat, tsuccess } from "app/constants"
 import ErrorCard from "components/ErrorCard"
 import LoaderFullScreen from "components/LoaderFullScreen"
 
@@ -127,7 +127,7 @@ export const ProductsList = () => {
       product_unit: Yup.string().required("*Required"),
     }),
     onSubmit: async (data) => {
-      // console.log("data", data)
+      console.log("data", data)
 
       if (!productEditState) {
         try {
@@ -137,12 +137,9 @@ export const ProductsList = () => {
             },
             {
               onSuccess: () => {
-                toast?.current?.show({
-                  severity: "success",
-                  summary: "Product Created",
-                  detail: "Product created successfully.",
-                  life: 3000,
-                })
+                toast?.current?.show(
+                  tsuccess("Product Created", `${data.products_sku} created successfully`)
+                )
               },
             }
           )
@@ -153,9 +150,16 @@ export const ProductsList = () => {
         }
       } else {
         try {
-          await updateProductMutation({
-            ...data,
-          })
+          await updateProductMutation(
+            { ...data },
+            {
+              onSuccess: (data) => {
+                toast?.current?.show(
+                  tsuccess("Updated", `${data.products_sku} updated successfully`)
+                )
+              },
+            }
+          )
         } catch (error) {
           // console.log("Updation", error)
           return
@@ -209,10 +213,6 @@ export const ProductsList = () => {
       {creatingProduct && <LoaderFullScreen />}
       {updatingProduct && <LoaderFullScreen />}
       <div ref={scrolToTop} className="col-12 ">
-        {!errorProducts.length &&
-          ErrorMsgs.map((ele, i) => (
-            <ErrorCard ErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
-          ))}
         <div className="card flex justify-content-between align-items-center">
           <h2 className="mb-0">Products</h2>
           <div className="flex">
@@ -320,6 +320,10 @@ export const ProductsList = () => {
             />
           </div>
         </div>
+        {!errorProducts.length &&
+          ErrorMsgs.map((ele, i) => (
+            <ErrorCard ErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
+          ))}
       </div>
       <div
         className={`col-12 ${
