@@ -55,6 +55,7 @@ import createNotifications from "app/notifications_sents/mutations/createNotific
 import { useSession } from "@blitzjs/auth"
 import { Ctx } from "blitz"
 import { useCurrentUser } from "app/core/hooks/useCurrentUser"
+import CreateNewPo from "components/CreateNewPo"
 
 const ITEMS_PER_PAGE = 100
 
@@ -721,8 +722,6 @@ export const Purchase_ordersList = () => {
         }
       } else {
         try {
-          console.log("purchaseDetails", purchaseDetails)
-          console.log("itemList", itemList)
           const purchaseOrder = await createPurchaseOrderMutation(
             {
               vendor_vendor_id: Number(vendor_vendor_id),
@@ -749,9 +748,9 @@ export const Purchase_ordersList = () => {
               onSuccess: async (data) => {
                 toast?.current.show(tsuccess(null, "PO Created Successfully"))
                 await createNotificationsMutations({
-                  user_id: User?.id,
-                  user_name: User?.name,
-                  user_email: User?.email,
+                  user_id: id,
+                  user_name: name,
+                  user_email: email,
                   mutations: `${data?.po_code} is Created`,
                   created_at: new Date().toString(),
                 })
@@ -930,7 +929,7 @@ export const Purchase_ordersList = () => {
               // console.log(fiveFields)
               setPoCodeChecked(true)
               setPoEditState(false)
-              setPurchaseDialog(!purchaseDialog)
+              setPurchaseDialog(true)
               setPurchaseDetails({
                 vendor_vendor_id: "",
                 po_code: "",
@@ -942,68 +941,7 @@ export const Purchase_ordersList = () => {
                 rfq_id: "",
               })
               setItemList(fiveFields)
-              // setItemList([
-              //   {
-              //     purchase_order_po_id: "",
-              //     purchase_order_purchase_order_status_pos_id: 1,
-              //     purchase_order_vendor_vendor_id: "",
-              //     vendor_products_vp_id: "",
-              //     vendor_products_vendor_vendor_id: "",
-              //     vendor_products_products_product_id: "",
-              //     quantity: "",
-              //     price_per_unit: "",
-              //     received_quantity: 0,
-              //     products_product_id: "",
-              //   },
-              //   {
-              //     purchase_order_po_id: "",
-              //     purchase_order_purchase_order_status_pos_id: 1,
-              //     purchase_order_vendor_vendor_id: "",
-              //     vendor_products_vp_id: "",
-              //     vendor_products_vendor_vendor_id: "",
-              //     vendor_products_products_product_id: "",
-              //     quantity: "",
-              //     price_per_unit: "",
-              //     received_quantity: 0,
-              //     products_product_id: "",
-              //   },
-              //   {
-              //     purchase_order_po_id: "",
-              //     purchase_order_purchase_order_status_pos_id: 1,
-              //     purchase_order_vendor_vendor_id: "",
-              //     vendor_products_vp_id: "",
-              //     vendor_products_vendor_vendor_id: "",
-              //     vendor_products_products_product_id: "",
-              //     quantity: "",
-              //     price_per_unit: "",
-              //     received_quantity: 0,
-              //     products_product_id: "",
-              //   },
-              //   {
-              //     purchase_order_po_id: "",
-              //     purchase_order_purchase_order_status_pos_id: 1,
-              //     purchase_order_vendor_vendor_id: "",
-              //     vendor_products_vp_id: "",
-              //     vendor_products_vendor_vendor_id: "",
-              //     vendor_products_products_product_id: "",
-              //     quantity: "",
-              //     price_per_unit: "",
-              //     received_quantity: 0,
-              //     products_product_id: "",
-              //   },
-              //   {
-              //     purchase_order_po_id: "",
-              //     purchase_order_purchase_order_status_pos_id: 1,
-              //     purchase_order_vendor_vendor_id: "",
-              //     vendor_products_vp_id: "",
-              //     vendor_products_vendor_vendor_id: "",
-              //     vendor_products_products_product_id: "",
-              //     quantity: "",
-              //     price_per_unit: "",
-              //     received_quantity: 0,
-              //     products_product_id: "",
-              //   },
-              // ])
+
               setFilterProductOptions([])
             }}
           ></Button>
@@ -1012,8 +950,8 @@ export const Purchase_ordersList = () => {
           <ErrorCard ErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
         ))}
       </div>
-
-      <div
+      {/**Po form before converting in to component */}
+      {/* <div
         className={`col-12 ${
           purchaseDialog
             ? "visible scalein animation-duration-200"
@@ -1067,24 +1005,6 @@ export const Purchase_ordersList = () => {
                 </div>
                 {getFormErrorMessage("vendor_vendor_id")}
               </div>
-              {/* <div className="field col-12 lg:col-4 mt-2">
-              <Dropdown
-                // className="mr-2 w-22rem"
-                value={purchaseDetails.vendor_vendor_id}
-                options={vendorOptions}
-                onChange={(e) => {
-                  setPurchaseDetails({
-                    ...purchaseDetails,
-                    vendor_vendor_id: e.target.value,
-                  })
-                }}
-                optionLabel="name"
-                filter
-                showClear
-                filterBy="name"
-                placeholder="Select Vendor"
-              />
-            </div> */}
 
               <div className="field col-12 lg:col-4 mt-2">
                 <span className="p-float-label">
@@ -1150,11 +1070,6 @@ export const Purchase_ordersList = () => {
                     completeMethod={searchAgreement}
                     dropdown
                     field="name"
-                    // onChange={(e) => {
-                    //   let agreement = typeof e.value === "string" ? e.value : e.value.name
-                    //   // console.log("agreement", agreement)
-                    //   setPurchaseDetails({ ...purchaseDetails, agreement })
-                    // }}
                     onChange={async (e) => {
                       let agreement = typeof e.value === "string" ? e.value : e.value.name
 
@@ -1317,14 +1232,6 @@ export const Purchase_ordersList = () => {
                       )}
                     </span>
                   </div>
-
-                  {/* <Button
-                  type="button"
-                  disabled={itemList.length <= 1}
-                  icon="pi pi-minus"
-                  className="m-2 p-button-rounded "
-                  onClick={() => removeFields(i)}
-                /> */}
                 </div>
               ))}
               <div className="m-auto text-2xl">{getFormErrorMessage("itemsLength")}</div>
@@ -1467,7 +1374,24 @@ export const Purchase_ordersList = () => {
             </div>
           </form>
         </div>
-      </div>
+      </div> */}
+      <CreateNewPo
+        products={products}
+        purchaseDetails={purchaseDetails}
+        itemList={itemList}
+        setItemList={setItemList}
+        purchase_order_products={purchase_order_products}
+        activeRow={activeRow}
+        poEditState={poEditState}
+        toast={toast}
+        purchaseDialog={purchaseDialog}
+        setPurchaseDialog={setPurchaseDialog}
+        vendor_products={vendor_products}
+        vendors={vendors}
+        initialItemState={initialItemState}
+        setPoErrorMsgs={setPoErrorMsgs}
+        scrollToTop={scrollToPo}
+      />
       <div className="col-12">
         <div className="card">
           <DataTable

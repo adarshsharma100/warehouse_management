@@ -411,6 +411,7 @@ export const RfqsList = () => {
           command: () => {
             setPurchaseDialog(true)
             setRfqItemList()
+            scrollToRfq?.current?.scrollIntoView()
           },
         },
         {
