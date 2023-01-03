@@ -55,12 +55,16 @@ import getMutation_admin_mail from "app/mutation_admin_mails/queries/getMutation
 import { Toast } from "primereact/toast"
 import ScannedProducts from "components/ScannedProducts"
 import { getAntiCSRFToken } from "@blitzjs/auth"
+import createNotifications_sent from "app/notifications_sents/mutations/createNotifications_sent"
+import { useCurrentUser } from "app/core/hooks/useCurrentUser"
 
 const ITEMS_PER_PAGE = 100
 
 export const RfqsList = () => {
   const router = useRouter()
   const antiCSRFToken = getAntiCSRFToken()
+  const user = useCurrentUser()
+  const { id, role, name, email } = user
 
   const page = Number(router.query.page) || 0
   // const [{ rfqs, hasMore }, { refetch }] = usePaginatedQuery(getRfqs, {
@@ -118,6 +122,7 @@ export const RfqsList = () => {
     useMutation(createRfq)
   const [updateRFQMutation, { isLoading: updatingRfq, error: updateRFQMutationError }] =
     useMutation(updateRfq)
+  const [createNotificationsMutations] = useMutation(createNotifications_sent)
   const [createRFQProductMutation] = useMutation(createManyRfq_products)
   const [deleteRFQProductMutation] = useMutation(deleteRfq_product)
   const [deleteRFQMutation] = useMutation(deleteRfq)
@@ -427,12 +432,19 @@ export const RfqsList = () => {
                 active,
               },
               {
-                onSuccess: () => {
+                onSuccess: async (data) => {
+                  const rfq_code = data?.rfq_code
+                  const status = active ? "Active" : "Inactive"
+
                   toast?.current.show(
-                    tsuccess(
-                      "Updated",
-                      `${activeRow.rfq_code} is now ${active ? "Active" : "Inactive"}`
-                    )
+                    tsuccess("Updated", `${rfq_code} is now ${status}`),
+                    await createNotificationsMutations({
+                      user_id: id,
+                      user_name: name,
+                      user_email: email,
+                      mutations: `${rfq_code} is now ${status}`,
+                      created_at: new Date().toString(),
+                    })
                   )
                 },
               }
@@ -551,9 +563,18 @@ export const RfqsList = () => {
             },
           },
           {
-            onSuccess: () => {
+            onSuccess: async (data) => {
+              const rfq_code = data?.rfq_code
+
               toast?.current.show(
-                tsuccess("Updated", `${activeRow.rfq_code} is now updated sucessfully`)
+                tsuccess("Updated", `${rfq_code} is now updated sucessfully`),
+                await createNotificationsMutations({
+                  user_id: id,
+                  user_name: name,
+                  user_email: email,
+                  mutations: `${rfq_code} is Updated`,
+                  created_at: new Date().toString(),
+                })
               )
             },
           }
@@ -593,8 +614,16 @@ export const RfqsList = () => {
               },
             },
             {
-              onSuccess: () => {
-                toast?.current?.show(tsuccess(null, "RFQ created successfully."))
+              onSuccess: async (data) => {
+                const rfq_code = data?.rfq_code
+                toast?.current?.show(tsuccess(null, `${rfq_code} created successfully.`))
+                await createNotificationsMutations({
+                  user_id: id,
+                  user_name: name,
+                  user_email: email,
+                  mutations: `${rfq_code} is Created`,
+                  created_at: new Date().toString(),
+                })
               },
             }
           )

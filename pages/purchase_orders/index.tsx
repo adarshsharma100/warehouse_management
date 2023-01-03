@@ -51,12 +51,18 @@ import classNames from "classnames"
 import { arrayFillCopy, createSearchFunction, filterExistingValues, tsuccess } from "app/constants"
 import { Toast } from "primereact/toast"
 import Invoice from "components/Invoice"
+import createNotifications from "app/notifications_sents/mutations/createNotifications_sent"
+import { useSession } from "@blitzjs/auth"
+import { Ctx } from "blitz"
+import { useCurrentUser } from "app/core/hooks/useCurrentUser"
 
 const ITEMS_PER_PAGE = 100
 
 export const Purchase_ordersList = () => {
   const router = useRouter()
   const antiCSRFToken = getAntiCSRFToken()
+  const user = useCurrentUser()
+  const { id, role, name, email } = user
 
   const page = Number(router.query.page) || 0
   const [{ purchase_orders, hasMore }, { error: getPoError, refetch }] = usePaginatedQuery(
@@ -67,6 +73,7 @@ export const Purchase_ordersList = () => {
       take: ITEMS_PER_PAGE,
     }
   )
+
   const [{ purchase_order_products }, { error: getPoProductsError, refetch: refetchPoProducts }] =
     usePaginatedQuery(getPurchase_order_products, {
       orderBy: { pop_id: "asc" },
@@ -115,6 +122,8 @@ export const Purchase_ordersList = () => {
   const [updatePurchaseOrderMutation, { isLoading: UpdatingPO, error: updatingMutationError }] =
     useMutation(updatePurchase_order)
   const [createGrnMutation, { error: grnCreationError }] = useMutation(createGrn)
+  const [createNotificationsMutations, { error: notificationCreationError }] =
+    useMutation(createNotifications)
 
   const [createManyPurchaseOrderProductsMutation] = useMutation(createManyPurchase_order_product)
   const [deletePurchase_orderMutation] = useMutation(deletePurchase_order)
@@ -692,8 +701,15 @@ export const Purchase_ordersList = () => {
               },
             },
             {
-              onSuccess: () => {
+              onSuccess: async (data) => {
                 toast?.current.show(tsuccess("Updated", `${po_code} is upadted successfully`))
+                await createNotificationsMutations({
+                  user_id: id,
+                  user_name: name,
+                  user_email: email,
+                  mutations: `${data?.po_code} is Updated`,
+                  created_at: new Date().toString(),
+                })
               },
             }
           )
@@ -730,8 +746,15 @@ export const Purchase_ordersList = () => {
               },
             },
             {
-              onSuccess: () => {
+              onSuccess: async (data) => {
                 toast?.current.show(tsuccess(null, "PO Created Successfully"))
+                await createNotificationsMutations({
+                  user_id: User?.id,
+                  user_name: User?.name,
+                  user_email: User?.email,
+                  mutations: `${data?.po_code} is Created`,
+                  created_at: new Date().toString(),
+                })
               },
             }
           )
@@ -748,7 +771,7 @@ export const Purchase_ordersList = () => {
       await refetchPoProducts()
     },
   })
-  console.log("formik.errors", formik.errors)
+  // console.log("formik.errors", formik.errors)
   // console.log("formik.values", formik.values)
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
@@ -864,7 +887,7 @@ export const Purchase_ordersList = () => {
                 expected_delivery: moment(activeRow?.expected_delivery, "DD-MM-YYYY").toDate(),
                 expiry_date: moment(activeRow?.expiry_date, "DD-MM-YYYY").toDate(),
               }
-              console.log("antiCSRFToken", antiCSRFToken)
+              // console.log("antiCSRFToken", antiCSRFToken)
 
               const requestData = JSON.stringify({
                 data: {
@@ -1312,7 +1335,7 @@ export const Purchase_ordersList = () => {
                 type="submit"
                 className=" mr-2"
                 label={poEditState ? "UPDATE" : "ADD"}
-                onClick={() => console.log("asda")}
+                // onClick={() => console.log("asda")}
                 // onClick={async (e) => {
                 //   console.log("purchaseDetails", purchaseDetails)
                 //   console.log("activeRow", activeRow)
