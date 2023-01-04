@@ -57,6 +57,7 @@ import ScannedProducts from "components/ScannedProducts"
 import { getAntiCSRFToken } from "@blitzjs/auth"
 import createNotifications_sent from "app/notifications_sents/mutations/createNotifications_sent"
 import { useCurrentUser } from "app/core/hooks/useCurrentUser"
+import { date } from "zod"
 
 const ITEMS_PER_PAGE = 100
 
@@ -249,10 +250,11 @@ export const RfqsList = () => {
   }, [vendorChangeState])
 
   const tableRFQ = rfqs.map((ele) => {
+    console.log(ele.created_at)
     return {
       ...ele,
-      created_at: moment(ele.created_at).format("DD-MM-YYYY, HH:MM"),
-      updated_at: moment(ele.updated_at).format("DD-MM-YYYY, HH:MM"),
+      created_at: moment(ele.createdAt).format("DD-MM-YYYY, HH:MM"),
+      updated_at: moment(ele.updatedAt).format("DD-MM-YYYY, HH:MM"),
       // name: ele.products.name,
     }
   })
@@ -415,7 +417,7 @@ export const RfqsList = () => {
           },
         },
         {
-          label: "Send Quotation",
+          label: "Send RFQ",
           icon: "pi pi-send",
           command: () => {
             setSendDialog(true)
@@ -861,7 +863,7 @@ export const RfqsList = () => {
             <Button
               className="ml-2"
               icon="pi pi-qrcode"
-              label="Scane Mode"
+              label="Scan Mode"
               onClick={(e) => {
                 setScanner(!scanner)
               }}
@@ -1268,24 +1270,24 @@ export const RfqsList = () => {
               header="Description"
               // className="text-center"
             />
-            <Column
+            {/* <Column
               field="expected_dod"
               header="Delivery date"
               body={(tableRFQ) => new Date(tableRFQ.expected_dod).toLocaleDateString()}
 
               // className="text-center"
-            />
+            /> */}
 
             <Column
               field="created_at"
               header="Created at"
               // className="text-center"
             />
-            {/* <Column
-          field="updated_at"
-          header="Updated at"
-          // className="text-center"
-        /> */}
+            <Column
+              field="updated_at"
+              header="Updated at"
+              // className="text-center"
+            />
             <Column
               field="active"
               header="Status"

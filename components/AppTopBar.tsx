@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 // import { Link } from "react-router-dom"
 import classNames from "classnames"
 import logout from "app/auth/mutations/logout"
@@ -9,6 +9,11 @@ import { Routes } from "@blitzjs/next"
 // import Image from "next/image"
 import { ConfirmPopup } from "primereact/confirmpopup"
 import { Badge } from "primereact/badge"
+import getNotifications_sent from "app/notifications_sents/queries/getNotifications_sent"
+import getNotifications_sents from "app/notifications_sents/queries/getNotifications_sents"
+import moment from "moment"
+import { Button } from "primereact/button"
+import { DataScroller } from "primereact/datascroller"
 
 export const AppTopbar = (props) => {
   const [logoutMutation] = useMutation(logout)
@@ -17,6 +22,35 @@ export const AppTopbar = (props) => {
   const [oldAlerts, setOldAlerts] = useState(0)
   const [alertCount, setAlertCount] = useState(0)
   const [visible, setVisible] = useState<boolean>(false)
+  const [{ notifications_sents: notifications }, { error: getNotificationsError, refetch }] =
+    useQuery(getNotifications_sents, {
+      orderBy: { id: "desc" },
+    })
+
+  const moreData = useRef(null)
+
+  // console.log("notifications", notifications)
+
+  const notificationTemplate = (ele) => {
+    return (
+      <div className="border-solid border-1 border-round-lg mb-2 p-2">
+        <p className="m-0">{`${ele.mutations} by ${ele.user_name} `}</p>
+        <p className="text-xs align-content-end text-right mt-2	">
+          {moment(ele.created_at).format("DD-MM-YYYY, HH:MM")}
+        </p>
+      </div>
+    )
+  }
+
+  const notificationFooter = (
+    <Button type="text" icon="pi pi-plus" label="Load" onClick={() => moreData.current.load()} />
+  )
+
+  useEffect(() => {
+    ;(async () => await refetch())().catch((error) =>
+      console.log("fecthNotifications-Error", error)
+    )
+  }, [notifications, visible])
 
   const router = useRouter()
   return (
@@ -74,16 +108,37 @@ export const AppTopbar = (props) => {
             }}
           > */}
           <div className="flex justify-content end align-items-center">
-            <ConfirmPopup
+            {/* <ConfirmPopup
               target={document.querySelector(".pi-bell")}
               visible={visible}
               onHide={() => setVisible((prev) => !prev)}
               message="Alert Message"
               icon="pi pi-exclamation-triangle"
-            />
+            /> */}
+            <div
+              className={`card w-3 absolute ${
+                visible ? "visible " : "hidden"
+              } max-h-30rem overflow-scroll	`}
+              style={{
+                transform: "translate(-90%,54%)",
+              }}
+            >
+              <DataScroller
+                ref={moreData}
+                value={notifications}
+                itemTemplate={notificationTemplate}
+                rows={5}
+                loader
+                footer={notificationFooter}
+                header="Notifications"
+              />
+            </div>
+
             <i
               className="  pi pi-bell mr-4 p-text-secondary p-overlay-badge"
-              onClick={() => setVisible((prev) => !prev)} // {async () => {
+              onClick={() => {
+                setVisible((prev) => !prev)
+              }} // {async () => {
               //   setAlertCount(0)
               //   await router.push("/alerts")
               // }}

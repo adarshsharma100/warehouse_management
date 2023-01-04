@@ -134,7 +134,7 @@ const CreateNewPo = (props) => {
         console.log("While setting po values", error)
       })
     }
-  }, [poEditState])
+  }, [poEditState, activeRow])
 
   const updatePoValues = async () => {
     const {
@@ -748,9 +748,8 @@ const CreateNewPo = (props) => {
                 e.preventDefault()
                 setPurchaseDialog(false)
                 setItemList([initialItemState])
-
                 formik.resetForm()
-                setShowPriorList(false)
+                // setShowPriorList(false)
               }}
             />
           </div>
