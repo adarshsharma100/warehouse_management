@@ -68,6 +68,8 @@ export const Inventory_productsList = () => {
     quantity: null,
     products_product_id: "",
     product_description: "",
+    good_stock: null,
+    bad_stock: null,
   }
 
   const [productForm, setProductForm] = useState<boolean>(false)
@@ -115,7 +117,7 @@ export const Inventory_productsList = () => {
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
   const goToNextPage = () => router.push({ query: { page: page + 1 } })
   const tableInventory = inventory_products.map(
-    ({ quantity, products, price, inventory_product_id }) => {
+    ({ quantity, products, price, inventory_product_id, good_stock, bad_stock }) => {
       return {
         products_sku: products?.products_sku,
         name: products?.name,
@@ -123,6 +125,8 @@ export const Inventory_productsList = () => {
         quantity,
         price,
         inventory_product_id,
+        good_stock,
+        bad_stock,
       }
     }
   )
@@ -193,7 +197,15 @@ export const Inventory_productsList = () => {
     onSubmit: async (data) => {
       // console.log("data", data)
 
-      const { name, price, quantity, products_product_id, product_description } = data
+      const {
+        name,
+        price,
+        quantity,
+        products_product_id,
+        product_description,
+        good_stock,
+        bad_stock,
+      } = data
 
       if (!productEditState) {
         try {
@@ -203,6 +215,8 @@ export const Inventory_productsList = () => {
               price: price,
               quantity: Number(quantity),
               products_product_id: Number(products_product_id),
+              good_stock,
+              bad_stock,
             },
             {
               onSuccess: () => {
@@ -225,6 +239,8 @@ export const Inventory_productsList = () => {
               inventory_product_id,
               price: Number(price),
               quantity: Number(quantity),
+              good_stock,
+              bad_stock,
             },
             {
               onSuccess: () => {
@@ -270,6 +286,8 @@ export const Inventory_productsList = () => {
     msgArray.splice(i, 1)
     setErrorMsgs(msgArray)
   }
+
+  console.log("formik.values", formik.values)
 
   return (
     <div className="grid w-full mr-0" ref={scroolToTop}>
@@ -368,7 +386,7 @@ export const Inventory_productsList = () => {
         <div className="card p-4">
           <form className="p-fluid" onSubmit={formik.handleSubmit}>
             <h4 className="mb-3">{productEditState ? "Update " : "Create "}Product</h4>
-            <div className="formgrid grid justify-content-around">
+            <div className="formgrid grid justify-content-flex-start">
               <div className="field col-12 md:col-3 lg:col-3 mt-4">
                 <div className="p-float-label">
                   <AutoComplete
@@ -408,7 +426,7 @@ export const Inventory_productsList = () => {
                 </div>
                 {getFormErrorMessage("name")}
               </div>
-              <div className="field col-12 md:col-3 lg:col-3 mt-4">
+              {/* <div className="field col-12 md:col-3 lg:col-3 mt-4">
                 <span className="p-float-label">
                   <InputNumber
                     id="price"
@@ -427,9 +445,8 @@ export const Inventory_productsList = () => {
                   </label>
                 </span>
                 {getFormErrorMessage("price")}
-              </div>
-
-              <div className="field col-12 md:col-3 lg:col-3 mt-4">
+              </div> */}
+              {/* <div className="field col-12 md:col-3 lg:col-3 mt-4">
                 <span className="p-float-label">
                   <InputNumber
                     id="quantity"
@@ -449,7 +466,35 @@ export const Inventory_productsList = () => {
                   </label>
                 </span>
                 {getFormErrorMessage("quantity")}
-              </div>
+              </div> */}
+              {[
+                { type: "text", label: "Price", field: "price" },
+                { type: "text", label: "Good Stock", field: "good_stock" },
+                { type: "text", label: "Bad Stock", field: "bad_stock" },
+                { type: "text", label: "Total", field: "quantity" },
+              ].map((ele, i) => (
+                <div key={i} className="field col-12 md:col-3 lg:col-3 mt-4">
+                  <span className="p-float-label">
+                    <InputNumber
+                      id={ele.field}
+                      name={ele.field}
+                      value={formik.values[ele.field]}
+                      // onChange={formik.handleChange}
+                      onChange={(e) => formik.setValues({ ...formik.values, [ele.field]: e.value })}
+                      autoFocus
+                      className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
+                    />
+
+                    <label
+                      htmlFor={ele.field}
+                      className={classNames({ "p-error": isFormFieldValid(ele.field) })}
+                    >
+                      {ele.label}
+                    </label>
+                  </span>
+                  {getFormErrorMessage(ele.field)}
+                </div>
+              ))}
             </div>
             <div className="flex mt-4">
               <Button type="submit" className="mr-2" label={productEditState ? "UPDATE" : "ADD"} />
@@ -511,8 +556,18 @@ export const Inventory_productsList = () => {
           // className="text-center"
         /> */}
             <Column
+              body={(rowdata) => rowdata.quantity - rowdata.bad_stock}
+              header="Good-Stock"
+              // className="text-center"
+            />
+            <Column
+              field="bad_stock"
+              header="Bad-Stock"
+              // className="text-center"
+            />
+            <Column
               field="quantity"
-              header="Quantity"
+              header="Total-Stock"
               // className="text-center"
             />
 

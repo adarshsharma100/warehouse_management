@@ -169,6 +169,8 @@ export const Purchase_ordersList = () => {
   const poError = [updatingMutationError, creatingMutationError]
   const [vendorSuggestions, setVendorSuggestions] = useState<any>(null)
 
+  // const [isLoading, setIsLoading] = useState(false)
+
   const menu = useRef<Menu>(null)
   const toast = useRef(null)
 
@@ -815,6 +817,7 @@ export const Purchase_ordersList = () => {
   const updateFormValues = async (fields) => {
     await formik.setValues({ ...formik.values, ...fields })
   }
+  const refetchFuns = [refetch, refetchPoProducts]
 
   // useEffect(() => {
   //   poEditState
@@ -1389,8 +1392,8 @@ export const Purchase_ordersList = () => {
         vendor_products={vendor_products}
         vendors={vendors}
         initialItemState={initialItemState}
-        setPoErrorMsgs={setPoErrorMsgs}
-        scrollToTop={scrollToPo}
+        setErrorMsgs={setPoErrorMsgs}
+        refetchFuns={refetchFuns}
       />
       <div className="col-12">
         <div className="card">

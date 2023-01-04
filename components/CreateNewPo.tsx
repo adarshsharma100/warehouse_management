@@ -19,6 +19,7 @@ import { InputText } from "primereact/inputtext"
 import { classNames } from "primereact/utils"
 import React, { useEffect, useRef, useState } from "react"
 import * as Yup from "yup"
+import LoaderFullScreen from "./LoaderFullScreen"
 
 const CreateNewPo = (props) => {
   const {
@@ -34,20 +35,22 @@ const CreateNewPo = (props) => {
     vendors,
     products,
     initialItemState,
-    scrollToTop,
-    setPoErrorMsgs,
+    setErrorMsgs,
+    refetchFuns,
   } = props
 
   const [{ prefixes }, { error: getPrefixesError }] = useQuery(getPrefixes, {
     orderBy: { id: "asc" },
   })
-  const [{ purchase_orders }, { error: getPoError, refetch }] = useQuery(getPurchase_orders, {
+  const [{ purchase_orders }, { error: getPoError }] = useQuery(getPurchase_orders, {
     orderBy: { po_id: "asc" },
   })
-  const [{ purchase_order_products }, { error: getPoProductsError, refetch: refetchPoProducts }] =
-    useQuery(getPurchase_order_products, {
+  const [{ purchase_order_products }, { error: getPoProductsError }] = useQuery(
+    getPurchase_order_products,
+    {
       orderBy: { pop_id: "asc" },
-    })
+    }
+  )
 
   const [createPurchaseOrderMutation, { isLoading: creatingPO, error: creatingMutationError }] =
     useMutation(createPurchase_order)
@@ -64,16 +67,19 @@ const CreateNewPo = (props) => {
   const [showPriorList, setShowPriorList] = useState(false)
   const [pastVendors, setPastVendors] = useState([])
 
-  const [filterProductOptions, setFilterProductOptions] = useState([])
+  const [filterProductOptions, setFilterProductOptions] = useState<any>(null)
   const [vendorSuggestions, setVendorSuggestions] = useState<any>(null)
   const [ProductsSuggestions, setProductsSuggestions] = useState<any>(null)
 
   const [filteredSuggestions, setFilteredSuggestions] = useState<any>(null)
+  const [fromPartySuggetions, setFromPartySuggetions] = useState<any>(null)
 
   const agreementStatusEnum = ["Approved", "Waiting For Approval"]
   const agreementStatusOptions = agreementStatusEnum.map((ele) => ({
     name: ele,
   }))
+
+  const fromParty = [{ name: "TIF-Banaswadi" }, { name: "TIF-Rajajinagar" }, { name: "TIF-Hennur" }]
 
   const prevVendor = useRef()
   const createNewPOCode = () => {
@@ -81,14 +87,16 @@ const CreateNewPo = (props) => {
     const nextPoId = purchase_orders.length + 1
     setNewPOCode(`${poPrefix}#${nextPoId}`)
   }
-  const productOptions = products.map(({ product_id, name, vendor_products, Price }) => {
-    return {
-      name,
-      product_id,
-      vendorID: vendor_products.map((ele) => ele.vendor_vendor_id),
-      Price,
+  const productOptions = products.map(
+    ({ product_id, name, vendor_products, Price, products_sku }) => {
+      return {
+        name: `${products_sku} - ${name}`,
+        product_id,
+        vendorID: vendor_products.map((ele) => ele.vendor_vendor_id),
+        Price,
+      }
     }
-  })
+  )
   const vendorOptions = vendors.map(({ vendor, vendor_id, vendor_code }) => {
     return {
       name: ` ${vendor_code}: ${vendor}`,
@@ -124,6 +132,25 @@ const CreateNewPo = (props) => {
   const removeFields = (index) => {
     setItemList(itemList.filter((data, i) => index !== i))
   }
+
+  useEffect(() => {
+    const ErrorArray = [
+      updatingMutationError,
+      creatingMutationError,
+      getPoError,
+      getPoProductsError,
+    ]
+
+    const msg = []
+
+    for (let err of ErrorArray) {
+      if (err) {
+        msg.push(err)
+      }
+    }
+    setErrorMsgs(msg)
+  }, [updatingMutationError, creatingMutationError, getPoError, getPoProductsError])
+
   useEffect(() => {
     createNewPOCode()
   })
@@ -168,6 +195,7 @@ const CreateNewPo = (props) => {
   const searchProducts = createSearchFunction(filterProductOptions, setProductsSuggestions)
   const searchVendor = createSearchFunction(vendorOptions, setVendorSuggestions)
   const searchAgreement = createSearchFunction(agreementStatusOptions, setFilteredSuggestions)
+  const searchFromParty = createSearchFunction(fromParty, setFromPartySuggetions)
 
   const findProductVpID = (i, list) => {
     const currentVendor = Number(formik.values.vendor_vendor_id)
@@ -199,7 +227,6 @@ const CreateNewPo = (props) => {
 
       if (!itemsData) {
         formik.setErrors({ itemsLength: "⚠ Please select atleast one product" })
-        scrollToTop?.current?.scrollIntoView()
         return
       }
       console.log("data", data)
@@ -220,8 +247,8 @@ const CreateNewPo = (props) => {
         agreement,
       } = data
       const activePoProducts = purchase_order_products
-        .filter((ele) => ele.purchase_order_po_id === activeRow.po_id)
-        .map((ele) => ele.pop_id)
+        .filter((ele) => ele.purchase_order_po_id === activeRow?.po_id)
+        .map((ele) => ele?.pop_id)
 
       // const existingProductsPopIDs = [...itemList.map((ele) => ele.pop_id)]
       const newProductsPopIDs = itemList.map((ele) => ele.pop_id)
@@ -327,10 +354,11 @@ const CreateNewPo = (props) => {
                   mutations: `${data?.po_code} is Created`,
                   created_at: new Date().toString(),
                 })
+                setPriorList([])
+                setShowPriorList(false)
               },
             }
           )
-
           console.log("purchaseOrder: ", purchaseOrder)
           setPurchaseDialog(false)
           formik.resetForm()
@@ -339,12 +367,14 @@ const CreateNewPo = (props) => {
         }
       }
 
-      await refetch()
-      await refetchPoProducts()
+      refetchFuns?.forEach(async (ele) => await ele())
+
+      // await refetch()
+      // await refetchPoProducts()
     },
   })
   // console.log("formik.errors", formik.errors)
-  console.log("priorList", priorList)
+  //   console.log("priorList", priorList)
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
@@ -414,6 +444,8 @@ const CreateNewPo = (props) => {
           : "hidden scaleout animation-duration-200"
       }`}
     >
+      {creatingPO && <LoaderFullScreen />}
+      {UpdatingPO && <LoaderFullScreen />}
       <div className={`card`}>
         <form onSubmit={formik.handleSubmit} on className="p-fluid ">
           <h5>Create PO</h5>
@@ -435,8 +467,6 @@ const CreateNewPo = (props) => {
                   completeMethod={searchVendor}
                   field="name"
                   onChange={async (e) => {
-                    // console.log("name", e.value)
-
                     let vendor_vendor_id =
                       typeof e.value === "string" ? e.value : e.value?.vendor_id
                     let vendor = typeof e.value === "string" ? e.value : e.value?.name
@@ -524,6 +554,7 @@ const CreateNewPo = (props) => {
                   value={formik.values.agreement}
                   suggestions={filteredSuggestions}
                   completeMethod={searchAgreement}
+                  // forceSelection
                   dropdown
                   field="name"
                   // onChange={(e) => {
@@ -555,6 +586,37 @@ const CreateNewPo = (props) => {
             </div>
             <div className="field col-12 lg:col-4 mt-2">
               <div className="p-float-label">
+                <AutoComplete
+                  id="from_party"
+                  value={formik.values.from_party}
+                  suggestions={fromPartySuggetions}
+                  completeMethod={searchFromParty}
+                  dropdown
+                  field="name"
+                  onChange={async (e) => {
+                    let from_party = typeof e.value === "string" ? e.value : e.value.name
+
+                    await formik.setValues({
+                      ...formik.values,
+                      from_party,
+                    })
+                  }}
+                  aria-label="FromParty Options"
+                  dropdownAriaLabel="FromParty Options"
+                  className={classNames({ "p-invalid": isFormFieldValid("from_party") })}
+                />
+
+                <label
+                  htmlFor="from_party"
+                  className={classNames({ "p-error": isFormFieldValid("from_party") })}
+                >
+                  From Party
+                </label>
+              </div>
+              {getFormErrorMessage("from_party")}
+            </div>
+            {/* <div className="field col-12 lg:col-4 mt-2">
+              <div className="p-float-label">
                 <InputText
                   id="from_party"
                   value={formik.values.from_party}
@@ -570,7 +632,7 @@ const CreateNewPo = (props) => {
                 </label>
               </div>
               {getFormErrorMessage("from_party")}
-            </div>
+            </div> */}
             <div className="field col-12 lg:col-4 mt-2">
               <span className="p-float-label">
                 <InputText
@@ -657,11 +719,11 @@ const CreateNewPo = (props) => {
                       value={ele.product_name}
                       suggestions={ProductsSuggestions}
                       completeMethod={searchProducts}
-                      forceSelection
+                      //   forceSelection //
                       dropdown
                       field="name"
                       onChange={async (e) => {
-                        console.log("event understand", e)
+                        console.log("event understand", e.value)
                         let product_id = typeof e.value === "string" ? "" : e.value?.product_id
                         let name = typeof e.value === "string" ? e.value : e.value?.name
                         let price_per_unit = typeof e.value === "string" ? e.value : e.value?.Price
@@ -749,7 +811,8 @@ const CreateNewPo = (props) => {
                 setPurchaseDialog(false)
                 setItemList([initialItemState])
                 formik.resetForm()
-                // setShowPriorList(false)
+                setPriorList([])
+                setShowPriorList(false)
               }}
             />
           </div>

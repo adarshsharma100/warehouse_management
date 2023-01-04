@@ -9,6 +9,8 @@ const UpdateProduct = z.object({
   product_type: z.string().optional(),
   products_sku: z.string().optional(),
   product_unit: z.string().optional(),
+  good_stock: z.string(),
+  bad_stock: z.string(),
 })
 
 export default resolver.pipe(

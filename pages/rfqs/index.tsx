@@ -58,6 +58,7 @@ import { getAntiCSRFToken } from "@blitzjs/auth"
 import createNotifications_sent from "app/notifications_sents/mutations/createNotifications_sent"
 import { useCurrentUser } from "app/core/hooks/useCurrentUser"
 import { date } from "zod"
+import CreateNewPo from "components/CreateNewPo"
 
 const ITEMS_PER_PAGE = 100
 
@@ -159,26 +160,40 @@ export const RfqsList = () => {
   const [rfqDetails, setRfqDetails] = useState(initialRfqState)
   const [rfqEditState, setRfqEditState] = useState(false)
   const [activeRfqId, setActiveRfqId] = useState("")
-  const [productItemList, setProductItemList] = useState([
-    {
-      purchase_order_po_id: "",
-      purchase_order_purchase_order_status_pos_id: 1,
-      purchase_order_vendor_vendor_id: "",
-      vendor_products_vp_id: "",
-      vendor_products_vendor_vendor_id: "",
-      vendor_products_products_product_id: "",
-      quantity: "",
-      price_per_unit: "",
-      received_quantity: 0,
-      product_name: "",
-      vendor_unit_: "",
-      product_id: "",
-    },
-  ])
+  // const [productItemList, setProductItemList] = useState([
+  //   {
+  //     purchase_order_po_id: "",
+  //     purchase_order_purchase_order_status_pos_id: 1,
+  //     purchase_order_vendor_vendor_id: "",
+  //     vendor_products_vp_id: "",
+  //     vendor_products_vendor_vendor_id: "",
+  //     vendor_products_products_product_id: "",
+  //     quantity: "",
+  //     price_per_unit: "",
+  //     received_quantity: 0,
+  //     product_name: "",
+  //     vendor_unit_: "",
+  //     product_id: "",
+  //   },
+  // ])
 
   const [itemList, setItemList] = useState([
     { products_product_id: "", quantity: "", price_per_unit: "" },
   ])
+  const initialPoItemState = {
+    purchase_order_po_id: "",
+    purchase_order_purchase_order_status_pos_id: 1,
+    purchase_order_vendor_vendor_id: "",
+    vendor_products_vp_id: "",
+    vendor_products_vendor_vendor_id: "",
+    vendor_products_products_product_id: "",
+    quantity: "",
+    price_per_unit: "",
+    received_quantity: 0,
+    products_product_id: "",
+    product_name: "",
+  }
+  const [poItemList, setPoItemList] = useState([initialPoItemState])
 
   const [activeRfq, setActiveRfq] = useState([])
   const [purchaseDetails, setPurchaseDetails] = useState({
@@ -246,11 +261,11 @@ export const RfqsList = () => {
         }
       })
 
-    setProductItemList(activeProductsdetails)
+    // setProductItemList(activeProductsdetails)
   }, [vendorChangeState])
 
   const tableRFQ = rfqs.map((ele) => {
-    console.log(ele.created_at)
+    // console.log(ele.created_at)
     return {
       ...ele,
       created_at: moment(ele.createdAt).format("DD-MM-YYYY, HH:MM"),
@@ -296,35 +311,37 @@ export const RfqsList = () => {
     setItemList(itemList.filter((data, i) => index !== i))
   }
   const [itemsList, setItemsList] = useState<any>(null)
-  const addFieldsPurchase = () => {
-    let newfield = {
-      purchase_order_po_id: "",
-      purchase_order_purchase_order_status_pos_id: 1,
-      purchase_order_vendor_vendor_id: "",
-      vendor_products_vp_id: "",
-      vendor_products_vendor_vendor_id: "",
-      vendor_products_products_product_id: "",
-      quantity: "",
-      price_per_unit: "",
-      received_quantity: 0,
-      product_name: "",
-      vendor_unit_: "",
-      product_id: "",
-    }
+  // const addFieldsPurchase = () => {
+  //   let newfield = {
+  //     purchase_order_po_id: "",
+  //     purchase_order_purchase_order_status_pos_id: 1,
+  //     purchase_order_vendor_vendor_id: "",
+  //     vendor_products_vp_id: "",
+  //     vendor_products_vendor_vendor_id: "",
+  //     vendor_products_products_product_id: "",
+  //     quantity: "",
+  //     price_per_unit: "",
+  //     received_quantity: 0,
+  //     product_name: "",
+  //     vendor_unit_: "",
+  //     product_id: "",
+  //   }
 
-    setProductItemList([...productItemList, newfield])
-  }
-  const removeFieldsPurchase = (index) => {
-    let data = [...productItemList]
-    const data2 = data.splice(index, 1)
+  //   setProductItemList([...productItemList, newfield])
+  // }
+  // const removeFieldsPurchase = (index) => {
+  //   let data = [...productItemList]
+  //   const data2 = data.splice(index, 1)
 
-    setProductItemList(data2)
-  }
+  //   setProductItemList(data2)
+  // }
   const handleFormChange = (e: any, i: number) => {
     let data = [...itemList]
     e.target ? (data[i][e.target.name] = e.value) : (data[i][e.originalEvent.target.name] = e.value)
     setItemList(data)
   }
+
+  // console.log("tableRfqProducts", tableRfqProducts[0])
 
   const setRfqItemList = () => {
     const active = tableRfqProducts
@@ -340,6 +357,23 @@ export const RfqsList = () => {
         }
       })
     setItemList(active)
+  }
+  const setPoItems = () => {
+    const active = tableRfqProducts
+      .filter(({ rfq_id }) => {
+        return rfq_id === activeRow.id
+      })
+      .map(({ products, quantity, price_per_unit, rfq_products_id, product_name }) => {
+        return {
+          ...initialPoItemState,
+          products_product_id: products.product_id,
+          quantity,
+          price_per_unit,
+          rfq_products_id,
+          product_name,
+        }
+      })
+    setPoItemList(active)
   }
 
   // console.log("formik.errors",)
@@ -411,9 +445,10 @@ export const RfqsList = () => {
           label: "Create PO",
           icon: "pi pi-plus",
           command: () => {
-            setPurchaseDialog(true)
+            setPoItems()
             setRfqItemList()
             scrollToRfq?.current?.scrollIntoView()
+            setPurchaseDialog(true)
           },
         },
         {
@@ -458,7 +493,7 @@ export const RfqsList = () => {
       ],
     },
   ]
-
+  // console.log("poItemList", poItemList)
   const rowExpansionTemplate = (data) => {
     return (
       <div className="w-full expandTable">
@@ -1223,6 +1258,22 @@ export const RfqsList = () => {
         newRFQCode={newRFQCode}
         setRfqDetails={setRfqDetails}
         rfqDetails={rfqDetails}
+      />
+
+      <CreateNewPo
+        products={products}
+        purchaseDialog={purchaseDialog}
+        setPurchaseDialog={setPurchaseDialog}
+        vendor_products={vendor_products}
+        toast={toast}
+        vendors={vendors}
+        purchaseDetails={purchaseDetails}
+        itemList={poItemList}
+        setItemList={setPoItemList}
+        initialItemState={initialPoItemState}
+        setErrorMsgs={setRfqErrorMsgs}
+        // activeRow={activeRow}
+        // poEditState={poEditState}
       />
       <CreatePo
         rfqData={activeRow}

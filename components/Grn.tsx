@@ -121,14 +121,20 @@ function GRN({ currentGrn, prefixes, poDetails, refetch }) {
             header="QC-Status"
             // className="text-center"
           />
+
           <Column
             field="quantity"
             header="Recevied"
             // className="text-center"
           />
           <Column
-            // field=""
-            header="Rejected"
+            field=""
+            header="Good-Stock"
+            // className="text-center"
+          />
+          <Column
+            field=""
+            header="Bad-stock"
             // className="text-center"
           />
           <Column

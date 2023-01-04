@@ -26,7 +26,7 @@ import { InputNumber } from "primereact/inputnumber"
 import * as Yup from "yup"
 import classNames from "classnames"
 import { AutoComplete } from "primereact/autocomplete"
-import { createCSVFormat, tsuccess } from "app/constants"
+import { createCSVFormat, createSearchFunction, tsuccess } from "app/constants"
 import ErrorCard from "components/ErrorCard"
 import LoaderFullScreen from "components/LoaderFullScreen"
 
@@ -64,6 +64,15 @@ export const ProductsList = () => {
   const toast = useRef(null)
   const scrolToTop = useRef<HTMLDivElement>(null)
   const clearUpload = useRef<FileUpload>(null)
+
+  const [unitSuggestions, setUnitSuggestions] = useState<any>(null)
+
+  const units = ["Pc", "Combo", "set", "kit"]
+  const unitOptions = units.map((ele) => ({
+    name: ele,
+  }))
+
+  const searchUnits = createSearchFunction(unitOptions, setUnitSuggestions)
 
   const onBasicUpload = async (e) => {
     let index = 2
@@ -172,7 +181,7 @@ export const ProductsList = () => {
       formik.resetForm()
     },
   })
-  console.log(activeRowData)
+  // console.log(activeRowData)
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
@@ -389,8 +398,8 @@ export const ProductsList = () => {
                 { type: "text", label: "Name", field: "name" },
                 { type: "text", label: "Product SKU", field: "products_sku" },
                 { type: "text", label: "Product Type", field: "product_type" },
-                { type: "text", label: "Product Unit", field: "product_unit" },
-                { type: "area", label: "Description", field: "description" },
+                // { type: "text", label: "Product Unit", field: "product_unit" },
+                // { type: "area", label: "Description", field: "description" },
               ].map((ele, i) => {
                 if (ele.type === "text") {
                   return (
@@ -415,30 +424,83 @@ export const ProductsList = () => {
                     </div>
                   )
                 } else {
-                  return (
-                    <div key={`${ele.field}${i}`} className="field col-12 mt-4">
-                      <span className="p-float-label">
-                        <InputTextarea
-                          id={ele.field}
-                          rows={5}
-                          name={ele.field}
-                          value={formik.values.description}
-                          onChange={formik.handleChange}
-                          autoFocus
-                          className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
-                        />
-                        <label
-                          htmlFor={ele.field}
-                          className={classNames({ "p-error": isFormFieldValid(ele.field) })}
-                        >
-                          {ele.label}
-                        </label>
-                      </span>
-                      {getFormErrorMessage(ele.field)}
-                    </div>
-                  )
+                  // return (
+                  //   <div key={`${ele.field}${i}`} className="field col-12 mt-4">
+                  //     <span className="p-float-label">
+                  //       <InputTextarea
+                  //         id={ele.field}
+                  //         rows={5}
+                  //         name={ele.field}
+                  //         value={formik.values.description}
+                  //         onChange={formik.handleChange}
+                  //         autoFocus
+                  //         className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
+                  //       />
+                  //       <label
+                  //         htmlFor={ele.field}
+                  //         className={classNames({ "p-error": isFormFieldValid(ele.field) })}
+                  //       >
+                  //         {ele.label}
+                  //       </label>
+                  //     </span>
+                  //     {getFormErrorMessage(ele.field)}
+                  //   </div>
+                  // )
                 }
               })}
+              <div className="field col-12 lg:col-3 mt-4">
+                <div className="p-float-label">
+                  <AutoComplete
+                    id="product_unit"
+                    // disabled={editState}
+                    value={formik.values.product_unit}
+                    dropdown
+                    forceSelection
+                    suggestions={unitSuggestions}
+                    completeMethod={searchUnits}
+                    field="name"
+                    onChange={async (e) => {
+                      let product_unit = typeof e.value === "string" ? e.value : e.value?.name
+
+                      await formik.setValues({
+                        ...formik.values,
+                        product_unit,
+                      })
+                    }}
+                    aria-label="Product Unit"
+                    dropdownAriaLabel="Product Units"
+                    className={classNames({ "p-invalid": isFormFieldValid("product_unit") })}
+                  />
+
+                  <label
+                    htmlFor="product_unit"
+                    className={classNames({ "p-error": isFormFieldValid("product_unit") })}
+                  >
+                    Product Unit
+                  </label>
+                </div>
+                {getFormErrorMessage("product_unit")}
+              </div>
+              <div className="field col-12 mt-4">
+                <span className="p-float-label">
+                  <InputTextarea
+                    id={"description"}
+                    rows={5}
+                    name={"description"}
+                    value={formik.values.description}
+                    onChange={formik.handleChange}
+                    autoFocus
+                    className={classNames({ "p-invalid": isFormFieldValid("description") })}
+                  />
+                  <label
+                    htmlFor={"description"}
+                    className={classNames({ "p-error": isFormFieldValid("description") })}
+                  >
+                    Description
+                  </label>
+                </span>
+                {getFormErrorMessage("description")}
+              </div>
             </div>
             <div className="flex mt-4">
               <Button type="submit" className="mr-2 " label={productEditState ? "UPDATE" : "ADD"} />

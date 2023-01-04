@@ -35,6 +35,8 @@ model inventory_products {
   quantity             Int      @default(0)
   products_product_id  Int
   created_at           DateTime @default(now()) @db.DateTime(0)
+  good_stock           Int?
+  bad_stock            Int?     @default(0)
   products             products @relation(fields: [products_product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_products1")
 
   @@id([inventory_product_id, products_product_id])

@@ -5,17 +5,17 @@ const LoaderFullScreen = () => {
   return (
     <div
       style={{
-        position: "fixed",
-        width: "100vw",
-        height: "100vh",
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
         zIndex: 9999,
         background: "rgba(0, 0, 0, 0.7)",
         transition: "opacity 0.2s",
       }}
     >
-      <span
-        style={{ position: "absolute", top: "40%", left: "40%", transform: " translate(-50%)" }}
-      >
+      <span style={{ position: "absolute", top: "50%", left: "50%" }}>
         <ProgressSpinner />{" "}
       </span>
     </div>

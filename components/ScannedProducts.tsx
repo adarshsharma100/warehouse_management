@@ -54,7 +54,7 @@ const ScannedProducts = ({
     setProductsList(productsList.filter((data, i) => index !== i))
   }
 
-  console.log("items", items)
+  // console.log("items", items)
 
   useEffect(() => {
     const checkForEmptyList = productsList.filter((ele, i) => ele.product_id).length ? true : false
