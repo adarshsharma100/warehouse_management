@@ -43,7 +43,15 @@ export const AppTopbar = (props) => {
   }
 
   const notificationFooter = (
-    <Button type="text" icon="pi pi-plus" label="Load" onClick={() => moreData.current.load()} />
+    <Button
+      type="text"
+      icon="pi pi-plus"
+      label="Load"
+      onClick={(e) => {
+        e.stopPropagation()
+        moreData.current.load()
+      }}
+    />
   )
 
   useEffect(() => {
@@ -116,7 +124,7 @@ export const AppTopbar = (props) => {
               icon="pi pi-exclamation-triangle"
             /> */}
             <div
-              className={`card w-3 absolute ${
+              className={`card lg:w-3 md:w-24rem absolute ${
                 visible ? "visible " : "hidden"
               } max-h-30rem overflow-scroll	`}
               style={{
@@ -136,7 +144,8 @@ export const AppTopbar = (props) => {
 
             <i
               className="  pi pi-bell mr-4 p-text-secondary p-overlay-badge"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation()
                 setVisible((prev) => !prev)
               }} // {async () => {
               //   setAlertCount(0)

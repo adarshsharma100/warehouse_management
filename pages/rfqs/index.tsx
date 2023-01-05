@@ -349,7 +349,7 @@ export const RfqsList = () => {
   const statuses = ["1", "0"]
 
   const statusFilterTemplate = (options) => {
-    console.log(options)
+    // console.log(options)
     return (
       <Dropdown
         value={options.value}
@@ -1150,84 +1150,86 @@ export const RfqsList = () => {
               </div>
               {itemList.map((ele, i) => (
                 <>
-                  <div key={`RFQ-product-${i}`} className="field col-12 lg:col-7 mt-2">
-                    <Dropdown
-                      name="products_product_id"
-                      // disabled={editState}
-                      optionLabel="name"
-                      filter
-                      showClear
-                      filterBy="name"
-                      value={ele.products_product_id}
-                      options={productOptions}
-                      onChange={async (e) => {
-                        await handleFormChange(e, i)
-                        const productPrice = products.filter(
-                          (item) => item.product_id === e.value
-                        )[0]?.Price
-                        let data = [...itemList]
-                        e.target
-                          ? (data[i].price_per_unit = productPrice)
-                          : (data[i].price_per_unit = 0)
-                        setItemList(data)
-                        if (i === 0) {
-                          const itemsLength = e.value ? true : false
-                          await formik.setValues({ ...formik.values, itemsLength })
-                        }
-                      }}
-                      placeholder="Select Product"
-                    />
-                  </div>
-                  <div className="field col-12 lg:col-2 mt-2">
-                    <span className="p-float-label">
-                      <InputNumber
-                        id={`product-prixe-${i}`}
-                        name="price_per_unit"
-                        value={Number(ele.price_per_unit)}
-                        onChange={(e) => handleFormChange(e, i)}
-                        // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                  <div className="col-12 grid" key={`RFQ-product-${i}`}>
+                    <div className="field col-12 lg:col-7 mt-2">
+                      <Dropdown
+                        name="products_product_id"
+                        // disabled={editState}
+                        optionLabel="name"
+                        filter
+                        showClear
+                        filterBy="name"
+                        value={ele.products_product_id}
+                        options={productOptions}
+                        onChange={async (e) => {
+                          await handleFormChange(e, i)
+                          const productPrice = products.filter(
+                            (item) => item.product_id === e.value
+                          )[0]?.Price
+                          let data = [...itemList]
+                          e.target
+                            ? (data[i].price_per_unit = productPrice)
+                            : (data[i].price_per_unit = 0)
+                          setItemList(data)
+                          if (i === 0) {
+                            const itemsLength = e.value ? true : false
+                            await formik.setValues({ ...formik.values, itemsLength })
+                          }
+                        }}
+                        placeholder="Select Product"
                       />
-                      <label
-                      // className={classNames({ "p-error": isFormFieldValid("name") })}
-                      >
-                        Target price per unit
-                      </label>
-                    </span>
-                    {/* {getFormErrorMessage("name")} */}
-                  </div>
-                  <div className="field col-12 lg:col-2 mt-2">
-                    <span className="p-float-label">
-                      <InputNumber
-                        id={`product-qty-${i}`}
-                        name="quantity"
-                        value={Number(ele.quantity)}
-                        onChange={(e) => handleFormChange(e, i)}
-                        // className={classNames({ "p-invalid": isFormFieldValid("name") })}
-                      />
-                      <label
-                      // className={classNames({ "p-error": isFormFieldValid("name") })}
-                      >
-                        Quantity
-                      </label>
-                    </span>
-                    {/* {getFormErrorMessage("name")} */}
-                  </div>
-                  <div className="field col-6 lg:col-1 mt-2">
-                    <span className="p-buttonset">
-                      {i === itemList.length - 1 && (
-                        <Button type="button" label="+" onClick={addFields} />
-                      )}
-                      {itemList.length > 1 && (
-                        <Button
-                          type="button"
-                          label="-"
-                          className="p-button-secondary"
-                          onClick={(e) => {
-                            removeFields(i)
-                          }}
+                    </div>
+                    <div className="field col-12 lg:col-2 mt-2">
+                      <span className="p-float-label">
+                        <InputNumber
+                          id={`product-prixe-${i}`}
+                          name="price_per_unit"
+                          value={Number(ele.price_per_unit)}
+                          onChange={(e) => handleFormChange(e, i)}
+                          // className={classNames({ "p-invalid": isFormFieldValid("name") })}
                         />
-                      )}
-                    </span>
+                        <label
+                        // className={classNames({ "p-error": isFormFieldValid("name") })}
+                        >
+                          Target price per unit
+                        </label>
+                      </span>
+                      {/* {getFormErrorMessage("name")} */}
+                    </div>
+                    <div className="field col-12 lg:col-2 mt-2">
+                      <span className="p-float-label">
+                        <InputNumber
+                          id={`product-qty-${i}`}
+                          name="quantity"
+                          value={Number(ele.quantity)}
+                          onChange={(e) => handleFormChange(e, i)}
+                          // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                        />
+                        <label
+                        // className={classNames({ "p-error": isFormFieldValid("name") })}
+                        >
+                          Quantity
+                        </label>
+                      </span>
+                      {/* {getFormErrorMessage("name")} */}
+                    </div>
+                    <div className="field col-6 lg:col-1 mt-2">
+                      <span className="p-buttonset">
+                        {i === itemList.length - 1 && (
+                          <Button type="button" label="+" onClick={addFields} />
+                        )}
+                        {itemList.length > 1 && (
+                          <Button
+                            type="button"
+                            label="-"
+                            className="p-button-secondary"
+                            onClick={(e) => {
+                              removeFields(i)
+                            }}
+                          />
+                        )}
+                      </span>
+                    </div>
                   </div>
                 </>
               ))}
