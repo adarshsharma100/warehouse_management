@@ -59,6 +59,7 @@ import createNotifications_sent from "app/notifications_sents/mutations/createNo
 import { useCurrentUser } from "app/core/hooks/useCurrentUser"
 import { date } from "zod"
 import CreateNewPo from "components/CreateNewPo"
+import { FilterMatchMode, FilterOperator } from "primereact/api"
 
 const ITEMS_PER_PAGE = 100
 
@@ -268,8 +269,8 @@ export const RfqsList = () => {
     // console.log(ele.created_at)
     return {
       ...ele,
-      created_at: moment(ele.createdAt).format("DD-MM-YYYY, HH:MM"),
-      updated_at: moment(ele.updatedAt).format("DD-MM-YYYY, HH:MM"),
+      // created_at: moment(ele.createdAt).format("DD-MM-YYYY, HH:MM"),
+      // updated_at: moment(ele.updatedAt).format("DD-MM-YYYY, HH:MM"),
       // name: ele.products.name,
     }
   })
@@ -302,6 +303,108 @@ export const RfqsList = () => {
   const [vendorOptions, setVendorOptions] = useState(options)
   const [vendorEmailOptions, setVendorEmailOptions] = useState(optionsForVendorEmails)
   const [vendorEmailSuggestions, setVendorEmailSuggestions] = useState<any>(null)
+
+  const [filters, setFilters] = useState({})
+  const [globalFilterValue, setGlobalFilterValue] = useState("")
+
+  const clearFilter = () => {
+    initFilters()
+  }
+  const onGlobalFilterChange = (e) => {
+    const value = e.target.value
+    let _filters1 = { ...filters }
+    _filters1["global"].value = value
+
+    setFilters(_filters1)
+    setGlobalFilterValue(value)
+  }
+  const initFilters = () => {
+    setFilters({
+      global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+
+      rfq_code: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      rfq_description: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      updatedAt: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.DATE_IS }],
+      },
+      createdAt: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.DATE_IS }],
+      },
+      active: {
+        operator: FilterOperator.OR,
+        constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }],
+      },
+    })
+    setGlobalFilterValue("")
+  }
+
+  const statuses = ["1", "0"]
+
+  const statusFilterTemplate = (options) => {
+    console.log(options)
+    return (
+      <Dropdown
+        value={options.value}
+        options={statuses}
+        onChange={(e) => options.filterCallback(e.value, options.index)}
+        itemTemplate={statusItemTemplate}
+        placeholder="Select a Status"
+        className="p-column-filter"
+        showClear
+      />
+    )
+  }
+  const statusItemTemplate = (option) => {
+    return (
+      <span className={`badge status-${option === "1" ? "active" : "inactive"}`}>
+        {option === "1" ? "Active" : "Inactive"}
+      </span>
+    )
+  }
+
+  const dateFilterTemplate = (options) => {
+    return (
+      <Calendar
+        value={options.value}
+        onChange={(e) => options.filterCallback(e.value, options.index)}
+        dateFormat="dd/mm/yy"
+        placeholder="dd/mm/yyyy"
+        mask="99/99/9999"
+      />
+    )
+  }
+
+  const renderHeader = () => {
+    return (
+      <div className="flex justify-content-between">
+        <Button
+          type="button"
+          icon="pi pi-filter-slash"
+          label="Clear"
+          className="p-button-outlined"
+          onClick={clearFilter}
+        />
+        <span className="p-input-icon-left">
+          <i className="pi pi-search" />
+          <InputText
+            value={globalFilterValue}
+            onChange={onGlobalFilterChange}
+            placeholder="Keyword Search"
+          />
+        </span>
+      </div>
+    )
+  }
+  const header1 = renderHeader()
+
   const addFields = () => {
     let newfield = { products_product_id: "", quantity: "", price_per_unit: "" }
 
@@ -768,6 +871,10 @@ export const RfqsList = () => {
     createNewRFQCode()
   })
 
+  useEffect(() => {
+    initFilters()
+  }, [])
+
   // console.log("values", typeof new Date())
 
   // console.log("newcode", newRFQCode)
@@ -1132,101 +1239,7 @@ export const RfqsList = () => {
                 type="submit"
                 className="mr-2"
                 label={rfqEditState ? "UPDATE" : "ADD"}
-                onClick={async (e) => {
-                  // const removeEmptyItems = itemList.filter((prod) => prod?.products_product_id)
-                  // const itemsList = removeEmptyItems.length ? true : false
-                  // await formik.setValues({ ...formik.values, itemsList })
-                  //   e.preventDefault()
-                  //   if (rfqEditState) {
-                  //     const currentProducts = [
-                  //       ...itemList.map(({ rfq_products_id }) => rfq_products_id),
-                  //     ]
-                  //     const newProductList = itemList.filter((item) => !item.rfq_products_id)
-                  //     const removemail = { ...rfqDetails }
-                  //     const delProductList = currentRfqitemsID.filter(
-                  //       (x) => !itemList.map(({ rfq_products_id }) => rfq_products_id).includes(x)
-                  //     )
-                  //     delete removemail.rfq_email
-                  //     const data = await updateRFQMutation({
-                  //       ...removemail,
-                  //       // expected_dod: rfqDetails.expected_dod.toString(),
-                  //       active: 1,
-                  //       rfq_products: {
-                  //         create: newProductList.map((ele) => ({
-                  //           price_per_unit: Number(ele.price_per_unit),
-                  //           quantity: Number(ele.quantity),
-                  //           products: {
-                  //             connect: {
-                  //               product_id: Number(ele.products_product_id),
-                  //             },
-                  //           },
-                  //         })),
-                  //         updateMany: itemList.map((ele) => ({
-                  //           where: {
-                  //             rfq_products_id: ele.rfq_products_id,
-                  //           },
-                  //           data: {
-                  //             price_per_unit: Number(ele.price_per_unit),
-                  //             quantity: Number(ele.quantity),
-                  //           },
-                  //         })),
-                  //         deleteMany: {
-                  //           rfq_products_id: {
-                  //             in: delProductList,
-                  //           },
-                  //         },
-                  //       },
-                  //       rfq_sentto: {
-                  //         create: rfqDetails?.rfq_email?.length
-                  //           ? rfqDetails?.rfq_email?.map((item, i) => ({ email: item }))
-                  //           : undefined,
-                  //       },
-                  //     })
-                  //     console.log(data)
-                  //     setRfqDialog(!rfqDialog)
-                  //     await refetch()
-                  //     fetchRfqProducts()
-                  //   } else {
-                  //     const removeEmptyItems = itemList.filter((prod) => prod?.products_product_id)
-                  //     if (removeEmptyItems.length === 0) {
-                  //       setRfqErrorMsgs([
-                  //         ...rfqErrorMsgs,
-                  //         {
-                  //           message:
-                  //             "You should at least select 1 product from the select products List ",
-                  //         },
-                  //       ])
-                  //       return
-                  //     }
-                  //     try {
-                  //       const newRfqData = await createRFQMutation({
-                  //         ...rfqDetails,
-                  //         active: 1,
-                  //         rfq_products: {
-                  //           create: removeEmptyItems.map((ele) => ({
-                  //             price_per_unit: Number(ele.price_per_unit),
-                  //             quantity: Number(ele.quantity),
-                  //             products: {
-                  //               connect: {
-                  //                 product_id: Number(ele.products_product_id),
-                  //               },
-                  //             },
-                  //           })),
-                  //         },
-                  //         rfq_sentto: {
-                  //           create: rfqDetails?.rfq_email.length
-                  //             ? rfqDetails?.rfq_email?.map((item, i) => ({ email: item }))
-                  //             : undefined,
-                  //         },
-                  //       })
-                  //       setRfqDialog(!rfqDialog)
-                  //       await refetch()
-                  //       await fetchRfqProducts()
-                  //     } catch (error) {
-                  //       console.log(error)
-                  //     }
-                  //   }
-                }}
+                onClick={async (e) => {}}
               />
               <Button
                 className="mr-2 p-button-secondary"
@@ -1275,7 +1288,7 @@ export const RfqsList = () => {
         // activeRow={activeRow}
         // poEditState={poEditState}
       />
-      <CreatePo
+      {/* <CreatePo
         rfqData={activeRow}
         productOptions={productOptions}
         removeFields={removeFields}
@@ -1284,7 +1297,7 @@ export const RfqsList = () => {
         purchaseDialog={purchaseDialog}
         setPurchaseDialog={setPurchaseDialog}
         prefixes={prefixes}
-      />
+      /> */}
       <div className="col-12">
         <div className="card">
           <DataTable
@@ -1303,6 +1316,10 @@ export const RfqsList = () => {
             expandedRows={expandedRows}
             onRowToggle={(e) => setExpandedRows(e.data)}
             rowExpansionTemplate={rowExpansionTemplate}
+            filters={filters}
+            header={header1}
+            filterDisplay="menu"
+            emptyMessage="No Results found."
           >
             <Column expander={allowExpansion} style={{ width: "3em" }} />
             {/* <Column
@@ -1314,11 +1331,15 @@ export const RfqsList = () => {
             <Column
               field="rfq_code"
               header="Code"
+              filter
+              filterPlaceholder="Search by Code"
               // className="text-center"
             />
             <Column
               field="rfq_description"
               header="Description"
+              filter
+              filterPlaceholder="Search by Description"
               // className="text-center"
             />
             {/* <Column
@@ -1330,13 +1351,23 @@ export const RfqsList = () => {
             /> */}
 
             <Column
-              field="created_at"
               header="Created at"
+              filterField="createdAt"
+              dataType="date"
+              body={(rowData) => moment(new Date(rowData.createdAt)).format("DD-MM-YYYY, HH:MM")}
+              filter
+              filterElement={dateFilterTemplate}
+
               // className="text-center"
             />
             <Column
-              field="updated_at"
               header="Updated at"
+              filterField="updatedAt"
+              dataType="date"
+              body={(rowData) => moment(new Date(rowData.updatedAt)).format("DD-MM-YYYY, HH:MM")}
+              filter
+              filterElement={dateFilterTemplate}
+
               // className="text-center"
             />
             <Column
@@ -1349,6 +1380,8 @@ export const RfqsList = () => {
                   </span>
                 )
               }}
+              filter
+              filterElement={statusFilterTemplate}
             />
             <Column
               // field="vendor_gstin"

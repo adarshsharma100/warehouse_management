@@ -33,6 +33,8 @@ import { useFormik } from "formik"
 import * as Yup from "yup"
 import ErrorComponent from "components/ErrorComponent"
 import LoaderFullScreen from "components/LoaderFullScreen"
+import { FilterMatchMode, FilterOperator } from "primereact/api"
+import { Dropdown } from "primereact/dropdown"
 const ITEMS_PER_PAGE = 100
 
 export const VendorsList = () => {
@@ -74,6 +76,111 @@ export const VendorsList = () => {
       </div>
     )
   }
+
+  const [filters, setFilters] = useState({})
+  const [globalFilterValue, setGlobalFilterValue] = useState("")
+
+  const clearFilter = () => {
+    initFilters()
+  }
+  const onGlobalFilterChange = (e) => {
+    const value = e.target.value
+    let _filters1 = { ...filters }
+    _filters1["global"].value = value
+
+    setFilters(_filters1)
+    setGlobalFilterValue(value)
+  }
+  const initFilters = () => {
+    setFilters({
+      global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+
+      vendor: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      vendor_code: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      vendor_email: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      vendor_city: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      vendor_state: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      vendor_contact: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      vendor_gstin: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      address: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      status: {
+        operator: FilterOperator.OR,
+        constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }],
+      },
+    })
+    setGlobalFilterValue("")
+  }
+  const statuses = [true, false]
+
+  const statusFilterTemplate = (options) => {
+    console.log(options)
+    return (
+      <Dropdown
+        value={options.value}
+        options={statuses}
+        onChange={(e) => options.filterCallback(e.value, options.index)}
+        itemTemplate={statusItemTemplate}
+        placeholder="Select a Status"
+        className="p-column-filter"
+        showClear
+      />
+    )
+  }
+  const statusItemTemplate = (option) => {
+    console.log("option-temp", option)
+    return (
+      <span className={`badge status-${option ? "active" : "inactive"}`}>
+        {option ? "Active" : "Inactive"}
+      </span>
+    )
+  }
+
+  const renderHeader = () => {
+    return (
+      <div className="flex justify-content-between">
+        <Button
+          type="button"
+          icon="pi pi-filter-slash"
+          label="Clear"
+          className="p-button-outlined"
+          onClick={clearFilter}
+        />
+        <span className="p-input-icon-left">
+          <i className="pi pi-search" />
+          <InputText
+            value={globalFilterValue}
+            onChange={onGlobalFilterChange}
+            placeholder="Keyword Search"
+          />
+        </span>
+      </div>
+    )
+  }
+  const header1 = renderHeader()
   const toast = useRef(null)
   const scrollToTop = useRef<HTMLDivElement>(null)
 
@@ -247,6 +354,10 @@ export const VendorsList = () => {
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
+
+  useEffect(() => {
+    initFilters()
+  }, [])
 
   return (
     <div className="grid w-full mr-0" ref={scrollToTop}>
@@ -458,6 +569,9 @@ export const VendorsList = () => {
             // rows={PAGINATION_VARIABLES.rows}
             // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
             // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
+            filters={filters}
+            header={header1}
+            filterDisplay="menu"
           >
             {/* <Column
           field="vendor_id"
@@ -467,47 +581,59 @@ export const VendorsList = () => {
             <Column
               field="vendor"
               header="Vendor"
+              filter
+              filterPlaceholder="Search by Vendor"
               // className="text-center"
               // className="hidden"
             />
             <Column
               field="vendor_code"
               header="Code"
+              filter
+              filterPlaceholder="Search by Code"
               // className="text-center"
             />
-            {/* <Column
-          field="vendor_sku"
-          header="Vendor Sku"
-          // className="text-center"
-        /> */}
+
             <Column
               field="vendor_email"
               header="Vendor Email"
+              filter
+              filterPlaceholder="Search by Email"
               // className="text-center"
             />
             <Column
               field="vendor_city"
               header="Vendor City"
+              filter
+              filterPlaceholder="Search by City"
               // className="text-center"
             />
             <Column
               field="vendor_state"
               header="Vendor State"
+              filter
+              filterPlaceholder="Search by State"
               // className="text-center"
             />
             <Column
               field="vendor_contact"
               header="Vendor Contact"
+              filter
+              filterPlaceholder="Search by Contact"
               // className="text-center"
             />
             <Column
               field="vendor_gstin"
               header="Vendor GSTIN"
+              filter
+              filterPlaceholder="Search by GSTIN No."
               // className="text-center"
             />
             <Column
               field="address"
               header="Address"
+              filter
+              filterPlaceholder="Search by Address"
               // className="text-center"
             />
             <Column
@@ -524,13 +650,15 @@ export const VendorsList = () => {
               field="status"
               header="Status"
               body={(rowData) => {
-                // console.log(`${rowData.vendor_code}`, rowData)
+                console.log("rowData", rowData.status)
                 return (
                   <span className={`badge status-${rowData.status ? "active" : "inactive"}`}>
                     {rowData.status ? "Active" : "Inactive"}
                   </span>
                 )
               }}
+              filter
+              filterElement={statusFilterTemplate}
               // className="text-center"
             />
             <Column

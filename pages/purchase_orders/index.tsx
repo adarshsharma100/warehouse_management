@@ -56,6 +56,7 @@ import { useSession } from "@blitzjs/auth"
 import { Ctx } from "blitz"
 import { useCurrentUser } from "app/core/hooks/useCurrentUser"
 import CreateNewPo from "components/CreateNewPo"
+import { FilterMatchMode, FilterOperator } from "primereact/api"
 
 const ITEMS_PER_PAGE = 100
 
@@ -206,10 +207,10 @@ export const Purchase_ordersList = () => {
       ...ele,
       approved_on: moment(ele.approved_on).format("DD-MM-YYYY, HH:MM"),
       created_at: moment(ele.created_at).format("DD-MM-YYYY, HH:MM"),
-      expected_delivery: moment(new Date(ele.expected_delivery)).format("DD-MM-YYYY"),
-      expiry_date: moment(new Date(ele.expiry_date)).format("DD-MM-YYYY"),
-      updated_on: moment(ele.updated_on).format("DD-MM-YYYY, HH:MM"),
-      po_status: ele.purchase_order_status.pos_name,
+      // expected_delivery: moment(new Date(ele.expected_delivery)).format("DD-MM-YYYY"),
+      // expiry_date: moment(new Date(ele.expiry_date)).format("DD-MM-YYYY"),
+      // updated_on: moment(ele.updated_on).format("DD-MM-YYYY, HH:MM"),
+      // po_status: ele.purchase_order_status.pos_name,
       vendor: ele.vendor.vendor,
     }
   })
@@ -385,7 +386,7 @@ export const Purchase_ordersList = () => {
     }
   })
 
-  const [expandedRows, setExpandedRows] = useState(null)
+  const [expandedRows, setExpandedRows] = useState()
 
   const findProductVpID = (i, list) => {
     const currentVendor = Number(formik.values.vendor_vendor_id)
@@ -595,6 +596,95 @@ export const Purchase_ordersList = () => {
 
   const [filteredSuggestions, setFilteredSuggestions] = useState<any>(null)
 
+  const [filters, setFilters] = useState(null)
+  const [globalFilterValue, setGlobalFilterValue] = useState("")
+
+  const clearFilter = () => {
+    initFilters()
+  }
+  const onGlobalFilterChange = (e) => {
+    const value = e.target.value
+    let _filters1 = { ...filters }
+    _filters1["global"].value = value
+
+    setFilters(_filters1)
+    setGlobalFilterValue(value)
+  }
+  const initFilters = () => {
+    setFilters({
+      global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+
+      po_code: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      po_description: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      vendor: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      po_status: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      from_party: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      agreement_status: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      expected_delivery: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.DATE_IS }],
+      },
+      updated_on: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.DATE_IS }],
+      },
+    })
+    setGlobalFilterValue("")
+  }
+
+  const dateFilterTemplate = (options) => {
+    return (
+      <Calendar
+        value={options.value}
+        onChange={(e) => options.filterCallback(e.value, options.index)}
+        dateFormat="dd/mm/yy"
+        placeholder="dd/mm/yyyy"
+        mask="99/99/9999"
+      />
+    )
+  }
+
+  const renderHeader = () => {
+    return (
+      <div className="flex justify-content-between">
+        <Button
+          type="button"
+          icon="pi pi-filter-slash"
+          label="Clear"
+          className="p-button-outlined"
+          onClick={clearFilter}
+        />
+        <span className="p-input-icon-left">
+          <i className="pi pi-search" />
+          <InputText
+            value={globalFilterValue}
+            onChange={onGlobalFilterChange}
+            placeholder="Keyword Search"
+          />
+        </span>
+      </div>
+    )
+  }
+  const header1 = renderHeader()
+
   const searchAgreement = (event: { query: string }) => {
     setTimeout(() => {
       let _filteredSuggestions
@@ -772,8 +862,6 @@ export const Purchase_ordersList = () => {
       await refetchPoProducts()
     },
   })
-  // console.log("formik.errors", formik.errors)
-  // console.log("formik.values", formik.values)
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
@@ -819,34 +907,12 @@ export const Purchase_ordersList = () => {
   }
   const refetchFuns = [refetch, refetchPoProducts]
 
-  // useEffect(() => {
-  //   poEditState
-  //     ? null
-  //     : poCodeChecked
-  //     ? setPurchaseDetails({
-  //         ...purchaseDetails,
-  //         po_code: newPOCode,
-  //       })
-  //     : null
-  // }, [poCodeChecked, newPOCode])
-
-  // useEffect(() => {
-  //   poEditState
-  //     ? null
-  //     : setPurchaseDetails({
-  //         ...purchaseDetails,
-  //         po_code: newPOCode,
-  //       })
-  // }, [purchaseDialog])
-
   useEffect(() => {
     createNewPOCode()
-    // console.log("New render", formik.values)
-    // console.log("item render", itemList)
   })
-
-  // console.log("antiCSRFToken", antiCSRFToken)
-  // console.log("formik.values", formik.values)
+  useEffect(() => {
+    initFilters()
+  }, [])
 
   return (
     <div className="grid w-full mr-0">
@@ -865,25 +931,6 @@ export const Purchase_ordersList = () => {
             icon="pi pi-send"
             label="Confirm"
             onClick={async () => {
-              // const activePo = purchase_orders.find((ele) => ele.po_id === activeRow.po_id)
-
-              // console.log(activePo)
-
-              // const data = JSON.stringify({
-              //   to: "varunram.66@gmail.com",
-              //   subject: "mailDetails.subject123",
-              //   message: "mailDetails.message",
-              // })
-
-              // var config = {
-              //   method: "post",
-              //   url: "http://localhost:3000/api/rfq",
-              //   headers: {
-              //     "Content-Type": "application/json",
-              //   },
-              //   data: data,
-              // }
-
               const formatedData = {
                 ...activeRow,
                 expected_delivery: moment(activeRow?.expected_delivery, "DD-MM-YYYY").toDate(),
@@ -953,431 +1000,7 @@ export const Purchase_ordersList = () => {
           <ErrorCard ErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
         ))}
       </div>
-      {/**Po form before converting in to component */}
-      {/* <div
-        className={`col-12 ${
-          purchaseDialog
-            ? "visible scalein animation-duration-200"
-            : "hidden scaleout animation-duration-200"
-        }`}
-      >
-        <div className={`card`}>
-          <form onSubmit={formik.handleSubmit} className="p-fluid ">
-            <h5>Create PO</h5>
-            <div className="formgrid grid">
-              <div className="col-12">
-                <h6>PO Details:</h6>
-                <hr />
-              </div>
 
-              <div className="field col-12 md:col-3 lg:col-4  mt-2 ">
-                <div className="p-float-label">
-                  <AutoComplete
-                    id="vendor_vendor_id"
-                    // disabled={editState}
-                    value={formik.values.vendor}
-                    dropdown
-                    forceSelection
-                    suggestions={vendorSuggestions}
-                    completeMethod={searchVendor}
-                    field="name"
-                    onChange={async (e) => {
-                      // console.log("name", e.value)
-
-                      let vendor_vendor_id =
-                        typeof e.value === "string" ? e.value : e.value?.vendor_id
-                      let vendor = typeof e.value === "string" ? e.value : e.value?.name
-
-                      await formik.setValues({
-                        ...formik.values,
-                        vendor_vendor_id,
-                        vendor,
-                      })
-                    }}
-                    aria-label="products"
-                    dropdownAriaLabel="Select Product"
-                    className={classNames({ "p-invalid": isFormFieldValid("vendor_vendor_id") })}
-                  />
-
-                  <label
-                    htmlFor="vendor_vendor_id"
-                    className={classNames({ "p-error": isFormFieldValid("vendor_vendor_id") })}
-                  >
-                    Select Vendor
-                  </label>
-                </div>
-                {getFormErrorMessage("vendor_vendor_id")}
-              </div>
-
-              <div className="field col-12 lg:col-4 mt-2">
-                <span className="p-float-label">
-                  <InputText
-                    id="po_description"
-                    value={formik.values.po_description}
-                    onChange={formik.handleChange}
-                    className={classNames({ "p-invalid": isFormFieldValid("po_description") })}
-                    autoFocus
-                  />
-                  <label
-                    htmlFor="po_description"
-                    className={classNames({ "p-error": isFormFieldValid("po_description") })}
-                  >
-                    PO Description
-                  </label>
-                </span>
-                {getFormErrorMessage("po_description")}
-              </div>
-              <div className="field col-12 lg:col-4 mt-2">
-                <div className="p-float-label">
-                  <Calendar
-                    id="expiry_date"
-                    minDate={new Date()}
-                    // id="basic"
-                    value={formik.values.expiry_date}
-                    onChange={formik.handleChange}
-                    className={classNames({ "p-invalid": isFormFieldValid("expiry_date") })}
-                  />
-                  <label
-                    htmlFor="expiry_date"
-                    className={classNames({ "p-error": isFormFieldValid("expiry_date") })}
-                  >
-                    Expiry Date
-                  </label>
-                </div>
-                {getFormErrorMessage("expiry_date")}
-              </div>
-              <div className="field col-12 lg:col-4 mt-2">
-                <div className="p-float-label">
-                  <Calendar
-                    minDate={new Date()}
-                    // className="mr-2 w-22rem"
-                    id="expected_delivery"
-                    value={formik.values.expected_delivery}
-                    onChange={formik.handleChange}
-                    className={classNames({ "p-invalid": isFormFieldValid("expected_delivery") })}
-                  />
-                  <label
-                    htmlFor="expected_delivery"
-                    className={classNames({ "p-error": isFormFieldValid("expected_delivery") })}
-                  >
-                    Expected Delivery
-                  </label>
-                </div>
-                {getFormErrorMessage("expected_delivery")}
-              </div>
-              <div className="field col-12 lg:col-4 mt-2">
-                <div className="p-float-label">
-                  <AutoComplete
-                    value={formik.values.agreement}
-                    suggestions={filteredSuggestions}
-                    completeMethod={searchAgreement}
-                    dropdown
-                    field="name"
-                    onChange={async (e) => {
-                      let agreement = typeof e.value === "string" ? e.value : e.value.name
-
-                      await formik.setValues({
-                        ...formik.values,
-                        agreement,
-                      })
-                    }}
-                    aria-label="agreementStatusOptions"
-                    dropdownAriaLabel="Select Agreement"
-                    className={classNames({ "p-invalid": isFormFieldValid("agreement") })}
-                  />
-
-                  <label
-                    htmlFor="agreement"
-                    className={classNames({ "p-error": isFormFieldValid("agreement") })}
-                  >
-                    Agreement
-                  </label>
-                </div>
-                {getFormErrorMessage("agreement")}
-              </div>
-              <div className="field col-12 lg:col-4 mt-2">
-                <div className="p-float-label">
-                  <InputText
-                    id="from_party"
-                    value={formik.values.from_party}
-                    onChange={formik.handleChange}
-                    className={classNames({ "p-invalid": isFormFieldValid("from_party") })}
-                    autoFocus
-                  />
-                  <label
-                    htmlFor="from_party"
-                    className={classNames({ "p-error": isFormFieldValid("from_party") })}
-                  >
-                    From Party
-                  </label>
-                </div>
-                {getFormErrorMessage("from_party")}
-              </div>
-              <div className="field col-12 lg:col-4 mt-2">
-                <span className="p-float-label">
-                  <InputText
-                    id="po_code"
-                    name=""
-                    // className="mr-2 w-22rem"
-                    value={formik.values.po_code}
-                    onChange={formik.handleChange}
-                    disabled={poCodeChecked}
-                    className={classNames({ "p-invalid": isFormFieldValid("po_code") })}
-                  />
-                  <label
-                    htmlFor="po_code"
-                    className={classNames({ "p-error": isFormFieldValid("po_code") })}
-                  >
-                    PO Code
-                  </label>
-                </span>
-                {getFormErrorMessage("po_code")}
-                <div className="field-checkbox mt-3">
-                  <Checkbox
-                    id="poCode"
-                    onChange={(e) => setPoCodeChecked(e.checked)}
-                    checked={poCodeChecked}
-                    disabled={poEditState}
-                  />
-                  <label htmlFor="poCode">Un-check to add custom code.</label>
-                </div>
-              </div>
-
-              <div className="col-12 mt-3 mb-3 ">
-                <h6>Select Products</h6>
-                <hr />
-              </div>
-              {itemList.map((ele, i) => (
-                <div key={`PO-product-${i} `} className="field grid col-12  mt-2">
-                  <div className="field col-12 lg:col-7 mt-2">
-                    <div className="p-float-label">
-                      <AutoComplete
-                        id="name"
-                        name="name"
-                        value={ele.product_name}
-                        suggestions={ProductsSuggestions}
-                        completeMethod={searchProducts}
-                        forceSelection
-                        dropdown
-                        field="name"
-                        onChange={async (e) => {
-                          console.log("event understand", e)
-                          let product_id = typeof e.value === "string" ? "" : e.value?.product_id
-                          let name = typeof e.value === "string" ? e.value : e.value?.name
-                          let price_per_unit =
-                            typeof e.value === "string" ? e.value : e.value?.Price
-                          let data = [...itemList]
-
-                          data[i].product_name = name
-                          data[i].products_product_id = product_id
-                          data[i].price_per_unit = price_per_unit
-
-                          // if (!e.value.name) {
-                          //   await formik.setValues({ ...formik.values, itemsLength: false })
-                          // } else {
-                          //   await formik.setValues({ ...formik.values, itemsLength: true })
-                          // }
-                          let itemsLength = !e.value?.name ? false : true
-                          await formik.setValues({ ...formik.values, itemsLength })
-
-                          setItemList(data)
-                        }}
-                        aria-label="products"
-                        dropdownAriaLabel="Select Product"
-                        //   className={classNames({ "p-invalid": isFormFieldValid("name") })}
-                      />
-
-                      <label
-                        htmlFor="name"
-                        //   className={classNames({ "p-error": isFormFieldValid("name") })}
-                      >
-                        Select Product
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="field col-12 lg:col-2 mt-2">
-                    <span className="p-float-label ">
-                      <InputNumber
-                        name="price_per_unit"
-                        // className="mr-2 w-20rem"
-                        value={Number(ele.price_per_unit)}
-                        onChange={(e) => handleFormChange(e, i)}
-                      />
-                      <label>Price per unit</label>
-                    </span>
-                  </div>
-                  <div className="field col-12 lg:col-2 mt-2">
-                    <span className="p-float-label ">
-                      <InputNumber
-                        name="quantity"
-                        value={Number(ele.quantity)}
-                        // className="mr-2 w-20rem"
-                        onChange={(e) => handleFormChange(e, i)}
-                      />
-                      <label className="mr-2">Quantity</label>
-                    </span>
-                  </div>
-                  <div className="field col-6 lg:col-1 mt-2">
-                    <span className="p-buttonset">
-                      {i === itemList.length - 1 && (
-                        <Button type="button" label="+" onClick={addFields} />
-                      )}
-                      {itemList.length > 1 && (
-                        <Button
-                          type="button"
-                          label="-"
-                          className="p-button-secondary"
-                          onClick={(e) => {
-                            removeFields(i)
-                          }}
-                        />
-                      )}
-                    </span>
-                  </div>
-                </div>
-              ))}
-              <div className="m-auto text-2xl">{getFormErrorMessage("itemsLength")}</div>
-            </div>
-            <Divider />
-            <div className="flex ">
-              <Button
-                type="submit"
-                className=" mr-2"
-                label={poEditState ? "UPDATE" : "ADD"}
-                // onClick={() => console.log("asda")}
-                // onClick={async (e) => {
-                //   console.log("purchaseDetails", purchaseDetails)
-                //   console.log("activeRow", activeRow)
-                //   console.log("itemList", itemList)
-                //   const data = purchase_order_products
-                //     .filter((ele) => ele.purchase_order_po_id === activeRow.po_id)
-                //     .map((ele) => ele.pop_id)
-                //   console.log("data", data)
-                //   // const existingProductsPopIDs = [...itemList.map((ele) => ele.pop_id)]
-                //   const newProductsPopIDs = itemList.map((ele) => ele.pop_id)
-                //   // console.log(existingProductsPopIDs)
-                //   const newProducts = itemList.filter((ele) => !ele.pop_id)
-                //   const existingProducts = itemList.filter((ele) => ele.pop_id)
-                //   const deletelist = data.filter((item) => {
-                //     const array = itemList.map((ele) => ele.pop_id)
-                //     return !array.includes(item)
-                //   })
-                //   if (poEditState) {
-                //     // updatePurchaseOrderMutation
-
-                //     try {
-                //       const update = await updatePurchaseOrderMutation({
-                //         po_id: activeRow.po_id,
-                //         ...purchaseDetails,
-                //         purchase_order_products: {
-                //           create: newProducts.map((ele) => ({
-                //             quantity: Number(ele.quantity),
-                //             price_per_unit: Number(ele.price_per_unit),
-                //             received_quantity: 0,
-                //             vendor_products: {
-                //               connect: {
-                //                 vp_id: Number(ele.vendor_products_vp_id),
-                //               },
-                //             },
-                //           })),
-                //           updateMany: existingProducts.map((ele) => ({
-                //             where: {
-                //               pop_id: ele.pop_id,
-                //             },
-                //             data: {
-                //               price_per_unit: Number(ele.price_per_unit),
-                //               quantity: Number(ele.quantity),
-                //             },
-                //           })),
-                //           deleteMany: {
-                //             pop_id: {
-                //               in: deletelist,
-                //             },
-                //           },
-                //         },
-                //       })
-
-                //       console.log(update)
-                //     } catch (error) {
-                //       console.log(error)
-                //     }
-                //   } else {
-                //     try {
-                //       console.log("purchaseDetails", purchaseDetails)
-                //       console.log("itemList", itemList)
-                //       const purchaseOrder = await createPurchaseOrderMutation({
-                //         vendor_vendor_id: Number(purchaseDetails.vendor_vendor_id),
-                //         po_code: purchaseDetails.po_code,
-                //         po_description: purchaseDetails.po_description,
-                //         expiry_date: new Date(purchaseDetails.expiry_date),
-                //         expected_delivery: new Date(purchaseDetails.expected_delivery),
-                //         from_party: purchaseDetails.from_party,
-                //         agreement_status: purchaseDetails.agreement.replaceAll(" ", "_"),
-                //         // agreement: purchaseDetails.agreement,
-                //         // rfq_id: Number(purchaseDetails.rfq_id) ?? undefined,
-                //         purchase_order_products: {
-                //           create: itemList.map((ele) => ({
-                //             quantity: Number(ele.quantity),
-                //             price_per_unit: Number(ele.price_per_unit),
-                //             received_quantity: 0,
-                //             vendor_products: {
-                //               connect: {
-                //                 vp_id: Number(ele.vendor_products_vp_id),
-                //               },
-                //             },
-                //           })),
-                //         },
-                //       })
-                //       setPurchaseDialog(!purchaseDialog)
-                //       console.log("purchaseOrder: ", purchaseOrder)
-                //     } catch (error) {
-                //       console.log("error: ", error)
-                //     }
-                //   }
-
-                //   await refetch()
-                //   await refetchPoProducts()
-                //   setPurchaseDialog(!purchaseDialog)
-                // }}
-              />
-              <Button
-                className="mr-2 p-button-secondary"
-                label="Cancel"
-                onClick={(e) => {
-                  e.preventDefault()
-                  setPurchaseDialog(!purchaseDialog)
-                  setPurchaseDetails({
-                    vendor_vendor_id: "",
-                    po_code: "",
-                    po_description: "",
-                    expiry_date: "",
-                    expected_delivery: "",
-                    from_party: "",
-                    agreement: "",
-                    rfq_id: "",
-                  })
-                  setItemList([
-                    {
-                      purchase_order_po_id: "",
-                      purchase_order_purchase_order_status_pos_id: 1,
-                      purchase_order_vendor_vendor_id: "",
-                      vendor_products_vp_id: "",
-                      vendor_products_vendor_vendor_id: "",
-                      vendor_products_products_product_id: "",
-                      quantity: "",
-                      price_per_unit: "",
-                      received_quantity: 0,
-                    },
-                  ])
-
-                  formik.resetForm()
-                }}
-              />
-            </div>
-          </form>
-        </div>
-      </div> */}
       <CreateNewPo
         products={products}
         purchaseDetails={purchaseDetails}
@@ -1412,6 +1035,11 @@ export const Purchase_ordersList = () => {
             expandedRows={expandedRows}
             onRowToggle={(e) => setExpandedRows(e.data)}
             rowExpansionTemplate={rowExpansionTemplate}
+            filters={filters}
+            header={header1}
+            filterDisplay="menu"
+            // globalFilterFields={["products_sku"]}
+            emptyMessage="No Results found."
           >
             <Column
               field="details"
@@ -1424,6 +1052,8 @@ export const Purchase_ordersList = () => {
             <Column
               field="po_code"
               header="Code"
+              filter
+              filterPlaceholder="Search by Code"
               // className="text-center"
             />
 
@@ -1431,6 +1061,8 @@ export const Purchase_ordersList = () => {
               field="po_description"
               header="Description"
               className="overflow-hidden"
+              filter
+              filterPlaceholder="Search by Description"
               // className="text-center"
             />
 
@@ -1443,54 +1075,49 @@ export const Purchase_ordersList = () => {
               field="vendor"
               header="Vendor"
               className="overflow-hidden"
+              filter
+              filterPlaceholder="Search by Vendor"
               // className="text-center"
             />
-            <Column
-              field="po_status"
-              header="Status"
-              // className="text-center"
-            />
-            {/* <Column
-          field="ordered_qty"
-          header="Ordered Quantity"
-          // className="text-center"
-        />
-        <Column
-          field="received_qty"
-          header="Recieved Quantity"
-          // className="text-center"
-        />
 
-        <Column
-          field="total"
-          header="Total Value"
-          // className="text-center"
-        /> */}
             <Column
-              field="updated_on"
+              // field="updated_on"
+              filterField="updated_on"
               header="Updated on"
+              dataType="date"
+              body={(rowData) => moment(new Date(rowData.updated_on)).format("DD-MM-YYYY, HH:MM")}
+              filter
+              filterElement={dateFilterTemplate}
+              // className="text-center"
+            />
+
+            <Column
+              // field="expected_delivery"
+              header="Expected Delivery"
+              filterField="expected_delivery"
+              dataType="date"
+              body={(rowData) =>
+                moment(new Date(rowData.expected_delivery)).format("DD-MM-YYYY, HH:MM")
+              }
+              filter
+              filterElement={dateFilterTemplate}
               // className="text-center"
             />
             <Column
               field="from_party"
               header="From Party"
               className="overflow-hidden"
-              // className="text-center"
-            />
-            <Column
-              field="expiry_date"
-              header="Expiry Date"
-              // className="text-center"
-            />
-            <Column
-              field="expected_delivery"
-              header="Expected Delivery"
+              filter
+              filterPlaceholder="Search by Party"
               // className="text-center"
             />
             <Column
               field="agreement_status"
               header="Agreement"
               className="overflow-hidden"
+              body={(rowdata) => rowdata.agreement_status?.replaceAll("_", " ")}
+              filter
+              filterPlaceholder="Search by Agreement"
               // style={{ width: "10px" }}
               // className="text-center"
             />

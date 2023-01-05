@@ -30,6 +30,7 @@ import classNames from "classnames"
 import { AutoComplete } from "primereact/autocomplete"
 import { devNull } from "os"
 import LoaderFullScreen from "components/LoaderFullScreen"
+import { FilterMatchMode, FilterOperator } from "primereact/api"
 
 const ITEMS_PER_PAGE = 100
 
@@ -90,39 +91,74 @@ export const Vendor_productsList = () => {
   const [vendorSuggestions, setVendorSuggestions] = useState<any>(null)
   const [ErrorMsgs, setErrorMsgs] = useState([])
 
-  // const createSearchProductsFunction = (products, setFilteredSuggestions) => {
-  //   return function search(event) {
-  //     setTimeout(() => {
-  //       let _filteredSuggestions
-  //       if (!event.query.trim().length) {
-  //         _filteredSuggestions = [...products]
-  //       } else {
-  //         _filteredSuggestions = products.filter((element) => {
-  //           return element.name.toLowerCase().includes(event.query.toLowerCase())
-  //         })
-  //       }
-  //       setFilteredSuggestions(_filteredSuggestions)
-  //     }, 50)
-  //   }
-  // }
+  const [filters, setFilters] = useState({})
+  const [globalFilterValue, setGlobalFilterValue] = useState("")
+
+  const clearFilter = () => {
+    initFilters()
+  }
+  const onGlobalFilterChange = (e) => {
+    const value = e.target.value
+    let _filters1 = { ...filters }
+    _filters1["global"].value = value
+
+    setFilters(_filters1)
+    setGlobalFilterValue(value)
+  }
+  const initFilters = () => {
+    setFilters({
+      global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+
+      "vendor.vendor": {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      "vendor.vendor_code": {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      "products.name": {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      "products.products_sku": {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      vendor_sku: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+    })
+    setGlobalFilterValue("")
+  }
+
+  const renderHeader = () => {
+    return (
+      <div className="flex justify-content-between">
+        <Button
+          type="button"
+          icon="pi pi-filter-slash"
+          label="Clear"
+          className="p-button-outlined"
+          onClick={clearFilter}
+        />
+        <span className="p-input-icon-left">
+          <i className="pi pi-search" />
+          <InputText
+            value={globalFilterValue}
+            onChange={onGlobalFilterChange}
+            placeholder="Keyword Search"
+          />
+        </span>
+      </div>
+    )
+  }
+  const header1 = renderHeader()
 
   const searchProducts = createSearchFunction(products, setFilteredSuggestions)
   const searchVendor = createSearchFunction(vendorOptions, setVendorSuggestions)
 
-  // const searchProducts = (event: { query: string }) => {
-  //   setTimeout(() => {
-  //     let _filteredSuggestions
-  //     if (!event.query.trim().length) {
-  //       _filteredSuggestions = [...products]
-  //     } else {
-  //       _filteredSuggestions = products.filter((element) => {
-  //         return element.name.toLowerCase().includes(event.query.toLowerCase())
-  //       })
-  //     }
-
-  //     setFilteredSuggestions(_filteredSuggestions)
-  //   }, 50)
-  // }
   useEffect(() => {
     const ErrorArray = [
       createVpMutationError,
@@ -151,8 +187,11 @@ export const Vendor_productsList = () => {
     msgArray.splice(i, 1)
     setErrorMsgs(msgArray)
   }
+  useEffect(() => {
+    initFilters()
+  }, [])
 
-  if (isLoading || isVendorsLoading || isProductsLoading) return <div>Loading</div>
+  // if (isLoading || isVendorsLoading || isProductsLoading) return <div>Loading</div>
 
   const tableVendorProducts = vendor_products.map(
     ({ products, unit_price, vendor, vp_id, vendor_sku }) => {
@@ -501,12 +540,40 @@ export const Vendor_productsList = () => {
             showGridlines
             stripedRows
             className="text-s datatable-responsive"
+            filters={filters}
+            header={header1}
+            filterDisplay="menu"
           >
-            <Column field="vendor.vendor" header="Vendor" />
-            <Column field="vendor.vendor_code" header="Vendor Code" />
-            <Column field="products.name" header="Item Name" />
-            <Column field="products.products_sku" header="SKU" />
-            <Column field="vendor_sku" header="Vendor Sku" />
+            <Column
+              field="vendor.vendor"
+              header="Vendor"
+              filter
+              filterPlaceholder="Search by Vendor"
+            />
+            <Column
+              field="vendor.vendor_code"
+              header="Vendor Code"
+              filter
+              filterPlaceholder="Search by Vendor Code"
+            />
+            <Column
+              field="products.name"
+              header="Products"
+              filter
+              filterPlaceholder="Search by Product"
+            />
+            <Column
+              field="products.products_sku"
+              header="SKU"
+              filter
+              filterPlaceholder="Search by SKU"
+            />
+            <Column
+              field="vendor_sku"
+              header="Vendor SKU"
+              filter
+              filterPlaceholder="Search by Vendor SKU"
+            />
             <Column field="unit_price" header="Unit Price" />
             <Column
               header="Action"

@@ -29,6 +29,7 @@ import { AutoComplete } from "primereact/autocomplete"
 import { createCSVFormat, createSearchFunction, tsuccess } from "app/constants"
 import ErrorCard from "components/ErrorCard"
 import LoaderFullScreen from "components/LoaderFullScreen"
+import { FilterMatchMode, FilterOperator } from "primereact/api"
 
 const ITEMS_PER_PAGE = 100
 
@@ -64,8 +65,77 @@ export const ProductsList = () => {
   const toast = useRef(null)
   const scrolToTop = useRef<HTMLDivElement>(null)
   const clearUpload = useRef<FileUpload>(null)
-
+  const [ErrorMsgs, setErrorMsgs] = useState([])
   const [unitSuggestions, setUnitSuggestions] = useState<any>(null)
+
+  const [filters, setFilters] = useState(null)
+  const [globalFilterValue, setGlobalFilterValue] = useState("")
+
+  const clearFilter = () => {
+    initFilters()
+  }
+  const onGlobalFilterChange = (e) => {
+    const value = e.target.value
+    let _filters1 = { ...filters }
+    _filters1["global"].value = value
+
+    setFilters(_filters1)
+    setGlobalFilterValue(value)
+  }
+  const initFilters = () => {
+    setFilters({
+      global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+
+      products_sku: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      name: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      price: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      product_type: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      description: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      product_unit: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+    })
+    setGlobalFilterValue("")
+  }
+
+  const renderHeader = () => {
+    return (
+      <div className="flex justify-content-between">
+        <Button
+          type="button"
+          icon="pi pi-filter-slash"
+          label="Clear"
+          className="p-button-outlined"
+          onClick={clearFilter}
+        />
+        <span className="p-input-icon-left">
+          <i className="pi pi-search" />
+          <InputText
+            value={globalFilterValue}
+            onChange={onGlobalFilterChange}
+            placeholder="Keyword Search"
+          />
+        </span>
+      </div>
+    )
+  }
+  const header1 = renderHeader()
 
   const units = ["Pc", "Combo", "set", "kit"]
   const unitOptions = units.map((ele) => ({
@@ -192,11 +262,10 @@ export const ProductsList = () => {
     headers: ["NAME", "DESCRIPTION", "SKU", "TYPE", "UNIT"],
     name: "Product-format.csv",
   }
+  useEffect(() => {
+    initFilters()
+  }, [])
 
-  if (isLoading || isProductsLoading) {
-    return <Loading />
-  }
-  const [ErrorMsgs, setErrorMsgs] = useState([])
   useEffect(() => {
     const ErrorArray = [productUpdationError, productCreationError]
 
@@ -209,6 +278,10 @@ export const ProductsList = () => {
     }
     setErrorMsgs(msg)
   }, [productCreationError, productUpdationError])
+
+  // if (isLoading || isProductsLoading) {
+  //   return <Loading />
+  // }
 
   const removeErrorBox = (i) => {
     const msgArray = [...ErrorMsgs]
@@ -530,8 +603,13 @@ export const ProductsList = () => {
             // scrollHeight="60vh"
             stripedRows
             className="text-s datatable-responsive"
+            filters={filters}
+            header={header1}
+            filterDisplay="menu"
+            // globalFilterFields={["products_sku"]}
+            emptyMessage="No Results found."
           >
-            {prefix?.prefix && (
+            {/* {prefix?.prefix && (
               <Column
                 header="ID"
                 body={({ product_id }) => (
@@ -540,12 +618,17 @@ export const ProductsList = () => {
                   </span>
                 )}
               />
-            )}
-            <Column field="products_sku" header="SKU" />
-            <Column field="name" header="Name" />
-            <Column field="product_type" header="Type" />
-            <Column field="description" header="Product Description" />
-            <Column field="product_unit" header="Unit" />
+            )} */}
+            <Column field="products_sku" header="SKU" filter filterPlaceholder="Search by SKU" />
+            <Column field="name" header="Name" filter filterPlaceholder="Search by Name" />
+            <Column field="product_type" header="Type" filter filterPlaceholder="Search by Type" />
+            <Column
+              field="description"
+              header="Product Description"
+              filter
+              filterPlaceholder="Search by Description"
+            />
+            <Column field="product_unit" header="Unit" filter filterPlaceholder="Search by Unit" />
 
             <Column
               header="Action"
