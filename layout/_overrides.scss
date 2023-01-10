@@ -6,3 +6,9 @@
 .p-datatable-wrapper .p-datatable-table .p-datatable-tbody > tr > td {
   padding: 1rem 1rem !important;
 }
+
+.p-datatable-emptymessage {
+  td {
+    text-align: center !important;
+  }
+}

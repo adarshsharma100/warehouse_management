@@ -10,7 +10,7 @@ import { CSSTransition } from "react-transition-group"
 import { Tooltip } from "primereact/tooltip"
 import Image from "next/image"
 import logo from "../Assets/Images/tif.png"
-import SideBarIcons from "components/SideBarIcons"
+import SideBarIcons from "components/SideBarMenu"
 
 const Layout = ({ children }) => {
   const [layoutMode, setLayoutMode] = useState("static")
