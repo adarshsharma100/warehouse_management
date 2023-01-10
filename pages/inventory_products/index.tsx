@@ -70,7 +70,6 @@ export const Inventory_productsList = () => {
     products_product_id: "",
     product_description: "",
     good_stock: null,
-    bad_stock: null,
   }
 
   const [productForm, setProductForm] = useState<boolean>(false)
@@ -80,7 +79,7 @@ export const Inventory_productsList = () => {
   const [activeRowData, setActiveRowData] = useState({})
   const [btnVisibility, setBtnVisibility] = useState(false)
   const [errorProducts, setErrorProducts] = useState([])
-  const [filters, setFilters] = useState(null)
+  const [filters, setFilters] = useState({})
   const [globalFilterValue, setGlobalFilterValue] = useState("")
 
   const clearUpload = useRef<FileUpload>(null)
@@ -177,7 +176,7 @@ export const Inventory_productsList = () => {
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
   const goToNextPage = () => router.push({ query: { page: page + 1 } })
   const tableInventory = inventory_products.map(
-    ({ quantity, products, price, inventory_product_id, good_stock, bad_stock }) => {
+    ({ quantity, products, price, inventory_product_id, good_stock }) => {
       return {
         products_sku: products?.products_sku,
         name: products?.name,
@@ -186,7 +185,6 @@ export const Inventory_productsList = () => {
         price,
         inventory_product_id,
         good_stock,
-        bad_stock,
       }
     }
   )
@@ -253,19 +251,12 @@ export const Inventory_productsList = () => {
       name: Yup.string().required("*Required"),
       price: Yup.number().required("*Required").typeError("Must be a Number"),
       quantity: Yup.number().required("*Required").typeError("Must be a Number"),
+      good_stock: Yup.number().required("*Required").typeError("Must be a Number"),
     }),
     onSubmit: async (data) => {
       // console.log("data", data)
 
-      const {
-        name,
-        price,
-        quantity,
-        products_product_id,
-        product_description,
-        good_stock,
-        bad_stock,
-      } = data
+      const { name, price, quantity, products_product_id, product_description, good_stock } = data
 
       if (!productEditState) {
         try {
@@ -276,7 +267,6 @@ export const Inventory_productsList = () => {
               quantity: Number(quantity),
               products_product_id: Number(products_product_id),
               good_stock,
-              bad_stock,
             },
             {
               onSuccess: () => {
@@ -300,7 +290,6 @@ export const Inventory_productsList = () => {
               price: Number(price),
               quantity: Number(quantity),
               good_stock,
-              bad_stock,
             },
             {
               onSuccess: () => {
@@ -534,7 +523,6 @@ export const Inventory_productsList = () => {
               {[
                 { type: "text", label: "Price", field: "price" },
                 { type: "text", label: "Good Stock", field: "good_stock" },
-                { type: "text", label: "Bad Stock", field: "bad_stock" },
                 { type: "text", label: "Total", field: "quantity" },
               ].map((ele, i) => (
                 <div key={i} className="field col-12 md:col-3 lg:col-3 mt-4">
@@ -594,11 +582,6 @@ export const Inventory_productsList = () => {
             // globalFilterFields={["products_sku"]}
             emptyMessage="No Results found."
           >
-            {/* <Column
-          field="vendor_id"
-          header="Vendor ID"
-          // className="text-center"
-        /> */}
             <Column
               field="products_sku"
               header="SKU"
@@ -633,13 +616,14 @@ export const Inventory_productsList = () => {
           // className="text-center"
         /> */}
             <Column
-              body={(rowdata) => rowdata.quantity - rowdata.bad_stock}
+              field="good_stock"
               header="Good-Stock"
               // className="text-center"
             />
             <Column
               field="bad_stock"
               header="Bad-Stock"
+              body={(rowdata) => rowdata.quantity - rowdata.good_stock}
               // className="text-center"
             />
             <Column

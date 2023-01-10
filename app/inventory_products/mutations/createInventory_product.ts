@@ -9,7 +9,6 @@ const CreateInventory_product = z.object({
   quantity: z.number(),
   products_product_id: z.number(),
   good_stock: z.number(),
-  bad_stock: z.number(),
 })
 
 // function for mailing the specific user after creating inventory_products
