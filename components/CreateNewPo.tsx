@@ -37,6 +37,7 @@ const CreateNewPo = (props) => {
     initialItemState,
     setErrorMsgs,
     refetchFuns,
+    rfqCode,
   } = props
 
   const [{ prefixes }, { error: getPrefixesError }] = useQuery(getPrefixes, {
@@ -405,6 +406,7 @@ const CreateNewPo = (props) => {
         (ele, i) => !vendorProductsIds.includes(ele.products_product_id) && ele.products_product_id
       )
       priorValues.length ? setShowPriorList(true) : setShowPriorList(false)
+      //setShowPriorList(priorValues.length > 0)
 
       console.log("priorValues", priorValues.length)
 
@@ -418,6 +420,9 @@ const CreateNewPo = (props) => {
 
       setItemList([...values, ...emptyFields])
     }
+
+    // if (rfQCode) {
+    // }
   }, [formik?.values.vendor_vendor_id])
 
   useEffect(() => {

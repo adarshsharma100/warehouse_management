@@ -133,13 +133,18 @@ export const RfqsList = () => {
   // const [updateManyRfqProductsMutation] = useMutation(updateManyRfq_products)
   const [updateRfqProductMutation] = useMutation(updateRfq_product)
   const [createPurchaseOrderMutation] = useMutation(createPurchase_order)
-  const productOptions = products.map(({ product_id, name, products_sku, vendor_products }) => {
-    return {
-      name: `${name}-${products_sku}`,
-      value: product_id,
-      vendorID: vendor_products.map((ele) => ele.vendor_vendor_id),
+  const productOptions = products.map(
+    ({ product_id, name, products_sku, vendor_products, Price }) => {
+      return {
+        name: `${products_sku} - ${name}`,
+        product_id,
+        vendorID: vendor_products.map((ele) => ele.vendor_vendor_id),
+        Price,
+      }
     }
-  })
+  )
+  const [productsSuggestions, setProductsSuggestions] = useState<any>(null)
+  const searchProducts = createSearchFunction(productOptions, setProductsSuggestions)
   const menu = useRef<Menu>(null)
   const toast = useRef(null)
 
@@ -179,7 +184,7 @@ export const RfqsList = () => {
   // ])
 
   const [itemList, setItemList] = useState([
-    { products_product_id: "", quantity: "", price_per_unit: "" },
+    { products_product_id: "", quantity: "", price_per_unit: "", product_name: "" },
   ])
   const initialPoItemState = {
     purchase_order_po_id: "",
@@ -1150,8 +1155,48 @@ export const RfqsList = () => {
               </div>
               {itemList.map((ele, i) => (
                 <>
-                  <div className="col-12 grid" key={`RFQ-product-${i}`}>
+                  <div className="col-12 grid mt-1" key={`RFQ-product-${i}`}>
                     <div className="field col-12 lg:col-7 mt-2">
+                      <div className="p-float-label">
+                        <AutoComplete
+                          id="name"
+                          name="name"
+                          value={ele.product_name}
+                          suggestions={productsSuggestions}
+                          completeMethod={searchProducts}
+                          //   forceSelection //
+                          dropdown
+                          field="name"
+                          onChange={async (e) => {
+                            console.log("event understand", e.value)
+                            let product_id = typeof e.value === "string" ? "" : e.value?.product_id
+                            let name = typeof e.value === "string" ? e.value : e.value?.name
+                            let price_per_unit = typeof e.value === "string" ? 0 : e.value?.Price
+                            let data = [...itemList]
+
+                            data[i].product_name = name
+                            data[i].products_product_id = product_id
+                            data[i].price_per_unit = price_per_unit
+
+                            let itemsLength = !e.value?.name ? false : true
+                            await formik.setValues({ ...formik.values, itemsLength })
+
+                            setItemList(data)
+                          }}
+                          aria-label="products"
+                          dropdownAriaLabel="Select Product"
+                          //   className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                        />
+
+                        <label
+                          htmlFor="name"
+                          //   className={classNames({ "p-error": isFormFieldValid("name") })}
+                        >
+                          Select Product
+                        </label>
+                      </div>
+                    </div>
+                    {/* <div className="field col-12 lg:col-7 mt-2">
                       <Dropdown
                         name="products_product_id"
                         // disabled={editState}
@@ -1178,7 +1223,7 @@ export const RfqsList = () => {
                         }}
                         placeholder="Select Product"
                       />
-                    </div>
+                    </div> */}
                     <div className="field col-12 lg:col-2 mt-2">
                       <span className="p-float-label">
                         <InputNumber
@@ -1287,6 +1332,7 @@ export const RfqsList = () => {
         setItemList={setPoItemList}
         initialItemState={initialPoItemState}
         setErrorMsgs={setRfqErrorMsgs}
+        rfQCode={newRFQCode}
         // activeRow={activeRow}
         // poEditState={poEditState}
       />

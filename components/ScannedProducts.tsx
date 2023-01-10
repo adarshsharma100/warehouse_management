@@ -1,4 +1,4 @@
-import { createSearchFunction } from "app/constants"
+import { arrayFillCopy, createSearchFunction } from "app/constants"
 import classNames from "classnames"
 import { AutoComplete } from "primereact/autocomplete"
 import { Button } from "primereact/button"
@@ -16,13 +16,12 @@ const ScannedProducts = ({
   newRFQCode,
   rfqDetails,
 }) => {
-  const productListInitialState = [
-    { product_id: "", quantity: null, price_per_unit: null, name: "" },
-    { product_id: "", quantity: null, price_per_unit: null, name: "" },
-    { product_id: "", quantity: null, price_per_unit: null, name: "" },
-    { product_id: "", quantity: null, price_per_unit: null, name: "" },
-    { product_id: "", quantity: null, price_per_unit: null, name: "" },
-  ]
+  const productListInitialState = arrayFillCopy(5, {
+    product_id: "",
+    quantity: null,
+    price_per_unit: null,
+    name: "",
+  })
 
   const [productsList, setProductsList] = useState(productListInitialState)
   const [items, setItems] = useState(false)
