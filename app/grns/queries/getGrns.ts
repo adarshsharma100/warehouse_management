@@ -1,6 +1,6 @@
-import { paginate } from "blitz";
-import { resolver } from "@blitzjs/rpc";
-import db, { Prisma } from "db";
+import { paginate } from "blitz"
+import { resolver } from "@blitzjs/rpc"
+import db, { Prisma } from "db"
 
 interface GetGrnsInput
   extends Pick<Prisma.GrnFindManyArgs, "where" | "orderBy" | "skip" | "take"> {}
@@ -19,14 +19,21 @@ export default resolver.pipe(
       take,
       count: () => db.grn.count({ where }),
       query: (paginateArgs) =>
-        db.grn.findMany({ ...paginateArgs, where, orderBy }),
-    });
+        db.grn.findMany({
+          ...paginateArgs,
+          where,
+          orderBy,
+          include: {
+            grn_status_grnTogrn_status: true,
+          },
+        }),
+    })
 
     return {
       grns,
       nextPage,
       hasMore,
       count,
-    };
+    }
   }
-);
+)
