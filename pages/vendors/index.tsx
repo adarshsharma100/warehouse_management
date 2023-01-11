@@ -137,7 +137,6 @@ export const VendorsList = () => {
   const statuses = [true, false]
 
   const statusFilterTemplate = (options) => {
-    console.log(options)
     return (
       <Dropdown
         value={options.value}
@@ -151,7 +150,6 @@ export const VendorsList = () => {
     )
   }
   const statusItemTemplate = (option) => {
-    console.log("option-temp", option)
     return (
       <span className={`badge status-${option ? "active" : "inactive"}`}>
         {option ? "Active" : "Inactive"}

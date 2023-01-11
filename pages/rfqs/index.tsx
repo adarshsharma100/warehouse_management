@@ -1031,7 +1031,7 @@ export const RfqsList = () => {
       >
         <div className={` card `}>
           <form className="p-fluid" onSubmit={formik.handleSubmit}>
-            <h5 className="mb-3">Create RFQ</h5>
+            <h5 className="mb-3">{`${rfqEditState ? "Update" : "Create"} RFQ`}</h5>
             <div className="formgrid grid p-4">
               <div className="col-12">
                 <h6>RFQ Details:</h6>

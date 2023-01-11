@@ -337,6 +337,11 @@ export const Purchase_ordersList = () => {
             setActivePO()
           },
         },
+        {
+          label: "More info",
+          icon: "pi pi-info-circle",
+          command: () => (window.location.href = `/purchase_orders/${activeRow.po_id}`),
+        },
         // {
         //   label: "View Products",
         //   icon: "pi pi-external-link",
@@ -925,7 +930,7 @@ export const Purchase_ordersList = () => {
         style={{ width: "50vw" }}
         onHide={() => setSendPoDialog(false)}
       >
-        <p>{`You are about to send PO to ${activeRow?.vendor}`}</p>
+        <p>{`You are about to send ${activeRow?.po_code} to ${activeRow?.vendor}`}</p>
         <div className="w-full flex justify-content-end mt-2 pl-2">
           <Button
             icon="pi pi-send"
