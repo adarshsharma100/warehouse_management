@@ -53,7 +53,7 @@ const CreateNewPo = (props) => {
     }
   )
 
-  console.log("activeRow form po component", activeRow)
+  // console.log("activeRow form po component", activeRow)
 
   const [createPurchaseOrderMutation, { isLoading: creatingPO, error: creatingMutationError }] =
     useMutation(createPurchase_order)
@@ -395,7 +395,7 @@ const CreateNewPo = (props) => {
 
     const vendorID = formik.values.vendor_vendor_id
     const filterProducts = productOptions.filter((ele) => ele.vendorID.includes(Number(vendorID)))
-    console.log("filterProducts", filterProducts)
+    // console.log("filterProducts", filterProducts)
 
     setFilterProductOptions(filterProducts)
     if (!poEditState) {
@@ -411,7 +411,7 @@ const CreateNewPo = (props) => {
       priorValues.length ? setShowPriorList(true) : setShowPriorList(false)
       //setShowPriorList(priorValues.length > 0)
 
-      console.log("priorValues", priorValues.length)
+      // console.log("priorValues", priorValues.length)
 
       setPriorList([...priorValues])
       //   const itemlistIds = itemList.map((ele) => ele.products_product_id)
@@ -688,7 +688,7 @@ const CreateNewPo = (props) => {
                   className="p-button-warning p-button-sm w-auto p-button-outlined"
                   onClick={async (e) => {
                     await updateFormValues({ vendor: pastVendors[0]?.vendor })
-                    console.log("prevVendor.current", prevVendor.current)
+                    // console.log("prevVendor.current", prevVendor.current)
                     const removeEmptyItems = itemList.filter((ele, i) => ele.products_product_id)
                     const initialState = priorList.length + removeEmptyItems.length
                     let count = initialState >= 5 ? 2 : 5 - initialState

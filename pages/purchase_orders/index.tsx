@@ -310,19 +310,11 @@ export const Purchase_ordersList = () => {
               itemsLength: true,
             })
 
-            // setPurchaseDetails({
-            //   vendor_vendor_id: vendor_vendor_id,
-            //   po_code: po_code,
-            //   po_description: po_description,
-            //   expiry_date: moment(expiry_date, "DD-MM-YYYY").toDate(),
-            //   expected_delivery: moment(expected_delivery, "DD-MM-YYYY").toDate(),
-            //   from_party: from_party,
-            //   agreement: agreement,
-            //   rfq_id: rfq_id,
-            // })
-            const active = tableProducts.filter(
-              (ele) => activeRow.po_id === ele.purchase_order_po_id
-            )
+            const active = tableProducts
+              .filter((ele) => activeRow.po_id === ele.purchase_order_po_id)
+              .map((ele) => ({ ...ele, product_name: `${ele.product_sku} - ${ele.product_name}` }))
+
+            console.log("active", active)
 
             setItemList(active)
             setActivePO()
@@ -532,7 +524,9 @@ export const Purchase_ordersList = () => {
       agreement: agreement,
       rfq_id: rfq_id,
     })
-    const active = tableProducts.filter((ele) => activeRow.po_id === ele.purchase_order_po_id)
+    const active = tableProducts
+      .filter((ele) => activeRow.po_id === ele.purchase_order_po_id)
+      .map((ele) => ({ ...ele, product_name: `${ele.product_sku} - ${ele.product_name}` }))
 
     setItemList(active)
   }

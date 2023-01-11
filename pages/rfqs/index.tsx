@@ -519,8 +519,10 @@ export const RfqsList = () => {
                   quantity: quantity,
                   price_per_unit: price_per_unit,
                   rfq_products_id,
+                  product_name: `${products.products_sku} - ${products.name}`,
                 }
               })
+
             console.log("tableRfqProducts", tableRfqProducts)
             console.log("active item list", active)
             setItemList(active)

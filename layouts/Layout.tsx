@@ -36,10 +36,10 @@ const Layout = ({ children }) => {
   useEffect(() => {
     if (mobileMenuActive) {
       // addClass(document.body, "body-overflow-hidden")
-      addClass(document.querySelector(".layout-sidebar"), "layout-sidebar-inactive")
+      // addClass(document.querySelector(".layout-sidebar"), "layout-sidebar-inactive")
     } else {
       // removeClass(document.body, "body-overflow-hidden")
-      removeClass(document.querySelector(".layout-sidebar"), "layout-sidebar-inactive")
+      // removeClass(document.querySelector(".layout-sidebar"), "layout-sidebar-inactive")
     }
   }, [mobileMenuActive])
 
@@ -80,7 +80,8 @@ const Layout = ({ children }) => {
 
   const onToggleMenuClick = (event) => {
     menuClick = true
-
+    setStaticMenuInactive((prevState) => !prevState)
+    return
     if (isDesktop()) {
       if (layoutMode === "overlay") {
         if (mobileMenuActive === true) {
@@ -362,14 +363,14 @@ const Layout = ({ children }) => {
           onColorModeChange={onColorModeChange}
         /> */}
 
-        <CSSTransition
+        {/* <CSSTransition
           classNames="layout-mask"
           timeout={{ enter: 200, exit: 200 }}
           in={mobileMenuActive}
           unmountOnExit
         >
           <div className="layout-mask p-component-overlay"></div>
-        </CSSTransition>
+        </CSSTransition> */}
       </div>
     </div>
   )
