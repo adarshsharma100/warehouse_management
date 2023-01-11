@@ -53,6 +53,8 @@ const CreateNewPo = (props) => {
     }
   )
 
+  console.log("activeRow form po component", activeRow)
+
   const [createPurchaseOrderMutation, { isLoading: creatingPO, error: creatingMutationError }] =
     useMutation(createPurchase_order)
   const [updatePurchaseOrderMutation, { isLoading: UpdatingPO, error: updatingMutationError }] =
@@ -173,6 +175,7 @@ const CreateNewPo = (props) => {
       expiry_date,
       expected_delivery,
       from_party,
+      agreement_status,
       agreement,
       rfq_id,
       po_status,
@@ -187,7 +190,7 @@ const CreateNewPo = (props) => {
       expiry_date: expiry,
       expected_delivery: expected,
       from_party,
-      agreement: po_status.replaceAll("_", " "),
+      agreement: agreement_status?.replaceAll("_", " "),
       rfq_id,
       itemsLength: true,
     })
@@ -302,7 +305,7 @@ const CreateNewPo = (props) => {
             },
             {
               onSuccess: async (data) => {
-                toast?.current.show(tsuccess("Updated", `${po_code} is upadted successfully`))
+                toast?.current.show(tsuccess("Updated", `${po_code} is updated successfully`))
                 await createNotificationsMutations({
                   user_id: id,
                   user_name: name,

@@ -27,7 +27,7 @@ export const Purchase_order = () => {
   const router = useRouter()
   const purchase_orderId = useParam("purchase_orderId", "number")
   console.log("purchase_orderId", purchase_orderId)
-  const [deletePurchase_orderMutation] = useMutation(deletePurchase_order)
+  // const [deletePurchase_orderMutation] = useMutation(deletePurchase_order)
   const [purchase_order] = useQuery(getPurchase_order, {
     po_id: purchase_orderId,
   })
@@ -69,15 +69,15 @@ export const Purchase_order = () => {
   return (
     <>
       <Head>
-        <title>Purchase_order {purchase_order.po_id}</title>
+        <title>{po_code}</title>
       </Head>
 
       <div>
-        <h1>Purchase_order {purchase_order.po_id}</h1>
-        <div className="flex px-6">
-          <section className="flex-1 p-2">
-            <h3 className="text-center">PO Details</h3>
-            <div className="">
+        <h1>{po_code}</h1>
+        <div className="lg:flex m-3 p-1 border-1 border-round border-primary">
+          <section className="lg:w-3 p-3 m-2 border-1 border-round border-primary">
+            <h3 className="text-center">Details</h3>
+            <div className="flex flex-column justify-content-center text-lg">
               {[
                 { field: "Code", value: po_code },
                 { field: "Description", value: po_description },
@@ -87,10 +87,10 @@ export const Purchase_order = () => {
                 { field: "Agreement", value: agreement_status || `-` },
                 { field: "Vendor", value: findVendor(vendor_vendor_id) },
               ].map((ele, i) => (
-                <div className="grid align-items-center" key={i}>
-                  <p className="col-3 m-0">{ele.field}</p>
-                  <span>:</span>
-                  <p className="col-3">
+                <div className="grid align-items-center py-2" key={i}>
+                  <p className="flex-1 m-0">{ele.field}</p>
+                  <span>: &nbsp; </span>
+                  <p className="flex-1">
                     {typeof ele.value === "string"
                       ? ele.value
                       : moment(ele.value).format("DD-MM-YYYY, HH:MM")}
@@ -99,8 +99,8 @@ export const Purchase_order = () => {
               ))}
             </div>
           </section>
-          <section className="flex-1 p-2">
-            <h3 className="text-center">PO Products</h3>
+          <section className="flex-1 p-3 m-2 border-1 border-round border-primary  ">
+            <h3 className="text-center">Products</h3>
             <div className="">
               <DataTable
                 value={purchase_order_products}
@@ -202,28 +202,7 @@ export const Purchase_order = () => {
           <AccordionTab header="Invoice III">Content III</AccordionTab>
         </Accordion>
 
-        <pre>{JSON.stringify(purchase_order, null, 2)}</pre>
-
-        <Link
-          href={Routes.EditPurchase_orderPage({
-            purchase_orderId: purchase_order.po_id,
-          })}
-        >
-          <a>Edit</a>
-        </Link>
-
-        <button
-          type="button"
-          onClick={async () => {
-            if (window.confirm("This will be deleted")) {
-              await deletePurchase_orderMutation({ po_id: purchase_order.po_id })
-              await router.push(Routes.Purchase_ordersPage())
-            }
-          }}
-          style={{ marginLeft: "0.5rem" }}
-        >
-          Delete
-        </button>
+        {/* <pre>{JSON.stringify(purchase_order, null, 2)}</pre> */}
       </div>
     </>
   )

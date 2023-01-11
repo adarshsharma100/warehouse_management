@@ -53,6 +53,14 @@ export const AppTopbar = (props) => {
       }}
     />
   )
+  const hideNotification = () => setVisible(false)
+
+  useEffect(() => {
+    window.addEventListener("click", hideNotification)
+    return () => {
+      window.removeEventListener("click", hideNotification)
+    }
+  }, [])
 
   useEffect(() => {
     ;(async () => await refetch())().catch((error) =>

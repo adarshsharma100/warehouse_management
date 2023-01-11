@@ -1534,6 +1534,12 @@ export const arrayFillCopy = (count, obj) => {
   return copy
 }
 
+export const removeErrorBox = (i, ErrorMsgs, setErrorMsgs) => {
+  const msgArray = [...ErrorMsgs]
+  msgArray.splice(i, 1)
+  setErrorMsgs(msgArray)
+}
+
 // export const sendPoEmail = async (data, po) => {
 //   // const vendorDetails = await db.vendor.findUnique({
 //   //   where: { vendor_id: data.vendor_vendor_id },

@@ -305,7 +305,7 @@ export const Purchase_ordersList = () => {
               expiry_date: expiry,
               expected_delivery: expected,
               from_party,
-              agreement: po_status.replaceAll("_", " "),
+              agreement: po_status?.replaceAll("_", " "),
               rfq_id,
               itemsLength: true,
             })
@@ -800,7 +800,7 @@ export const Purchase_ordersList = () => {
             },
             {
               onSuccess: async (data) => {
-                toast?.current.show(tsuccess("Updated", `${po_code} is upadted successfully`))
+                toast?.current.show(tsuccess("Updated", `${po_code} is updated successfully`))
                 await createNotificationsMutations({
                   user_id: id,
                   user_name: name,

@@ -2,7 +2,7 @@ import { Suspense, useEffect, useRef, useState } from "react"
 import { Routes } from "@blitzjs/next"
 import Head from "next/head"
 import Link from "next/link"
-import { usePaginatedQuery, useQuery } from "@blitzjs/rpc"
+import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
 import Layout from "layouts/Layout"
 import getGrns from "app/grns/queries/getGrns"
@@ -18,6 +18,15 @@ import { InputText } from "primereact/inputtext"
 import { Dropdown } from "primereact/dropdown"
 import { Menu } from "primereact/menu"
 import classNames from "classnames"
+import { useFormik } from "formik"
+import * as Yup from "yup"
+import { Checkbox } from "primereact/checkbox"
+import { e } from "@blitzjs/auth/dist/index-c7aa9db2"
+import { AutoComplete } from "primereact/autocomplete"
+import { createSearchFunction, removeErrorBox, tsuccess } from "app/constants"
+import updateGrn from "app/grns/mutations/updateGrn"
+import { Toast } from "primereact/toast"
+import ErrorCard from "components/ErrorCard"
 
 const ITEMS_PER_PAGE = 100
 
@@ -31,6 +40,8 @@ export const GrnsList = () => {
     orderBy: { id: "asc" },
   })
 
+  const [updateGrnMutation, { error: grnCreationError }] = useMutation(updateGrn)
+
   const items = [
     {
       label: "Options",
@@ -38,7 +49,9 @@ export const GrnsList = () => {
         {
           label: "Edit",
           icon: "pi pi-pencil",
-          command: () => {
+          command: async () => {
+            const grn_status = (activeRow as any)?.grn_status_grnTogrn_status?.name
+            await formik.setValues({ ...activeRow, grn_status })
             setGrnEditState(true)
             scrollToTop?.current?.scrollIntoView()
           },
@@ -46,15 +59,30 @@ export const GrnsList = () => {
       ],
     },
   ]
-
+  const initialGrnDetails = {
+    grn_id: "",
+    grn_batch_code: "",
+    grn_status: "",
+    grn_status_id: "",
+    grn_desc: "",
+    grn_invoice_id: "",
+  }
+  // const [grnDetails, setGrnDetails] = useState(initialGrnDetails)
   const [expandedRows, setExpandedRows] = useState()
   const [activeRow, setActiveRow] = useState({})
   const [filters, setFilters] = useState({})
   const [globalFilterValue, setGlobalFilterValue] = useState("")
   const [grnEditState, setGrnEditState] = useState(false)
+  const [filterStatus, setFilterStatus] = useState([])
+  const [grnErrorMsg, setGrnErrorMsg] = useState([])
+
+  const searchStatus = createSearchFunction(filterStatus, setFilterStatus)
 
   const menu = useRef<Menu>(null)
   const scrollToTop = useRef<HTMLDivElement>(null)
+  const toast = useRef(null)
+
+  const removeGrnError = (i) => removeErrorBox(i, grnErrorMsg, setGrnErrorMsg)
 
   const clearFilter = () => {
     initFilters()
@@ -199,19 +227,77 @@ export const GrnsList = () => {
     )
   }
 
+  const formik = useFormik({
+    initialValues: initialGrnDetails,
+    validationSchema: Yup.object().shape({
+      grn_status: Yup.string().required("*Required"),
+      grn_desc: Yup.string().required("*Required").typeError("*Required"),
+    }),
+    onSubmit: async (data) => {
+      console.log("data", data)
+      console.log("activeRow", activeRow)
+      const { grn_id, grn_batch_code, grn_status, grn_status_id, grn_desc, grn_invoice_id } = data
+
+      if (grnEditState) {
+        try {
+          const updateGrn = await updateGrnMutation(
+            { grn_id, grn_status_id, grn_desc },
+            {
+              onSuccess: async (data) => {
+                toast?.current.show(
+                  tsuccess("Updated", `${grn_batch_code} is updated successfully`)
+                )
+                await refetchGrn()
+                formik.resetForm()
+                setGrnEditState(false)
+              },
+            }
+          )
+        } catch (error) {
+          console.log("GRN-Updation-Error", error)
+        }
+      }
+    },
+  })
+  // console.log(formik.values)
+
+  const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
+  const getFormErrorMessage = (name) => {
+    return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
+  }
+
+  useEffect(() => {
+    const ErrorArray = [grnCreationError]
+
+    const msg = []
+
+    for (let err of ErrorArray) {
+      if (err) {
+        msg.push(err)
+      }
+    }
+    setGrnErrorMsg(msg)
+  }, [grnCreationError])
+
   useEffect(() => {
     initFilters()
+    setFilterStatus(grn_statuses)
   }, [])
 
-  console.log("activedata", activeRow)
+  console.log("Formik", formik.values)
 
   return (
     <div className="grid w-full mr-0" ref={scrollToTop}>
+      <Toast ref={toast} />
+      {/* <pre>{JSON.stringify(activeRow, null, 2)}</pre> */}
       <div className="col-12">
         <div className="card flex justify-content-between align-items-center mb-2">
           <h4 className="mb-0">Goods Received Note</h4>
           <div className="flex justify-content-end align-items-center"></div>
         </div>
+        {grnErrorMsg.map((ele, i) => (
+          <ErrorCard ErrorMsgs={ele} closeErrorBox={removeGrnError} value={i} key={i} />
+        ))}
       </div>
       <div
         className={`col-12 ${
@@ -221,93 +307,112 @@ export const GrnsList = () => {
         } `}
       >
         <div className={` card `}>
-          <form className="p-fluid">
+          <form className="p-fluid" onSubmit={formik.handleSubmit}>
             <h5 className="mb-3">{`${grnEditState ? "Update" : "Create"} GRN`}</h5>
             <div className="formgrid grid p-4">
               <div className="col-12">
                 <h6>GRN Details:</h6>
               </div>
-              {/* <div className="field col-12 lg:col-4 mt-2 ">
-                <span className="p-float-label ">
-                  <InputText
-                    id="rfq_code"
-                    name="rfq_code"
-                    value={formik.values.rfq_code}
-                    onChange={formik.handleChange}
-                    disabled={RFQCodechecked}
-                    autoFocus
-                    className={classNames({ "p-invalid": isFormFieldValid("rfq_code") })}
-                  />
-                  <label
-                    htmlFor="rfq_code"
-                    className={classNames({ "p-error": isFormFieldValid("rfq_code") })}
-                  >
-                    RFQ Code
-                  </label>
-                </span>
-                {getFormErrorMessage("rfq_code")}
 
-                <div className="field-checkbox my-2">
-                  <Checkbox
-                    // style={{ width: "0.1rem", height: "0rem" }}
-                    onChange={(e) => setRFQCodeChecked(e.checked)}
-                    checked={RFQCodechecked}
-                    disabled={rfqEditState}
-                  />
-                  <label
-                    // htmlFor="binary"
-                    className="text-sm	"
-                  >
-                    Un-check to add custom code.
-                  </label>
-                </div>
-              </div>
-              <div className="field col-12 lg:col-4 my-2">
+              <div className="field col-12 lg:col-4 mt-2">
                 <span className="p-float-label">
                   <InputText
-                    id="rfq_description"
-                    name="rfq_description"
-                    value={formik.values.rfq_description}
+                    id="grn_batch_code"
+                    name="grn_batch_code"
+                    disabled={true}
+                    value={formik.values.grn_batch_code}
                     onChange={formik.handleChange}
-                    className={classNames({ "p-invalid": isFormFieldValid("rfq_description") })}
-                    autoFocus
+                    className={classNames({ "p-invalid": isFormFieldValid("grn_batch_code") })}
                   />
                   <label
-                    htmlFor="rfq_description"
-                    className={classNames({ "p-error": isFormFieldValid("rfq_description") })}
+                    htmlFor="grn_batch_code"
+                    className={classNames({ "p-error": isFormFieldValid("grn_batch_code") })}
                   >
-                    RFQ Description
+                    GRN Code
                   </label>
                 </span>
-                {getFormErrorMessage("rfq_description")}
+                {getFormErrorMessage("grn_batch_code")}
+                {/* <div className="field-checkbox mt-3">
+                  <Checkbox
+                    id="poCode"
+                    onChange={(e) => setPoCodeChecked(e.checked)}
+                    checked={poCodeChecked}
+                    disabled={poEditState}
+                  />
+                  <label htmlFor="poCode">Un-check to add custom code.</label>
+                </div> */}
               </div>
-              <div className="field col-12 lg:col-4 mt-2 ">
+              <div className="field col-12 lg:col-4 mt-2">
                 <span className="p-float-label">
-                  <Calendar
-                    id="expected_dod"
-                    minDate={new Date()}
-                    // // value={(rfqDetails.expected_dod)}
-                    // onChange={(e) =>
-                    //   setRfqDetails({ ...rfqDetails, expected_dod: e.target.value?.toString() })
-                    value={formik.values.expected_dod}
+                  <InputText
+                    id="grn_invoice_id"
+                    name="grn_invoice_id"
+                    disabled={true}
+                    value={formik.values.grn_invoice_id}
+                    onChange={formik.handleChange}
+                    className={classNames({ "p-invalid": isFormFieldValid("grn_invoice_id") })}
+                  />
+                  <label
+                    htmlFor="grn_invoice_id"
+                    className={classNames({ "p-error": isFormFieldValid("grn_invoice_id") })}
+                  >
+                    Invoice
+                  </label>
+                </span>
+                {getFormErrorMessage("grn_invoice_id")}
+              </div>
+              <div className="field col-12 lg:col-4 mt-2">
+                <span className="p-float-label">
+                  <InputText
+                    id="grn_desc"
+                    name="grn_desc"
+                    value={formik.values.grn_desc}
+                    onChange={formik.handleChange}
+                    className={classNames({ "p-invalid": isFormFieldValid("grn_desc") })}
+                  />
+                  <label
+                    htmlFor=" grn_desc"
+                    className={classNames({ "p-error": isFormFieldValid("grn_desc") })}
+                  >
+                    Description
+                  </label>
+                </span>
+                {getFormErrorMessage("grn_desc")}
+              </div>
+              <div className="field col-12 lg:col-4 mt-2">
+                <div className="p-float-label">
+                  <AutoComplete
+                    value={formik.values.grn_status}
+                    suggestions={filterStatus}
+                    completeMethod={searchStatus}
+                    // forceSelection
+                    dropdown
+                    field="name"
                     onChange={async (e) => {
+                      console.log(e.value)
+                      let grn_status = typeof e.value === "string" ? e.value : e.value.name
+                      let grn_status_id = typeof e.value === "string" ? e.value : e.value.id
+
                       await formik.setValues({
                         ...formik.values,
-                        expected_dod: e.value,
+                        grn_status,
+                        grn_status_id,
                       })
                     }}
-                    className={classNames({ "p-invalid": isFormFieldValid("expected_dod") })}
+                    aria-label="agreementStatusOptions"
+                    dropdownAriaLabel="Select Status"
+                    className={classNames({ "p-invalid": isFormFieldValid("grn_status") })}
                   />
+
                   <label
-                    style={{ zIndex: 10 }}
-                    htmlFor="expected_dod"
-                    className={classNames({ "p-error": isFormFieldValid("expected_dod") })}
+                    htmlFor="grn_status"
+                    className={classNames({ "p-error": isFormFieldValid("grn_status") })}
                   >
-                    Expected Delivery
+                    GRN Status
                   </label>
-                </span>
-                {getFormErrorMessage("expected_dod")}
-                  </div> */}
+                </div>
+                {getFormErrorMessage("grn_status")}
+              </div>
             </div>
 
             <div className="flex mx-4 ">
@@ -315,13 +420,16 @@ export const GrnsList = () => {
                 type="submit"
                 className="mr-2"
                 label={grnEditState ? "UPDATE" : "ADD"}
-                onClick={async (e) => {}}
+                // onClick={async (e) => {
+                //   e.preventDefault()
+                // }}
               />
               <Button
                 className="mr-2 p-button-secondary"
                 label="Cancel"
                 onClick={(e) => {
                   e.preventDefault()
+                  formik.resetForm()
                   setGrnEditState(false)
                 }}
               />
@@ -329,7 +437,7 @@ export const GrnsList = () => {
           </form>
         </div>
       </div>
-      {JSON.stringify(grns[0], null, 2)}
+
       <div className="col-12">
         <div className="card">
           <DataTable
