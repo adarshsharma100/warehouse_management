@@ -67,6 +67,10 @@ export const GrnsList = () => {
     grn_desc: "",
     grn_invoice_id: "",
   }
+
+  // const statuseOptions = grn_statuses..map((ele,i) => ({
+
+  // }))
   // const [grnDetails, setGrnDetails] = useState(initialGrnDetails)
   const [expandedRows, setExpandedRows] = useState()
   const [activeRow, setActiveRow] = useState({})
@@ -76,7 +80,7 @@ export const GrnsList = () => {
   const [filterStatus, setFilterStatus] = useState([])
   const [grnErrorMsg, setGrnErrorMsg] = useState([])
 
-  const searchStatus = createSearchFunction(filterStatus, setFilterStatus)
+  const searchStatus = createSearchFunction(grn_statuses, setFilterStatus)
 
   const menu = useRef<Menu>(null)
   const scrollToTop = useRef<HTMLDivElement>(null)
@@ -283,8 +287,6 @@ export const GrnsList = () => {
     initFilters()
     setFilterStatus(grn_statuses)
   }, [])
-
-  console.log("Formik", formik.values)
 
   return (
     <div className="grid w-full mr-0" ref={scrollToTop}>

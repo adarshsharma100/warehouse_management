@@ -117,12 +117,6 @@ function GRN({ currentGrn, prefixes, poDetails, refetch }) {
           />
 
           <Column
-            // field="quantity"
-            header="QC-Status"
-            // className="text-center"
-          />
-
-          <Column
             field="quantity"
             header="Recevied"
             // className="text-center"
