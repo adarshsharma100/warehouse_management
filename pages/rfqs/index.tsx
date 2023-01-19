@@ -93,8 +93,8 @@ export const RfqsList = () => {
     getRfq_products,
     {
       orderBy: { rfq_products_id: "asc" },
-      skip: 0,
-      take: ITEMS_PER_PAGE,
+      // skip: 0,
+      // take: ITEMS_PER_PAGE,
     }
   )
   const [{ vendors }, { error: getVendorsError }] = usePaginatedQuery(getVendors, {
