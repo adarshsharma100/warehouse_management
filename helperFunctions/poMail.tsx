@@ -43,6 +43,8 @@ const sendPoEmail = async (data, po, info) => {
   // console.log("csvData", csvData)
   // const csvData = "name,age,gender\nAlice,25,female\nBob,30,male\nCharlie,35,male" \\EXAMPLE
 
+  const headersArray = ["Sl No.", "Name", "Product", "Quantity", "Unit Price", "Total"]
+
   const html = `<div style="position: relative;">
   <h1 style="text-align: center; text-decoration: underline double;">Purchase Order</h1>
   <section>
@@ -116,12 +118,9 @@ const sendPoEmail = async (data, po, info) => {
           <table style="border-collapse: collapse; width: 100%;">
               <thead style="background-color: black; color: white;">
                   <tr style="border: 1px solid;">
-                      <td style="border: 1px solid; padding: 10px;">Sl No.</td>
-                      <td style="border: 1px solid; padding: 10px;">Name</td>
-                      <td style="border: 1px solid; padding: 10px;">Product-SKU</td>
-                      <td style="border: 1px solid; padding: 10px;">Quantity</td>
-                      <td style="border: 1px solid; padding: 10px;">Unit Price</td>
-                      <td style="border: 1px solid; padding: 10px;">Total</td>
+                      ${headersArray
+                        .map((ele) => `<td style="border: 1px solid; padding: 10px;">${ele}</td>`)
+                        .join("")}
                   </tr>
               </thead>
               <tbody>

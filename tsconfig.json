@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2015",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "baseUrl": ".",
     "allowJs": true,
     "skipLibCheck": true,
@@ -23,15 +19,6 @@
     "incremental": true,
     "tsBuildInfoFile": ".tsbuildinfo"
   },
-  "exclude": [
-    "node_modules",
-    "**/*.e2e.ts",
-    "cypress"
-  ],
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    "types"
-  ]
+  "exclude": ["node_modules", "**/*.e2e.ts", "cypress"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "types", ".ttf"]
 }
