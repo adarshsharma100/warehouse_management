@@ -63,6 +63,14 @@ export const Inventory_productsList = () => {
     take: ITEMS_PER_PAGE,
   })
 
+  const productOptions = products.map(({ product_id, name, products_sku, description }) => {
+    return {
+      name: `${products_sku} - ${name}`,
+      product_id,
+      description,
+    }
+  })
+
   const productInitialState = {
     name: "",
     price: null,
@@ -153,7 +161,9 @@ export const Inventory_productsList = () => {
   // console.log("productsId", productsId)
   const avilableProductsID = filterExistingValues(productsId, inventoryProductsId)
 
-  const avilableProducts = products.filter((ele, i) => avilableProductsID.includes(ele.product_id))
+  const avilableProducts = productOptions.filter((ele, i) =>
+    avilableProductsID.includes(ele.product_id)
+  )
   // console.log("avilableProducts", avilableProducts)
 
   const searchProducts = (event: { query: string }) => {
