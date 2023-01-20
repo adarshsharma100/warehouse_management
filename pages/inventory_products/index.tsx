@@ -26,7 +26,7 @@ import { useFormik } from "formik"
 import * as Yup from "yup"
 import classNames from "classnames"
 import { AutoComplete } from "primereact/autocomplete"
-import { createCSVFormat, filterExistingValues, tsuccess } from "app/constants"
+import { createCSVFormat, exportExcel, filterExistingValues, tsuccess } from "app/constants"
 import { Toast } from "primereact/toast"
 import ErrorCard from "components/ErrorCard"
 import LoaderFullScreen from "components/LoaderFullScreen"
@@ -132,24 +132,58 @@ export const Inventory_productsList = () => {
     setGlobalFilterValue("")
   }
 
+  const createExcelExportData = () => {
+    const excelData = inventory_products.map((ele) => {
+      const {
+        products: { products_sku, name, product_type },
+        good_stock,
+        quantity,
+      } = ele
+
+      return {
+        SKU: products_sku,
+        Product: name,
+        Type: product_type,
+        "Good-Stock": good_stock,
+        "Bad-Stock": quantity - good_stock,
+        "Total-Stock": quantity,
+      }
+    })
+    exportExcel(excelData)
+  }
+
   const renderHeader = () => {
     return (
-      <div className="flex justify-content-between">
+      <div className="flex justify-content-">
+        <span
+          className="flex justify-content-between flex-grow-1 pr-3"
+          style={{ display: "inline-block" }}
+        >
+          <Button
+            type="button"
+            icon="pi pi-filter-slash"
+            label="Clear"
+            className="p-button-outlined"
+            onClick={clearFilter}
+          />
+          <span className="p-input-icon-left">
+            <i className="pi pi-search" />
+            <InputText
+              value={globalFilterValue}
+              onChange={onGlobalFilterChange}
+              placeholder="Keyword Search"
+            />
+          </span>
+        </span>
         <Button
           type="button"
-          icon="pi pi-filter-slash"
-          label="Clear"
-          className="p-button-outlined"
-          onClick={clearFilter}
+          icon="pi pi-file-excel"
+          onClick={createExcelExportData}
+          className="p-button-success mr-2"
+          // data-pr-tooltip="XLS"
+          tooltip="Export-XLS"
+          tooltipOptions={{ position: "bottom" }}
         />
-        <span className="p-input-icon-left">
-          <i className="pi pi-search" />
-          <InputText
-            value={globalFilterValue}
-            onChange={onGlobalFilterChange}
-            placeholder="Keyword Search"
-          />
-        </span>
       </div>
     )
   }
@@ -209,7 +243,7 @@ export const Inventory_productsList = () => {
       skipEmptyLines: true,
       step: async ({ data }, parser) => {
         console.log(`${index}-data`, data)
-        const missingKey = ["PRODUCT_ID", "PRICE", "QUANTITY", "DESCRIPTION"].find(
+        const missingKey = ["PRODUCT_ID", "PRICE", "QUANTITY", "DESCRIPTION", "GOOD-STOCK"].find(
           (key) => !(key in data)
         )
         console.log("missingKey", missingKey)
@@ -224,6 +258,7 @@ export const Inventory_productsList = () => {
               quantity: Number(data["QUANTITY"]),
               products_product_id: Number(data["PRODUCT_ID"]),
               product_description: data["DESCRIPTION"],
+              good_stock: Number(data["GOOD-STOCK"]),
             },
             {
               onSuccess: (data) => {
@@ -251,7 +286,7 @@ export const Inventory_productsList = () => {
 
   // console.log("error-products", errorProducts)
   const vpCsvFormatDetails = {
-    headers: ["PRODUCT_ID", "PRICE", "QUANTITY", "DESCRIPTION"],
+    headers: ["PRODUCT_ID", "PRICE", "QUANTITY", "DESCRIPTION", "GOOD-STOCK"],
     name: "Inventory-Product-format.csv",
   }
 
@@ -386,6 +421,11 @@ export const Inventory_productsList = () => {
                 onSelect={() => setBtnVisibility(true)}
                 onBeforeSelect={() => setBtnVisibility(false)}
                 onClear={() => setBtnVisibility(false)}
+                chooseLabel="Import"
+                chooseOptions={{
+                  label: "Uplaod",
+                  icon: "pi pi-upload",
+                }}
               />
               <Button
                 visible={btnVisibility}
