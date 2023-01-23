@@ -58,7 +58,7 @@ import { useCurrentUser } from "app/core/hooks/useCurrentUser"
 import CreateNewPo from "components/CreateNewPo"
 import { FilterMatchMode, FilterOperator } from "primereact/api"
 
-const ITEMS_PER_PAGE = 100
+const ITEMS_PER_PAGE = 250
 
 export const Purchase_ordersList = () => {
   const router = useRouter()

@@ -7,7 +7,7 @@ interface GetPurchase_ordersInput
 
 export default resolver.pipe(
   resolver.authorize(),
-  async ({ where, orderBy, skip = 0, take = 100 }: GetPurchase_ordersInput) => {
+  async ({ where, orderBy, skip = 0, take = 250 }: GetPurchase_ordersInput) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const {
       items: purchase_orders,
