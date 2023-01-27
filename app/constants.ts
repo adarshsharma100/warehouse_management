@@ -1507,6 +1507,14 @@ export const tsuccess = (summary, detail) => {
     life: 3000,
   }
 }
+export const tError = (summary, detail) => {
+  return {
+    severity: "erorr",
+    summary: summary ? summary : "Created",
+    detail: detail,
+    life: 3000,
+  }
+}
 
 export const createSearchFunction = (Options, setFilteredSuggestions) => {
   return function search(event) {
@@ -1571,6 +1579,15 @@ export const exportExcel = (exportData) => {
     .catch((error) => {
       console.log("exporting Table Error ", error)
     })
+}
+
+export const isTrue = (...para) => {
+  return para.every((arg) => arg === true)
+}
+
+export const removeKeyFromObj = (obj, ...keys) => {
+  keys.forEach((ele) => delete obj[ele])
+  return obj
 }
 
 // export const sendPoEmail = async (data, po) => {

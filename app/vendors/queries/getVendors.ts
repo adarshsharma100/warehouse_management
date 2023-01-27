@@ -23,6 +23,13 @@ export default resolver.pipe(
           ...paginateArgs,
           where,
           orderBy,
+          include: {
+            vendor_tags: {
+              include: {
+                tags: true,
+              },
+            },
+          },
           // select: {
           //   vendor: true,
           //   vendor_city: true,

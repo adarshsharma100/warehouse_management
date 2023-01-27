@@ -109,6 +109,7 @@ model vendor {
   status          Boolean?          @default(true)
   purchase_order  purchase_order[]
   vendor_products vendor_products[]
+  vendor_tags     vendor_tags[]
 }
 
 model vendor_products {
@@ -124,6 +125,7 @@ model vendor_products {
   purchase_order_products purchase_order_products[]
 
   @@id([vp_id, vendor_vendor_id, products_product_id])
+  @@unique([vendor_vendor_id, products_product_id], map: "unique_index")
   @@index([products_product_id], map: "fk_vendor_products_products1_idx")
   @@index([vendor_vendor_id], map: "fk_vendor_products_vendor_idx")
 }
@@ -271,7 +273,26 @@ model grn_status {
   grn  grn[]
 }
 
+model tags {
+  id          Int           @id @default(autoincrement())
+  name        String?       @unique(map: "name_UNIQUE") @db.VarChar(45)
+  color       String?       @db.VarChar(50)
+  vendor_tags vendor_tags[]
+}
+
+model vendor_tags {
+  id               Int    @id @default(autoincrement())
+  vendor_vendor_id Int
+  tags_id          Int
+  tags             tags   @relation(fields: [tags_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_tags_tags1")
+  vendor           vendor @relation(fields: [vendor_vendor_id], references: [vendor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_tags_vendor1")
+
+  @@unique([vendor_vendor_id, tags_id], map: "unique_index")
+  @@index([tags_id], map: "fk_vendor_tags_tags1_idx")
+  @@index([vendor_vendor_id], map: "fk_vendor_tags_vendor1_idx")
+}
+
 enum purchase_order_agreement_status {
   Approved
-  Waiting_For_Approval @map("Waiting For Approval")
+  Waiting_For_Approval  @map("Waiting For Approval")
 }

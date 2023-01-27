@@ -13,6 +13,7 @@ import { Column } from "primereact/column"
 import { Dialog } from "primereact/dialog"
 import classNames from "classnames"
 import { InputText } from "primereact/inputtext"
+import { Chip } from "primereact/Chip"
 import createVendor from "app/vendors/mutations/createVendor"
 import updateVendor from "app/vendors/mutations/updateVendor"
 import deleteVendor from "app/vendors/mutations/deleteVendor"
@@ -25,7 +26,14 @@ import nodemailer from "nodemailer"
 import { mail } from "helperFunctions/mail"
 import axios from "axios"
 
-import { cities, tsuccess } from "app/constants"
+import {
+  cities,
+  filterExistingValues,
+  isTrue,
+  removeKeyFromObj,
+  tError,
+  tsuccess,
+} from "app/constants"
 import { createCSVFormat } from "app/constants"
 import { AutoComplete } from "primereact/autocomplete"
 import ErrorCard from "components/ErrorCard"
@@ -35,6 +43,13 @@ import ErrorComponent from "components/ErrorComponent"
 import LoaderFullScreen from "components/LoaderFullScreen"
 import { FilterMatchMode, FilterOperator } from "primereact/api"
 import { Dropdown } from "primereact/dropdown"
+import createTag from "app/tags/mutations/createTag"
+import { Chips } from "primereact/chips"
+import { InputTextarea } from "primereact/inputtextarea"
+import getTags from "app/tags/queries/getTags"
+import Creatable from "react-select/creatable"
+import chroma from "chroma-js"
+
 const ITEMS_PER_PAGE = 100
 
 export const VendorsList = () => {
@@ -45,6 +60,57 @@ export const VendorsList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
+
+  // console.log("vendors", vendors[0])
+
+  const [{ tags }, { refetch: refeatchTags }] = useQuery(getTags, {
+    orderBy: { id: "asc" },
+    skip: ITEMS_PER_PAGE * page,
+    take: ITEMS_PER_PAGE,
+  })
+
+  function getRandomColor() {
+    // const array = [
+    //   "#A1B5D8",
+    //   "#B3CBB9",
+    //   "#72B01D",
+    //   "#E6C0E9",
+    //   "#8D89A6",
+    //   "#9BBEC7",
+    //   "#F6E27F",
+    //   "#9BBEC7",
+    //   "#8491A3",
+    //   "#8491A3",
+    //   "#679436",
+    //   "#427AA1",
+    //   "#5D2E46",
+    //   "#5E0035",
+    //   "#005C69",
+    //   "#EAC5D8",
+    //   "#A9927D",
+    //   "#D9F9A5",
+    //   "#96C0B7",
+    //   "#E43F6F",
+    //   "#F56476",
+    //   "#5E4352",
+    //   "#50A2A7",
+    //   "#E4D6A7",
+    //   "#F1A208",
+    //   "#06A77D",
+    //   "#F0E100",
+    //   "#FCFF4B",
+    // ]
+    const colors = tags.map((ele) => ele.color)
+    return colors[Math.floor(Math.random() * colors.length)]
+  }
+
+  const existingTags = tags.map((ele) => ({
+    value: ele.id,
+    label: ele.name,
+    color: ele.color,
+    // color: getRandomColor(),
+  }))
+
   const initialVendorState = {
     vendor: "",
     vendor_code: "",
@@ -56,17 +122,102 @@ export const VendorsList = () => {
     address: "",
     vendor_city: "",
     vendor_state: "",
+    tags: [],
+  }
+  const styles4TagsComponent = {
+    control: (baseStyles, state) => ({
+      ...baseStyles,
+      borderColor: state.isFocused ? "#A5B4FC" : "#040d19",
+      backgroundColor: "#040d19",
+      color: "white",
+      opacity: state.isDisabled ? 0.4 : 1,
+    }),
+    menu: (baseStyles, state) => ({
+      ...baseStyles,
+      // borderColor: "red",
+      backgroundColor: "#040d19",
+    }),
+    input: (baseStyles, state) => ({
+      ...baseStyles,
+      // borderColor: "red",
+      backgroundColor: "#040d19",
+      color: "white",
+    }),
+    // option: (baseStyles, state) => ({
+    //   ...baseStyles,
+    //   backgroundColor: state.isFocused ? "grey" : "#040d19",
+    // }),
+    placeholder: (baseStyles, state) => ({
+      ...baseStyles,
+      color: "rgba(255, 255, 255, 0.6)",
+      zIndex: "1",
+    }),
+    option: (styles, { data, isDisabled, isFocused, isSelected }) => {
+      const color = chroma(data.color ?? "blue")
+
+      return {
+        ...styles,
+        backgroundColor: isDisabled
+          ? undefined
+          : isSelected
+          ? data.color
+          : isFocused
+          ? color.alpha(0.1).css()
+          : undefined,
+        color: isDisabled
+          ? "#ccc"
+          : isSelected
+          ? chroma.contrast(color, "white") > 2
+            ? "white"
+            : "black"
+          : data.color,
+        cursor: isDisabled ? "not-allowed" : "default",
+
+        ":active": {
+          ...styles[":active"],
+          backgroundColor: !isDisabled
+            ? isSelected
+              ? data.color
+              : color.alpha(0.3).css()
+            : undefined,
+        },
+      }
+    },
+    multiValue: (styles, { data }) => {
+      const color = chroma(data.color ?? "black")
+      return {
+        ...styles,
+        backgroundColor: color.alpha(0.1).css(),
+      }
+    },
+    multiValueLabel: (styles, { data }) => ({
+      ...styles,
+      color: data.color,
+    }),
+    multiValueRemove: (styles, { data }) => ({
+      ...styles,
+      color: data.color,
+      ":hover": {
+        backgroundColor: data.color,
+        color: "white",
+      },
+    }),
   }
 
   const [createVendorMutation, { error: vendorCreationError, isLoading: creatingVendor }] =
     useMutation(createVendor)
   const [updateVendorMutation, { error: vendorUpdationError, isLoading: updatingVendor }] =
     useMutation(updateVendor)
+
+  const [createTags] = useMutation(createTag)
+
   const [deleteVendorMutation] = useMutation(deleteVendor)
-  const [vendorDialog, setVendorDialog] = useState(false)
+  const [vendorDialog, setVendorDialog] = useState(true)
   const [vendorDetails, setVendorDetails] = useState(initialVendorState)
   const [errorProducts, setErrorProducts] = useState([])
   const [activeVendor, setActiveVendor] = useState(false)
+  const [activeVendorData, setActiveVendorData] = useState({})
+  const [vendorEditState, setVendorEditState] = useState(false)
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
   const goToNextPage = () => router.push({ query: { page: page + 1 } })
   const renderFooter = () => {
@@ -76,6 +227,7 @@ export const VendorsList = () => {
       </div>
     )
   }
+  console.log("active", activeVendorData)
 
   const [filters, setFilters] = useState({})
   const [globalFilterValue, setGlobalFilterValue] = useState("")
@@ -320,30 +472,100 @@ export const VendorsList = () => {
     }),
     onSubmit: async (data) => {
       console.log("data", data)
+      const { vendor_id, tags, vendor_tags } = data
+      const newTags = data.tags.filter((ele) => ele?.__isNew__)
 
-      if (!activeVendor) {
-        await createVendorMutation(
-          { ...data },
-          {
-            onSuccess: () => {
-              toast?.current?.show(tsuccess(null, "Vendor Created successfully"))
-            },
-          }
+      const existingTagIds = activeVendorData?.vendor_tags?.map(({ tags }, i) => tags.id)
+
+      const tagsToFilter = tags
+        .filter((ele, i) => typeof ele?.value === "number")
+        .map((ele) => ele.value)
+      console.log("tagsToFilter", tagsToFilter)
+
+      const tagsToConnect = filterExistingValues(tagsToFilter, existingTagIds).map((ele) => ({
+        tags_id: ele,
+      }))
+
+      const tagsToDelete = filterExistingValues(existingTagIds, tagsToFilter).map((ele) => ele)
+
+      console.log("Connecting", {
+        tagsToConnect,
+        existingTagIds,
+        tagsToDelete,
+      })
+
+      try {
+        await Promise.all(
+          newTags.map(
+            async (ele) =>
+              await createTags(
+                { name: ele.label },
+                {
+                  onSuccess: async ({ id }) =>
+                    await updateVendorMutation(
+                      {
+                        vendor_id,
+                        vendor_tags: {
+                          create: [
+                            {
+                              tags_id: id,
+                            },
+                          ],
+                        },
+                      }
+                      // {
+                      //   onSuccess: (data) => {
+                      //     toast?.current?.show(tsuccess(null, JSON.stringify(data, null, 2)))
+                      //   },
+                      //   onError: (data) =>
+                      //     toast?.current?.show(tsuccess(null, JSON.stringify(data, null, 2))),
+                      // }
+                    ),
+                }
+              )
+          )
         )
-      } else {
-        console.log(data)
-        await updateVendorMutation(
-          { ...data },
-          {
-            onSuccess: () => {
-              toast?.current?.show(tsuccess("Updated", "Vendor updated successfully"))
+        await refeatchTags()
+
+        if (!activeVendor) {
+          await createVendorMutation(
+            { ...data },
+            {
+              onSuccess: () => {
+                toast?.current?.show(tsuccess(null, "Vendor Created successfully"))
+              },
+            }
+          )
+        } else {
+          console.log(data)
+          removeKeyFromObj(data, "vendor_tags", "tags")
+          await updateVendorMutation(
+            {
+              ...data,
+              vendor_tags: {
+                create: tagsToConnect,
+                deleteMany: {
+                  tags_id: {
+                    in: tagsToDelete,
+                  },
+                },
+              },
             },
-          }
-        )
+            {
+              onSuccess: () => {
+                toast?.current?.show(tsuccess("Updated", "Vendor updated successfully"))
+              },
+            }
+          )
+        }
+      } catch (error) {
+        console.log(error)
       }
       await refetch()
+      await refeatchTags()
       setActiveVendor(false)
       setVendorDialog(false)
+      setVendorEditState(false)
       formik.resetForm()
     },
   })
@@ -356,6 +578,8 @@ export const VendorsList = () => {
   useEffect(() => {
     initFilters()
   }, [])
+
+  console.log("formik values", formik.values)
 
   return (
     <div className="grid w-full mr-0" ref={scrollToTop}>
@@ -372,6 +596,7 @@ export const VendorsList = () => {
               onClick={() => {
                 setVendorDetails(initialVendorState)
                 setVendorDialog(true)
+                setVendorEditState(true)
               }}
             ></Button>
             <span className=" flex justify-content-center align-items-center">
@@ -423,7 +648,65 @@ export const VendorsList = () => {
       >
         <div className="card p-4 mb-2 ">
           <form className="p-fluid" onSubmit={formik.handleSubmit}>
-            <h4 className="mb-3">{activeVendor ? "Update " : "Create "}Vendor</h4>
+            {activeVendor && (
+              <span
+                className={`badge status-${
+                  activeVendorData.status ? "active" : "inactive"
+                } mb-3 inline-block`}
+              >
+                {activeVendorData.status ? "Active" : "Inactive"}
+              </span>
+            )}
+            <div className="mb2 flex justify-content-between">
+              <h4 className="mb0 align-self-center">
+                {<span>{activeVendor ? "Update " : "Create "}</span>}
+                Vendor Details
+              </h4>
+              {activeVendor && (
+                <div>
+                  <Button
+                    // label="Edit"
+                    icon="pi pi-pencil"
+                    className="m-1"
+                    onClick={async (e) => {
+                      e.preventDefault()
+                      setActiveVendor(true)
+                      setVendorEditState(!vendorEditState)
+                    }}
+                    tooltip="Edit Form"
+                    tooltipOptions={{ position: "top" }}
+                  />
+                  <Button
+                    disabled={!vendorEditState}
+                    icon="bi bi-subtract"
+                    className="m-1"
+                    tooltip={`Make ${activeVendorData.status === false ? "Active" : "Inactive"}`}
+                    tooltipOptions={{ position: "top" }}
+                    onClick={async (e) => {
+                      e.preventDefault()
+                      // e.stopPropagation()
+
+                      await updateVendorMutation(
+                        {
+                          vendor_id: activeVendorData?.vendor_id,
+                          status: activeVendorData?.status === false ? true : false,
+                        },
+                        {
+                          onSuccess: (data) => {
+                            toast?.current?.show(tsuccess(null, JSON.stringify(data, null, 2)))
+                            activeVendorData.status = data.status
+                          },
+                          onError: (data) =>
+                            toast?.current?.show(tError(null, JSON.stringify(data, null, 2))),
+                        }
+                      )
+
+                      await refetch()
+                    }}
+                  />
+                </div>
+              )}
+            </div>
             <div className="formgrid grid">
               {[
                 { type: "text", label: "Name", field: "vendor" },
@@ -448,6 +731,7 @@ export const VendorsList = () => {
                         onChange={formik.handleChange}
                         autoFocus
                         className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
+                        disabled={!vendorEditState}
                       />
                       <label
                         htmlFor={ele.field}
@@ -477,6 +761,7 @@ export const VendorsList = () => {
                     aria-label="cities"
                     dropdownAriaLabel="Select City"
                     className={classNames({ "p-invalid": isFormFieldValid("vendor_city") })}
+                    disabled={!vendorEditState}
                   />
 
                   <label
@@ -494,6 +779,8 @@ export const VendorsList = () => {
                     id="vendor_state"
                     value={formik.values.vendor_state}
                     className={classNames({ "p-invalid": isFormFieldValid("vendor_state") })}
+                    disabled={!vendorEditState}
+                    onChange={formik.handleChange}
                   />
                   <label
                     htmlFor="vendor_state"
@@ -504,11 +791,63 @@ export const VendorsList = () => {
                 </span>
                 {getFormErrorMessage("vendor_state")}
               </div>
+
+              {/* <div className="field col-12  mt-4">
+                <div className="p-float-label">
+                  <Chips
+                    className="min-w-min"
+                    id="tags"
+                    value={formik.values.tags}
+                    onChange={async (e) => {
+                      const tags = e.value
+                      await formik.setValues({
+                        ...formik.values,
+                        tags,
+                      })
+                    }}
+                  ></Chips>
+
+                  <label
+                    htmlFor="tags"
+                    className={classNames({ "p-error": isFormFieldValid("vendor_city") })}
+                  >
+                    Tags
+                  </label>
+                </div>
+              </div> */}
+              <div className="field col-12  mt-4">
+                <div className="p-float-label">
+                  <Creatable
+                    classNamePrefix="tags"
+                    styles={styles4TagsComponent}
+                    isMulti
+                    options={existingTags}
+                    onChange={async (value) => {
+                      await formik.setValues({ ...formik.values, tags: value })
+                    }}
+                    value={formik.values.tags}
+                    // placeholder="Tags"
+                    isDisabled={!vendorEditState}
+                  />
+
+                  <label htmlFor="tags" style={{ transform: "translateY(-230%)" }}>
+                    Tags
+                  </label>
+                </div>
+              </div>
             </div>
+
             <div className="flex justify-content-end">
-              <Button type="submit" className="mr-2" label={activeVendor ? "UPDATE" : "ADD"} />
+              {vendorEditState && (
+                <Button
+                  type="submit"
+                  className="mr-2"
+                  label={activeVendor ? "UPDATE" : "ADD VENDOR"}
+                />
+              )}
               <Button
-                className="p-button-secondary"
+                className="p-button-secondary flex-grow-0"
+                style={{ maxWidth: "50%" }}
                 type="button"
                 label="Cancel"
                 onClick={() => {
@@ -516,12 +855,14 @@ export const VendorsList = () => {
                   setActiveVendor(false)
                   setVendorDialog(false)
                   setVendorDetails(initialVendorState)
+                  setVendorEditState(false)
                 }}
               />
             </div>
           </form>
         </div>
       </div>
+
       <div
         className={`col-12 ${
           errorProducts.length
@@ -570,6 +911,23 @@ export const VendorsList = () => {
             filters={filters}
             header={header1}
             filterDisplay="menu"
+            onRowClick={async (e) => {
+              setActiveVendorData({ ...e.data })
+              const tags = e.data.vendor_tags.map(({ tags }, i) => ({
+                value: tags.id,
+                label: tags.name,
+                color: tags.color,
+              }))
+              console.log("tags", e.data)
+              setVendorDialog(true)
+              setActiveVendor(true)
+              console.log(e.data)
+              await formik.setValues({
+                ...e.data,
+                tags,
+              })
+              scrollToTop?.current.scrollIntoView()
+            }}
           >
             {/* <Column
           field="vendor_id"
@@ -648,7 +1006,7 @@ export const VendorsList = () => {
               field="status"
               header="Status"
               body={(rowData) => {
-                console.log("rowData", rowData.status)
+                // console.log("rowData", rowData.status)
                 return (
                   <span className={`badge status-${rowData.status ? "active" : "inactive"}`}>
                     {rowData.status ? "Active" : "Inactive"}
@@ -659,42 +1017,29 @@ export const VendorsList = () => {
               filterElement={statusFilterTemplate}
               // className="text-center"
             />
-            <Column
-              // field="vendor_gstin"
+            {/* <Column
               header="Action"
               body={(rowData) => {
                 return (
                   <div className="flex">
                     <Button
-                      // label="Edit"
                       icon="pi pi-pencil"
                       className="m-1"
                       onClick={async () => {
                         setActiveVendor(true)
-                        // setVendorDetails({ ...rowData })
+
                         await formik.setValues({ ...rowData })
                         setVendorDialog(true)
                         scrollToTop?.current.scrollIntoView()
                       }}
                     />
-                    {/* <Button
-                      // label="Delete"
-                      disabled={false}
-                      icon="pi pi-trash"
-                      className="m-1"
-                      onClick={async () => {
-                        await deleteVendorMutation({ vendor_id: rowData.vendor_id })
-                        await refetch()
-                      }}
-                    /> */}
+
                     <Button
                       // label="Delete"
                       disabled={false}
                       icon="pi pi-info-circle"
                       className="m-1"
                       onClick={async () => {
-                        console.log("rowData", rowData)
-
                         await updateVendorMutation({
                           vendor_id: rowData.vendor_id,
                           status: rowData.status === false ? true : false,
@@ -706,8 +1051,7 @@ export const VendorsList = () => {
                   </div>
                 )
               }}
-              // className="text-center"
-            />
+            /> */}
           </DataTable>
         </div>
       </div>
@@ -726,111 +1070,5 @@ const VendorsPage = () => {
     </div>
   )
 }
-// *-----------------------------------------------------*
-// Vendor form befor Formik
-{
-  /* <div className="card">
-  <form
-    className="p-fluid"
-    onSubmit={async (e) => {
-      e.preventDefault()
-      console.log(vendorDetails)
-      console.log("vendorDetails: ", vendorDetails)
-      if (!activeVendor) {
-        await createVendorMutation({
-          ...vendorDetails,
-        })
-      } else {
-        await updateVendorMutation({ ...vendorDetails })
-      }
-      await refetch()
-      setActiveVendor(false)
-      setVendorDialog(false)
-    }}
-  >
-    <h4 className="mb-3">{activeVendor ? "Update " : "Create "}Vendor</h4>
-    <div className="formgrid grid">
-      {[
-        { type: "text", label: "Name", field: "vendor" },
-        { type: "text", label: "Code", field: "vendor_code" },
-        { type: "email", label: "Email", field: "vendor_email" },
-        // { type: "text", label: "City", field: "vendor_city" },
-        { type: "text", label: "Contact Number", field: "vendor_contact" },
-        { type: "text", label: "GSTIN", field: "vendor_gstin" },
-        { type: "text", label: "Credit Period", field: "credit_period" },
-        { type: "text", label: "Lead Time", field: "lead_time" },
-        { type: "text", label: "Address", field: "address" },
-      ].map((ele, i) => {
-        return (
-          <div key={`create-${ele.field}-${i}`} className="field col-12 md:col-3 lg:col-2 mt-4">
-            <span className="p-float-label">
-              <InputText
-                id={ele.field}
-                name={ele.field}
-                value={vendorDetails[ele.field]}
-                onChange={(e) => {
-                  setVendorDetails({ ...vendorDetails, [ele.field]: e.target.value })
-                }}
-              />
-              <label htmlFor={ele.field}>{ele.label}</label>
-            </span>
-          </div>
-        )
-      })}
-      <div className="field col-12 md:col-3 lg:col-2 mt-4">
-        <div className="p-float-label">
-          <AutoComplete
-            value={vendorDetails.vendor_city}
-            suggestions={filteredSuggestions}
-            completeMethod={searchCities}
-            field="city"
-            onChange={(e) => {
-              let vendor_city = typeof e.value === typeof "s" ? e.value : e.value.city
-              let vendor_state = typeof e.value === typeof "s" ? " " : e.value.state
-              setVendorDetails({ ...vendorDetails, vendor_city, vendor_state })
-            }}
-            aria-label="cities"
-            dropdownAriaLabel="Select City"
-          />
-
-          <label
-          // htmlFor={ele.field}
-          // className={classNames({ "p-error": isFormFieldValid("name") })}
-          >
-            City
-          </label>
-        </div>
-      </div>
-      <div className="field col-12 md:col-3 lg:col-2 mt-4">
-        <span className="p-float-label">
-          <InputText
-            id="state"
-            name="state"
-            value={vendorDetails.vendor_state}
-            onChange={(e) => {
-              setVendorDetails({ ...vendorDetails, vendor_state: e.value })
-            }}
-          />
-          <label htmlFor="state">State</label>
-        </span>
-      </div>
-    </div>
-    <div className="flex justify-content-end">
-      <Button type="submit" className="mr-2" label={activeVendor ? "UPDATE" : "ADD"} />
-      <Button
-        className="p-button-secondary"
-        type="button"
-        label="Cancel"
-        onClick={() => {
-          setActiveVendor(false)
-          setVendorDialog(false)
-          setVendorDetails(initialVendorState)
-        }}
-      />
-    </div>
-  </form>
-</div> */
-}
-// *-----------------------------------------------------*
 
 export default VendorsPage
