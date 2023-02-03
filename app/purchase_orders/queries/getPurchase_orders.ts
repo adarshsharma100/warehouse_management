@@ -25,7 +25,6 @@ export default resolver.pipe(
           orderBy,
           include: {
             vendor: true,
-            purchase_order_status: true,
             purchase_order_products: {
               include: {
                 vendor_products: {
