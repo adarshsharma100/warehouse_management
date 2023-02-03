@@ -20,3 +20,7 @@
 .fb-35 {
   flex-basis: 35%;
 }
+
+.p-datatable .p-datatable-tbody > tr:hover {
+  cursor: pointer;
+}
