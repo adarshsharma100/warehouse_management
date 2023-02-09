@@ -29,6 +29,8 @@ export default resolver.pipe(
                 products: true,
               },
             },
+            rfq_sentto: true,
+            agreement_terms: true,
           },
         }),
     })

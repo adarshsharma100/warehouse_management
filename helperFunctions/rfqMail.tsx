@@ -3,6 +3,12 @@ import { e_mail } from "./e_mail"
 // import { mail } from "./mail"
 
 const sendEmail = async (data, rfq, info) => {
+  console.log("rfq_data: ", {
+    data,
+    rfq,
+    info,
+  })
+
   const products = await db.rfq_products.findMany({
     where: { rfq_id: rfq?.id },
     include: { products: true },
@@ -21,7 +27,7 @@ const sendEmail = async (data, rfq, info) => {
   //   ? data?.rfq_sentto?.create.map(({ email }) => email)
   //   : sentmails?.map(({ email }) => email)
 
-  const headersArray = ["Sl No.", "Name", "Description", "Quantity", "Unit Price"]
+  const headersArray = ["Sl No.", "Item", "Image", "Qty", "Target Price"]
 
   const html = `<section>
   <div>
@@ -31,6 +37,7 @@ const sendEmail = async (data, rfq, info) => {
       <p><strong>Description:</strong> ${rfq.rfq_description}</p>
       <p><strong>Created on:</strong> ${new Date(rfq.createdAt).toLocaleDateString()}</p>
       <p><strong>Expected Delivery:</strong> ${new Date(rfq.expected_dod).toLocaleDateString()}</p>
+      <p><strong>Terms:</strong> ${rfq.agreement_terms.name}</p>
       <hr />
   </div>
   <div>
@@ -50,9 +57,7 @@ const sendEmail = async (data, rfq, info) => {
                     `<tr style="border: 1px solid">
                   <td style="border: 1px solid;text-align: center; padding:10px">${i + 1}</td>
                   <td style="border: 1px solid;text-align: center; padding:10px">${name}</td>
-                  <td style="border: 1px solid;text-align: center; padding:10px">${
-                    description ? description : "-"
-                  }</td>
+                  <td style="border: 1px solid;text-align: center; padding:10px">Image</td>
                   <td style="border: 1px solid;text-align: center; padding:10px">${
                     quantity ? quantity : "-"
                   }</td>
@@ -67,17 +72,17 @@ const sendEmail = async (data, rfq, info) => {
   </div>
 </section>
   `
-
-  const csvHeader = "Sl No,Name,Description,Quantity,Unit Price\n"
+  const csvHeader = "Sl No,Item,Image,Qty,Target Price\n"
 
   const csvBody = products.map((ele, i) => {
     const {
       quantity,
       price_per_unit,
-      products: { name, description, products_sku },
+      products_product_id: productId,
+      products: { name: item, description, products_sku: sku },
     } = ele
 
-    return [i + 1, name, description, quantity, price_per_unit].toString() + "\n"
+    return [i + 1, item, "IMAGE", quantity, price_per_unit].toString() + "\n"
   })
   const csvData = csvHeader + csvBody.join("")
 

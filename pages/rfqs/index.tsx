@@ -50,7 +50,13 @@ import getRfq_senttos from "app/rfq_senttos/queries/getRfq_senttos"
 import { useFormik } from "formik"
 import * as Yup from "yup"
 import classNames from "classnames"
-import { createSearchFunction, filterExistingValues, tsuccess } from "app/constants"
+import {
+  arrayFillCopy,
+  createCSV,
+  createSearchFunction,
+  filterExistingValues,
+  tsuccess,
+} from "app/constants"
 import getMutation_admin_mail from "app/mutation_admin_mails/queries/getMutation_admin_mail"
 import { Toast } from "primereact/toast"
 import ScannedProducts from "components/ScannedProducts"
@@ -60,6 +66,10 @@ import { useCurrentUser } from "app/core/hooks/useCurrentUser"
 import { date } from "zod"
 import CreateNewPo from "components/CreateNewPo"
 import { FilterMatchMode, FilterOperator } from "primereact/api"
+import getPurchase_orders from "app/purchase_orders/queries/getPurchase_orders"
+import { clearConfigCache } from "prettier"
+import getAgreement_terms from "app/agreement_terms/queries/getAgreement_terms"
+import { spawn } from "child_process"
 
 const ITEMS_PER_PAGE = 100
 
@@ -78,12 +88,20 @@ export const RfqsList = () => {
   const [{ rfqs }, { error: rfqError, refetch }] = useQuery(getRfqs, {
     orderBy: { id: "asc" },
   })
+  const [{ purchase_orders }, { error: getPoError }] = useQuery(getPurchase_orders, {
+    orderBy: { po_id: "desc" }, // Do not change the order this will affect on LatestPO function
+    skip: ITEMS_PER_PAGE * page,
+    take: ITEMS_PER_PAGE,
+  })
+
+  console.log("last po details", purchase_orders)
 
   const [{ products }, { error: productsError }] = usePaginatedQuery(getProducts, {
     orderBy: { product_id: "asc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
+
   // const [{ rfq_products }, { refetch: fetchRfqProducts }] = usePaginatedQuery(getRfq_products, {
   //   orderBy: { rfq_products_id: "asc" },
   //   skip: ITEMS_PER_PAGE * page,
@@ -119,7 +137,14 @@ export const RfqsList = () => {
   const [{ rfq_senttos }, { error: getRfq_senttosError }] = useQuery(getRfq_senttos, {
     orderBy: { id: "asc" },
   })
-  // console.log(rfq_senttos)
+  const [{ agreement_terms: rfqTerms }, { error: agreementTermsError }] = useQuery(
+    getAgreement_terms,
+    {
+      where: { for: "rfq" },
+      orderBy: { id: "asc" },
+    }
+  )
+
   const [sendDialog, setSendDialog] = useState(false)
   const [createRFQMutation, { isLoading: creatingRfq, error: createRFQMutationError }] =
     useMutation(createRfq)
@@ -162,6 +187,7 @@ export const RfqsList = () => {
     expected_dod: "",
     rfq_email: null,
     itemsLength: false,
+    terms: "",
   }
   const [rfqDetails, setRfqDetails] = useState(initialRfqState)
   const [rfqEditState, setRfqEditState] = useState(false)
@@ -183,8 +209,20 @@ export const RfqsList = () => {
   //   },
   // ])
 
+  const initialItemList = {
+    products_product_id: "",
+    quantity: "",
+    price_per_unit: "",
+    product_name: "",
+    last_po_price: "-",
+    last_vendor: "",
+    avg_price: "-",
+  }
+
   const [itemList, setItemList] = useState([
-    { products_product_id: "", quantity: "", price_per_unit: "", product_name: "" },
+    {
+      ...initialItemList,
+    },
   ])
   const initialPoItemState = {
     purchase_order_po_id: "",
@@ -225,6 +263,9 @@ export const RfqsList = () => {
   const [RFQCodechecked, setRFQCodeChecked] = useState<boolean>(true)
   const [scanner, setScanner] = useState<boolean>(false)
   const scrollToRfq = useRef<HTMLHeadingElement>(null)
+  const [rfqTermsSuggestions, setRfqTermsSuggestions] = useState<any>(null)
+
+  const searchTerms = createSearchFunction(rfqTerms, setRfqTermsSuggestions)
 
   const tableRfqProducts = rfq_products.map((ele) => {
     return {
@@ -233,6 +274,58 @@ export const RfqsList = () => {
       product_sku: ele.products.products_sku,
     }
   })
+
+  // console.log("Formik_values",formik.values)
+
+  const LatestPO = (poList, num) => {
+    // get all the po
+    // serach the po from last for selected product and get the price
+
+    const lastProductPrice = poList.find((ele) =>
+      ele.purchase_order_products.find((ele) => ele.vendor_products_products_product_id === num)
+    )
+
+    // const {
+    //   // vendor: { vendor },
+    //   purchase_order_products,
+    //   // po_id,
+    // } = lastProductPrice
+
+    const vendor = lastProductPrice?.vendor?.vendor
+    const po_id = lastProductPrice?.po_id
+    const prod_price = lastProductPrice?.purchase_order_products?.find(
+      (ele) => ele.vendor_products_products_product_id === num
+    ).price_per_unit
+
+    const data = {
+      po_id,
+      vendor: vendor || "NA",
+      prod_price,
+    }
+    console.log("data: ", data)
+
+    return data
+  }
+  const AverageCostPrice = (poList, num) => {
+    // get all the po
+
+    const productPos = poList.filter((ele) =>
+      ele.purchase_order_products.some((item) => item.vendor_products_products_product_id === num)
+    )
+
+    const totalPrice = productPos.reduce((acc, ele) => {
+      let matchingProducts = ele.purchase_order_products.filter(
+        (product) => product.vendor_products_products_product_id === num
+      )
+      return acc + matchingProducts.reduce((acc, product) => acc + product.price_per_unit, 0)
+    }, 0)
+
+    const avgPrice = totalPrice / productPos.length
+
+    // console.log("avgPrice: ", avgPrice)
+
+    return avgPrice
+  }
 
   useEffect(() => {
     const active = tableRfqProducts.filter(({ rfq_id }) => {
@@ -347,6 +440,10 @@ export const RfqsList = () => {
         operator: FilterOperator.OR,
         constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }],
       },
+      agreement_terms_id: {
+        operator: FilterOperator.OR,
+        constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }],
+      },
     })
     setGlobalFilterValue("")
   }
@@ -354,7 +451,7 @@ export const RfqsList = () => {
   const statuses = ["1", "0"]
 
   const statusFilterTemplate = (options) => {
-    // console.log(options)
+    console.log("options", options)
     return (
       <Dropdown
         value={options.value}
@@ -370,9 +467,28 @@ export const RfqsList = () => {
   const statusItemTemplate = (option) => {
     return (
       <span className={`badge status-${option === "1" ? "active" : "inactive"}`}>
-        {option === "1" ? "Active" : "Inactive"}
+        {option === "1" ? "Active" : "Closed"}
       </span>
     )
+  }
+  const termsOptions = rfqTerms.map((ele) => ele.name)
+
+  const termsFilterTemplate = (options) => {
+    console.log("rfqTerms", rfqTerms)
+    return (
+      <Dropdown
+        value={options.value}
+        options={termsOptions}
+        onChange={(e) => options.filterCallback(e.value, options.index)}
+        itemTemplate={termsItemTemplate}
+        placeholder="Select a Status"
+        className="p-column-filter"
+        showClear
+      />
+    )
+  }
+  const termsItemTemplate = (option) => {
+    return <span>{option}</span>
   }
 
   const dateFilterTemplate = (options) => {
@@ -411,7 +527,7 @@ export const RfqsList = () => {
   const header1 = renderHeader()
 
   const addFields = () => {
-    let newfield = { products_product_id: "", quantity: "", price_per_unit: "" }
+    let newfield = initialItemList
 
     setItemList([...itemList, newfield])
   }
@@ -502,6 +618,7 @@ export const RfqsList = () => {
               expected_dod,
               id: activeRow.id,
               itemsLength: true,
+              terms: activeRow.agreement_terms,
             })
             // setRfqDetails({
             //   rfq_code: activeRow.rfq_code,
@@ -600,6 +717,36 @@ export const RfqsList = () => {
             await refetch()
           },
         },
+        {
+          label: "download csv",
+          icon: "pi pi-send",
+          command: () => {
+            console.log("ActiveRow", activeRow)
+
+            const rfq_prods = activeRow?.rfq_products
+            console.log("rfq_prods: ", rfq_prods)
+            // return
+
+            const csvHeader = "Sl No,SKU,Item,Image,Qty,Cost Price,Target Price\n"
+
+            const csvBody = rfq_prods.map((ele, i) => {
+              const {
+                quantity,
+                price_per_unit,
+                products_product_id: productId,
+                products: { name: item, description, products_sku: sku },
+              } = ele
+              const price = LatestPO(purchase_orders, productId).prod_price
+
+              return [i + 1, sku, item, "IMAGE", quantity, price, price_per_unit].toString() + "\n"
+            })
+            const csvData = csvHeader + csvBody.join("")
+            const name = activeRow?.rfq_code
+            console.log("csvData: ", csvData)
+
+            createCSV(csvData, name)
+          },
+        },
       ],
     },
   ]
@@ -649,6 +796,8 @@ export const RfqsList = () => {
     )
   }
 
+  console.log("formik", formik?.values)
+
   const formik = useFormik({
     initialValues: rfqDetails,
     validationSchema: Yup.object().shape({
@@ -658,9 +807,10 @@ export const RfqsList = () => {
       itemsLength: Yup.boolean().equals([true], "⚠ Please select atleast one product").required(),
     }),
     onSubmit: async (data) => {
-      // console.log("data", data)
+      console.log("onSubmit", data)
+
       // console.log("activeRow", activeRow)
-      const { rfq_code, rfq_description, rfq_email, expected_dod } = data
+      const { rfq_code, rfq_description, rfq_email, expected_dod, terms } = data
       const dateToString = expected_dod.toString()
       const sentoEmails = rfq_email?.length
         ? rfq_email?.map((item, i) => ({ email: item.value }))
@@ -681,6 +831,7 @@ export const RfqsList = () => {
             rfq_description,
             expected_dod,
             active: 1,
+            agreement_terms_id: Number(terms.id),
             rfq_products: {
               create: newProductList.map((ele) => ({
                 price_per_unit: Number(ele.price_per_unit),
@@ -746,6 +897,7 @@ export const RfqsList = () => {
               ...data,
               expected_dod: dateToString,
               active: 1,
+              agreement_terms_id: Number(terms.id),
               rfq_products: {
                 create: removeEmptyItems.map((ele) => ({
                   price_per_unit: Number(ele.price_per_unit),
@@ -778,7 +930,7 @@ export const RfqsList = () => {
           setRfqDialog(false)
           formik.resetForm()
         } catch (error) {
-          console.log(error)
+          console.log("rfq_CreationError :", error)
         }
       }
       await refetch()
@@ -884,7 +1036,7 @@ export const RfqsList = () => {
 
   // console.log("values", typeof new Date())
 
-  // console.log("newcode", newRFQCode)
+  console.log("RFQ: ", rfqs)
 
   return (
     <div ref={scrollToRfq} className="grid w-full mr-0">
@@ -998,13 +1150,9 @@ export const RfqsList = () => {
                 // })
 
                 await formik.setValues({ ...initialRfqState })
-                setItemList([
-                  { products_product_id: "", quantity: "", price_per_unit: "" },
-                  { products_product_id: "", quantity: "", price_per_unit: "" },
-                  { products_product_id: "", quantity: "", price_per_unit: "" },
-                  { products_product_id: "", quantity: "", price_per_unit: "" },
-                  { products_product_id: "", quantity: "", price_per_unit: "" },
-                ])
+
+                const fiveFields = arrayFillCopy(5, initialItemList)
+                setItemList(fiveFields)
                 setRfqDialog(true)
                 setRFQCodeChecked(true)
               }}
@@ -1120,19 +1268,42 @@ export const RfqsList = () => {
                 {getFormErrorMessage("expected_dod")}
               </div>
 
+              <div className="field col-12 lg:col-4 mt-2">
+                <div className="p-float-label">
+                  <AutoComplete
+                    id="terms"
+                    // disabled={fieldDisable}
+                    value={formik.values?.terms?.name}
+                    suggestions={rfqTermsSuggestions}
+                    completeMethod={searchTerms}
+                    dropdown
+                    field="name"
+                    onChange={async (e) => {
+                      let terms = typeof e.value === "string" ? e.value : e.value
+
+                      await formik.setValues({
+                        ...formik.values,
+                        terms,
+                      })
+                    }}
+                    aria-label="Agreement Status"
+                    dropdownAriaLabel="Agreement Status"
+                    className={classNames({ "p-invalid": isFormFieldValid("terms") })}
+                  />
+
+                  <label
+                    htmlFor="terms"
+                    className={classNames({ "p-error": isFormFieldValid("terms") })}
+                  >
+                    Terms
+                  </label>
+                </div>
+                {getFormErrorMessage("terms")}
+              </div>
+
               <div className="col-12">
                 <h6 className="mb-4">Send To Emails:</h6>
               </div>
-
-              {/* <MultiSelect
-                style={{ minWidth: "33%" }}
-                value={rfqDetails.rfq_email}
-                options={vendorEmailOptions}
-                onChange={(e) => setRfqDetails({ ...rfqDetails, rfq_email: e.value })}
-                optionLabel="name"
-                placeholder="Select a Vendor"
-                display="chip"
-              /> */}
 
               <span className="p-float-label w-full">
                 <AutoComplete
@@ -1158,7 +1329,7 @@ export const RfqsList = () => {
               {itemList.map((ele, i) => (
                 <>
                   <div className="col-12 grid mt-1" key={`RFQ-product-${i}`}>
-                    <div className="field col-12 lg:col-7 mt-2">
+                    <div className="field col-12 lg:col-5 mt-2">
                       <div className="p-float-label">
                         <AutoComplete
                           id="name"
@@ -1176,9 +1347,15 @@ export const RfqsList = () => {
                             let price_per_unit = typeof e.value === "string" ? 0 : e.value?.Price
                             let data = [...itemList]
 
+                            const lastPo = LatestPO(purchase_orders, product_id)
+                            const avg_price = AverageCostPrice(purchase_orders, product_id)
+
                             data[i].product_name = name
                             data[i].products_product_id = product_id
-                            data[i].price_per_unit = price_per_unit
+                            data[i].price_per_unit = price_per_unit || lastPo?.prod_price || ""
+                            data[i].last_po_price = lastPo?.prod_price || ""
+                            data[i].last_vendor = lastPo?.vendor || ""
+                            data[i].avg_price = avg_price || ""
 
                             let itemsLength = !e.value?.name ? false : true
                             await formik.setValues({ ...formik.values, itemsLength })
@@ -1198,36 +1375,9 @@ export const RfqsList = () => {
                         </label>
                       </div>
                     </div>
-                    {/* <div className="field col-12 lg:col-7 mt-2">
-                      <Dropdown
-                        name="products_product_id"
-                        // disabled={editState}
-                        optionLabel="name"
-                        filter
-                        showClear
-                        filterBy="name"
-                        value={ele.products_product_id}
-                        options={productOptions}
-                        onChange={async (e) => {
-                          await handleFormChange(e, i)
-                          const productPrice = products.filter(
-                            (item) => item.product_id === e.value
-                          )[0]?.Price
-                          let data = [...itemList]
-                          e.target
-                            ? (data[i].price_per_unit = productPrice)
-                            : (data[i].price_per_unit = 0)
-                          setItemList(data)
-                          if (i === 0) {
-                            const itemsLength = e.value ? true : false
-                            await formik.setValues({ ...formik.values, itemsLength })
-                          }
-                        }}
-                        placeholder="Select Product"
-                      />
-                    </div> */}
-                    <div className="field col-12 lg:col-2 mt-2">
-                      <span className="p-float-label">
+
+                    <div className="field col-12 lg:col-1 mt-2">
+                      <span className="p-float-label ">
                         <InputNumber
                           id={`product-prixe-${i}`}
                           name="price_per_unit"
@@ -1236,14 +1386,14 @@ export const RfqsList = () => {
                           // className={classNames({ "p-invalid": isFormFieldValid("name") })}
                         />
                         <label
-                        // className={classNames({ "p-error": isFormFieldValid("name") })}
+                        // className="labelpos_1"
                         >
-                          Target price per unit
+                          Target price
                         </label>
                       </span>
                       {/* {getFormErrorMessage("name")} */}
                     </div>
-                    <div className="field col-12 lg:col-2 mt-2">
+                    <div className="field col-12 lg:col-1 mt-2">
                       <span className="p-float-label">
                         <InputNumber
                           id={`product-qty-${i}`}
@@ -1256,6 +1406,61 @@ export const RfqsList = () => {
                         // className={classNames({ "p-error": isFormFieldValid("name") })}
                         >
                           Quantity
+                        </label>
+                      </span>
+                      {/* {getFormErrorMessage("name")} */}
+                    </div>
+                    <div className="field col-12 lg:col-1 mt-2">
+                      <span className="p-float-label">
+                        <InputText
+                          id="last_po_price"
+                          name="last_po_price"
+                          disabled
+                          value={ele.last_po_price}
+                          onChange={(e) => handleFormChange(e, i)}
+                          // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                        />
+                        <label
+                        // className="labelpos_1"
+                        // className={classNames({ "p-error": isFormFieldValid("name") })}
+                        >
+                          Latest Price
+                        </label>
+                      </span>
+                      {/* {getFormErrorMessage("name")} */}
+                    </div>
+                    <div className="field col-12 lg:col-1 mt-2">
+                      <span className="p-float-label">
+                        <InputNumber
+                          id="avg_price"
+                          name="avg_price"
+                          disabled
+                          value={ele.avg_price}
+                          onChange={(e) => handleFormChange(e, i)}
+                          // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                        />
+                        <label
+                        // className="labelpos_1"
+                        // className={classNames({ "p-error": isFormFieldValid("name") })}
+                        >
+                          Avg. Price
+                        </label>
+                      </span>
+                      {/* {getFormErrorMessage("name")} */}
+                    </div>
+                    <div className="field col-12 lg:col-2 mt-2">
+                      <span className="p-float-label">
+                        <InputText
+                          id="last_vendor"
+                          name="last_vendor"
+                          value={ele.last_vendor}
+                          onChange={(e) => handleFormChange(e, i)}
+                          // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                        />
+                        <label
+                        // className={classNames({ "p-error": isFormFieldValid("name") })}
+                        >
+                          Last Vendor
                         </label>
                       </span>
                       {/* {getFormErrorMessage("name")} */}
@@ -1287,7 +1492,7 @@ export const RfqsList = () => {
               <Button
                 type="submit"
                 className="mr-2"
-                label={rfqEditState ? "UPDATE" : "ADD"}
+                label={rfqEditState ? "UPDATE" : "Submit"}
                 onClick={async (e) => {}}
               />
               <Button
@@ -1348,6 +1553,7 @@ export const RfqsList = () => {
         setPurchaseDialog={setPurchaseDialog}
         prefixes={prefixes}
       /> */}
+
       <div className="col-12">
         <div className="card">
           <DataTable
@@ -1380,7 +1586,7 @@ export const RfqsList = () => {
         /> */}
             <Column
               field="rfq_code"
-              header="Code"
+              header="RFQ No."
               filter
               filterPlaceholder="Search by Code"
               // className="text-center"
@@ -1426,12 +1632,47 @@ export const RfqsList = () => {
               body={(rowData) => {
                 return (
                   <span className={`badge status-${rowData.active ? "active" : "inactive"}`}>
-                    {rowData.active ? "Active" : "Inactive"}
+                    {rowData.active ? "Active" : "Closed"}
                   </span>
                 )
               }}
               filter
               filterElement={statusFilterTemplate}
+            />
+            <Column
+              field="rfq_sentto"
+              header="Vendors"
+              body={(rowData) => {
+                console.log("rowData", rowData)
+
+                const sentMails = rowData.rfq_sentto?.map((ele) => ele.email)
+                const uniqueMails = [...new Set(sentMails)]
+                console.log("uniqueMails: ", uniqueMails)
+
+                const sentVendors = vendors
+                  .filter((ele, i) => uniqueMails.includes(ele.vendor_email))
+                  .map((ele) => ele.vendor)
+
+                // return <div className="cutoff-text">{sentVendors.join(" , ")}</div>
+                return (
+                  <div className="tooltip-pr">
+                    <span className="tooltiptext-pr">{sentVendors.join(" , ")}</span>
+                  </div>
+                )
+              }}
+            />
+            <Column
+              field="agreement_terms_id"
+              header="Terms"
+              body={(rowData) => {
+                console.log("rowDataterms: ", rowData)
+
+                return <span>{rowData.agreement_terms.name}</span>
+              }}
+              filter
+              filterPlaceholder="Search by Terms"
+              filterElement={termsFilterTemplate}
+              // className="text-center"
             />
             <Column
               // field="vendor_gstin"
