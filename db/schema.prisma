@@ -29,15 +29,16 @@ model grn {
 }
 
 model inventory_products {
-  inventory_product_id Int           @unique @default(autoincrement())
-  product_description  String?       @db.VarChar(45)
-  price                Int?          @default(0)
-  quantity             Int           @default(0)
+  inventory_product_id Int              @unique @default(autoincrement())
+  product_description  String?          @db.VarChar(45)
+  price                Int?             @default(0)
+  quantity             Int              @default(0)
   products_product_id  Int
-  created_at           DateTime      @default(now()) @db.DateTime(0)
+  created_at           DateTime         @default(now()) @db.DateTime(0)
   good_stock           Int?
-  bad_stock            Int?          @default(0)
-  products             products      @relation(fields: [products_product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_products1")
+  bad_stock            Int?             @default(0)
+  products             products         @relation(fields: [products_product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_products1")
+  inventory_logs       inventory_logs[]
   kit_product          kit_product[]
 
   @@id([inventory_product_id, products_product_id])
@@ -58,7 +59,7 @@ model products {
 }
 
 model purchase_order {
-  po_id                    Int                       @unique(map: "po_id_UNIQUE") @default(autoincrement())
+  po_id                    Int                       @id @unique(map: "po_id_UNIQUE") @default(autoincrement())
   po_type                  String                    @default("Manual") @db.VarChar(45)
   updated_on               DateTime?                 @default(now())
   approved_on              DateTime?                 @db.DateTime(0)
@@ -67,7 +68,6 @@ model purchase_order {
   expiry_date              DateTime                  @db.DateTime(0)
   expected_delivery        DateTime                  @db.DateTime(0)
   agreement                String?                   @db.VarChar(45)
-  vendor_vendor_id         Int
   po_description           String                    @db.VarChar(155)
   po_code                  String                    @db.VarChar(45)
   rfq_id                   Int?
@@ -75,14 +75,15 @@ model purchase_order {
   note                     String?                   @db.VarChar(50)
   agreement_terms_id       Int
   purchase_order_status_id Int
+  vendor_vendor_id         Int
   agreement_terms          agreement_terms           @relation(fields: [agreement_terms_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_agreement_terms1")
   grn                      grn?                      @relation(fields: [grn_grn_id], references: [grn_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_grn1")
   purchase_order_status    purchase_order_status     @relation(fields: [purchase_order_status_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_purchase_order_status1")
   rfq                      rfq?                      @relation(fields: [rfq_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_rfq1")
   vendor                   vendor                    @relation(fields: [vendor_vendor_id], references: [vendor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_vendor1")
+  po_tomail                po_tomail[]
   purchase_order_products  purchase_order_products[]
 
-  @@id([po_id, vendor_vendor_id])
   @@index([purchase_order_status_id], map: "fk_purchase_order_purchase_order_status1_idx")
   @@index([vendor_vendor_id], map: "fk_purchase_order_vendor1_idx")
   @@index([rfq_id], map: "fk_purchase_order_rfq1_idx")
@@ -111,6 +112,7 @@ model vendor {
   lead_time       String            @db.VarChar(45)
   status          Boolean?          @default(true)
   purchase_order  purchase_order[]
+  vendor_emails   vendor_emails[]
   vendor_products vendor_products[]
   vendor_tags     vendor_tags[]
 }
@@ -141,9 +143,13 @@ model rfq {
   rfq_code        String           @db.VarChar(45)
   rfq_description String           @db.VarChar(155)
   active          Int              @default(1) @db.TinyInt
+  rfq_terms_id    Int
+  rfq_terms       rfq_terms        @relation(fields: [rfq_terms_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_rfq_terms1")
   purchase_order  purchase_order[]
   rfq_products    rfq_products[]
   rfq_sentto      rfq_sentto[]
+
+  @@index([rfq_terms_id], map: "fk_rfq_rfq_terms1_idx")
 }
 
 model session {
@@ -185,6 +191,7 @@ model user {
   email               String                @unique(map: "User_email_key")
   hashedPassword      String?
   role                String                @default("USER")
+  inventory_logs      inventory_logs[]
   mutation_admin_mail mutation_admin_mail[]
   notifications_sent  notifications_sent[]
   session             session[]
@@ -215,7 +222,7 @@ model purchase_order_products {
   received_quantity                   Int?
   purchase_order_po_id                Int
   purchase_order_vendor_vendor_id     Int
-  purchase_order                      purchase_order  @relation(fields: [purchase_order_po_id, purchase_order_vendor_vendor_id], references: [po_id, vendor_vendor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_products_purchase_order1")
+  purchase_order                      purchase_order  @relation(fields: [purchase_order_po_id], references: [po_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_products_purchase_order1")
   vendor_products                     vendor_products @relation(fields: [vendor_products_vp_id, vendor_products_vendor_vendor_id, vendor_products_products_product_id], references: [vp_id, vendor_vendor_id, products_product_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_products_vendor_products1")
 
   @@id([pop_id, vendor_products_vp_id, vendor_products_vendor_vendor_id, vendor_products_products_product_id, quantity])
@@ -255,11 +262,12 @@ model notifications_sent {
 }
 
 model rfq_sentto {
-  id     Int     @id @default(autoincrement())
-  email  String? @db.VarChar(45)
+  id     Int    @id @default(autoincrement())
+  email  String @db.VarChar(45)
   rfq_id Int
-  rfq    rfq     @relation(fields: [rfq_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_sentto_rfq1")
+  rfq    rfq    @relation(fields: [rfq_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_sentto_rfq1")
 
+  @@unique([email, rfq_id], map: "email_rfqid")
   @@index([rfq_id], map: "fk_rfq_sentto_rfq1_idx")
 }
 
@@ -299,6 +307,7 @@ model kit_product {
   inventory_products_inventory_product_id Int
   inventory_products_products_product_id  Int
   kits_id                                 Int
+  quantity                                Int?
   inventory_products                      inventory_products @relation(fields: [inventory_products_inventory_product_id, inventory_products_products_product_id], references: [inventory_product_id, products_product_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_product_inventory_products1")
   kits                                    kits               @relation(fields: [kits_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_product_kits1")
 
@@ -318,4 +327,50 @@ model agreement_terms {
   name           String?          @db.VarChar(45)
   description    String?          @db.VarChar(45)
   purchase_order purchase_order[]
+}
+
+model inventory_logs {
+  id                                      Int                       @id @unique(map: "id_UNIQUE") @default(autoincrement())
+  parameter                               inventory_logs_parameter?
+  value                                   Int
+  updated_at                              DateTime                  @default(now()) @db.DateTime(0)
+  inventory_products_inventory_product_id Int
+  inventory_products_products_product_id  Int
+  user_id                                 Int
+  inventory_products                      inventory_products        @relation(fields: [inventory_products_inventory_product_id, inventory_products_products_product_id], references: [inventory_product_id, products_product_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_logs_inventory_products1")
+  user                                    user                      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_logs_user1")
+
+  @@index([inventory_products_inventory_product_id, inventory_products_products_product_id], map: "fk_inventory_logs_inventory_products1_idx")
+  @@index([user_id], map: "fk_inventory_logs_user1_idx")
+}
+
+model po_tomail {
+  id                   Int            @id @unique(map: "id_UNIQUE") @default(autoincrement())
+  email                String         @db.VarChar(45)
+  purchase_order_po_id Int
+  purchase_order       purchase_order @relation(fields: [purchase_order_po_id], references: [po_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_po_tomail_purchase_order1")
+
+  @@index([purchase_order_po_id], map: "fk_po_tomail_purchase_order1_idx")
+}
+
+model rfq_terms {
+  id           Int     @id @unique(map: "id_UNIQUE") @default(autoincrement())
+  terms        String? @db.VarChar(45)
+  descriptions String? @db.VarChar(45)
+  rfq          rfq[]
+}
+
+model vendor_emails {
+  id               Int    @id @unique(map: "id_UNIQUE") @default(autoincrement())
+  email            String @db.VarChar(45)
+  vendor_vendor_id Int
+  vendor           vendor @relation(fields: [vendor_vendor_id], references: [vendor_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_emails_vendor1")
+
+  @@index([vendor_vendor_id], map: "fk_vendor_emails_vendor1_idx")
+}
+
+enum inventory_logs_parameter {
+  price
+  quantity
+  good_stock
 }
