@@ -1498,6 +1498,18 @@ export const createCSVFormat = (fileData) => {
   postNode.click()
   postNode.remove()
 }
+export const createCSV = (data, filename) => {
+  const blob = new Blob([data], { type: "text/csv" })
+  const href = URL.createObjectURL(blob)
+  const postNode = document.createElement("a")
+
+  postNode.setAttribute("download", filename)
+  postNode.setAttribute("href", href)
+  postNode.setAttribute("target", "_blank")
+  document.body.appendChild(postNode)
+  postNode.click()
+  postNode.remove()
+}
 
 export const tsuccess = (summary, detail) => {
   return {
