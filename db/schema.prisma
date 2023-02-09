@@ -136,20 +136,20 @@ model vendor_products {
 }
 
 model rfq {
-  id              Int              @id @unique(map: "rfc_id_key") @default(autoincrement())
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @default(now())
-  expected_dod    String           @db.VarChar(65)
-  rfq_code        String           @db.VarChar(45)
-  rfq_description String           @db.VarChar(155)
-  active          Int              @default(1) @db.TinyInt
-  rfq_terms_id    Int
-  rfq_terms       rfq_terms        @relation(fields: [rfq_terms_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_rfq_terms1")
-  purchase_order  purchase_order[]
-  rfq_products    rfq_products[]
-  rfq_sentto      rfq_sentto[]
+  id                 Int              @id @unique(map: "rfc_id_key") @default(autoincrement())
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @default(now())
+  expected_dod       String           @db.VarChar(65)
+  rfq_code           String           @db.VarChar(45)
+  rfq_description    String           @db.VarChar(155)
+  active             Int              @default(1) @db.TinyInt
+  agreement_terms_id Int
+  agreement_terms    agreement_terms  @relation(fields: [agreement_terms_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_agreement_terms1")
+  purchase_order     purchase_order[]
+  rfq_products       rfq_products[]
+  rfq_sentto         rfq_sentto[]
 
-  @@index([rfq_terms_id], map: "fk_rfq_rfq_terms1_idx")
+  @@index([agreement_terms_id], map: "fk_rfq_agreement_terms1_idx")
 }
 
 model session {
@@ -323,10 +323,12 @@ model kits {
 }
 
 model agreement_terms {
-  id             Int              @id @default(autoincrement())
-  name           String?          @db.VarChar(45)
-  description    String?          @db.VarChar(45)
+  id             Int                 @id @default(autoincrement())
+  name           String?             @db.VarChar(45)
+  description    String?             @db.VarChar(45)
+  for            agreement_terms_for
   purchase_order purchase_order[]
+  rfq            rfq[]
 }
 
 model inventory_logs {
@@ -357,7 +359,6 @@ model rfq_terms {
   id           Int     @id @unique(map: "id_UNIQUE") @default(autoincrement())
   terms        String? @db.VarChar(45)
   descriptions String? @db.VarChar(45)
-  rfq          rfq[]
 }
 
 model vendor_emails {
@@ -373,4 +374,9 @@ enum inventory_logs_parameter {
   price
   quantity
   good_stock
+}
+
+enum agreement_terms_for {
+  rfq
+  po
 }
