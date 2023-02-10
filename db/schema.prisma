@@ -221,7 +221,7 @@ model purchase_order_products {
   price_per_unit                      Int?
   received_quantity                   Int?
   purchase_order_po_id                Int
-  purchase_order_vendor_vendor_id     Int
+  purchase_order_vendor_vendor_id     Int?
   purchase_order                      purchase_order  @relation(fields: [purchase_order_po_id], references: [po_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_products_purchase_order1")
   vendor_products                     vendor_products @relation(fields: [vendor_products_vp_id, vendor_products_vendor_vendor_id, vendor_products_products_product_id], references: [vp_id, vendor_vendor_id, products_product_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_order_products_vendor_products1")
 
