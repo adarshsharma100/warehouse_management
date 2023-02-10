@@ -13,7 +13,7 @@ const UpdateProduct = z.object({
 
 export default resolver.pipe(
   resolver.zod(UpdateProduct),
-  resolver.authorize(),
+  // resolver.authorize(),
   async ({ product_id, ...data }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const product = await db.products.update({ where: { product_id }, data })

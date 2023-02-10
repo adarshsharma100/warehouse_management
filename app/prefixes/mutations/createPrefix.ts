@@ -8,7 +8,7 @@ const CreatePrefix = z.object({
 
 export default resolver.pipe(
   resolver.zod(CreatePrefix),
-  resolver.authorize(),
+  // resolver.authorize(),
   async (input) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const prefix = await db.prefix.create({ data: input });

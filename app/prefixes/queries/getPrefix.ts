@@ -9,11 +9,15 @@ const GetPrefix = z.object({
   name: z.string(),
 })
 
-export default resolver.pipe(resolver.zod(GetPrefix), resolver.authorize(), async ({ id }) => {
-  // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-  const prefix = await db.prefix.findFirst({ where: { id } })
+export default resolver.pipe(
+  resolver.zod(GetPrefix),
+  //  resolver.authorize(),
+  async ({ id }) => {
+    // TODO: in multi-tenant app, you must add validation to ensure correct tenant
+    const prefix = await db.prefix.findFirst({ where: { id } })
 
-  if (!prefix) throw new NotFoundError()
+    if (!prefix) throw new NotFoundError()
 
-  return prefix
-})
+    return prefix
+  }
+)

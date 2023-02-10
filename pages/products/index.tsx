@@ -671,11 +671,11 @@ export const ProductsList = () => {
 const ProductsPage = () => {
   return (
     <Suspense fallback={<Loading />}>
-      <Layout>
-        <ProductsList />
-      </Layout>
+      {/* <Layout> */}
+      <ProductsList />
+      {/* </Layout> */}
     </Suspense>
   )
 }
-
+ProductsPage.authenticate = false
 export default ProductsPage

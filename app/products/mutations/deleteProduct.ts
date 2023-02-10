@@ -8,7 +8,7 @@ const DeleteProduct = z.object({
 
 export default resolver.pipe(
   resolver.zod(DeleteProduct),
-  resolver.authorize(),
+  // resolver.authorize(),
   async ({ product_id }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const product = await db.products.deleteMany({ where: { product_id } })

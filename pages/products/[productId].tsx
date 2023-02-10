@@ -64,7 +64,7 @@ const ShowProductPage = () => {
   )
 }
 
-ShowProductPage.authenticate = true
+ShowProductPage.authenticate = false
 ShowProductPage.getLayout = (page) => <Layout>{page}</Layout>
 
 export default ShowProductPage
