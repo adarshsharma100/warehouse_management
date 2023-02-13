@@ -70,6 +70,7 @@ import getPurchase_orders from "app/purchase_orders/queries/getPurchase_orders"
 import { clearConfigCache } from "prettier"
 import getAgreement_terms from "app/agreement_terms/queries/getAgreement_terms"
 import { spawn } from "child_process"
+import RFQPO from "components/RFQPO"
 
 const ITEMS_PER_PAGE = 100
 
@@ -796,14 +797,13 @@ export const RfqsList = () => {
     )
   }
 
-  console.log("formik", formik?.values)
-
   const formik = useFormik({
     initialValues: rfqDetails,
     validationSchema: Yup.object().shape({
       rfq_code: Yup.string().required("*Required"),
-      rfq_description: Yup.string().required("*Required"),
-      expected_dod: Yup.mixed().required("*Required"),
+      // rfq_description: Yup.string().required("*Required"),
+      // expected_dod: Yup.mixed().required("*Required"),
+      // terms: Yup.mixed().required("*Required"),
       itemsLength: Yup.boolean().equals([true], "⚠ Please select atleast one product").required(),
     }),
     onSubmit: async (data) => {
@@ -1286,8 +1286,8 @@ export const RfqsList = () => {
                         terms,
                       })
                     }}
-                    aria-label="Agreement Status"
-                    dropdownAriaLabel="Agreement Status"
+                    aria-label="Agreement Terms"
+                    dropdownAriaLabel="Agreement Terms"
                     className={classNames({ "p-invalid": isFormFieldValid("terms") })}
                   />
 
@@ -1527,7 +1527,7 @@ export const RfqsList = () => {
         rfqDetails={rfqDetails}
       />
 
-      <CreateNewPo
+      {/* <CreateNewPo
         products={products}
         purchaseDialog={purchaseDialog}
         setPurchaseDialog={setPurchaseDialog}
@@ -1542,6 +1542,17 @@ export const RfqsList = () => {
         rfQCode={newRFQCode}
         // activeRow={activeRow}
         // poEditState={poEditState}
+      /> */}
+      <RFQPO
+        products={products}
+        vendors={vendors}
+        purchaseDetails={purchaseDetails}
+        itemList={poItemList}
+        purchase_orders={purchase_orders}
+        purchaseDialog={purchaseDialog}
+        setPurchaseDialog={setPurchaseDialog}
+        setItemList={setPoItemList}
+        initialItemState={initialPoItemState}
       />
       {/* <CreatePo
         rfqData={activeRow}
