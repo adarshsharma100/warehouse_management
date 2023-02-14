@@ -67,6 +67,8 @@ const RFQPO = (props) => {
   }
   const [newPOCode, setNewPOCode] = useState("")
   const [purchaseDetails, setPurchaseDetails] = useState(initialPurchaseState)
+  const [priorList, setPriorList] = useState([])
+  const [showPriorList, setShowPriorList] = useState(false)
 
   const [poCodeChecked, setPoCodeChecked] = useState<boolean>(true)
   const [vendorSuggestions, setVendorSuggestions] = useState<any>(null)
@@ -74,6 +76,7 @@ const RFQPO = (props) => {
   const [fromPartySuggetions, setFromPartySuggetions] = useState<any>(null)
   const [termsSuggetions, setTermsSuggetions] = useState<any>(null)
   const [ProductsSuggestions, setProductsSuggestions] = useState<any>(null)
+  const [filteredProducts, setfilteredProducts] = useState<any>(null)
 
   const chipContainer = useRef(null)
   const [chipValues, setChipValues] = useState([])
@@ -157,7 +160,7 @@ const RFQPO = (props) => {
   }
 
   // Autocomplete filter search function creation
-  const searchProducts = createSearchFunction(productOptions, setProductsSuggestions)
+  const searchProducts = createSearchFunction(filteredProducts, setProductsSuggestions)
   const searchVendor = createSearchFunction(vendorOptions, setVendorSuggestions)
   const searchAgreement = createSearchFunction(poStatusList, setPoFilteredAgreements)
   const searchFromParty = createSearchFunction(fromParty, setFromPartySuggetions)
@@ -364,6 +367,29 @@ const RFQPO = (props) => {
       })
     }
   }, [poCodeChecked, purchaseDialog])
+
+  // onVendor Change
+  useEffect(() => {
+    const vendorID = formik.values.vendor_vendor_id
+    const filterProducts = productOptions.filter((ele) => ele.vendorID.includes(Number(vendorID)))
+    setfilteredProducts(filterProducts)
+
+    const vendorProductsIds = filterProducts.map((ele) => ele.product_id)
+
+    const values = itemList.filter((ele, i) => vendorProductsIds.includes(ele.products_product_id))
+    const priorValues = itemList.filter(
+      (ele, i) => !vendorProductsIds.includes(ele.products_product_id) && ele.products_product_id
+    )
+    priorValues.length ? setShowPriorList(true) : setShowPriorList(false)
+
+    setPriorList([...priorValues])
+    const initialState = values?.length
+    let count = initialState >= 5 ? 1 : 5 - values?.length
+
+    const emptyFields = arrayFillCopy(count, initialItemState)
+
+    setItemList([...values, ...emptyFields])
+  }, [formik?.values.vendor_vendor_id])
 
   //   TO get email through ref
 
@@ -642,18 +668,15 @@ const RFQPO = (props) => {
                 ))}
               </div>
             </div>
-            {"showPriorList" && (
+            {showPriorList && (
               <div className="field col-12 p-error">
                 <h6>Selected Vendor doesnot sell below products</h6>
                 <ul>
-                  {/* {priorList
+                  {priorList
                     .filter((ele) => ele.products_product_id)
                     .map((ele, i) => (
                       <li key={i}>{`${ele.product_name}`}</li>
-                    ))} */}
-                  <li>Prod 1</li>
-                  <li>Prod 2</li>
-                  <li>Prod 3</li>
+                    ))}
                 </ul>
                 <Button
                   type="button"
@@ -681,7 +704,7 @@ const RFQPO = (props) => {
                   label="Continue"
                   className="p-button-warning p-button-sm w-auto ml-3"
                   onClick={async (e) => {
-                    // setShowPriorList(false)
+                    setShowPriorList(false)
                   }}
                 />
               </div>
@@ -793,8 +816,8 @@ const RFQPO = (props) => {
                 setPurchaseDialog(false)
                 setItemList([initialItemState])
                 formik.resetForm()
-                // setPriorList([])
-                // setShowPriorList(false)
+                setPriorList([])
+                setShowPriorList(false)
               }}
             />
           </div>

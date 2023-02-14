@@ -185,13 +185,15 @@ export const RfqsList = () => {
   const initialRfqState = {
     rfq_code: newRFQCode,
     rfq_description: "",
-    expected_dod: "",
+    expected_dod: {},
     rfq_email: null,
     itemsLength: false,
     terms: "",
+    id: "",
   }
   const [rfqDetails, setRfqDetails] = useState(initialRfqState)
   const [rfqEditState, setRfqEditState] = useState(false)
+  const [readOnlyForm, setReadOnlyForm] = useState(true)
   const [activeRfqId, setActiveRfqId] = useState("")
   // const [productItemList, setProductItemList] = useState([
   //   {
@@ -275,6 +277,136 @@ export const RfqsList = () => {
       product_sku: ele.products.products_sku,
     }
   })
+  const statuses = ["1", "0"]
+
+  const termsOptions = rfqTerms.map((ele) => ele.name)
+  const dateFilterTemplate = (options) => {
+    return (
+      <Calendar
+        value={options.value}
+        onChange={(e) => options.filterCallback(e.value, options.index)}
+        dateFormat="dd/mm/yy"
+        placeholder="dd/mm/yyyy"
+        mask="99/99/9999"
+      />
+    )
+  }
+  const statusFilterTemplate = (options) => {
+    console.log("options", options)
+    return (
+      <Dropdown
+        value={options.value}
+        options={statuses}
+        onChange={(e) => options.filterCallback(e.value, options.index)}
+        itemTemplate={statusItemTemplate}
+        placeholder="Select a Status"
+        className="p-column-filter"
+        showClear
+      />
+    )
+  }
+  const statusItemTemplate = (option) => {
+    return (
+      <span className={`badge status-${option === "1" ? "active" : "inactive"}`}>
+        {option === "1" ? "Active" : "Closed"}
+      </span>
+    )
+  }
+
+  const termsFilterTemplate = (options) => {
+    console.log("rfqTerms", rfqTerms)
+    return (
+      <Dropdown
+        value={options.value}
+        options={termsOptions}
+        onChange={(e) => options.filterCallback(e.value, options.index)}
+        itemTemplate={termsItemTemplate}
+        placeholder="Select a Status"
+        className="p-column-filter"
+        showClear
+      />
+    )
+  }
+  const termsItemTemplate = (option) => {
+    return <span>{option}</span>
+  }
+  const columns = [
+    {
+      field: "rfq_code",
+      header: "RFQ No.",
+      filter: true,
+      filterPlaceholder: "Search by Code",
+    },
+    {
+      field: "rfq_description",
+      header: "Description",
+      filter: true,
+      filterPlaceholder: "Search by Description",
+    },
+    {
+      field: "createdAt",
+      header: "Created at",
+      filterField: "createdAt",
+      filter: true,
+      filterElement: dateFilterTemplate,
+      dataType: "date",
+      body: (rowData) => moment(new Date(rowData.createdAt)).format("DD-MM-YYYY, HH:MM"),
+    },
+    {
+      // field: "updatedAt",
+      header: "updatedAt",
+      filterField: "Updated at",
+      filter: true,
+      filterElement: dateFilterTemplate,
+      dataType: "date",
+      body: (rowData) => moment(new Date(rowData.updatedAt)).format("DD-MM-YYYY, HH:MM"),
+    },
+    {
+      field: "active",
+      header: "Status",
+      filter: true,
+      body: (rowData) => (
+        <span className={`badge status-${rowData.active ? "active" : "inactive"}`}>
+          {rowData.active ? "Active" : "Closed"}
+        </span>
+      ),
+      filterElement: statusFilterTemplate,
+    },
+    {
+      field: "rfq_sentto",
+      header: "Vendors",
+      // filter: true,
+      body: (rowData) => {
+        console.log("rowData", rowData)
+
+        const sentMails = rowData.rfq_sentto?.map((ele) => ele.email)
+        const uniqueMails = [...new Set(sentMails)]
+        console.log("uniqueMails: ", uniqueMails)
+
+        const sentVendors = vendors
+          .filter((ele, i) => uniqueMails.includes(ele.vendor_email))
+          .map((ele) => ele.vendor)
+        return (
+          <div className="tooltip-pr">
+            <span className="tooltiptext-pr">{sentVendors.join(" , ")}</span>
+          </div>
+        )
+      },
+    },
+    {
+      field: "agreement_terms_id",
+      header: "Terms",
+      filter: true,
+      body: (rowData) => {
+        console.log("rowDataterms: ", rowData)
+
+        return <span>{rowData.agreement_terms.name}</span>
+      },
+      filterPlaceholder: "Search by Terms",
+      filterElement: termsFilterTemplate,
+    },
+  ]
+  const [selectedColumns, setSelectedColumns] = useState(columns)
 
   // console.log("Formik_values",formik.values)
 
@@ -449,79 +581,65 @@ export const RfqsList = () => {
     setGlobalFilterValue("")
   }
 
-  const statuses = ["1", "0"]
+  // col Toggle
 
-  const statusFilterTemplate = (options) => {
-    console.log("options", options)
+  const onColumnToggle = (event) => {
+    console.log("orderedSelectedColumns", columns)
+    let selectedColumns = event.value
+    console.log("orderedSelectedColumnsevent.value: ", event.value)
+    let orderedSelectedColumns = columns.filter((col) =>
+      selectedColumns.some((sCol) => sCol.header === col.header)
+    )
+    setSelectedColumns(orderedSelectedColumns)
+    console.log("orderedSelectedColumns: ", orderedSelectedColumns)
+  }
+  const columnComponents = selectedColumns.map((col) => {
+    const { field, filterField, dataType, body, header, filter, filterPlaceholder, filterElement } =
+      col
     return (
-      <Dropdown
-        value={options.value}
-        options={statuses}
-        onChange={(e) => options.filterCallback(e.value, options.index)}
-        itemTemplate={statusItemTemplate}
-        placeholder="Select a Status"
-        className="p-column-filter"
-        showClear
+      <Column
+        key={field}
+        field={field}
+        header={header}
+        filter={filter}
+        filterPlaceholder={filterPlaceholder}
+        filterField={filterField}
+        filterElement={filterElement ? filterElement : false}
+        body={body}
+        dataType={dataType}
       />
     )
-  }
-  const statusItemTemplate = (option) => {
-    return (
-      <span className={`badge status-${option === "1" ? "active" : "inactive"}`}>
-        {option === "1" ? "Active" : "Closed"}
-      </span>
-    )
-  }
-  const termsOptions = rfqTerms.map((ele) => ele.name)
-
-  const termsFilterTemplate = (options) => {
-    console.log("rfqTerms", rfqTerms)
-    return (
-      <Dropdown
-        value={options.value}
-        options={termsOptions}
-        onChange={(e) => options.filterCallback(e.value, options.index)}
-        itemTemplate={termsItemTemplate}
-        placeholder="Select a Status"
-        className="p-column-filter"
-        showClear
-      />
-    )
-  }
-  const termsItemTemplate = (option) => {
-    return <span>{option}</span>
-  }
-
-  const dateFilterTemplate = (options) => {
-    return (
-      <Calendar
-        value={options.value}
-        onChange={(e) => options.filterCallback(e.value, options.index)}
-        dateFormat="dd/mm/yy"
-        placeholder="dd/mm/yyyy"
-        mask="99/99/9999"
-      />
-    )
-  }
+  })
 
   const renderHeader = () => {
     return (
       <div className="flex justify-content-between">
-        <Button
-          type="button"
-          icon="pi pi-filter-slash"
-          label="Clear"
-          className="p-button-outlined"
-          onClick={clearFilter}
-        />
-        <span className="p-input-icon-left">
-          <i className="pi pi-search" />
-          <InputText
-            value={globalFilterValue}
-            onChange={onGlobalFilterChange}
-            placeholder="Keyword Search"
+        <div>
+          <MultiSelect
+            value={selectedColumns}
+            options={columns}
+            optionLabel="header"
+            onChange={onColumnToggle}
+            style={{ width: "20em" }}
           />
-        </span>
+        </div>
+        <div className="flex">
+          <span className="p-input-icon-left">
+            <i className="pi pi-search" />
+            <InputText
+              value={globalFilterValue}
+              onChange={onGlobalFilterChange}
+              placeholder="Keyword Search"
+            />
+          </span>
+          <Button
+            type="button"
+            icon="pi pi-filter-slash"
+            label="Clear"
+            className="p-button-outlined"
+            onClick={clearFilter}
+          />
+        </div>
       </div>
     )
   }
@@ -595,7 +713,7 @@ export const RfqsList = () => {
           quantity,
           price_per_unit,
           rfq_products_id,
-          product_name,
+          product_name: `${products.products_sku} - ${products.name}`,
         }
       })
     setPoItemList(active)
@@ -1042,7 +1160,6 @@ export const RfqsList = () => {
     <div ref={scrollToRfq} className="grid w-full mr-0">
       <Toast ref={toast} />
       {(updatingRfq || creatingRfq) && <LoaderFullScreen />}
-
       <Dialog
         header="Send Quotation"
         visible={sendDialog}
@@ -1126,7 +1243,6 @@ export const RfqsList = () => {
           />
         </div>
       </Dialog>
-
       <div className="col-12">
         <div className="card flex justify-content-between align-items-center mb-2">
           <h4 className="mb-0">Request for Quotations</h4>
@@ -1155,6 +1271,7 @@ export const RfqsList = () => {
                 setItemList(fiveFields)
                 setRfqDialog(true)
                 setRFQCodeChecked(true)
+                setReadOnlyForm(false)
               }}
             ></Button>
             <Button
@@ -1171,7 +1288,7 @@ export const RfqsList = () => {
           <ErrorCard ErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
         ))}
       </div>
-
+      {/* {activeRow && <pre>{JSON.stringify(activeRow, null, 2)}</pre>} */}
       <div
         className={`col-12 ${
           rfqDialog
@@ -1181,7 +1298,123 @@ export const RfqsList = () => {
       >
         <div className={` card `}>
           <form className="p-fluid" onSubmit={formik.handleSubmit}>
-            <h5 className="mb-3">{`${rfqEditState ? "Update" : "Create"} RFQ`}</h5>
+            <div className="flex justify-content-between">
+              <h5 className="mb-3">{`
+            ${readOnlyForm ? "RFQ-Details" : rfqEditState ? "Update - RFQ" : "Create - RFQ"}
+            `}</h5>
+
+              {readOnlyForm && (
+                <div>
+                  <Button
+                    // label="Edit"
+                    icon="pi pi-pencil"
+                    className="m-1"
+                    onClick={async (e) => {
+                      e.preventDefault()
+                      setReadOnlyForm(false)
+                      setRfqEditState(true)
+                    }}
+                    tooltip="Edit Form"
+                    tooltipOptions={{ position: "top" }}
+                  />
+                  <Button
+                    // label="Edit"
+                    icon="pi pi-plus"
+                    className="m-1"
+                    onClick={async (e) => {
+                      e.preventDefault()
+                      setPoItems()
+                      setRfqItemList()
+                      scrollToRfq?.current?.scrollIntoView()
+                      setPurchaseDialog(true)
+                      setRfqDialog(false)
+                    }}
+                    tooltip="Create PO"
+                    tooltipOptions={{ position: "top" }}
+                  />
+                  <Button
+                    // label="Edit"
+                    icon="pi pi-send"
+                    className="m-1"
+                    onClick={async (e) => {
+                      e.preventDefault()
+                      setSendDialog(true)
+                      setRfqDetails({ ...rfqDetails, rfq_email: [] })
+                    }}
+                    tooltip="Send RFQ"
+                    tooltipOptions={{ position: "top" }}
+                  />
+                  <Button
+                    icon="bi bi-subtract"
+                    className="m-1"
+                    onClick={async (e) => {
+                      e.preventDefault()
+                      const active = activeRow.active === 0 ? 1 : 0
+                      await updateRFQMutation(
+                        {
+                          id: activeRow.id,
+                          active,
+                        },
+                        {
+                          onSuccess: async (data) => {
+                            const rfq_code = data?.rfq_code
+                            const status = active ? "Active" : "Inactive"
+
+                            toast?.current.show(
+                              tsuccess("Updated", `${rfq_code} is now ${status}`),
+                              await createNotificationsMutations({
+                                user_id: id,
+                                user_name: name,
+                                user_email: email,
+                                mutations: `${rfq_code} is now ${status}`,
+                                created_at: new Date().toString(),
+                              })
+                            )
+                          },
+                        }
+                      )
+                      await refetch()
+                    }}
+                    tooltip="Update-Status"
+                    tooltipOptions={{ position: "top" }}
+                  />
+                  <Button
+                    icon="pi pi-arrow-down"
+                    className="m-1"
+                    onClick={async (e) => {
+                      e.preventDefault()
+                      const rfq_prods = activeRow?.rfq_products
+                      console.log("rfq_prods: ", rfq_prods)
+                      // return
+
+                      const csvHeader = "Sl No,SKU,Item,Image,Qty,Cost Price,Target Price\n"
+
+                      const csvBody = rfq_prods.map((ele, i) => {
+                        const {
+                          quantity,
+                          price_per_unit,
+                          products_product_id: productId,
+                          products: { name: item, description, products_sku: sku },
+                        } = ele
+                        const price = LatestPO(purchase_orders, productId).prod_price
+
+                        return (
+                          [i + 1, sku, item, "IMAGE", quantity, price, price_per_unit].toString() +
+                          "\n"
+                        )
+                      })
+                      const csvData = csvHeader + csvBody.join("")
+                      const name = activeRow?.rfq_code
+                      console.log("csvData: ", csvData)
+
+                      createCSV(csvData, name)
+                    }}
+                    tooltip="Download CSV"
+                    tooltipOptions={{ position: "top" }}
+                  />
+                </div>
+              )}
+            </div>
             <div className="formgrid grid p-4">
               <div className="col-12">
                 <h6>RFQ Details:</h6>
@@ -1227,6 +1460,7 @@ export const RfqsList = () => {
                     id="rfq_description"
                     name="rfq_description"
                     value={formik.values.rfq_description}
+                    disabled={readOnlyForm}
                     onChange={formik.handleChange}
                     className={classNames({ "p-invalid": isFormFieldValid("rfq_description") })}
                     autoFocus
@@ -1249,6 +1483,7 @@ export const RfqsList = () => {
                     // onChange={(e) =>
                     //   setRfqDetails({ ...rfqDetails, expected_dod: e.target.value?.toString() })
                     value={formik.values.expected_dod}
+                    disabled={readOnlyForm}
                     onChange={async (e) => {
                       await formik.setValues({
                         ...formik.values,
@@ -1276,6 +1511,7 @@ export const RfqsList = () => {
                     value={formik.values?.terms?.name}
                     suggestions={rfqTermsSuggestions}
                     completeMethod={searchTerms}
+                    disabled={readOnlyForm}
                     dropdown
                     field="name"
                     onChange={async (e) => {
@@ -1312,6 +1548,7 @@ export const RfqsList = () => {
                   value={formik.values.rfq_email}
                   suggestions={vendorEmailSuggestions}
                   completeMethod={emailsuggestions}
+                  disabled={readOnlyForm}
                   field="name"
                   multiple
                   onChange={async (e) => {
@@ -1337,6 +1574,7 @@ export const RfqsList = () => {
                           value={ele.product_name}
                           suggestions={productsSuggestions}
                           completeMethod={searchProducts}
+                          disabled={readOnlyForm}
                           //   forceSelection //
                           dropdown
                           field="name"
@@ -1382,6 +1620,7 @@ export const RfqsList = () => {
                           id={`product-prixe-${i}`}
                           name="price_per_unit"
                           value={Number(ele.price_per_unit)}
+                          disabled={readOnlyForm}
                           onChange={(e) => handleFormChange(e, i)}
                           // className={classNames({ "p-invalid": isFormFieldValid("name") })}
                         />
@@ -1398,6 +1637,7 @@ export const RfqsList = () => {
                         <InputNumber
                           id={`product-qty-${i}`}
                           name="quantity"
+                          disabled={readOnlyForm}
                           value={Number(ele.quantity)}
                           onChange={(e) => handleFormChange(e, i)}
                           // className={classNames({ "p-invalid": isFormFieldValid("name") })}
@@ -1454,6 +1694,7 @@ export const RfqsList = () => {
                           id="last_vendor"
                           name="last_vendor"
                           value={ele.last_vendor}
+                          disabled
                           onChange={(e) => handleFormChange(e, i)}
                           // className={classNames({ "p-invalid": isFormFieldValid("name") })}
                         />
@@ -1488,16 +1729,19 @@ export const RfqsList = () => {
               <div className="m-auto text-2xl">{getFormErrorMessage("itemsLength")}</div>
             </div>
 
-            <div className="flex mx-4 ">
-              <Button
-                type="submit"
-                className="mr-2"
-                label={rfqEditState ? "UPDATE" : "Submit"}
-                onClick={async (e) => {}}
-              />
+            <div className="flex mx-4 justify-content-end ">
+              {!readOnlyForm && (
+                <Button
+                  type="submit"
+                  className="mr-2"
+                  label={rfqEditState ? "UPDATE" : "SUBMIT"}
+                  onClick={async (e) => {}}
+                />
+              )}
               <Button
                 className="mr-2 p-button-secondary"
-                label="Cancel"
+                style={{ maxWidth: "50%" }}
+                label="CANCEL"
                 onClick={(e) => {
                   e.preventDefault()
                   setRfqDialog(false)
@@ -1508,6 +1752,8 @@ export const RfqsList = () => {
                     expected_dod: "",
                     rfq_email: [],
                   })
+                  const fiveFields = arrayFillCopy(5, initialItemList)
+                  setItemList(fiveFields)
 
                   formik.resetForm()
                 }}
@@ -1526,7 +1772,6 @@ export const RfqsList = () => {
         setRfqDetails={setRfqDetails}
         rfqDetails={rfqDetails}
       />
-
       {/* <CreateNewPo
         products={products}
         purchaseDialog={purchaseDialog}
@@ -1564,7 +1809,6 @@ export const RfqsList = () => {
         setPurchaseDialog={setPurchaseDialog}
         prefixes={prefixes}
       /> */}
-
       <div className="col-12">
         <div className="card">
           <DataTable
@@ -1587,37 +1831,103 @@ export const RfqsList = () => {
             header={header1}
             filterDisplay="menu"
             emptyMessage="No Results found."
+            onRowClick={async (e) => {
+              scrollToRfq?.current?.scrollIntoView()
+              setActiveRow(e.data)
+              console.log("rowdata", e.data)
+              // example e.data
+              let obj = {
+                id: 18,
+                createdAt: "2022-11-15T08:57:48.405Z",
+                updatedAt: "2022-11-15T08:57:48.405Z",
+                expected_dod: "2022-12-30T18:30:00.000Z",
+                rfq_code: "RFQ007",
+                rfq_description: "Sensor Bundle",
+                active: 1,
+                agreement_terms_id: 12,
+                rfq_products: [
+                  {
+                    rfq_products_id: 13,
+                    rfq_id: 18,
+                    products_product_id: 7,
+                    quantity: 70,
+                    price_per_unit: 78,
+                    products: {
+                      product_id: 7,
+                      name: "Heat Flame Sensor",
+                      description: "description heat",
+                      product_type: "Sensors",
+                      products_sku: "TIF007",
+                      Price: 56,
+                      product_unit: null,
+                    },
+                  },
+                ],
+                rfq_sentto: [
+                  {
+                    id: 207,
+                    email: "varunram.66@gmail.com",
+                    rfq_id: 18,
+                  },
+                ],
+                agreement_terms: {
+                  id: 12,
+                  name: "Quotation Validity",
+                  description: "Quotation Validity",
+                  for: "rfq",
+                },
+              }
+              const rfqProducts = e.data.rfq_products
+
+              let active = rfqProducts.map(
+                ({ products, quantity, price_per_unit, rfq_products_id }) => {
+                  return {
+                    products_product_id: products.product_id,
+                    quantity: quantity,
+                    price_per_unit: price_per_unit,
+                    rfq_products_id,
+                    product_name: `${products.products_sku} - ${products.name}`,
+                  }
+                }
+              )
+              setItemList(active)
+
+              const { rfq_code, rfq_description, expected_dod, id, agreement_terms } = e.data
+
+              const _expected_dod = new Date(expected_dod)
+              const sentToEmails = e.data.rfq_sentto.map((ele) => ele.email)
+
+              await formik.setValues({
+                rfq_code: rfq_code,
+                rfq_description: rfq_description,
+                expected_dod: _expected_dod,
+                id,
+                itemsLength: true,
+                terms: agreement_terms,
+                rfq_email: sentToEmails,
+              })
+
+              setRfqDialog(true)
+              setReadOnlyForm(true)
+            }}
           >
             <Column expander={allowExpansion} style={{ width: "3em" }} />
             {/* <Column
-          field="id"
-          header="ID"
-          body={({ id }) => `${prefixes[1].prefix}-${id}`}
-          // className="text-center"
-        /> */}
-            <Column
               field="rfq_code"
               header="RFQ No."
               filter
               filterPlaceholder="Search by Code"
               // className="text-center"
-            />
-            <Column
+            /> */}
+            {/* <Column
               field="rfq_description"
               header="Description"
               filter
               filterPlaceholder="Search by Description"
               // className="text-center"
-            />
-            {/* <Column
-              field="expected_dod"
-              header="Delivery date"
-              body={(tableRFQ) => new Date(tableRFQ.expected_dod).toLocaleDateString()}
-
-              // className="text-center"
             /> */}
 
-            <Column
+            {/* <Column
               header="Created at"
               filterField="createdAt"
               dataType="date"
@@ -1626,8 +1936,8 @@ export const RfqsList = () => {
               filterElement={dateFilterTemplate}
 
               // className="text-center"
-            />
-            <Column
+            /> */}
+            {/* <Column
               header="Updated at"
               filterField="updatedAt"
               dataType="date"
@@ -1636,8 +1946,8 @@ export const RfqsList = () => {
               filterElement={dateFilterTemplate}
 
               // className="text-center"
-            />
-            <Column
+            /> */}
+            {/* <Column
               field="active"
               header="Status"
               body={(rowData) => {
@@ -1649,8 +1959,8 @@ export const RfqsList = () => {
               }}
               filter
               filterElement={statusFilterTemplate}
-            />
-            <Column
+            /> */}
+            {/* <Column
               field="rfq_sentto"
               header="Vendors"
               body={(rowData) => {
@@ -1671,8 +1981,8 @@ export const RfqsList = () => {
                   </div>
                 )
               }}
-            />
-            <Column
+            /> */}
+            {/* <Column
               field="agreement_terms_id"
               header="Terms"
               body={(rowData) => {
@@ -1684,30 +1994,8 @@ export const RfqsList = () => {
               filterPlaceholder="Search by Terms"
               filterElement={termsFilterTemplate}
               // className="text-center"
-            />
-            <Column
-              // field="vendor_gstin"
-              header="Action"
-              body={(rowData) => {
-                return (
-                  <div>
-                    <Menu model={items} popup ref={menu} id="popup_menu" />
-                    <Button
-                      // label="Show"
-                      icon="pi pi-ellipsis-v"
-                      onClick={(event) => {
-                        // console.log("event", event)
-                        setActiveRow(rowData)
-                        menu.current.toggle(event)
-                      }}
-                      aria-controls="popup_menu"
-                      aria-haspopup
-                    />
-                  </div>
-                )
-              }}
-              // className="text-center"
-            />
+            /> */}
+            {columnComponents}
           </DataTable>
         </div>
       </div>
