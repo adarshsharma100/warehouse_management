@@ -48,7 +48,15 @@ import { getAntiCSRFToken } from "@blitzjs/auth"
 import { useFormik } from "formik"
 import * as Yup from "yup"
 import classNames from "classnames"
-import { arrayFillCopy, createSearchFunction, filterExistingValues, tsuccess } from "app/constants"
+import {
+  arrayFillCopy,
+  calenderDateFormat,
+  createSearchFunction,
+  filterExistingValues,
+  tsuccess,
+  toDateObj,
+  tError,
+} from "app/constants"
 import { Toast } from "primereact/toast"
 import Invoice from "components/Invoice"
 import createNotifications from "app/notifications_sents/mutations/createNotifications_sent"
@@ -57,6 +65,7 @@ import { Ctx } from "blitz"
 import { useCurrentUser } from "app/core/hooks/useCurrentUser"
 import CreateNewPo from "components/CreateNewPo"
 import { FilterMatchMode, FilterOperator } from "primereact/api"
+import getAgreement_terms from "app/agreement_terms/queries/getAgreement_terms"
 
 const ITEMS_PER_PAGE = 250
 
@@ -67,58 +76,2315 @@ export const Purchase_ordersList = () => {
   const { id, role, name, email } = user
 
   const page = Number(router.query.page) || 0
-  const [{ purchase_orders, hasMore }, { error: getPoError, refetch }] = usePaginatedQuery(
-    getPurchase_orders,
-    {
-      orderBy: { po_id: "asc" },
-      skip: ITEMS_PER_PAGE * page,
-      take: ITEMS_PER_PAGE,
-    }
-  )
+  // const [{ purchase_orders, hasMore }, { error: getPoError, refetch }] = usePaginatedQuery(
+  //   getPurchase_orders,
+  //   {
+  //     orderBy: { po_id: "asc" },
+  //     skip: ITEMS_PER_PAGE * page,
+  //     take: ITEMS_PER_PAGE,
+  //   }
+  // )
 
-  const [{ purchase_order_products }, { error: getPoProductsError, refetch: refetchPoProducts }] =
-    usePaginatedQuery(getPurchase_order_products, {
-      orderBy: { pop_id: "asc" },
-      skip: ITEMS_PER_PAGE * page,
-      take: ITEMS_PER_PAGE,
-    })
-  const [{ vendors }, { error: getVenorsError }] = usePaginatedQuery(getVendors, {
-    orderBy: { vendor_id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-  })
-  const [{ vendor_products }, { error: getVendorProductsError }] = usePaginatedQuery(
-    getVendor_products,
+  const purchase_orders = [
     {
-      orderBy: { vp_id: "asc" },
-      skip: ITEMS_PER_PAGE * page,
-      take: ITEMS_PER_PAGE,
-    }
-  )
-  const [{ rfqs }, { error: getRfqError }] = usePaginatedQuery(getRfqs, {
-    orderBy: { id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-  })
-  const [{ rfq_products }, { error: getRfqProductsError }] = usePaginatedQuery(getRfq_products, {
-    orderBy: { rfq_products_id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-  })
-  const [{ products }, { error: getProductsError }] = useQuery(getProducts, {
-    orderBy: { product_id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-  })
-  const [{ grns }, { error: getGrnsError, refetch: refetchGrn }] = useQuery(getGrns, {
-    orderBy: { grn_id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-  })
+      po_id: 111,
+      po_type: "sss",
+      updated_on: "2022-11-15T11:46:48.081Z",
+      approved_on: null,
+      created_at: "2022-11-15T11:46:48.081Z",
+      from_party: "TIF Labs",
+      expiry_date: "2022-11-22T18:30:00.000Z",
+      expected_delivery: "2022-11-24T18:30:00.000Z",
+      agreement: "Approved",
+      po_description: "Sensor Bundle",
+      po_code: "PO#111",
+      rfq_id: 18,
+      grn_grn_id: 28,
+      note: null,
+      agreement_terms_id: 1,
+      purchase_order_terms: "Net-45",
+      purchase_order_status_id: 1,
+      vendor_vendor_id: 3,
+      vendor: {
+        vendor_id: 3,
+        vendor_code: "TE",
+        vendor_email: "thomasEdison@gmail.com",
+        vendor_city: "Miraj",
+        vendor_contact: "8954236172",
+        vendor_state: "Maharashtra",
+        vendor_gstin: "GSTMIL009222222",
+        vendor: "Thomas Edison",
+        address: "Milan",
+        credit_period: "4",
+        lead_time: "4",
+        status: false,
+      },
+      purchase_order_products: [
+        {
+          pop_id: 14,
+          vendor_products_vp_id: 8,
+          vendor_products_vendor_vendor_id: 3,
+          vendor_products_products_product_id: 7,
+          quantity: 89,
+          price_per_unit: 85,
+          received_quantity: 0,
+          purchase_order_po_id: 8,
+          purchase_order_vendor_vendor_id: 3,
+          vendor_products: {
+            vp_id: 8,
+            unit_price: 45,
+            vendor_vendor_id: 3,
+            products_product_id: 7,
+            enabled: 1,
+            priority: 2,
+            vendor_sku: "TE107",
+            products: {
+              product_id: 7,
+              name: "Heat Flame Sensor",
+              description: "description heat",
+              product_type: "Sensors",
+              products_sku: "TIF007",
+              Price: 56,
+              product_unit: null,
+            },
+          },
+        },
+        {
+          pop_id: 155,
+          vendor_products_vp_id: 20,
+          vendor_products_vendor_vendor_id: 3,
+          vendor_products_products_product_id: 5,
+          quantity: 7,
+          price_per_unit: 56,
+          received_quantity: 0,
+          purchase_order_po_id: 8,
+          purchase_order_vendor_vendor_id: 3,
+          vendor_products: {
+            vp_id: 20,
+            unit_price: 120,
+            vendor_vendor_id: 3,
+            products_product_id: 5,
+            enabled: 1,
+            priority: 1,
+            vendor_sku: "TE105",
+            products: {
+              product_id: 5,
+              name: "MQ-135 gas sensor Module",
+              description: "description 135",
+              product_type: "Sensors",
+              products_sku: "TIF005",
+              Price: 56,
+              product_unit: null,
+            },
+          },
+        },
+        {
+          pop_id: 156,
+          vendor_products_vp_id: 83,
+          vendor_products_vendor_vendor_id: 3,
+          vendor_products_products_product_id: 4,
+          quantity: 47,
+          price_per_unit: 42,
+          received_quantity: 0,
+          purchase_order_po_id: 8,
+          purchase_order_vendor_vendor_id: 3,
+          vendor_products: {
+            vp_id: 83,
+            unit_price: 0,
+            vendor_vendor_id: 3,
+            products_product_id: 4,
+            enabled: 1,
+            priority: 1,
+            vendor_sku: "TE104",
+            products: {
+              product_id: 4,
+              name: "E18-D80NK Infrared Sensor Module",
+              description: "description",
+              product_type: "Sensors",
+              products_sku: "TIF004",
+              Price: 42,
+              product_unit: null,
+            },
+          },
+        },
+        {
+          pop_id: 157,
+          vendor_products_vp_id: 5,
+          vendor_products_vendor_vendor_id: 3,
+          vendor_products_products_product_id: 3,
+          quantity: 14,
+          price_per_unit: 24,
+          received_quantity: 0,
+          purchase_order_po_id: 8,
+          purchase_order_vendor_vendor_id: 3,
+          vendor_products: {
+            vp_id: 5,
+            unit_price: 50,
+            vendor_vendor_id: 3,
+            products_product_id: 3,
+            enabled: 1,
+            priority: 4,
+            vendor_sku: "TE103",
+            products: {
+              product_id: 3,
+              name: "Waterproof Ultrasonic Sensor",
+              description: "water-desp",
+              product_type: "Sensors",
+              products_sku: "TIF003",
+              Price: 24,
+              product_unit: "combo",
+            },
+          },
+        },
+      ],
+      purchase_order_status: {
+        id: 1,
+        name: "Created ",
+        description: "The PO has been successfully created.",
+      },
+    },
+    {
+      po_id: 112,
+      po_type: "Manual",
+      updated_on: "2022-12-01T12:28:09.657Z",
+      approved_on: null,
+      created_at: "2022-12-01T12:28:09.657Z",
+      from_party: "po from party",
+      expiry_date: "2008-11-10T18:30:00.000Z",
+      expected_delivery: "2008-11-10T18:30:00.000Z",
+      agreement: "Waiting_For_Approval",
+      po_description: "po description",
+      po_code: "PO#112",
+      rfq_id: 16,
+      grn_grn_id: 24,
+      note: null,
+      agreement_terms_id: 1,
+      purchase_order_terms: "Net-70",
+      purchase_order_status_id: 1,
+      vendor_vendor_id: 1,
+      vendor: {
+        vendor_id: 1,
+        vendor_code: "DA",
+        vendor_email: "mdatif796@gmail.com",
+        vendor_city: "Panaji",
+        vendor_contact: "4562879123",
+        vendor_state: "Goa",
+        vendor_gstin: "GSTRIO783211111",
+        vendor: "Dylan Alisson",
+        address: "Rio ",
+        credit_period: "411",
+        lead_time: "471",
+        status: false,
+      },
+      purchase_order_products: [
+        {
+          pop_id: 38,
+          vendor_products_vp_id: 2,
+          vendor_products_vendor_vendor_id: 1,
+          vendor_products_products_product_id: 2,
+          quantity: 7,
+          price_per_unit: 142,
+          received_quantity: 0,
+          purchase_order_po_id: 223,
+          purchase_order_vendor_vendor_id: 1,
+          vendor_products: {
+            vp_id: 2,
+            unit_price: 10,
+            vendor_vendor_id: 1,
+            products_product_id: 2,
+            enabled: 1,
+            priority: 2,
+            vendor_sku: "DA1001",
+            products: {
+              product_id: 2,
+              name: "ESP",
+              description: "esp-desc",
+              product_type: "Electronics",
+              products_sku: "TIF002",
+              Price: 142,
+              product_unit: "2pc set",
+            },
+          },
+        },
+        {
+          pop_id: 39,
+          vendor_products_vp_id: 11,
+          vendor_products_vendor_vendor_id: 1,
+          vendor_products_products_product_id: 4,
+          quantity: 8,
+          price_per_unit: 42,
+          received_quantity: 0,
+          purchase_order_po_id: 223,
+          purchase_order_vendor_vendor_id: 1,
+          vendor_products: {
+            vp_id: 11,
+            unit_price: 83,
+            vendor_vendor_id: 1,
+            products_product_id: 4,
+            enabled: 1,
+            priority: 1,
+            vendor_sku: "DA102",
+            products: {
+              product_id: 4,
+              name: "E18-D80NK Infrared Sensor Module",
+              description: "description",
+              product_type: "Sensors",
+              products_sku: "TIF004",
+              Price: 42,
+              product_unit: null,
+            },
+          },
+        },
+        {
+          pop_id: 40,
+          vendor_products_vp_id: 1,
+          vendor_products_vendor_vendor_id: 1,
+          vendor_products_products_product_id: 1,
+          quantity: 9,
+          price_per_unit: 11,
+          received_quantity: 0,
+          purchase_order_po_id: 223,
+          purchase_order_vendor_vendor_id: 1,
+          vendor_products: {
+            vp_id: 1,
+            unit_price: 424,
+            vendor_vendor_id: 1,
+            products_product_id: 1,
+            enabled: 1,
+            priority: 1,
+            vendor_sku: "DA1002",
+            products: {
+              product_id: 1,
+              name: "Pi",
+              description: "Pi-descasw",
+              product_type: "Electronics",
+              products_sku: "TIF001",
+              Price: 11,
+              product_unit: "pc",
+            },
+          },
+        },
+      ],
+      purchase_order_status: {
+        id: 2,
+        name: "Waiting for approval",
+        description: "The PO is sent for approval and waiting to be",
+      },
+    },
+    {
+      po_id: 113,
+      po_type: "Manual",
+      updated_on: "2022-12-05T11:37:27.942Z",
+      approved_on: null,
+      created_at: "2022-12-05T11:37:27.942Z",
+      from_party: "tif labs",
+      expiry_date: "2022-11-30T18:30:00.000Z",
+      expected_delivery: "2022-11-30T18:30:00.000Z",
+      agreement: "Approved",
+      po_description: "erf",
+      po_code: "PO#113",
+      rfq_id: 17,
+      grn_grn_id: 1,
+      note: null,
+      agreement_terms_id: 1,
+      purchase_order_terms: "100% - Advance",
+      purchase_order_status_id: 1,
+      vendor_vendor_id: 1,
+      vendor: {
+        vendor_id: 1,
+        vendor_code: "DA",
+        vendor_email: "mdatif796@gmail.com",
+        vendor_city: "Panaji",
+        vendor_contact: "4562879123",
+        vendor_state: "Goa",
+        vendor_gstin: "GSTRIO783211111",
+        vendor: "Dylan Alisson",
+        address: "Rio ",
+        credit_period: "411",
+        lead_time: "471",
+        status: false,
+      },
+      purchase_order_products: [],
+      purchase_order_status: {
+        id: 3,
+        name: "Approved",
+        description: "The PO has been approved to be placed with/em",
+      },
+    },
+    {
+      po_id: 114,
+      po_type: "Manual",
+      updated_on: "2022-12-05T11:37:50.479Z",
+      approved_on: null,
+      created_at: "2022-12-05T11:37:50.479Z",
+      from_party: "tif12345",
+      expiry_date: "2022-11-30T18:30:00.000Z",
+      expected_delivery: "2022-11-30T18:30:00.000Z",
+      agreement: "Created_",
+      po_description: "q12345",
+      po_code: "PO#114",
+      rfq_id: 17,
+      grn_grn_id: 8,
+      note: null,
+      agreement_terms_id: 1,
+      purchase_order_terms: "50% - Advance",
+      purchase_order_status_id: 1,
+      vendor_vendor_id: 1,
+      vendor_Emails: ["mdatif796@gmail.com", "da@gmail.com", "dylan@gmail.com"],
+      amendedFrom: "PO#004",
+      AmendNotes: "Products Qty changed",
+      vendor: {
+        vendor_id: 1,
+        vendor_code: "DA",
+        vendor_email: "mdatif796@gmail.com",
+        vendor_city: "Panaji",
+        vendor_contact: "4562879123",
+        vendor_state: "Goa",
+        vendor_gstin: "GSTRIO783211111",
+        vendor: "Dylan Alisson",
+        address: "Rio ",
+        credit_period: "411",
+        lead_time: "471",
+        status: false,
+      },
+      purchase_order_products: [
+        {
+          pop_id: 16,
+          vendor_products_vp_id: 1,
+          vendor_products_vendor_vendor_id: 1,
+          vendor_products_products_product_id: 1,
+          quantity: 10,
+          price_per_unit: 500,
+          received_quantity: 0,
+          purchase_order_po_id: 186,
+          purchase_order_vendor_vendor_id: 1,
+          vendor_products: {
+            vp_id: 1,
+            unit_price: 424,
+            vendor_vendor_id: 1,
+            products_product_id: 1,
+            enabled: 1,
+            priority: 1,
+            vendor_sku: "DA1002",
+            products: {
+              product_id: 1,
+              name: "Pi",
+              description: "Pi-descasw",
+              product_type: "Electronics",
+              products_sku: "TIF001",
+              Price: 11,
+              product_unit: "pc",
+            },
+          },
+        },
+        {
+          pop_id: 73,
+          vendor_products_vp_id: 11,
+          vendor_products_vendor_vendor_id: 1,
+          vendor_products_products_product_id: 4,
+          quantity: 4,
+          price_per_unit: 42,
+          received_quantity: 0,
+          purchase_order_po_id: 186,
+          purchase_order_vendor_vendor_id: 1,
+          vendor_products: {
+            vp_id: 11,
+            unit_price: 83,
+            vendor_vendor_id: 1,
+            products_product_id: 4,
+            enabled: 1,
+            priority: 1,
+            vendor_sku: "DA102",
+            products: {
+              product_id: 4,
+              name: "E18-D80NK Infrared Sensor Module",
+              description: "description",
+              product_type: "Sensors",
+              products_sku: "TIF004",
+              Price: 42,
+              product_unit: null,
+            },
+          },
+        },
+        {
+          pop_id: 74,
+          vendor_products_vp_id: 2,
+          vendor_products_vendor_vendor_id: 1,
+          vendor_products_products_product_id: 2,
+          quantity: 47,
+          price_per_unit: 142,
+          received_quantity: 0,
+          purchase_order_po_id: 186,
+          purchase_order_vendor_vendor_id: 1,
+          vendor_products: {
+            vp_id: 2,
+            unit_price: 10,
+            vendor_vendor_id: 1,
+            products_product_id: 2,
+            enabled: 1,
+            priority: 2,
+            vendor_sku: "DA1001",
+            products: {
+              product_id: 2,
+              name: "ESP",
+              description: "esp-desc",
+              product_type: "Electronics",
+              products_sku: "TIF002",
+              Price: 142,
+              product_unit: "2pc set",
+            },
+          },
+        },
+      ],
+      purchase_order_status: {
+        id: 4,
+        name: "Amended",
+        description: "The PO has been updated/edited after being Approved",
+      },
+    },
+    {
+      po_id: 115,
+      po_type: "Manual",
+      updated_on: "2022-12-08T08:17:09.229Z",
+      approved_on: null,
+      created_at: "2022-12-08T08:17:09.229Z",
+      from_party: "dss",
+      expiry_date: "2022-12-26T18:30:00.000Z",
+      expected_delivery: "2022-12-26T18:30:00.000Z",
+      agreement: "dfsd",
+      po_description: "scfd",
+      po_code: "PO#115",
+      rfq_id: 201,
+      grn_grn_id: 9,
+      note: null,
+      agreement_terms_id: 1,
+      purchase_order_terms: "Net - 30",
+      purchase_order_status_id: 1,
+      vendor_vendor_id: 1,
+      vendor: {
+        vendor_id: 1,
+        vendor_code: "DA",
+        vendor_email: "mdatif796@gmail.com",
+        vendor_city: "Panaji",
+        vendor_contact: "4562879123",
+        vendor_state: "Goa",
+        vendor_gstin: "GSTRIO783211111",
+        vendor: "Dylan Alisson",
+        address: "Rio ",
+        credit_period: "411",
+        lead_time: "471",
+        status: false,
+      },
+      purchase_order_products: [
+        {
+          pop_id: 41,
+          vendor_products_vp_id: 6,
+          vendor_products_vendor_vendor_id: 3,
+          vendor_products_products_product_id: 6,
+          quantity: 89,
+          price_per_unit: 67,
+          received_quantity: 0,
+          purchase_order_po_id: 224,
+          purchase_order_vendor_vendor_id: 3,
+          vendor_products: {
+            vp_id: 6,
+            unit_price: 905,
+            vendor_vendor_id: 3,
+            products_product_id: 6,
+            enabled: 1,
+            priority: 5,
+            vendor_sku: "TE106",
+            products: {
+              product_id: 6,
+              name: "Turbidity Sensor",
+              description: "description sensor",
+              product_type: "Sensors",
+              products_sku: "TIF006",
+              Price: 67,
+              product_unit: null,
+            },
+          },
+        },
+        {
+          pop_id: 149,
+          vendor_products_vp_id: 83,
+          vendor_products_vendor_vendor_id: 3,
+          vendor_products_products_product_id: 4,
+          quantity: 87,
+          price_per_unit: 42,
+          received_quantity: 0,
+          purchase_order_po_id: 224,
+          purchase_order_vendor_vendor_id: 3,
+          vendor_products: {
+            vp_id: 83,
+            unit_price: 0,
+            vendor_vendor_id: 3,
+            products_product_id: 4,
+            enabled: 1,
+            priority: 1,
+            vendor_sku: "TE104",
+            products: {
+              product_id: 4,
+              name: "E18-D80NK Infrared Sensor Module",
+              description: "description",
+              product_type: "Sensors",
+              products_sku: "TIF004",
+              Price: 42,
+              product_unit: null,
+            },
+          },
+        },
+        {
+          pop_id: 150,
+          vendor_products_vp_id: 5,
+          vendor_products_vendor_vendor_id: 3,
+          vendor_products_products_product_id: 3,
+          quantity: 78,
+          price_per_unit: 24,
+          received_quantity: 0,
+          purchase_order_po_id: 224,
+          purchase_order_vendor_vendor_id: 3,
+          vendor_products: {
+            vp_id: 5,
+            unit_price: 50,
+            vendor_vendor_id: 3,
+            products_product_id: 3,
+            enabled: 1,
+            priority: 4,
+            vendor_sku: "TE103",
+            products: {
+              product_id: 3,
+              name: "Waterproof Ultrasonic Sensor",
+              description: "water-desp",
+              product_type: "Sensors",
+              products_sku: "TIF003",
+              Price: 24,
+              product_unit: "combo",
+            },
+          },
+        },
+        {
+          pop_id: 151,
+          vendor_products_vp_id: 8,
+          vendor_products_vendor_vendor_id: 3,
+          vendor_products_products_product_id: 7,
+          quantity: 67,
+          price_per_unit: 56,
+          received_quantity: 0,
+          purchase_order_po_id: 224,
+          purchase_order_vendor_vendor_id: 3,
+          vendor_products: {
+            vp_id: 8,
+            unit_price: 45,
+            vendor_vendor_id: 3,
+            products_product_id: 7,
+            enabled: 1,
+            priority: 2,
+            vendor_sku: "TE107",
+            products: {
+              product_id: 7,
+              name: "Heat Flame Sensor",
+              description: "description heat",
+              product_type: "Sensors",
+              products_sku: "TIF007",
+              Price: 56,
+              product_unit: null,
+            },
+          },
+        },
+        {
+          pop_id: 152,
+          vendor_products_vp_id: 6,
+          vendor_products_vendor_vendor_id: 3,
+          vendor_products_products_product_id: 6,
+          quantity: 56,
+          price_per_unit: 67,
+          received_quantity: 0,
+          purchase_order_po_id: 224,
+          purchase_order_vendor_vendor_id: 3,
+          vendor_products: {
+            vp_id: 6,
+            unit_price: 905,
+            vendor_vendor_id: 3,
+            products_product_id: 6,
+            enabled: 1,
+            priority: 5,
+            vendor_sku: "TE106",
+            products: {
+              product_id: 6,
+              name: "Turbidity Sensor",
+              description: "description sensor",
+              product_type: "Sensors",
+              products_sku: "TIF006",
+              Price: 67,
+              product_unit: null,
+            },
+          },
+        },
+        {
+          pop_id: 153,
+          vendor_products_vp_id: 20,
+          vendor_products_vendor_vendor_id: 3,
+          vendor_products_products_product_id: 5,
+          quantity: 45,
+          price_per_unit: 56,
+          received_quantity: 0,
+          purchase_order_po_id: 224,
+          purchase_order_vendor_vendor_id: 3,
+          vendor_products: {
+            vp_id: 20,
+            unit_price: 120,
+            vendor_vendor_id: 3,
+            products_product_id: 5,
+            enabled: 1,
+            priority: 1,
+            vendor_sku: "TE105",
+            products: {
+              product_id: 5,
+              name: "MQ-135 gas sensor Module",
+              description: "description 135",
+              product_type: "Sensors",
+              products_sku: "TIF005",
+              Price: 56,
+              product_unit: null,
+            },
+          },
+        },
+        {
+          pop_id: 154,
+          vendor_products_vp_id: 5,
+          vendor_products_vendor_vendor_id: 3,
+          vendor_products_products_product_id: 3,
+          quantity: 23,
+          price_per_unit: 24,
+          received_quantity: 0,
+          purchase_order_po_id: 224,
+          purchase_order_vendor_vendor_id: 3,
+          vendor_products: {
+            vp_id: 5,
+            unit_price: 50,
+            vendor_vendor_id: 3,
+            products_product_id: 3,
+            enabled: 1,
+            priority: 4,
+            vendor_sku: "TE103",
+            products: {
+              product_id: 3,
+              name: "Waterproof Ultrasonic Sensor",
+              description: "water-desp",
+              product_type: "Sensors",
+              products_sku: "TIF003",
+              Price: 24,
+              product_unit: "combo",
+            },
+          },
+        },
+      ],
+    },
+  ]
 
-  const [{ prefixes }, { error: getPrefixesError }] = useQuery(getPrefixes, {
-    orderBy: { id: "asc" },
-  })
+  // const [{ purchase_order_products }, { error: getPoProductsError, refetch: refetchPoProducts }] =
+  //   usePaginatedQuery(getPurchase_order_products, {
+  //     orderBy: { pop_id: "asc" },
+  //     skip: ITEMS_PER_PAGE * page,
+  //     take: ITEMS_PER_PAGE,
+  //   })
+
+  // const [{ vendors }, { error: getVenorsError }] = usePaginatedQuery(getVendors, {
+  //   orderBy: { vendor_id: "asc" },
+  //   skip: ITEMS_PER_PAGE * page,
+  //   take: ITEMS_PER_PAGE,
+  // })
+
+  const vendors = [
+    {
+      vendor_id: 1,
+      vendor_code: "DA",
+      vendor_email: ["mdatif796@gmail.com", "da@gmail.com", "dylan@gmail.com"],
+      vendor_city: "Panaji",
+      vendor_contact: "4562879123",
+      vendor_state: "Goa",
+      vendor_gstin: "GSTRIO783211111",
+      vendor: "Dylan Alisson",
+      address: "Rio ",
+      credit_period: "411",
+      lead_time: "471",
+      status: 0,
+    },
+    {
+      vendor_id: 2,
+      vendor_code: "UE",
+      vendor_email: ["udederson@gmail.com", "UE@gmail.com", "test@gmail.com"],
+      vendor_city: "Manuguru",
+      vendor_contact: "8956237845",
+      vendor_state: "Andhra Pradesh",
+      vendor_gstin: "GSTMAN012541111",
+      vendor: "Ud Ederson",
+      address: "Manaus",
+      credit_period: "5",
+      lead_time: "4",
+      status: 1,
+    },
+    {
+      vendor_id: 3,
+      vendor_code: "TE",
+      vendor_email: ["thomasEdison@gmail.com", "TE@gmail.com", "tho@gmail.com"],
+      vendor_city: "Miraj",
+      vendor_contact: "8954236172",
+      vendor_state: "Maharashtra",
+      vendor_gstin: "GSTMIL009222222",
+      vendor: "Thomas Edison",
+      address: "Milan",
+      credit_period: "4",
+      lead_time: "4",
+      status: 0,
+    },
+    {
+      vendor_id: 4,
+      vendor_code: "KM",
+      vendor_email: "kamehameha@gmail.com",
+      vendor_city: "Tonk",
+      vendor_contact: "7856124391",
+      vendor_state: "Rajasthan",
+      vendor_gstin: "GSTTK0097811111",
+      vendor: "Kamehameha",
+      address: "Tokyo",
+      credit_period: "7",
+      lead_time: "4",
+      status: 1,
+    },
+    {
+      vendor_id: 5,
+      vendor_code: "RH",
+      vendor_email: "rahul@gmail.com",
+      vendor_city: "Dumka",
+      vendor_contact: "4556788925",
+      vendor_state: "Jharkhand",
+      vendor_gstin: "GSTDUB012541111",
+      vendor: "Rahul",
+      address: "Dubai",
+      credit_period: "3",
+      lead_time: "4",
+      status: 1,
+    },
+    {
+      vendor_id: 123,
+      vendor_code: "VJ",
+      vendor_email: "varunram.66@gmail.com",
+      vendor_city: "Bangalore",
+      vendor_contact: "7892496089",
+      vendor_state: "Karnataka",
+      vendor_gstin: "GSTN97313398111",
+      vendor: "Varun",
+      address: "Hennur",
+      credit_period: "12",
+      lead_time: "21",
+      status: 0,
+    },
+    {
+      vendor_id: 133,
+      vendor_code: "iotif",
+      vendor_email: "iot@gmail.com",
+      vendor_city: "Gopalganj",
+      vendor_contact: "4567892567",
+      vendor_state: "Bihar",
+      vendor_gstin: "GSTO14562398745",
+      vendor: "TIF",
+      address: "banglore",
+      credit_period: "10",
+      lead_time: "12",
+      status: 0,
+    },
+    {
+      vendor_id: 134,
+      vendor_code: "KR",
+      vendor_email: "kar@gmail.com",
+      vendor_city: "Cambay",
+      vendor_contact: "8987634523",
+      vendor_state: "Gujarat",
+      vendor_gstin: "GSTI87640111111",
+      vendor: "Karan",
+      address: "12th street ",
+      credit_period: "4",
+      lead_time: "5",
+      status: 1,
+    },
+    {
+      vendor_id: 135,
+      vendor_code: "RA",
+      vendor_email: "raj@gail.com",
+      vendor_city: "banglor",
+      vendor_contact: "1546237964",
+      vendor_state: "Karnataka",
+      vendor_gstin: "GSTI14254572222",
+      vendor: "Raj",
+      address: "11th street",
+      credit_period: "11",
+      lead_time: "12",
+      status: 1,
+    },
+    {
+      vendor_id: 147,
+      vendor_code: "FK",
+      vendor_email: "xylene8@gmail.com",
+      vendor_city: "Salur",
+      vendor_contact: "4567891238",
+      vendor_state: "Andhra Pradesh",
+      vendor_gstin: "GSTIN6786543467",
+      vendor: "Frank",
+      address: "11",
+      credit_period: "11",
+      lead_time: "11",
+      status: 1,
+    },
+    {
+      vendor_id: 168,
+      vendor_code: "z",
+      vendor_email: "z@g.com",
+      vendor_city: "Chirala",
+      vendor_contact: "1456987856",
+      vendor_state: "Andhra Pradesh",
+      vendor_gstin: "145698712345698",
+      vendor: "z",
+      address: "asd",
+      credit_period: "45",
+      lead_time: "56",
+      status: 1,
+    },
+    {
+      vendor_id: 170,
+      vendor_code: "asq",
+      vendor_email: "d@c.com",
+      vendor_city: "Wanaparthy",
+      vendor_contact: "1234567894",
+      vendor_state: "Andhra Pradesh",
+      vendor_gstin: "123456789568745",
+      vendor: "q",
+      address: "sda",
+      credit_period: "12",
+      lead_time: "45",
+      status: 1,
+    },
+    {
+      vendor_id: 171,
+      vendor_code: "m",
+      vendor_email: "m2@G.COM",
+      vendor_city: "Zahirabad",
+      vendor_contact: "1456239875",
+      vendor_state: "Andhra Pradesh",
+      vendor_gstin: "123654789632145",
+      vendor: "m",
+      address: "WSAQ",
+      credit_period: "45",
+      lead_time: "69",
+      status: 1,
+    },
+    {
+      vendor_id: 173,
+      vendor_code: "SWD",
+      vendor_email: "SD@GMAIL.COM",
+      vendor_city: "Bellampalle",
+      vendor_contact: "7895263654",
+      vendor_state: "Andhra Pradesh",
+      vendor_gstin: "SDEF412C5D6E3S6",
+      vendor: "vj",
+      address: "STRING ",
+      credit_period: "56",
+      lead_time: "85",
+      status: 1,
+    },
+    {
+      vendor_id: 192,
+      vendor_code: "AS",
+      vendor_email: "AS@gmail.com",
+      vendor_city: "AS",
+      vendor_contact: "AS",
+      vendor_state: "AS",
+      vendor_gstin: "AS",
+      vendor: "AS",
+      address: "AS",
+      credit_period: "AS",
+      lead_time: "AS",
+      status: 1,
+    },
+  ]
+  // const [{ vendor_products }, { error: getVendorProductsError }] = usePaginatedQuery(
+  //   getVendor_products,
+  //   {
+  //     orderBy: { vp_id: "asc" },
+  //     skip: ITEMS_PER_PAGE * page,
+  //     take: ITEMS_PER_PAGE,
+  //   }
+  // )
+
+  const vendor_products = [
+    {
+      vp_id: 1,
+      unit_price: 424,
+      products: {
+        product_id: 1,
+        name: "Pi",
+        description: "Pi-descasw",
+        product_type: "Electronics",
+        products_sku: "TIF001",
+        Price: 11,
+        product_unit: "pc",
+      },
+      vendor: {
+        vendor_id: 1,
+        vendor_code: "DA",
+        vendor_email: "mdatif796@gmail.com",
+        vendor_city: "Panaji",
+        vendor_contact: "4562879123",
+        vendor_state: "Goa",
+        vendor_gstin: "GSTRIO783211111",
+        vendor: "Dylan Alisson",
+        address: "Rio ",
+        credit_period: "411",
+        lead_time: "471",
+        status: false,
+      },
+      vendor_vendor_id: 1,
+      products_product_id: 1,
+      vendor_sku: "DA1002",
+    },
+    {
+      vp_id: 2,
+      unit_price: 10,
+      products: {
+        product_id: 2,
+        name: "ESP",
+        description: "esp-desc",
+        product_type: "Electronics",
+        products_sku: "TIF002",
+        Price: 142,
+        product_unit: "2pc set",
+      },
+      vendor: {
+        vendor_id: 1,
+        vendor_code: "DA",
+        vendor_email: "mdatif796@gmail.com",
+        vendor_city: "Panaji",
+        vendor_contact: "4562879123",
+        vendor_state: "Goa",
+        vendor_gstin: "GSTRIO783211111",
+        vendor: "Dylan Alisson",
+        address: "Rio ",
+        credit_period: "411",
+        lead_time: "471",
+        status: false,
+      },
+      vendor_vendor_id: 1,
+      products_product_id: 2,
+      vendor_sku: "DA1001",
+    },
+    {
+      vp_id: 5,
+      unit_price: 50,
+      products: {
+        product_id: 3,
+        name: "Waterproof Ultrasonic Sensor",
+        description: "water-desp",
+        product_type: "Sensors",
+        products_sku: "TIF003",
+        Price: 24,
+        product_unit: "combo",
+      },
+      vendor: {
+        vendor_id: 3,
+        vendor_code: "TE",
+        vendor_email: "thomasEdison@gmail.com",
+        vendor_city: "Miraj",
+        vendor_contact: "8954236172",
+        vendor_state: "Maharashtra",
+        vendor_gstin: "GSTMIL009222222",
+        vendor: "Thomas Edison",
+        address: "Milan",
+        credit_period: "4",
+        lead_time: "4",
+        status: false,
+      },
+      vendor_vendor_id: 3,
+      products_product_id: 3,
+      vendor_sku: "TE103",
+    },
+    {
+      vp_id: 6,
+      unit_price: 905,
+      products: {
+        product_id: 6,
+        name: "Turbidity Sensor",
+        description: "description sensor",
+        product_type: "Sensors",
+        products_sku: "TIF006",
+        Price: 67,
+        product_unit: null,
+      },
+      vendor: {
+        vendor_id: 3,
+        vendor_code: "TE",
+        vendor_email: "thomasEdison@gmail.com",
+        vendor_city: "Miraj",
+        vendor_contact: "8954236172",
+        vendor_state: "Maharashtra",
+        vendor_gstin: "GSTMIL009222222",
+        vendor: "Thomas Edison",
+        address: "Milan",
+        credit_period: "4",
+        lead_time: "4",
+        status: false,
+      },
+      vendor_vendor_id: 3,
+      products_product_id: 6,
+      vendor_sku: "TE106",
+    },
+    {
+      vp_id: 8,
+      unit_price: 45,
+      products: {
+        product_id: 7,
+        name: "Heat Flame Sensor",
+        description: "description heat",
+        product_type: "Sensors",
+        products_sku: "TIF007",
+        Price: 56,
+        product_unit: null,
+      },
+      vendor: {
+        vendor_id: 3,
+        vendor_code: "TE",
+        vendor_email: "thomasEdison@gmail.com",
+        vendor_city: "Miraj",
+        vendor_contact: "8954236172",
+        vendor_state: "Maharashtra",
+        vendor_gstin: "GSTMIL009222222",
+        vendor: "Thomas Edison",
+        address: "Milan",
+        credit_period: "4",
+        lead_time: "4",
+        status: false,
+      },
+      vendor_vendor_id: 3,
+      products_product_id: 7,
+      vendor_sku: "TE107",
+    },
+    {
+      vp_id: 9,
+      unit_price: 88,
+      products: {
+        product_id: 6,
+        name: "Turbidity Sensor",
+        description: "description sensor",
+        product_type: "Sensors",
+        products_sku: "TIF006",
+        Price: 67,
+        product_unit: null,
+      },
+      vendor: {
+        vendor_id: 4,
+        vendor_code: "KM",
+        vendor_email: "kamehameha@gmail.com",
+        vendor_city: "Tonk",
+        vendor_contact: "7856124391",
+        vendor_state: "Rajasthan",
+        vendor_gstin: "GSTTK0097811111",
+        vendor: "Kamehameha",
+        address: "Tokyo",
+        credit_period: "7",
+        lead_time: "4",
+        status: true,
+      },
+      vendor_vendor_id: 4,
+      products_product_id: 6,
+      vendor_sku: "KM106",
+    },
+    {
+      vp_id: 10,
+      unit_price: 47,
+      products: {
+        product_id: 7,
+        name: "Heat Flame Sensor",
+        description: "description heat",
+        product_type: "Sensors",
+        products_sku: "TIF007",
+        Price: 56,
+        product_unit: null,
+      },
+      vendor: {
+        vendor_id: 4,
+        vendor_code: "KM",
+        vendor_email: "kamehameha@gmail.com",
+        vendor_city: "Tonk",
+        vendor_contact: "7856124391",
+        vendor_state: "Rajasthan",
+        vendor_gstin: "GSTTK0097811111",
+        vendor: "Kamehameha",
+        address: "Tokyo",
+        credit_period: "7",
+        lead_time: "4",
+        status: true,
+      },
+      vendor_vendor_id: 4,
+      products_product_id: 7,
+      vendor_sku: "KM107",
+    },
+    {
+      vp_id: 11,
+      unit_price: 83,
+      products: {
+        product_id: 4,
+        name: "E18-D80NK Infrared Sensor Module",
+        description: "description",
+        product_type: "Sensors",
+        products_sku: "TIF004",
+        Price: 42,
+        product_unit: null,
+      },
+      vendor: {
+        vendor_id: 1,
+        vendor_code: "DA",
+        vendor_email: "mdatif796@gmail.com",
+        vendor_city: "Panaji",
+        vendor_contact: "4562879123",
+        vendor_state: "Goa",
+        vendor_gstin: "GSTRIO783211111",
+        vendor: "Dylan Alisson",
+        address: "Rio ",
+        credit_period: "411",
+        lead_time: "471",
+        status: false,
+      },
+      vendor_vendor_id: 1,
+      products_product_id: 4,
+      vendor_sku: "DA102",
+    },
+    {
+      vp_id: 20,
+      unit_price: 120,
+      products: {
+        product_id: 5,
+        name: "MQ-135 gas sensor Module",
+        description: "description 135",
+        product_type: "Sensors",
+        products_sku: "TIF005",
+        Price: 56,
+        product_unit: null,
+      },
+      vendor: {
+        vendor_id: 3,
+        vendor_code: "TE",
+        vendor_email: "thomasEdison@gmail.com",
+        vendor_city: "Miraj",
+        vendor_contact: "8954236172",
+        vendor_state: "Maharashtra",
+        vendor_gstin: "GSTMIL009222222",
+        vendor: "Thomas Edison",
+        address: "Milan",
+        credit_period: "4",
+        lead_time: "4",
+        status: false,
+      },
+      vendor_vendor_id: 3,
+      products_product_id: 5,
+      vendor_sku: "TE105",
+    },
+    {
+      vp_id: 29,
+      unit_price: 11,
+      products: {
+        product_id: 8,
+        name: "Eye Blink Sensor",
+        description: "eye description",
+        product_type: "Sensors",
+        products_sku: "TIF008",
+        Price: 53,
+        product_unit: null,
+      },
+      vendor: {
+        vendor_id: 1,
+        vendor_code: "DA",
+        vendor_email: "mdatif796@gmail.com",
+        vendor_city: "Panaji",
+        vendor_contact: "4562879123",
+        vendor_state: "Goa",
+        vendor_gstin: "GSTRIO783211111",
+        vendor: "Dylan Alisson",
+        address: "Rio ",
+        credit_period: "411",
+        lead_time: "471",
+        status: false,
+      },
+      vendor_vendor_id: 1,
+      products_product_id: 8,
+      vendor_sku: "qws",
+    },
+    {
+      vp_id: 33,
+      unit_price: 25,
+      products: {
+        product_id: 2,
+        name: "ESP",
+        description: "esp-desc",
+        product_type: "Electronics",
+        products_sku: "TIF002",
+        Price: 142,
+        product_unit: "2pc set",
+      },
+      vendor: {
+        vendor_id: 123,
+        vendor_code: "VJ",
+        vendor_email: "varunram.66@gmail.com",
+        vendor_city: "Bangalore",
+        vendor_contact: "7892496089",
+        vendor_state: "Karnataka",
+        vendor_gstin: "GSTN97313398111",
+        vendor: "Varun",
+        address: "Hennur",
+        credit_period: "12",
+        lead_time: "21",
+        status: false,
+      },
+      vendor_vendor_id: 123,
+      products_product_id: 2,
+      vendor_sku: "VJ338",
+    },
+    {
+      vp_id: 34,
+      unit_price: 120,
+      products: {
+        product_id: 6,
+        name: "Turbidity Sensor",
+        description: "description sensor",
+        product_type: "Sensors",
+        products_sku: "TIF006",
+        Price: 67,
+        product_unit: null,
+      },
+      vendor: {
+        vendor_id: 5,
+        vendor_code: "RH",
+        vendor_email: "rahul@gmail.com",
+        vendor_city: "Dumka",
+        vendor_contact: "4556788925",
+        vendor_state: "Jharkhand",
+        vendor_gstin: "GSTDUB012541111",
+        vendor: "Rahul",
+        address: "Dubai",
+        credit_period: "3",
+        lead_time: "4",
+        status: true,
+      },
+      vendor_vendor_id: 5,
+      products_product_id: 6,
+      vendor_sku: "TE1564",
+    },
+    {
+      vp_id: 35,
+      unit_price: 11,
+      products: {
+        product_id: 7,
+        name: "Heat Flame Sensor",
+        description: "description heat",
+        product_type: "Sensors",
+        products_sku: "TIF007",
+        Price: 56,
+        product_unit: null,
+      },
+      vendor: {
+        vendor_id: 5,
+        vendor_code: "RH",
+        vendor_email: "rahul@gmail.com",
+        vendor_city: "Dumka",
+        vendor_contact: "4556788925",
+        vendor_state: "Jharkhand",
+        vendor_gstin: "GSTDUB012541111",
+        vendor: "Rahul",
+        address: "Dubai",
+        credit_period: "3",
+        lead_time: "4",
+        status: true,
+      },
+      vendor_vendor_id: 5,
+      products_product_id: 7,
+      vendor_sku: "TE571",
+    },
+    {
+      vp_id: 36,
+      unit_price: 756,
+      products: {
+        product_id: 1,
+        name: "Pi",
+        description: "Pi-descasw",
+        product_type: "Electronics",
+        products_sku: "TIF001",
+        Price: 11,
+        product_unit: "pc",
+      },
+      vendor: {
+        vendor_id: 4,
+        vendor_code: "KM",
+        vendor_email: "kamehameha@gmail.com",
+        vendor_city: "Tonk",
+        vendor_contact: "7856124391",
+        vendor_state: "Rajasthan",
+        vendor_gstin: "GSTTK0097811111",
+        vendor: "Kamehameha",
+        address: "Tokyo",
+        credit_period: "7",
+        lead_time: "4",
+        status: true,
+      },
+      vendor_vendor_id: 4,
+      products_product_id: 1,
+      vendor_sku: "TE417",
+    },
+    {
+      vp_id: 37,
+      unit_price: 454,
+      products: {
+        product_id: 1,
+        name: "Pi",
+        description: "Pi-descasw",
+        product_type: "Electronics",
+        products_sku: "TIF001",
+        Price: 11,
+        product_unit: "pc",
+      },
+      vendor: {
+        vendor_id: 5,
+        vendor_code: "RH",
+        vendor_email: "rahul@gmail.com",
+        vendor_city: "Dumka",
+        vendor_contact: "4556788925",
+        vendor_state: "Jharkhand",
+        vendor_gstin: "GSTDUB012541111",
+        vendor: "Rahul",
+        address: "Dubai",
+        credit_period: "3",
+        lead_time: "4",
+        status: true,
+      },
+      vendor_vendor_id: 5,
+      products_product_id: 1,
+      vendor_sku: "TE420",
+    },
+    {
+      vp_id: 79,
+      unit_price: 142,
+      products: {
+        product_id: 3,
+        name: "Waterproof Ultrasonic Sensor",
+        description: "water-desp",
+        product_type: "Sensors",
+        products_sku: "TIF003",
+        Price: 24,
+        product_unit: "combo",
+      },
+      vendor: {
+        vendor_id: 4,
+        vendor_code: "KM",
+        vendor_email: "kamehameha@gmail.com",
+        vendor_city: "Tonk",
+        vendor_contact: "7856124391",
+        vendor_state: "Rajasthan",
+        vendor_gstin: "GSTTK0097811111",
+        vendor: "Kamehameha",
+        address: "Tokyo",
+        credit_period: "7",
+        lead_time: "4",
+        status: true,
+      },
+      vendor_vendor_id: 4,
+      products_product_id: 3,
+      vendor_sku: "KA146",
+    },
+    {
+      vp_id: 81,
+      unit_price: 85,
+      products: {
+        product_id: 15,
+        name: "Solenoid valve 12V",
+        description: "valve 12V",
+        product_type: "Motors and mechanical devices",
+        products_sku: "TIF015",
+        Price: 343,
+        product_unit: null,
+      },
+      vendor: {
+        vendor_id: 1,
+        vendor_code: "DA",
+        vendor_email: "mdatif796@gmail.com",
+        vendor_city: "Panaji",
+        vendor_contact: "4562879123",
+        vendor_state: "Goa",
+        vendor_gstin: "GSTRIO783211111",
+        vendor: "Dylan Alisson",
+        address: "Rio ",
+        credit_period: "411",
+        lead_time: "471",
+        status: false,
+      },
+      vendor_vendor_id: 1,
+      products_product_id: 15,
+      vendor_sku: "DA10456",
+    },
+    {
+      vp_id: 83,
+      unit_price: 0,
+      products: {
+        product_id: 4,
+        name: "E18-D80NK Infrared Sensor Module",
+        description: "description",
+        product_type: "Sensors",
+        products_sku: "TIF004",
+        Price: 42,
+        product_unit: null,
+      },
+      vendor: {
+        vendor_id: 3,
+        vendor_code: "TE",
+        vendor_email: "thomasEdison@gmail.com",
+        vendor_city: "Miraj",
+        vendor_contact: "8954236172",
+        vendor_state: "Maharashtra",
+        vendor_gstin: "GSTMIL009222222",
+        vendor: "Thomas Edison",
+        address: "Milan",
+        credit_period: "4",
+        lead_time: "4",
+        status: false,
+      },
+      vendor_vendor_id: 3,
+      products_product_id: 4,
+      vendor_sku: "TE104",
+    },
+    {
+      vp_id: 86,
+      unit_price: 12,
+      products: {
+        product_id: 23,
+        name: "Test CSV",
+        description: "Test CSV",
+        product_type: "CSV",
+        products_sku: "TestSKU",
+        Price: 67,
+        product_unit: null,
+      },
+      vendor: {
+        vendor_id: 1,
+        vendor_code: "DA",
+        vendor_email: "mdatif796@gmail.com",
+        vendor_city: "Panaji",
+        vendor_contact: "4562879123",
+        vendor_state: "Goa",
+        vendor_gstin: "GSTRIO783211111",
+        vendor: "Dylan Alisson",
+        address: "Rio ",
+        credit_period: "411",
+        lead_time: "471",
+        status: false,
+      },
+      vendor_vendor_id: 1,
+      products_product_id: 23,
+      vendor_sku: "aws",
+    },
+    {
+      vp_id: 102,
+      unit_price: 15,
+      products: {
+        product_id: 21,
+        name: "Watermelon",
+        description:
+          "Water-melon is a flowering plant species of the Cucurbitaceae family orem ipsum dolor sit amet consectetur adipisicing elit. Maxime mollitia,\nmolestiae quas vel sint commodi repudiandae consequuntur voluptatum laborum",
+        product_type: "Fruit",
+        products_sku: "Test",
+        Price: 7,
+        product_unit: "kg",
+      },
+      vendor: {
+        vendor_id: 123,
+        vendor_code: "VJ",
+        vendor_email: "varunram.66@gmail.com",
+        vendor_city: "Bangalore",
+        vendor_contact: "7892496089",
+        vendor_state: "Karnataka",
+        vendor_gstin: "GSTN97313398111",
+        vendor: "Varun",
+        address: "Hennur",
+        credit_period: "12",
+        lead_time: "21",
+        status: false,
+      },
+      vendor_vendor_id: 123,
+      products_product_id: 21,
+      vendor_sku: "VJW1001",
+    },
+    {
+      vp_id: 104,
+      unit_price: 12,
+      products: {
+        product_id: 14,
+        name: "R385 DC PUMP",
+        description: "R385 ",
+        product_type: "Motors and mechanical devices",
+        products_sku: "TIF014",
+        Price: 787,
+        product_unit: null,
+      },
+      vendor: {
+        vendor_id: 4,
+        vendor_code: "KM",
+        vendor_email: "kamehameha@gmail.com",
+        vendor_city: "Tonk",
+        vendor_contact: "7856124391",
+        vendor_state: "Rajasthan",
+        vendor_gstin: "GSTTK0097811111",
+        vendor: "Kamehameha",
+        address: "Tokyo",
+        credit_period: "7",
+        lead_time: "4",
+        status: true,
+      },
+      vendor_vendor_id: 4,
+      products_product_id: 14,
+      vendor_sku: "dewa",
+    },
+    {
+      vp_id: 105,
+      unit_price: 123,
+      products: {
+        product_id: 5,
+        name: "MQ-135 gas sensor Module",
+        description: "description 135",
+        product_type: "Sensors",
+        products_sku: "TIF005",
+        Price: 56,
+        product_unit: null,
+      },
+      vendor: {
+        vendor_id: 2,
+        vendor_code: "UE",
+        vendor_email: "udederson@gmail.com",
+        vendor_city: "Manuguru",
+        vendor_contact: "8956237845",
+        vendor_state: "Andhra Pradesh",
+        vendor_gstin: "GSTMAN012541111",
+        vendor: "Ud Ederson",
+        address: "Manaus",
+        credit_period: "5",
+        lead_time: "4",
+        status: true,
+      },
+      vendor_vendor_id: 2,
+      products_product_id: 5,
+      vendor_sku: "ssWW",
+    },
+    {
+      vp_id: 106,
+      unit_price: 111,
+      products: {
+        product_id: 5,
+        name: "MQ-135 gas sensor Module",
+        description: "description 135",
+        product_type: "Sensors",
+        products_sku: "TIF005",
+        Price: 56,
+        product_unit: null,
+      },
+      vendor: {
+        vendor_id: 170,
+        vendor_code: "asq",
+        vendor_email: "d@c.com",
+        vendor_city: "Wanaparthy",
+        vendor_contact: "1234567894",
+        vendor_state: "Andhra Pradesh",
+        vendor_gstin: "123456789568745",
+        vendor: "q",
+        address: "sda",
+        credit_period: "12",
+        lead_time: "45",
+        status: true,
+      },
+      vendor_vendor_id: 170,
+      products_product_id: 5,
+      vendor_sku: "qqq",
+    },
+    {
+      vp_id: 108,
+      unit_price: 45,
+      products: {
+        product_id: 4,
+        name: "E18-D80NK Infrared Sensor Module",
+        description: "description",
+        product_type: "Sensors",
+        products_sku: "TIF004",
+        Price: 42,
+        product_unit: null,
+      },
+      vendor: {
+        vendor_id: 123,
+        vendor_code: "VJ",
+        vendor_email: "varunram.66@gmail.com",
+        vendor_city: "Bangalore",
+        vendor_contact: "7892496089",
+        vendor_state: "Karnataka",
+        vendor_gstin: "GSTN97313398111",
+        vendor: "Varun",
+        address: "Hennur",
+        credit_period: "12",
+        lead_time: "21",
+        status: false,
+      },
+      vendor_vendor_id: 123,
+      products_product_id: 4,
+      vendor_sku: "VJ12345",
+    },
+    {
+      vp_id: 112,
+      unit_price: 45,
+      products: {
+        product_id: 21,
+        name: "Watermelon",
+        description:
+          "Water-melon is a flowering plant species of the Cucurbitaceae family orem ipsum dolor sit amet consectetur adipisicing elit. Maxime mollitia,\nmolestiae quas vel sint commodi repudiandae consequuntur voluptatum laborum",
+        product_type: "Fruit",
+        products_sku: "Test",
+        Price: 7,
+        product_unit: "kg",
+      },
+      vendor: {
+        vendor_id: 147,
+        vendor_code: "FK",
+        vendor_email: "xylene8@gmail.com",
+        vendor_city: "Salur",
+        vendor_contact: "4567891238",
+        vendor_state: "Andhra Pradesh",
+        vendor_gstin: "GSTIN6786543467",
+        vendor: "Frank",
+        address: "11",
+        credit_period: "11",
+        lead_time: "11",
+        status: true,
+      },
+      vendor_vendor_id: 147,
+      products_product_id: 21,
+      vendor_sku: "FK489",
+    },
+    {
+      vp_id: 113,
+      unit_price: 40,
+      products: {
+        product_id: 4,
+        name: "E18-D80NK Infrared Sensor Module",
+        description: "description",
+        product_type: "Sensors",
+        products_sku: "TIF004",
+        Price: 42,
+        product_unit: null,
+      },
+      vendor: {
+        vendor_id: 147,
+        vendor_code: "FK",
+        vendor_email: "xylene8@gmail.com",
+        vendor_city: "Salur",
+        vendor_contact: "4567891238",
+        vendor_state: "Andhra Pradesh",
+        vendor_gstin: "GSTIN6786543467",
+        vendor: "Frank",
+        address: "11",
+        credit_period: "11",
+        lead_time: "11",
+        status: true,
+      },
+      vendor_vendor_id: 147,
+      products_product_id: 4,
+      vendor_sku: "FK491",
+    },
+    {
+      vp_id: 114,
+      unit_price: 41,
+      products: {
+        product_id: 2,
+        name: "ESP",
+        description: "esp-desc",
+        product_type: "Electronics",
+        products_sku: "TIF002",
+        Price: 142,
+        product_unit: "2pc set",
+      },
+      vendor: {
+        vendor_id: 147,
+        vendor_code: "FK",
+        vendor_email: "xylene8@gmail.com",
+        vendor_city: "Salur",
+        vendor_contact: "4567891238",
+        vendor_state: "Andhra Pradesh",
+        vendor_gstin: "GSTIN6786543467",
+        vendor: "Frank",
+        address: "11",
+        credit_period: "11",
+        lead_time: "11",
+        status: true,
+      },
+      vendor_vendor_id: 147,
+      products_product_id: 2,
+      vendor_sku: "FK490",
+    },
+    {
+      vp_id: 116,
+      unit_price: 85,
+      products: {
+        product_id: 1,
+        name: "Pi",
+        description: "Pi-descasw",
+        product_type: "Electronics",
+        products_sku: "TIF001",
+        Price: 11,
+        product_unit: "pc",
+      },
+      vendor: {
+        vendor_id: 3,
+        vendor_code: "TE",
+        vendor_email: "thomasEdison@gmail.com",
+        vendor_city: "Miraj",
+        vendor_contact: "8954236172",
+        vendor_state: "Maharashtra",
+        vendor_gstin: "GSTMIL009222222",
+        vendor: "Thomas Edison",
+        address: "Milan",
+        credit_period: "4",
+        lead_time: "4",
+        status: false,
+      },
+      vendor_vendor_id: 3,
+      products_product_id: 1,
+      vendor_sku: "TH4568",
+    },
+  ]
+
+  // const [{ rfqs }, { error: getRfqError }] = usePaginatedQuery(getRfqs, {
+  //   orderBy: { id: "asc" },
+  //   skip: ITEMS_PER_PAGE * page,
+  //   take: ITEMS_PER_PAGE,
+  // })
+  // const [{ rfq_products }, { error: getRfqProductsError }] = usePaginatedQuery(getRfq_products, {
+  //   orderBy: { rfq_products_id: "asc" },
+  //   skip: ITEMS_PER_PAGE * page,
+  //   take: ITEMS_PER_PAGE,
+  // })
+  // const [{ products }, { error: getProductsError }] = useQuery(getProducts, {
+  //   orderBy: { product_id: "asc" },
+  //   skip: ITEMS_PER_PAGE * page,
+  //   take: ITEMS_PER_PAGE,
+  // })
+
+  const products = [
+    {
+      product_id: 1,
+      name: "Pi",
+      description: "Pi-descasw",
+      product_type: "Electronics",
+      products_sku: "TIF001",
+      Price: 11,
+      product_unit: "pc",
+      vendor_products: [
+        {
+          vp_id: 1,
+          unit_price: 424,
+          vendor_vendor_id: 1,
+          products_product_id: 1,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "DA1002",
+        },
+        {
+          vp_id: 36,
+          unit_price: 756,
+          vendor_vendor_id: 4,
+          products_product_id: 1,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "TE417",
+        },
+        {
+          vp_id: 37,
+          unit_price: 454,
+          vendor_vendor_id: 5,
+          products_product_id: 1,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "TE420",
+        },
+        {
+          vp_id: 116,
+          unit_price: 85,
+          vendor_vendor_id: 3,
+          products_product_id: 1,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "TH4568",
+        },
+      ],
+    },
+    {
+      product_id: 2,
+      name: "ESP",
+      description: "esp-desc",
+      product_type: "Electronics",
+      products_sku: "TIF002",
+      Price: 142,
+      product_unit: "2pc set",
+      vendor_products: [
+        {
+          vp_id: 2,
+          unit_price: 10,
+          vendor_vendor_id: 1,
+          products_product_id: 2,
+          enabled: 1,
+          priority: 2,
+          vendor_sku: "DA1001",
+        },
+        {
+          vp_id: 33,
+          unit_price: 25,
+          vendor_vendor_id: 123,
+          products_product_id: 2,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "VJ338",
+        },
+        {
+          vp_id: 114,
+          unit_price: 41,
+          vendor_vendor_id: 147,
+          products_product_id: 2,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "FK490",
+        },
+      ],
+    },
+    {
+      product_id: 3,
+      name: "Waterproof Ultrasonic Sensor",
+      description: "water-desp",
+      product_type: "Sensors",
+      products_sku: "TIF003",
+      Price: 24,
+      product_unit: "combo",
+      vendor_products: [
+        {
+          vp_id: 5,
+          unit_price: 50,
+          vendor_vendor_id: 3,
+          products_product_id: 3,
+          enabled: 1,
+          priority: 4,
+          vendor_sku: "TE103",
+        },
+        {
+          vp_id: 79,
+          unit_price: 142,
+          vendor_vendor_id: 4,
+          products_product_id: 3,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "KA146",
+        },
+      ],
+    },
+    {
+      product_id: 4,
+      name: "E18-D80NK Infrared Sensor Module",
+      description: "description",
+      product_type: "Sensors",
+      products_sku: "TIF004",
+      Price: 42,
+      product_unit: null,
+      vendor_products: [
+        {
+          vp_id: 11,
+          unit_price: 83,
+          vendor_vendor_id: 1,
+          products_product_id: 4,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "DA102",
+        },
+        {
+          vp_id: 83,
+          unit_price: 0,
+          vendor_vendor_id: 3,
+          products_product_id: 4,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "TE104",
+        },
+        {
+          vp_id: 108,
+          unit_price: 45,
+          vendor_vendor_id: 123,
+          products_product_id: 4,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "VJ12345",
+        },
+        {
+          vp_id: 113,
+          unit_price: 40,
+          vendor_vendor_id: 147,
+          products_product_id: 4,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "FK491",
+        },
+      ],
+    },
+    {
+      product_id: 5,
+      name: "MQ-135 gas sensor Module",
+      description: "description 135",
+      product_type: "Sensors",
+      products_sku: "TIF005",
+      Price: 56,
+      product_unit: null,
+      vendor_products: [
+        {
+          vp_id: 20,
+          unit_price: 120,
+          vendor_vendor_id: 3,
+          products_product_id: 5,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "TE105",
+        },
+        {
+          vp_id: 105,
+          unit_price: 123,
+          vendor_vendor_id: 2,
+          products_product_id: 5,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "ssWW",
+        },
+        {
+          vp_id: 106,
+          unit_price: 111,
+          vendor_vendor_id: 170,
+          products_product_id: 5,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "qqq",
+        },
+      ],
+    },
+    {
+      product_id: 6,
+      name: "Turbidity Sensor",
+      description: "description sensor",
+      product_type: "Sensors",
+      products_sku: "TIF006",
+      Price: 67,
+      product_unit: null,
+      vendor_products: [
+        {
+          vp_id: 6,
+          unit_price: 905,
+          vendor_vendor_id: 3,
+          products_product_id: 6,
+          enabled: 1,
+          priority: 5,
+          vendor_sku: "TE106",
+        },
+        {
+          vp_id: 9,
+          unit_price: 88,
+          vendor_vendor_id: 4,
+          products_product_id: 6,
+          enabled: 1,
+          priority: 3,
+          vendor_sku: "KM106",
+        },
+        {
+          vp_id: 34,
+          unit_price: 120,
+          vendor_vendor_id: 5,
+          products_product_id: 6,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "TE1564",
+        },
+      ],
+    },
+    {
+      product_id: 7,
+      name: "Heat Flame Sensor",
+      description: "description heat",
+      product_type: "Sensors",
+      products_sku: "TIF007",
+      Price: 56,
+      product_unit: null,
+      vendor_products: [
+        {
+          vp_id: 8,
+          unit_price: 45,
+          vendor_vendor_id: 3,
+          products_product_id: 7,
+          enabled: 1,
+          priority: 2,
+          vendor_sku: "TE107",
+        },
+        {
+          vp_id: 10,
+          unit_price: 47,
+          vendor_vendor_id: 4,
+          products_product_id: 7,
+          enabled: 1,
+          priority: 2,
+          vendor_sku: "KM107",
+        },
+        {
+          vp_id: 35,
+          unit_price: 11,
+          vendor_vendor_id: 5,
+          products_product_id: 7,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "TE571",
+        },
+      ],
+    },
+    {
+      product_id: 8,
+      name: "Eye Blink Sensor",
+      description: "eye description",
+      product_type: "Sensors",
+      products_sku: "TIF008",
+      Price: 53,
+      product_unit: null,
+      vendor_products: [
+        {
+          vp_id: 29,
+          unit_price: 11,
+          vendor_vendor_id: 1,
+          products_product_id: 8,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "qws",
+        },
+      ],
+    },
+    {
+      product_id: 9,
+      name: "Laser Module",
+      description: "description laser",
+      product_type: "Sensors",
+      products_sku: "TIF009",
+      Price: 856,
+      product_unit: null,
+      vendor_products: [],
+    },
+    {
+      product_id: 10,
+      name: "Sound Sensor Module",
+      description: "sound description",
+      product_type: "Sensors",
+      products_sku: "TIF010",
+      Price: 56,
+      product_unit: null,
+      vendor_products: [],
+    },
+    {
+      product_id: 11,
+      name: "Servo Motor Pan-Tilt Setup",
+      description: "servo description",
+      product_type: "Motors and mechanical devices",
+      products_sku: "TIF011",
+      Price: 5657,
+      product_unit: null,
+      vendor_products: [],
+    },
+    {
+      product_id: 12,
+      name: "Micro Vibration Motor",
+      description: "micro  ",
+      product_type: "Motors and mechanical devices",
+      products_sku: "TIF012",
+      Price: 65,
+      product_unit: null,
+      vendor_products: [],
+    },
+    {
+      product_id: 13,
+      name: "A4988 Stepper Motor Driver",
+      description: "description pump",
+      product_type: "Motors and mechanical devices",
+      products_sku: "TIF013",
+      Price: 346,
+      product_unit: null,
+      vendor_products: [],
+    },
+    {
+      product_id: 14,
+      name: "R385 DC PUMP",
+      description: "R385 ",
+      product_type: "Motors and mechanical devices",
+      products_sku: "TIF014",
+      Price: 787,
+      product_unit: null,
+      vendor_products: [
+        {
+          vp_id: 104,
+          unit_price: 12,
+          vendor_vendor_id: 4,
+          products_product_id: 14,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "dewa",
+        },
+      ],
+    },
+    {
+      product_id: 15,
+      name: "Solenoid valve 12V",
+      description: "valve 12V",
+      product_type: "Motors and mechanical devices",
+      products_sku: "TIF015",
+      Price: 343,
+      product_unit: null,
+      vendor_products: [
+        {
+          vp_id: 81,
+          unit_price: 85,
+          vendor_vendor_id: 1,
+          products_product_id: 15,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "DA10456",
+        },
+      ],
+    },
+    {
+      product_id: 16,
+      name: "Neo 6M GPS Module",
+      description: "Neo 6M GPS",
+      product_type: "IOT & wireless devices",
+      products_sku: "TIF016",
+      Price: 657,
+      product_unit: null,
+      vendor_products: [],
+    },
+    {
+      product_id: 17,
+      name: "NRF24L01+PA+LNA",
+      description: "NRF24L01+PA+LNA",
+      product_type: "IOT & wireless devices",
+      products_sku: "TIF017",
+      Price: 786,
+      product_unit: null,
+      vendor_products: [],
+    },
+    {
+      product_id: 18,
+      name: "test",
+      description: "tes0123",
+      product_type: "IOT & wireless devices",
+      products_sku: "TIF018",
+      Price: 657,
+      product_unit: null,
+      vendor_products: [],
+    },
+    {
+      product_id: 19,
+      name: "ESP12E ESP8266 Wireless Transceiver Module",
+      description: "ESP12E ",
+      product_type: "IOT & wireless devices",
+      products_sku: "TIF019",
+      Price: 53,
+      product_unit: null,
+      vendor_products: [],
+    },
+    {
+      product_id: 20,
+      name: "dummy name",
+      description: "dummy name",
+      product_type: "dummy product type",
+      products_sku: "TIF000",
+      Price: 4,
+      product_unit: null,
+      vendor_products: [],
+    },
+    {
+      product_id: 21,
+      name: "Watermelon",
+      description:
+        "Water-melon is a flowering plant species of the Cucurbitaceae family orem ipsum dolor sit amet consectetur adipisicing elit. Maxime mollitia,\nmolestiae quas vel sint commodi repudiandae consequuntur voluptatum laborum",
+      product_type: "Fruit",
+      products_sku: "Test",
+      Price: 7,
+      product_unit: "kg",
+      vendor_products: [
+        {
+          vp_id: 102,
+          unit_price: 15,
+          vendor_vendor_id: 123,
+          products_product_id: 21,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "VJW1001",
+        },
+        {
+          vp_id: 112,
+          unit_price: 45,
+          vendor_vendor_id: 147,
+          products_product_id: 21,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "FK489",
+        },
+      ],
+    },
+    {
+      product_id: 23,
+      name: "Test CSV",
+      description: "Test CSV",
+      product_type: "CSV",
+      products_sku: "TestSKU",
+      Price: 67,
+      product_unit: null,
+      vendor_products: [
+        {
+          vp_id: 86,
+          unit_price: 12,
+          vendor_vendor_id: 1,
+          products_product_id: 23,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "aws",
+        },
+      ],
+    },
+    {
+      product_id: 64,
+      name: "boat",
+      description: "asdddasd",
+      product_type: "eleectric",
+      products_sku: "TI-100",
+      Price: 0,
+      product_unit: "Pc",
+      vendor_products: [],
+    },
+  ]
+  // const [{ grns }, { error: getGrnsError, refetch: refetchGrn }] = useQuery(getGrns, {
+  //   orderBy: { grn_id: "asc" },
+  //   skip: ITEMS_PER_PAGE * page,
+  //   take: ITEMS_PER_PAGE,
+  // })
+
+  // const [{ prefixes }, { error: getPrefixesError }] = useQuery(getPrefixes, {
+  //   orderBy: { id: "asc" },
+  // })
+
   const [createPurchaseOrderMutation, { isLoading: creatingPO, error: creatingMutationError }] =
     useMutation(createPurchase_order)
   const [updatePurchaseOrderMutation, { isLoading: UpdatingPO, error: updatingMutationError }] =
@@ -157,9 +2423,11 @@ export const Purchase_ordersList = () => {
     expiry_date: "",
     expected_delivery: "",
     from_party: "",
-    agreement: "",
+    terms: "",
     rfq_id: "",
     itemsLength: false,
+    purchase_order_status: "",
+    vendor_Emails: [],
   }
 
   const [purchaseDetails, setPurchaseDetails] = useState(initialPurchaseState)
@@ -174,13 +2442,14 @@ export const Purchase_ordersList = () => {
 
   const menu = useRef<Menu>(null)
   const toast = useRef(null)
+  const Po = useRef<CreateNewPo>(null)
 
-  const rfqOptions = rfqs.map(({ id, rfq_description, rfq_code }) => {
-    return { name: `${rfq_code}:${rfq_description}`, value: id }
-  })
+  // const rfqOptions = rfqs.map(({ id, rfq_description, rfq_code }) => {
+  //   return { name: `${rfq_code}:${rfq_description}`, value: id }
+  // })
   const vendorOptions = vendors.map(({ vendor, vendor_id, vendor_code }) => {
     return {
-      name: ` ${vendor_code}: ${vendor}`,
+      name: `${vendor_code}: ${vendor}`,
       vendor_id,
     }
   })
@@ -214,50 +2483,50 @@ export const Purchase_ordersList = () => {
       vendor: ele.vendor.vendor,
     }
   })
-  const tableProducts = purchase_order_products.map((ele) => {
-    return {
-      ...ele,
-      product_name: ele?.vendor_products?.products.name,
-      product_sku: ele?.vendor_products?.products.products_sku,
-      products_product_id: ele?.vendor_products.products?.product_id,
-    }
-  })
+  // const tableProducts = purchase_order_products.map((ele) => {
+  //   return {
+  //     ...ele,
+  //     product_name: ele?.vendor_products?.products.name,
+  //     product_sku: ele?.vendor_products?.products.products_sku,
+  //     products_product_id: ele?.vendor_products.products?.product_id,
+  //   }
+  // })
   // console.log("tableProducts", tableProducts)
 
-  const addFields = () => {
-    let newfield = {
-      purchase_order_po_id: "",
-      purchase_order_purchase_order_status_pos_id: 1,
-      purchase_order_vendor_vendor_id: "",
-      vendor_products_vp_id: "",
-      vendor_products_vendor_vendor_id: "",
-      vendor_products_products_product_id: "",
-      quantity: "",
-      price_per_unit: "",
-      received_quantity: 0,
-    }
+  // const addFields = () => {
+  //   let newfield = {
+  //     purchase_order_po_id: "",
+  //     purchase_order_purchase_order_status_pos_id: 1,
+  //     purchase_order_vendor_vendor_id: "",
+  //     vendor_products_vp_id: "",
+  //     vendor_products_vendor_vendor_id: "",
+  //     vendor_products_products_product_id: "",
+  //     quantity: "",
+  //     price_per_unit: "",
+  //     received_quantity: 0,
+  //   }
 
-    setItemList([...itemList, newfield])
-  }
-  const removeFields = (index) => {
-    setItemList(itemList.filter((data, i) => index !== i))
-  }
+  //   setItemList([...itemList, newfield])
+  // }
+  // const removeFields = (index) => {
+  //   setItemList(itemList.filter((data, i) => index !== i))
+  // }
 
-  const handleFormChange = (e: any, i: number) => {
-    // console.log("many", e)
-    let data = [...itemList]
-    // e.target ? (data[i][e.target.name] = e.value) : (data[i][e.originalEvent.target.name] = e.value)
+  // const handleFormChange = (e: any, i: number) => {
+  //   // console.log("many", e)
+  //   let data = [...itemList]
+  //   // e.target ? (data[i][e.target.name] = e.value) : (data[i][e.originalEvent.target.name] = e.value)
 
-    if (e.target) {
-      data[i][e.target.name] = e.value
-      // data[i].vendor_products_vp_id = findProductVpID(i)
-    } else {
-      data[i][e.originalEvent.target.name] = e.value
-    }
+  //   if (e.target) {
+  //     data[i][e.target.name] = e.value
+  //     // data[i].vendor_products_vp_id = findProductVpID(i)
+  //   } else {
+  //     data[i][e.originalEvent.target.name] = e.value
+  //   }
 
-    // console.log("many ", data)
-    setItemList(data)
-  }
+  //   // console.log("many ", data)
+  //   setItemList(data)
+  // }
   const items = [
     {
       label: "Options",
@@ -278,7 +2547,7 @@ export const Purchase_ordersList = () => {
           icon: "pi pi-pencil",
           command: async () => {
             scrollToPo?.current?.scrollIntoView()
-            setPoCodeChecked(true)
+
             setPoEditState(true)
             console.log(activeRow)
 
@@ -385,20 +2654,20 @@ export const Purchase_ordersList = () => {
 
   const [expandedRows, setExpandedRows] = useState()
 
-  const findProductVpID = (i, list) => {
-    const currentVendor = Number(formik.values.vendor_vendor_id)
-    const vendorProducts = vendor_products.filter((item) => item.vendor_vendor_id === currentVendor)
-    const vpId = vendorProducts.filter(
-      (ele) => ele.products_product_id === Number(list[i]?.products_product_id)
-    )[0]?.vp_id
+  // const findProductVpID = (i, list) => {
+  //   const currentVendor = Number(formik.values.vendor_vendor_id)
+  //   const vendorProducts = vendor_products.filter((item) => item.vendor_vendor_id === currentVendor)
+  //   const vpId = vendorProducts.filter(
+  //     (ele) => ele.products_product_id === Number(list[i]?.products_product_id)
+  //   )[0]?.vp_id
 
-    return vpId
-  }
+  //   return vpId
+  // }
 
   const rowExpansionTemplate = (data) => {
     // console.log(data)
     const rowGrnId = data.grn_grn_id
-    const currentGrn = grns?.filter((ele) => ele.grn_id === rowGrnId)[0]
+    // const currentGrn = grns?.filter((ele) => ele.grn_id === rowGrnId)[0]
     return (
       <div className="w-full">
         <TabView>
@@ -446,7 +2715,7 @@ export const Purchase_ordersList = () => {
               </DataTable>
             </div>
           </TabPanel>
-          <TabPanel header="  Invoice">
+          {/* <TabPanel header="  Invoice">
             <Invoice
               currentGrn={currentGrn}
               prefixes={prefixes}
@@ -493,16 +2762,13 @@ export const Purchase_ordersList = () => {
                 refetch={refetchGrn}
               />
             )}
-          </TabPanel>
+          </TabPanel> */}
         </TabView>
       </div>
     )
   }
 
-  const setActivePO = () => {
-    const expiry = new Date(activeRow.expiry_date)
-    const expected = new Date(activeRow.expected_delivery)
-
+  const updateItemList = (po) => {
     const {
       vendor_vendor_id,
       po_code,
@@ -512,23 +2778,46 @@ export const Purchase_ordersList = () => {
       from_party,
       agreement,
       rfq_id,
-    } = activeRow
+      purchase_order_products,
+      purchase_order_status,
+      purchase_order_terms: terms,
+    } = po
+    console.log("activeRow: ", activeRow)
 
-    setPurchaseDetails({
-      vendor_vendor_id: vendor_vendor_id,
-      po_code: po_code,
-      po_description: po_description,
-      expiry_date: moment(expiry_date, "DD-MM-YYYY").toDate(),
-      expected_delivery: moment(expected_delivery, "DD-MM-YYYY").toDate(),
-      from_party: from_party,
-      agreement: agreement,
-      rfq_id: rfq_id,
+    // setPurchaseDetails({
+    //   // vendor_vendor_id: vendor_vendor_id,
+    //   po_code: po_code,
+    //   po_description: po_description,
+    //   // expiry_date: moment(expiry_date, "DD-MM-YYYY").toDate(),
+    //   // expected_delivery: moment(expected_delivery, "DD-MM-YYYY").toDate(),
+    //   expected_delivery: toDateObj(expected_delivery),
+    //   expiry_date: toDateObj(expiry_date),
+    //   from_party: from_party,
+    //   agreement: agreement,
+    //   rfq_id: rfq_id,
+    //   purchase_order_status,
+    //   terms,
+    // })
+
+    // const active = tableProducts
+    //   .filter((ele) => activeRow.po_id === ele.purchase_order_po_id)
+    //   .map((ele) => ({ ...ele, product_name: `${ele.product_sku} - ${ele.product_name}` }))
+
+    const pop = purchase_order_products.map((pop) => {
+      const {
+        vendor_products: {
+          products: { products_sku, name, product_id },
+        },
+      } = pop
+
+      return {
+        ...pop,
+        product_name: `${products_sku} - ${name}`,
+        products_product_id: product_id,
+      }
     })
-    const active = tableProducts
-      .filter((ele) => activeRow.po_id === ele.purchase_order_po_id)
-      .map((ele) => ({ ...ele, product_name: `${ele.product_sku} - ${ele.product_name}` }))
 
-    setItemList(active)
+    setItemList(pop)
   }
 
   const [poErrorMsgs, setPoErrorMsgs] = useState([])
@@ -537,14 +2826,14 @@ export const Purchase_ordersList = () => {
     const ErrorArray = [
       updatingMutationError,
       creatingMutationError,
-      getGrnsError,
-      getPoError,
-      getPoProductsError,
-      getVenorsError,
-      getVendorProductsError,
-      getRfqError,
-      getProductsError,
-      getPrefixesError,
+
+      // getPoError,
+      // getPoProductsError,
+      // getVenorsError,
+      // getVendorProductsError,
+
+      // getProductsError,
+
       grnCreationError,
     ]
 
@@ -559,41 +2848,22 @@ export const Purchase_ordersList = () => {
   }, [
     updatingMutationError,
     creatingMutationError,
-    getGrnsError,
-    getPoError,
-    getPoProductsError,
-    getVenorsError,
-    getVendorProductsError,
-    getRfqError,
-    getProductsError,
-    getPrefixesError,
+
+    // getPoError,
+    // getPoProductsError,
+    // getVenorsError,
+    // getVendorProductsError,
+
+    // getProductsError,
+
     grnCreationError,
   ])
-
-  const allowExpansion = (rowData) => {
-    // return rowData.orders.length > 0;
-    return true
-  }
 
   const removeErrorBox = (i) => {
     const msgArray = [...poErrorMsgs]
     msgArray.splice(i, 1)
     setPoErrorMsgs(msgArray)
   }
-  const [newPOCode, setNewPOCode] = useState("")
-  const [poCodeChecked, setPoCodeChecked] = useState<boolean>(true)
-  const createNewPOCode = () => {
-    const poPrefix = prefixes.filter((prefix) => prefix.name === "PO")[0].name
-    const nextPoId = purchase_orders.length + 1
-    setNewPOCode(`${poPrefix}#${nextPoId}`)
-  }
-
-  const agreementStatusEnum = ["Approved", "Waiting For Approval"]
-  const agreementStatusOptions = agreementStatusEnum.map((ele) => ({
-    name: ele,
-  }))
-
-  const [filteredSuggestions, setFilteredSuggestions] = useState<any>(null)
 
   const [filters, setFilters] = useState(null)
   const [globalFilterValue, setGlobalFilterValue] = useState("")
@@ -654,9 +2924,9 @@ export const Purchase_ordersList = () => {
       <Calendar
         value={options.value}
         onChange={(e) => options.filterCallback(e.value, options.index)}
-        dateFormat="dd/mm/yy"
-        placeholder="dd/mm/yyyy"
-        mask="99/99/9999"
+        dateFormat={calenderDateFormat()}
+        placeholder={calenderDateFormat()}
+        // mask="99/99/9999"
       />
     )
   }
@@ -684,231 +2954,8 @@ export const Purchase_ordersList = () => {
   }
   const header1 = renderHeader()
 
-  const searchAgreement = (event: { query: string }) => {
-    setTimeout(() => {
-      let _filteredSuggestions
-      if (!event.query.trim().length) {
-        _filteredSuggestions = [...agreementStatusOptions]
-      } else {
-        _filteredSuggestions = agreementStatusOptions.filter((agreement) => {
-          return agreement.name.toLowerCase().startsWith(event.query.toLowerCase())
-        })
-      }
+  // const refetchFuns = [refetch, refetchPoProducts]
 
-      setFilteredSuggestions(_filteredSuggestions)
-    }, 50)
-  }
-
-  const formik = useFormik({
-    initialValues: purchaseDetails,
-    validationSchema: Yup.object().shape({
-      vendor_vendor_id: Yup.string().required("*Required"),
-      po_code: Yup.string().required("*Required"),
-      po_description: Yup.string().required("*Required"),
-      expiry_date: Yup.string().required("*Required"),
-      expected_delivery: Yup.string().required("*Required"),
-      from_party: Yup.string().required("*Required"),
-      agreement: Yup.string().required("*Required"),
-      vendor: Yup.string().required("*Required"),
-      itemsLength: Yup.boolean().equals([true], "⚠ Please select atleast one product").required(),
-    }),
-    onSubmit: async (data) => {
-      const itemsData = itemList.filter((ele, i) => {
-        return ele.products_product_id
-      }).length
-
-      if (!itemsData) {
-        formik.setErrors({ itemsLength: "⚠ Please select atleast one product" })
-        return
-      }
-      console.log("data", data)
-      // console.log("purchaseDetails", purchaseDetails)
-      // console.log("activeRow", activeRow)
-      // console.log("itemList", itemList)
-      console.log("poEditState", poEditState)
-
-      const removeEmptyItems = itemList.filter((ele, i) => ele.products_product_id)
-      console.log(removeEmptyItems)
-
-      const {
-        vendor_vendor_id,
-        po_code,
-        expiry_date,
-        expected_delivery,
-        po_description,
-        from_party,
-        agreement,
-      } = data
-      const activePoProducts = purchase_order_products
-        .filter((ele) => ele.purchase_order_po_id === activeRow.po_id)
-        .map((ele) => ele.pop_id)
-
-      // const existingProductsPopIDs = [...itemList.map((ele) => ele.pop_id)]
-      const newProductsPopIDs = itemList.map((ele) => ele.pop_id)
-      // console.log(existingProductsPopIDs)
-      const newProducts = itemList.filter((ele) => !ele.pop_id)
-      const existingProducts = itemList.filter((ele) => ele.pop_id)
-      const deletelist = activePoProducts.filter((item) => {
-        const array = itemList.map((ele) => ele.pop_id)
-        return !array.includes(item)
-      })
-      if (poEditState) {
-        console.log("itemList", itemList)
-        // updatePurchaseOrderMutation
-        try {
-          const update = await updatePurchaseOrderMutation(
-            {
-              vendor_vendor_id: activeRow?.vendor_vendor_id,
-              po_id: activeRow?.po_id,
-              agreement: agreement.replaceAll(" ", "_"),
-              po_description,
-              from_party,
-              expiry_date: new Date(expiry_date),
-              expected_delivery: new Date(expected_delivery),
-              purchase_order_products: {
-                create: newProducts.map((ele, i) => ({
-                  quantity: Number(ele.quantity),
-                  price_per_unit: Number(ele.price_per_unit),
-                  received_quantity: 0,
-                  vendor_products: {
-                    connect: {
-                      vp_id: Number(findProductVpID(i, newProducts)),
-                    },
-                  },
-                })),
-                updateMany: existingProducts.map((ele) => ({
-                  where: {
-                    pop_id: ele.pop_id,
-                  },
-                  data: {
-                    price_per_unit: Number(ele.price_per_unit),
-                    quantity: Number(ele.quantity),
-                  },
-                })),
-                deleteMany: {
-                  pop_id: {
-                    in: deletelist,
-                  },
-                },
-              },
-            },
-            {
-              onSuccess: async (data) => {
-                toast?.current.show(tsuccess("Updated", `${po_code} is updated successfully`))
-                await createNotificationsMutations({
-                  user_id: id,
-                  user_name: name,
-                  user_email: email,
-                  mutations: `${data?.po_code} is Updated`,
-                  created_at: new Date().toString(),
-                })
-              },
-            }
-          )
-          console.log("Update log", update)
-          setPurchaseDialog(false)
-          formik.resetForm()
-        } catch (error) {
-          console.log("updation error , ", error)
-        }
-      } else {
-        try {
-          const purchaseOrder = await createPurchaseOrderMutation(
-            {
-              vendor_vendor_id: Number(vendor_vendor_id),
-              po_code,
-              po_description,
-              expiry_date: new Date(expiry_date),
-              expected_delivery: new Date(expected_delivery),
-              from_party,
-              agreement_status: agreement.replaceAll(" ", "_"),
-              purchase_order_products: {
-                create: removeEmptyItems.map((ele, i) => ({
-                  quantity: Number(ele.quantity),
-                  price_per_unit: Number(ele.price_per_unit),
-                  received_quantity: 0,
-                  vendor_products: {
-                    connect: {
-                      vp_id: Number(findProductVpID(i, removeEmptyItems)),
-                    },
-                  },
-                })),
-              },
-            },
-            {
-              onSuccess: async (data) => {
-                toast?.current.show(tsuccess(null, "PO Created Successfully"))
-                await createNotificationsMutations({
-                  user_id: id,
-                  user_name: name,
-                  user_email: email,
-                  mutations: `${data?.po_code} is Created`,
-                  created_at: new Date().toString(),
-                })
-              },
-            }
-          )
-          // setPurchaseDialog(!purchaseDialog)
-          console.log("purchaseOrder: ", purchaseOrder)
-          setPurchaseDialog(false)
-          formik.resetForm()
-        } catch (error) {
-          console.log("error: ", error)
-        }
-      }
-
-      await refetch()
-      await refetchPoProducts()
-    },
-  })
-
-  const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
-  const getFormErrorMessage = (name) => {
-    return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
-  }
-  useEffect(() => {
-    const vendorID = formik.values.vendor_vendor_id
-    const filterProducts = productOptions.filter((ele) => ele.vendorID.includes(Number(vendorID)))
-    setFilterProductOptions(filterProducts)
-    if (!poEditState) {
-      // const itemListIds = itemList.map((ele) => ele.product_id)
-      const vendorProductsIds = filterProducts.map((ele) => ele.product_id)
-
-      const values = itemList.filter((ele, i) =>
-        vendorProductsIds.includes(ele.products_product_id)
-      )
-
-      const initialState = values?.length || 5
-      let count = initialState >= 5 ? 5 : 5 - values.length
-
-      const emptyFields = arrayFillCopy(count, initialItemState)
-
-      // let filteredItemList = itemList.filter(
-      //   (ele) => ele.vendor_products_vendor_vendor_id === vendorID
-      // )
-      setItemList([...values, ...emptyFields])
-    }
-  }, [formik?.values.vendor_vendor_id])
-
-  // console.log("itemList", itemList.length)
-  useEffect(() => {
-    if (poCodeChecked && purchaseDialog && !poEditState) {
-      updateFormValues({ po_code: newPOCode })
-        // .then((res) => console.log("newCode", res))
-        .catch((error) => {
-          console.log("From updateFormValues", error)
-        })
-    }
-  }, [poCodeChecked, purchaseDialog])
-
-  const updateFormValues = async (fields) => {
-    await formik.setValues({ ...formik.values, ...fields })
-  }
-  const refetchFuns = [refetch, refetchPoProducts]
-
-  useEffect(() => {
-    createNewPOCode()
-  })
   useEffect(() => {
     initFilters()
   }, [])
@@ -924,16 +2971,19 @@ export const Purchase_ordersList = () => {
         style={{ width: "50vw" }}
         onHide={() => setSendPoDialog(false)}
       >
-        <p>{`You are about to send ${activeRow?.po_code} to ${activeRow?.vendor}`}</p>
+        <p>{`You are about to send ${activeRow?.po_code} to ${activeRow?.vendor} `}</p>
         <div className="w-full flex justify-content-end mt-2 pl-2">
           <Button
             icon="pi pi-send"
             label="Confirm"
             onClick={async () => {
+              console.log("sendmailData: ", activeRow)
               const formatedData = {
                 ...activeRow,
-                expected_delivery: moment(activeRow?.expected_delivery, "DD-MM-YYYY").toDate(),
-                expiry_date: moment(activeRow?.expiry_date, "DD-MM-YYYY").toDate(),
+                // expected_delivery: moment(activeRow?.expected_delivery, "DD-MM-YYYY").toDate(),
+                // expiry_date: moment(activeRow?.expiry_date, "DD-MM-YYYY").toDate(),
+                expected_delivery: toDateObj(activeRow?.expected_delivery),
+                expiry_date: toDateObj(activeRow?.expiry_date),
               }
               // console.log("antiCSRFToken", antiCSRFToken)
 
@@ -955,9 +3005,11 @@ export const Purchase_ordersList = () => {
               }
 
               await axios(config)
-                .then(setSendPoDialog(false))
-                // .then(function (response) {})
-                .catch(function (error) {})
+                .then((e) => setSendPoDialog(false))
+                .catch((error) => {
+                  tError(null, `Failed to send Mail - ${error}`)
+                  console.log("error: ", error)
+                })
             }}
           />
         </div>
@@ -972,11 +3024,8 @@ export const Purchase_ordersList = () => {
             icon="pi pi-plus"
             label="Create PO"
             onClick={() => {
-              // const fiveFields = new Array(5).fill(initialItemState)
-              // const deepCopy = fiveFields.map((ele, i) => ({ ...ele }))
+              Po?.current?.setReadOnlyForm(false)
               const fiveFields = arrayFillCopy(5, initialItemState)
-              // console.log(fiveFields)
-              setPoCodeChecked(true)
               setPoEditState(false)
               setPurchaseDialog(true)
               setPurchaseDetails({
@@ -990,8 +3039,8 @@ export const Purchase_ordersList = () => {
                 rfq_id: "",
               })
               setItemList(fiveFields)
-
               setFilterProductOptions([])
+              Po?.current?.formik.resetForm()
             }}
           ></Button>
         </div>
@@ -1002,11 +3051,13 @@ export const Purchase_ordersList = () => {
 
       <CreateNewPo
         products={products}
+        purchase_orders={purchase_orders}
         purchaseDetails={purchaseDetails}
         itemList={itemList}
         setItemList={setItemList}
-        purchase_order_products={purchase_order_products}
+        // purchase_order_products={purchase_order_products}
         activeRow={activeRow}
+        setActiveRow={setActiveRow}
         poEditState={poEditState}
         toast={toast}
         purchaseDialog={purchaseDialog}
@@ -1015,8 +3066,13 @@ export const Purchase_ordersList = () => {
         vendors={vendors}
         initialItemState={initialItemState}
         setErrorMsgs={setPoErrorMsgs}
-        refetchFuns={refetchFuns}
+        // refetchFuns={refetchFuns}
+        scrollToPo={scrollToPo}
+        setPoEditState={setPoEditState}
+        ref={Po}
+        setSendPoDialog={setSendPoDialog}
       />
+
       <div className="col-12">
         <div className="card">
           <DataTable
@@ -1039,6 +3095,15 @@ export const Purchase_ordersList = () => {
             filterDisplay="menu"
             // globalFilterFields={["products_sku"]}
             emptyMessage="No Results found."
+            onRowClick={async (e) => {
+              scrollToPo?.current?.scrollIntoView()
+
+              setPoEditState(true)
+              setActiveRow(e.data)
+              updateItemList(e.data)
+              setPurchaseDialog(true)
+              Po.current?.setReadOnlyForm(true)
+            }}
           >
             <Column
               field="details"
@@ -1050,7 +3115,7 @@ export const Purchase_ordersList = () => {
             {/* <Column field="po_id" header="ID" body={({ po_id }) => `${prefixes[2].prefix}-${po_id}`} /> */}
             <Column
               field="po_code"
-              header="Code"
+              header="Po Number"
               filter
               filterPlaceholder="Search by Code"
               // className="text-center"
@@ -1111,10 +3176,10 @@ export const Purchase_ordersList = () => {
               // className="text-center"
             />
             <Column
-              field="agreement_status"
-              header="Agreement"
+              field="purchase_order_status"
+              header="Agreement Status"
               className="overflow-hidden"
-              body={(rowdata) => rowdata.agreement_status?.replaceAll("_", " ")}
+              body={(rowdata) => rowdata.purchase_order_status?.name}
               filter
               filterPlaceholder="Search by Agreement"
               // style={{ width: "10px" }}
@@ -1131,6 +3196,7 @@ export const Purchase_ordersList = () => {
                       // label="Show"
                       icon="pi pi-ellipsis-v"
                       onClick={(event) => {
+                        console.log("awesomeEvent", event)
                         setActiveRow(rowData)
                         menu.current.toggle(event)
                       }}
@@ -1158,5 +3224,6 @@ const Purchase_ordersPage = () => {
     </Suspense>
   )
 }
+Purchase_ordersPage.authenticate = false
 
 export default Purchase_ordersPage
