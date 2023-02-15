@@ -69,6 +69,8 @@ export const VendorsList = () => {
     take: ITEMS_PER_PAGE,
   })
 
+  console.log("tags: ", tags)
+
   function getRandomColor() {
     // const array = [
     //   "#A1B5D8",
@@ -153,7 +155,7 @@ export const VendorsList = () => {
       zIndex: "1",
     }),
     option: (styles, { data, isDisabled, isFocused, isSelected }) => {
-      const color = chroma(data.color ?? "blue")
+      const color = chroma(data.color ?? "white")
 
       return {
         ...styles,
@@ -212,7 +214,7 @@ export const VendorsList = () => {
   const [createTags] = useMutation(createTag)
 
   const [deleteVendorMutation] = useMutation(deleteVendor)
-  const [vendorDialog, setVendorDialog] = useState(true)
+  const [vendorDialog, setVendorDialog] = useState(false)
   const [vendorDetails, setVendorDetails] = useState(initialVendorState)
   const [errorProducts, setErrorProducts] = useState([])
   const [activeVendor, setActiveVendor] = useState(false)
@@ -373,7 +375,8 @@ export const VendorsList = () => {
         ].find((key) => !(key in data))
         if (missingKey) {
           setErrorProducts([...errorProducts, { message: `Column ${missingKey} missing.` }])
-          parser.abort()
+          // parser.abort()
+          return
         }
         await createVendorMutation(
           {
@@ -606,7 +609,7 @@ export const VendorsList = () => {
                 accept=".csv"
                 customUpload
                 maxFileSize={1000000}
-                uploadHandler={(e) => onBasicUpload(e)}
+                uploadHandler={(e) => onBasicUpload2(e)}
                 ref={clearUpload}
                 onSelect={() => setBtnVisibility(true)}
                 onBeforeSelect={() => setBtnVisibility(false)}
@@ -711,12 +714,12 @@ export const VendorsList = () => {
               {[
                 { type: "text", label: "Name", field: "vendor" },
                 { type: "text", label: "Code", field: "vendor_code" },
-                { type: "email", label: "Email", field: "vendor_email" },
-                { type: "text", label: "Contact Number", field: "vendor_contact" },
                 { type: "text", label: "GSTIN", field: "vendor_gstin" },
+                { type: "text", label: "Contact Number", field: "vendor_contact" },
                 { type: "text", label: "Credit Period", field: "credit_period" },
                 { type: "text", label: "Lead Time", field: "lead_time" },
                 { type: "text", label: "Address", field: "address" },
+                // { type: "email", label: "Email", field: "vendor_email" },
               ].map((ele, i) => {
                 return (
                   <div
@@ -791,6 +794,29 @@ export const VendorsList = () => {
                 </span>
                 {getFormErrorMessage("vendor_state")}
               </div>
+              {/* Email chips WIP */}
+              {/* <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                <span className="p-float-label">
+                  <Chips
+                    id="email"
+                    value={formik.values.email}
+                    onChange={async(e) => {
+                      await formik.setValues({
+                        ...formik.values,
+                      })
+                    }
+                    }}
+                    separator=","
+                  />
+                  <label
+                    htmlFor="email"
+                    className={classNames({ "p-error": isFormFieldValid("email") })}
+                  >
+                    Email
+                  </label>
+                </span>
+                {getFormErrorMessage("email")}
+              </div> */}
 
               {/* <div className="field col-12  mt-4">
                 <div className="p-float-label">
@@ -911,6 +937,7 @@ export const VendorsList = () => {
             filters={filters}
             header={header1}
             filterDisplay="menu"
+            rowHover
             onRowClick={async (e) => {
               setActiveVendorData({ ...e.data })
               const tags = e.data.vendor_tags.map(({ tags }, i) => ({

@@ -52,10 +52,12 @@ import * as Yup from "yup"
 import classNames from "classnames"
 import {
   arrayFillCopy,
+  dateFormat,
   createCSV,
   createSearchFunction,
   filterExistingValues,
   tsuccess,
+  calenderDateFormat,
 } from "app/constants"
 import getMutation_admin_mail from "app/mutation_admin_mails/queries/getMutation_admin_mail"
 import { Toast } from "primereact/toast"
@@ -285,8 +287,8 @@ export const RfqsList = () => {
       <Calendar
         value={options.value}
         onChange={(e) => options.filterCallback(e.value, options.index)}
-        dateFormat="dd/mm/yy"
-        placeholder="dd/mm/yyyy"
+        dateFormat={calenderDateFormat()}
+        placeholder={calenderDateFormat()}
         mask="99/99/9999"
       />
     )
@@ -350,7 +352,8 @@ export const RfqsList = () => {
       filter: true,
       filterElement: dateFilterTemplate,
       dataType: "date",
-      body: (rowData) => moment(new Date(rowData.createdAt)).format("DD-MM-YYYY, HH:MM"),
+      // body: (rowData) => moment(new Date(rowData.createdAt)).format("DD-MM-YYYY, HH:MM"),
+      body: (rowData) => dateFormat(rowData.createdAt),
     },
     {
       // field: "updatedAt",
@@ -359,7 +362,8 @@ export const RfqsList = () => {
       filter: true,
       filterElement: dateFilterTemplate,
       dataType: "date",
-      body: (rowData) => moment(new Date(rowData.updatedAt)).format("DD-MM-YYYY, HH:MM"),
+      // body: (rowData) => moment(new Date(rowData.updatedAt)).format("DD-MM-YYYY, HH:MM"),
+      body: (rowData) => dateFormat(rowData.createdAt),
     },
     {
       field: "active",
@@ -1483,6 +1487,7 @@ export const RfqsList = () => {
                     // onChange={(e) =>
                     //   setRfqDetails({ ...rfqDetails, expected_dod: e.target.value?.toString() })
                     value={formik.values.expected_dod}
+                    dateFormat={calenderDateFormat()}
                     disabled={readOnlyForm}
                     onChange={async (e) => {
                       await formik.setValues({
