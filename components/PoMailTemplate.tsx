@@ -237,6 +237,7 @@ const MyDocument = ({ data }) => {
     expected_delivery,
     purchase_order_products: POP,
     vendorDetails: { vendor, vendor_state, vendor_city, vendor_contact, vendor_gstin },
+    purchase_order_terms,
   } = data
   return (
     <Document>
@@ -281,6 +282,10 @@ const MyDocument = ({ data }) => {
               <View style={styles.poDTflexBox}>
                 <Text style={{ width: "85px" }}>Expiry Date </Text>
                 <Text>: {`${new Date(expiry_date).toLocaleDateString()}`}</Text>
+              </View>
+              <View style={styles.poDTflexBox}>
+                <Text style={{ width: "85px" }}>Terms</Text>
+                <Text>: {purchase_order_terms}</Text>
               </View>
             </View>
           </View>

@@ -1,5 +1,14 @@
 import { useMutation, useQuery } from "@blitzjs/rpc"
-import { arrayFillCopy, createSearchFunction, tsuccess } from "app/constants"
+import getAgreement_terms from "app/agreement_terms/queries/getAgreement_terms"
+import {
+  arrayFillCopy,
+  calenderDateFormat,
+  createSearchFunction,
+  tError,
+  tsuccess,
+  tWarn,
+  toDateObj,
+} from "app/constants"
 import { useCurrentUser } from "app/core/hooks/useCurrentUser"
 import createNotifications_sent from "app/notifications_sents/mutations/createNotifications_sent"
 import getPrefixes from "app/prefixes/queries/getPrefixes"
@@ -7,27 +16,33 @@ import createPurchase_order from "app/purchase_orders/mutations/createPurchase_o
 import updatePurchase_order from "app/purchase_orders/mutations/updatePurchase_order"
 import getPurchase_orders from "app/purchase_orders/queries/getPurchase_orders"
 import getPurchase_order_products from "app/purchase_order_products/queries/getPurchase_order_products"
+import getPurchase_order_statuses from "app/purchase_order_statuses/queries/getPurchase_order_statuses"
 import { useFormik } from "formik"
 import moment from "moment"
 import { AutoComplete } from "primereact/autocomplete"
 import { Button } from "primereact/button"
 import { Calendar } from "primereact/calendar"
 import { Checkbox } from "primereact/checkbox"
+import { Chip } from "primereact/Chip"
 import { Divider } from "primereact/divider"
 import { InputNumber } from "primereact/inputnumber"
 import { InputText } from "primereact/inputtext"
+import { InputTextarea } from "primereact/inputtextarea"
 import { classNames } from "primereact/utils"
 import React, { useEffect, useRef, useState } from "react"
+import { FALSE } from "sass"
 import * as Yup from "yup"
 import LoaderFullScreen from "./LoaderFullScreen"
 
-const CreateNewPo = (props) => {
+const CreateNewPo = React.forwardRef((props, ref) => {
   const {
     purchaseDetails,
     itemList,
     setItemList,
     activeRow,
+    setActiveRow,
     poEditState,
+    setPoEditState,
     toast,
     purchaseDialog,
     setPurchaseDialog,
@@ -38,18 +53,35 @@ const CreateNewPo = (props) => {
     setErrorMsgs,
     refetchFuns,
     rfqCode,
+    scrollToPo,
+    editForm,
+    purchase_orders,
+    setSendPoDialog,
   } = props
 
   const [{ prefixes }, { error: getPrefixesError }] = useQuery(getPrefixes, {
     orderBy: { id: "asc" },
   })
-  const [{ purchase_orders }, { error: getPoError }] = useQuery(getPurchase_orders, {
-    orderBy: { po_id: "asc" },
-  })
+  // const [{ purchase_orders }, { error: getPoError }] = useQuery(getPurchase_orders, {
+  //   orderBy: { po_id: "asc" },
+  // })
   const [{ purchase_order_products }, { error: getPoProductsError }] = useQuery(
     getPurchase_order_products,
     {
       orderBy: { pop_id: "asc" },
+    }
+  )
+  const [{ agreement_terms: poTerms }, { error: agreementTermsError }] = useQuery(
+    getAgreement_terms,
+    {
+      where: { for: "po" },
+      orderBy: { id: "asc" },
+    }
+  )
+  const [{ purchase_order_statuses: poStatusList }, { error: PO_statusError }] = useQuery(
+    getPurchase_order_statuses,
+    {
+      orderBy: { id: "asc" },
     }
   )
 
@@ -69,20 +101,40 @@ const CreateNewPo = (props) => {
   const [priorList, setPriorList] = useState([])
   const [showPriorList, setShowPriorList] = useState(false)
   const [pastVendors, setPastVendors] = useState([])
+  const [readOnlyForm, setReadOnlyForm] = useState(true)
+  const [amendingPO, setAmendingPO] = useState(false)
+  React.useImperativeHandle(ref, () => ({
+    setReadOnlyForm,
+    formik,
+  }))
 
   const [filterProductOptions, setFilterProductOptions] = useState<any>(null)
   const [vendorSuggestions, setVendorSuggestions] = useState<any>(null)
   const [ProductsSuggestions, setProductsSuggestions] = useState<any>(null)
 
-  const [filteredSuggestions, setFilteredSuggestions] = useState<any>(null)
+  const [poFilteredAgreements, setPoFilteredAgreements] = useState<any>(null)
   const [fromPartySuggetions, setFromPartySuggetions] = useState<any>(null)
+  const [termsSuggetions, setTermsSuggetions] = useState<any>(null)
 
-  const agreementStatusEnum = ["Approved", "Waiting For Approval"]
-  const agreementStatusOptions = agreementStatusEnum.map((ele) => ({
+  const agreementTermsEnum = ["Approved", "Waiting For Approval"]
+  const agreementTermsOptions = agreementTermsEnum.map((ele) => ({
     name: ele,
   }))
 
+  // console.log(purchase_orders[0])
+
   const fromParty = [{ name: "TIF-Banaswadi" }, { name: "TIF-Rajajinagar" }, { name: "TIF-Hennur" }]
+  const terms = [
+    { name: "Net-0df7" },
+    { name: "Net-30ff" },
+    { name: "Net-4ff5" },
+    { name: "Net-5ff0" },
+    { name: "100% Adfvance" },
+    { name: "50% Advaffnce" },
+    { name: "Bought Agfainst" },
+    { name: "Bought Agaffinst" },
+    { name: "Delivery" },
+  ]
 
   const prevVendor = useRef()
   const createNewPOCode = () => {
@@ -137,12 +189,7 @@ const CreateNewPo = (props) => {
   }
 
   useEffect(() => {
-    const ErrorArray = [
-      updatingMutationError,
-      creatingMutationError,
-      getPoError,
-      getPoProductsError,
-    ]
+    const ErrorArray = [updatingMutationError, creatingMutationError, getPoProductsError]
 
     const msg = []
 
@@ -152,7 +199,7 @@ const CreateNewPo = (props) => {
       }
     }
     setErrorMsgs(msg)
-  }, [updatingMutationError, creatingMutationError, getPoError, getPoProductsError])
+  }, [updatingMutationError, creatingMutationError, getPoProductsError])
 
   useEffect(() => {
     createNewPOCode()
@@ -175,13 +222,15 @@ const CreateNewPo = (props) => {
       expiry_date,
       expected_delivery,
       from_party,
-      agreement_status,
+      agreement_terms,
       agreement,
       rfq_id,
-      po_status,
+      purchase_order_status,
+      purchase_order_terms: terms,
     } = activeRow
-    const expiry = moment(expiry_date, "DD-MM-YYYY").toDate()
-    const expected = moment(expected_delivery, "DD-MM-YYYY").toDate()
+
+    const expiry = toDateObj(expiry_date)
+    const expected = toDateObj(expected_delivery)
     await formik.setValues({
       vendor,
       vendor_vendor_id,
@@ -190,16 +239,19 @@ const CreateNewPo = (props) => {
       expiry_date: expiry,
       expected_delivery: expected,
       from_party,
-      agreement: agreement_status?.replaceAll("_", " "),
+      // agreement: agreement_terms?.replaceAll("_", " "),
       rfq_id,
       itemsLength: true,
+      purchase_order_status,
+      terms,
     })
   }
 
   const searchProducts = createSearchFunction(filterProductOptions, setProductsSuggestions)
   const searchVendor = createSearchFunction(vendorOptions, setVendorSuggestions)
-  const searchAgreement = createSearchFunction(agreementStatusOptions, setFilteredSuggestions)
+  const searchAgreement = createSearchFunction(poStatusList, setPoFilteredAgreements)
   const searchFromParty = createSearchFunction(fromParty, setFromPartySuggetions)
+  const searchTerms = createSearchFunction(poTerms, setTermsSuggetions)
 
   const findProductVpID = (i, list) => {
     const currentVendor = Number(formik.values.vendor_vendor_id)
@@ -216,30 +268,35 @@ const CreateNewPo = (props) => {
     validationSchema: Yup.object().shape({
       vendor_vendor_id: Yup.string().required("*Required"),
       po_code: Yup.string().required("*Required"),
-      po_description: Yup.string().required("*Required"),
+      // po_description: Yup.string().required("*Required"),
       expiry_date: Yup.string().required("*Required"),
       expected_delivery: Yup.string().required("*Required"),
       from_party: Yup.string().required("*Required"),
-      agreement: Yup.string().required("*Required"),
+      // purchase_order_status: Yup.mixed().required("*Required"),
       vendor: Yup.string().required("*Required"),
+      // terms: Yup.mixed().required("*Required"),
       itemsLength: Yup.boolean().equals([true], "⚠ Please select atleast one product").required(),
     }),
     onSubmit: async (data) => {
       const itemsData = itemList.filter((ele, i) => {
         return ele.products_product_id
       }).length
-
       if (!itemsData) {
         formik.setErrors({ itemsLength: "⚠ Please select atleast one product" })
         return
       }
+
+      const productList = itemList.filter((ele, i) => ele.products_product_id)
+
+      console.log("PO Form:", { ...data, productList })
+
+      setAmendingPO(false)
+      return
+
       console.log("data", data)
-      // console.log("purchaseDetails", purchaseDetails)
-      // console.log("activeRow", activeRow)
-      // console.log("itemList", itemList)
-      console.log("poEditState", poEditState)
 
       const removeEmptyItems = itemList.filter((ele, i) => ele.products_product_id)
+      console.log("removeEmptyItems: ", removeEmptyItems)
 
       const {
         vendor_vendor_id,
@@ -248,21 +305,23 @@ const CreateNewPo = (props) => {
         expected_delivery,
         po_description,
         from_party,
-        agreement,
+        terms,
+        purchase_order_status,
       } = data
-      const activePoProducts = purchase_order_products
-        .filter((ele) => ele.purchase_order_po_id === activeRow?.po_id)
-        .map((ele) => ele?.pop_id)
+      // const activePoProducts = purchase_order_products
+      //   .filter((ele) => ele.purchase_order_po_id === activeRow?.po_id)
+      //   .map((ele) => ele?.pop_id)
 
       // const existingProductsPopIDs = [...itemList.map((ele) => ele.pop_id)]
       const newProductsPopIDs = itemList.map((ele) => ele.pop_id)
       // console.log(existingProductsPopIDs)
       const newProducts = itemList.filter((ele) => !ele.pop_id)
       const existingProducts = itemList.filter((ele) => ele.pop_id)
-      const deletelist = activePoProducts.filter((item) => {
-        const array = itemList.map((ele) => ele.pop_id)
-        return !array.includes(item)
-      })
+      // const deletelist = activePoProducts.filter((item) => {
+      //   const array = itemList.map((ele) => ele.pop_id)
+      //   return !array.includes(item)
+      // })
+
       if (poEditState) {
         console.log("itemList", itemList)
         // updatePurchaseOrderMutation
@@ -298,7 +357,7 @@ const CreateNewPo = (props) => {
                 })),
                 deleteMany: {
                   pop_id: {
-                    in: deletelist,
+                    // in: deletelist,
                   },
                 },
               },
@@ -334,7 +393,8 @@ const CreateNewPo = (props) => {
               expiry_date: new Date(expiry_date),
               expected_delivery: new Date(expected_delivery),
               from_party,
-              agreement_status: agreement.replaceAll(" ", "_"),
+              agreement_terms_id: Number(terms?.id),
+              purchase_order_status_id: Number(purchase_order_status?.id),
               purchase_order_products: {
                 create: removeEmptyItems.map((ele, i) => ({
                   quantity: Number(ele.quantity),
@@ -378,14 +438,27 @@ const CreateNewPo = (props) => {
     },
   })
   // console.log("formik.errors", formik.errors)
-  //   console.log("priorList", priorList)
+  // console.log("priorList", priorList)
+  console.log("formik.values", formik.values)
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
-
+  // onVendor Change
   useEffect(() => {
+    const selectedVendor = formik.values?.vendor_vendor_id
+    console.log("selectedVendor: ", selectedVendor)
+
+    const selectedVendorEmails = vendors
+      .filter((vendor) => vendor.vendor_id === selectedVendor)[0]
+      ?.vendor_email?.map((email) => email)
+    // console.log("formik.values - emails: ", selectedVendorEmails)
+
+    updateFormValues({ vendor_Emails: selectedVendorEmails }).catch((error) =>
+      console.log("formikvalueserror", error)
+    )
+
     // saving previous Vendors
     const slicedArray = pastVendors.slice(-1)
     setPastVendors([
@@ -442,8 +515,6 @@ const CreateNewPo = (props) => {
     await formik.setValues({ ...formik.values, ...fields })
   }
 
-  //   console.log("formik.errors", formik.errors)
-
   return (
     <div
       className={`col-12 ${
@@ -456,18 +527,116 @@ const CreateNewPo = (props) => {
       {UpdatingPO && <LoaderFullScreen />}
       <div className={`card`}>
         <form onSubmit={formik.handleSubmit} on className="p-fluid ">
-          <h5>Create PO</h5>
+          <div className="flex justify-content-between">
+            {/* <h5>{`${poEditState ? "Update" : "Create"} PO`}</h5> */}
+            <h5>{`${readOnlyForm ? "PO-Details" : poEditState ? "UPDATE-PO" : "CREATE-PO"}`}</h5>
+            {poEditState && (
+              <div>
+                <Button
+                  disabled={false}
+                  icon="pi pi-pencil"
+                  className="m-1"
+                  tooltip="Edit-PO"
+                  tooltipOptions={{ position: "top" }}
+                  onClick={(e) => {
+                    e.preventDefault()
+
+                    const activePOStatus = activeRow.purchase_order_status.name
+
+                    if (activePOStatus === "Approved") {
+                      toast?.current.show(tWarn(null, "PO already Approved Cannot Edit"))
+                      // toast?.current.show(tsuccess(null, "Cannot change Status already Approved"))
+                    } else {
+                      setReadOnlyForm(!readOnlyForm)
+                    }
+                  }}
+                />
+                <Button
+                  disabled={false}
+                  icon="pi pi-send"
+                  className="m-1"
+                  tooltip="Send Mail"
+                  tooltipOptions={{ position: "top" }}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    const activePOStatus = activeRow.purchase_order_status?.name
+                    console.log("activePOStatus: ", activePOStatus)
+
+                    if (!["Approved", "Amended"].includes(activePOStatus)) {
+                      toast?.current.show(tWarn(null, "Can only  send mail if PO is Approved "))
+                      // toast?.current.show(tsuccess(null, "Cannot change Status already Approved"))
+                    } else {
+                      setActiveRow({ ...activeRow, ...formik.values })
+                      setSendPoDialog(true)
+                    }
+                  }}
+                />
+                <Button
+                  icon="bi bi-file-text"
+                  className="m-1"
+                  tooltip="Amend PO"
+                  tooltipOptions={{ position: "top" }}
+                  onClick={async (e) => {
+                    e.preventDefault()
+                    setAmendingPO(true)
+                    setPoEditState(false)
+                    setReadOnlyForm(false)
+                    await updateFormValues({ po_code: newPOCode, amendedFrom: activeRow.po_code })
+                  }}
+                />
+                <Button
+                  icon="pi pi-info-circle"
+                  className="m-1"
+                  tooltip="Amend PO"
+                  tooltipOptions={{ position: "top" }}
+                  onClick={async (e) => {
+                    e.preventDefault()
+                    window.location.href = `/purchase_orders/${activeRow.po_id}`
+                  }}
+                />
+              </div>
+            )}
+          </div>
           <div className="formgrid grid">
             <div className="col-12">
-              <h6>PO Details:</h6>
+              {/* <h6>PO Details:</h6> */}
               <hr />
             </div>
-
+            <div className="col-12 mt-2 flex mb-2">
+              <span className="p-float-label lg:col-4 pl-0">
+                <InputText
+                  id="po_code"
+                  name=""
+                  // className="mr-2 w-22rem"
+                  value={formik.values.po_code}
+                  onChange={formik.handleChange}
+                  disabled={poCodeChecked}
+                  className={classNames({ "p-invalid": isFormFieldValid("po_code") })}
+                />
+                <label
+                  htmlFor="po_code"
+                  className={classNames({ "p-error": isFormFieldValid("po_code") })}
+                >
+                  PO Code
+                </label>
+              </span>
+              {getFormErrorMessage("po_code")}
+              <div className="field-checkbox mt-3">
+                <Checkbox
+                  id="poCode"
+                  onChange={(e) => setPoCodeChecked(e.checked)}
+                  checked={poCodeChecked}
+                  disabled={poEditState}
+                />
+                <label htmlFor="poCode">Un-check to add custom code.</label>
+              </div>
+            </div>
             <div className="field col-12 md:col-3 lg:col-4  mt-2 ">
               <div className="p-float-label">
                 <AutoComplete
                   id="vendor_vendor_id"
                   // disabled={editState}
+                  disabled={readOnlyForm}
                   value={formik.values.vendor}
                   dropdown
                   forceSelection
@@ -499,11 +668,11 @@ const CreateNewPo = (props) => {
               </div>
               {getFormErrorMessage("vendor_vendor_id")}
             </div>
-
             <div className="field col-12 lg:col-4 mt-2">
               <span className="p-float-label">
                 <InputText
                   id="po_description"
+                  disabled={readOnlyForm}
                   value={formik.values.po_description}
                   onChange={formik.handleChange}
                   className={classNames({ "p-invalid": isFormFieldValid("po_description") })}
@@ -522,11 +691,13 @@ const CreateNewPo = (props) => {
               <div className="p-float-label">
                 <Calendar
                   id="expiry_date"
+                  disabled={readOnlyForm}
                   minDate={new Date()}
                   // id="basic"
                   value={formik.values.expiry_date}
                   onChange={formik.handleChange}
                   className={classNames({ "p-invalid": isFormFieldValid("expiry_date") })}
+                  dateFormat={calenderDateFormat()}
                 />
                 <label
                   htmlFor="expiry_date"
@@ -543,9 +714,11 @@ const CreateNewPo = (props) => {
                   minDate={new Date()}
                   // className="mr-2 w-22rem"
                   id="expected_delivery"
+                  disabled={readOnlyForm}
                   value={formik.values.expected_delivery}
                   onChange={formik.handleChange}
                   className={classNames({ "p-invalid": isFormFieldValid("expected_delivery") })}
+                  dateFormat={calenderDateFormat()}
                 />
                 <label
                   htmlFor="expected_delivery"
@@ -559,43 +732,41 @@ const CreateNewPo = (props) => {
             <div className="field col-12 lg:col-4 mt-2">
               <div className="p-float-label">
                 <AutoComplete
-                  value={formik.values.agreement}
-                  suggestions={filteredSuggestions}
+                  id="purchase_order_status"
+                  disabled={readOnlyForm}
+                  value={formik?.values?.purchase_order_status?.name}
+                  suggestions={poFilteredAgreements}
                   completeMethod={searchAgreement}
                   // forceSelection
                   dropdown
                   field="name"
-                  // onChange={(e) => {
-                  //   let agreement = typeof e.value === "string" ? e.value : e.value.name
-                  //   // console.log("agreement", agreement)
-                  //   setPurchaseDetails({ ...purchaseDetails, agreement })
-                  // }}
                   onChange={async (e) => {
-                    let agreement = typeof e.value === "string" ? e.value : e.value.name
+                    let purchase_order_status = typeof e.value === "string" ? e.value : e.value
 
                     await formik.setValues({
                       ...formik.values,
-                      agreement,
+                      purchase_order_status,
                     })
                   }}
-                  aria-label="agreementStatusOptions"
-                  dropdownAriaLabel="Select Agreement"
-                  className={classNames({ "p-invalid": isFormFieldValid("agreement") })}
+                  aria-label="Po Status"
+                  dropdownAriaLabel="Po Status"
+                  className={classNames({ "p-invalid": isFormFieldValid("purchase_order_status") })}
                 />
 
                 <label
-                  htmlFor="agreement"
-                  className={classNames({ "p-error": isFormFieldValid("agreement") })}
+                  htmlFor="purchase_order_status"
+                  className={classNames({ "p-error": isFormFieldValid("purchase_order_status") })}
                 >
-                  Agreement
+                  PO Status
                 </label>
               </div>
-              {getFormErrorMessage("agreement")}
+              {getFormErrorMessage("purchase_order_status")}
             </div>
             <div className="field col-12 lg:col-4 mt-2">
               <div className="p-float-label">
                 <AutoComplete
                   id="from_party"
+                  disabled={readOnlyForm}
                   value={formik.values.from_party}
                   suggestions={fromPartySuggetions}
                   completeMethod={searchFromParty}
@@ -623,55 +794,101 @@ const CreateNewPo = (props) => {
               </div>
               {getFormErrorMessage("from_party")}
             </div>
-            {/* <div className="field col-12 lg:col-4 mt-2">
-              <div className="p-float-label">
-                <InputText
-                  id="from_party"
-                  value={formik.values.from_party}
-                  onChange={formik.handleChange}
-                  className={classNames({ "p-invalid": isFormFieldValid("from_party") })}
-                  autoFocus
-                />
-                <label
-                  htmlFor="from_party"
-                  className={classNames({ "p-error": isFormFieldValid("from_party") })}
-                >
-                  From Party
-                </label>
-              </div>
-              {getFormErrorMessage("from_party")}
-            </div> */}
             <div className="field col-12 lg:col-4 mt-2">
               <span className="p-float-label">
                 <InputText
-                  id="po_code"
-                  name=""
-                  // className="mr-2 w-22rem"
-                  value={formik.values.po_code}
+                  id="terms"
+                  disabled={readOnlyForm}
+                  value={formik.values.terms}
                   onChange={formik.handleChange}
-                  disabled={poCodeChecked}
-                  className={classNames({ "p-invalid": isFormFieldValid("po_code") })}
+                  className={classNames({ "p-invalid": isFormFieldValid("terms") })}
+                  autoFocus
                 />
                 <label
-                  htmlFor="po_code"
-                  className={classNames({ "p-error": isFormFieldValid("po_code") })}
+                  htmlFor="terms"
+                  className={classNames({ "p-error": isFormFieldValid("terms") })}
                 >
-                  PO Code
+                  PO Terms
                 </label>
               </span>
-              {getFormErrorMessage("po_code")}
-              <div className="field-checkbox mt-3">
-                <Checkbox
-                  id="poCode"
-                  onChange={(e) => setPoCodeChecked(e.checked)}
-                  checked={poCodeChecked}
-                  disabled={poEditState}
+              {getFormErrorMessage("terms")}
+            </div>
+            {amendingPO && (
+              <div className="field col-12 mt-2">
+                <span className="p-float-label">
+                  <InputTextarea
+                    id="ammendedNotes"
+                    disabled={readOnlyForm}
+                    value={formik.values.ammendedNotes}
+                    onChange={formik.handleChange}
+                    // className={classNames({ "p-invalid": isFormFieldValid("ammendedNotes") })}
+                    rows={3}
+                    // cols={10}
+                  />
+                  <label
+                    htmlFor="ammendedNotes"
+                    className={classNames({ "p-error": isFormFieldValid("ammendedNotes") })}
+                  >
+                    Amendments Notes
+                  </label>
+                </span>
+                {getFormErrorMessage("ammendedNotes")}
+              </div>
+            )}
+
+            {/* PO_Terms Autocomplete component */}
+            {/* <div className="field col-12 lg:col-4 mt-2">
+              <div className="p-float-label">
+                <AutoComplete
+                  id="terms"
+                  disabled={readOnlyForm}
+                  value={formik?.values?.terms?.name}
+                  suggestions={termsSuggetions}
+                  completeMethod={searchTerms}
+                  dropdown
+                  field="name"
+                  onChange={async (e) => {
+                    let terms = typeof e.value === "string" ? e.value : e.value
+
+                    await formik.setValues({
+                      ...formik.values,
+                      terms,
+                    })
+                  }}
+                  aria-label="PO Terms"
+                  dropdownAriaLabel="PO Terms"
+                  className={classNames({ "p-invalid": isFormFieldValid("terms") })}
                 />
-                <label htmlFor="poCode">Un-check to add custom code.</label>
+
+                <label
+                  htmlFor="terms"
+                  className={classNames({ "p-error": isFormFieldValid("terms") })}
+                >
+                  Terms
+                </label>
+              </div>
+              {getFormErrorMessage("terms")}
+            </div> */}
+            <div className="field col-12  mt-2">
+              <div className="mb-3">Emails</div>
+              <div className="flex align-items-center flex-wrap">
+                {formik?.values?.vendor_Emails?.map((email, i) => (
+                  <Chip
+                    key={i}
+                    label={email}
+                    className="mr-2 mb-2"
+                    removable={!readOnlyForm}
+                    onRemove={async (e) => {
+                      const updatedChips = formik.values.vendor_Emails.filter(
+                        (mail) => mail !== email
+                      )
+                      await updateFormValues({ vendor_Emails: updatedChips })
+                    }}
+                  />
+                ))}
               </div>
             </div>
-
-            {showPriorList && (
+            {/* {showPriorList && (
               <div className="field col-12 p-error">
                 <h6>Selected Vendor doesnot sell below products</h6>
                 <ul>
@@ -709,10 +926,9 @@ const CreateNewPo = (props) => {
                     setShowPriorList(false)
                   }}
                 />
-                {/* <span>{` Prev Vendor: - ${pastVendors[0]?.vendor}`}</span> */}
+                
               </div>
-            )}
-
+            )} */}
             <div className="col-12 mt-3 mb-3 ">
               <h6>Select Products</h6>
               <hr />
@@ -722,6 +938,7 @@ const CreateNewPo = (props) => {
                 <div className="field col-12 lg:col-7 mt-2">
                   <div className="p-float-label">
                     <AutoComplete
+                      disabled={readOnlyForm}
                       id="name"
                       name="name"
                       value={ele.product_name}
@@ -769,6 +986,7 @@ const CreateNewPo = (props) => {
                   <span className="p-float-label ">
                     <InputNumber
                       name="price_per_unit"
+                      disabled={readOnlyForm}
                       // className="mr-2 w-20rem"
                       value={Number(ele.price_per_unit)}
                       onChange={(e) => handleFormChange(e, i)}
@@ -780,6 +998,7 @@ const CreateNewPo = (props) => {
                   <span className="p-float-label ">
                     <InputNumber
                       name="quantity"
+                      disabled={readOnlyForm}
                       value={Number(ele.quantity)}
                       // className="mr-2 w-20rem"
                       onChange={(e) => handleFormChange(e, i)}
@@ -809,11 +1028,14 @@ const CreateNewPo = (props) => {
             <div className="m-auto text-2xl">{getFormErrorMessage("itemsLength")}</div>
           </div>
           <Divider />
-          <div className="flex ">
-            <Button type="submit" className=" mr-2" label={poEditState ? "UPDATE" : "ADD"} />
+          <div className="flex justify-content-end">
+            {!readOnlyForm && (
+              <Button type="submit" className=" mr-2" label={poEditState ? "UPDATE" : "SUBMIT"} />
+            )}
             <Button
-              className="mr-2 p-button-secondary"
-              label="Cancel"
+              className="mr-2 p-button-secondary align "
+              style={{ maxWidth: "50%" }}
+              label="CANCEL"
               onClick={(e) => {
                 e.preventDefault()
                 setPurchaseDialog(false)
@@ -821,6 +1043,7 @@ const CreateNewPo = (props) => {
                 formik.resetForm()
                 setPriorList([])
                 setShowPriorList(false)
+                setAmendingPO(false)
               }}
             />
           </div>
@@ -828,6 +1051,153 @@ const CreateNewPo = (props) => {
       </div>
     </div>
   )
-}
+})
 
 export default CreateNewPo
+
+// activeRow data Example
+
+// const activeRowData ={
+//   "po_id": 111,
+//   "po_type": "sss",
+//   "updated_on": "2022-11-15T11:46:48.081Z",
+//   "approved_on": "Invalid date",
+//   "created_at": "15-11-2022, 17:11",
+//   "from_party": "TIF Labs",
+//   "expiry_date": "2022-11-22T18:30:00.000Z",
+//   "expected_delivery": "2022-11-24T18:30:00.000Z",
+//   "agreement": "Approved",
+//   "po_description": "Sensor Bundle",
+//   "po_code": "PO#111",
+//   "rfq_id": 18,
+//   "grn_grn_id": 28,
+//   "note": null,
+//   "agreement_terms_id": 1,
+//   "purchase_order_terms": "Net-45",
+//   "purchase_order_status_id": 1,
+//   "vendor_vendor_id": 3,
+//   "vendor": "Thomas Edison",
+//   "purchase_order_products": [
+//       {
+//           "pop_id": 14,
+//           "vendor_products_vp_id": 8,
+//           "vendor_products_vendor_vendor_id": 3,
+//           "vendor_products_products_product_id": 7,
+//           "quantity": 89,
+//           "price_per_unit": 85,
+//           "received_quantity": 0,
+//           "purchase_order_po_id": 8,
+//           "purchase_order_vendor_vendor_id": 3,
+//           "vendor_products": {
+//               "vp_id": 8,
+//               "unit_price": 45,
+//               "vendor_vendor_id": 3,
+//               "products_product_id": 7,
+//               "enabled": 1,
+//               "priority": 2,
+//               "vendor_sku": "TE107",
+//               "products": {
+//                   "product_id": 7,
+//                   "name": "Heat Flame Sensor",
+//                   "description": "description heat",
+//                   "product_type": "Sensors",
+//                   "products_sku": "TIF007",
+//                   "Price": 56,
+//                   "product_unit": null
+//               }
+//           }
+//       },
+//       {
+//           "pop_id": 155,
+//           "vendor_products_vp_id": 20,
+//           "vendor_products_vendor_vendor_id": 3,
+//           "vendor_products_products_product_id": 5,
+//           "quantity": 7,
+//           "price_per_unit": 56,
+//           "received_quantity": 0,
+//           "purchase_order_po_id": 8,
+//           "purchase_order_vendor_vendor_id": 3,
+//           "vendor_products": {
+//               "vp_id": 20,
+//               "unit_price": 120,
+//               "vendor_vendor_id": 3,
+//               "products_product_id": 5,
+//               "enabled": 1,
+//               "priority": 1,
+//               "vendor_sku": "TE105",
+//               "products": {
+//                   "product_id": 5,
+//                   "name": "MQ-135 gas sensor Module",
+//                   "description": "description 135",
+//                   "product_type": "Sensors",
+//                   "products_sku": "TIF005",
+//                   "Price": 56,
+//                   "product_unit": null
+//               }
+//           }
+//       },
+//       {
+//           "pop_id": 156,
+//           "vendor_products_vp_id": 83,
+//           "vendor_products_vendor_vendor_id": 3,
+//           "vendor_products_products_product_id": 4,
+//           "quantity": 47,
+//           "price_per_unit": 42,
+//           "received_quantity": 0,
+//           "purchase_order_po_id": 8,
+//           "purchase_order_vendor_vendor_id": 3,
+//           "vendor_products": {
+//               "vp_id": 83,
+//               "unit_price": 0,
+//               "vendor_vendor_id": 3,
+//               "products_product_id": 4,
+//               "enabled": 1,
+//               "priority": 1,
+//               "vendor_sku": "TE104",
+//               "products": {
+//                   "product_id": 4,
+//                   "name": "E18-D80NK Infrared Sensor Module",
+//                   "description": "description",
+//                   "product_type": "Sensors",
+//                   "products_sku": "TIF004",
+//                   "Price": 42,
+//                   "product_unit": null
+//               }
+//           }
+//       },
+//       {
+//           "pop_id": 157,
+//           "vendor_products_vp_id": 5,
+//           "vendor_products_vendor_vendor_id": 3,
+//           "vendor_products_products_product_id": 3,
+//           "quantity": 14,
+//           "price_per_unit": 24,
+//           "received_quantity": 0,
+//           "purchase_order_po_id": 8,
+//           "purchase_order_vendor_vendor_id": 3,
+//           "vendor_products": {
+//               "vp_id": 5,
+//               "unit_price": 50,
+//               "vendor_vendor_id": 3,
+//               "products_product_id": 3,
+//               "enabled": 1,
+//               "priority": 4,
+//               "vendor_sku": "TE103",
+//               "products": {
+//                   "product_id": 3,
+//                   "name": "Waterproof Ultrasonic Sensor",
+//                   "description": "water-desp",
+//                   "product_type": "Sensors",
+//                   "products_sku": "TIF003",
+//                   "Price": 24,
+//                   "product_unit": "combo"
+//               }
+//           }
+//       }
+//   ],
+//   "purchase_order_status": {
+//       "id": 1,
+//       "name": "Created ",
+//       "description": "The PO has been successfully created."
+//   }
+// }

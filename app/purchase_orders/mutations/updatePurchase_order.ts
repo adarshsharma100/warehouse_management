@@ -33,7 +33,15 @@ export default resolver.pipe(
 
     console.log("updatePO", purchase_order)
 
-    await sendPomail(input, purchase_order, { class: "-Amended" })
+    const {
+      purchase_order_status: { name },
+    } = purchase_order
+
+    if (name === "Approved") {
+      await sendPomail(input, purchase_order, null)
+    }
+
+    // await sendPomail(input, purchase_order, { class: "-Amended" })
     return purchase_order
   }
 )

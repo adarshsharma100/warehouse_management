@@ -1,3 +1,5 @@
+import moment from "moment"
+
 export const cities = [
   { city: "Kolhapur", state: "Maharashtra" },
   { city: "Port Blair", state: "Andaman & Nicobar Islands" },
@@ -1521,8 +1523,16 @@ export const tsuccess = (summary, detail) => {
 }
 export const tError = (summary, detail) => {
   return {
-    severity: "erorr",
-    summary: summary ? summary : "Created",
+    severity: "error",
+    summary: summary ? summary : "Error",
+    detail: detail,
+    life: 3000,
+  }
+}
+export const tWarn = (summary, detail) => {
+  return {
+    severity: "warn",
+    summary: summary ? summary : "Warning",
     detail: detail,
     life: 3000,
   }
@@ -1601,6 +1611,10 @@ export const removeKeyFromObj = (obj, ...keys) => {
   keys.forEach((ele) => delete obj[ele])
   return obj
 }
+
+export const dateFormat = (dateObj) => moment(new Date(dateObj)).format("DD-MM-YYYY, HH:MM")
+export const calenderDateFormat = () => "dd/mm/yy"
+export const toDateObj = (dateObj) => moment(dateObj, "DD-MM-YYYY").toDate()
 
 // export const sendPoEmail = async (data, po) => {
 //   // const vendorDetails = await db.vendor.findUnique({
