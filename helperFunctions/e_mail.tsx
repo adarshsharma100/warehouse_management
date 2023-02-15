@@ -29,7 +29,7 @@ export const e_mail = async (to, subject, html, data = null) => {
   // Define the email options
   let mailOptions = {
     from: "care@robocraze.com",
-    to,
+    to: Array.isArray(to) ? to.join(", ") : to,
     subject,
     html,
     // attachments: [
