@@ -49,19 +49,911 @@ export const Inventory_productsList = () => {
   const router = useRouter()
 
   const page = Number(router.query.page) || 0
-  const [{ inventory_products, hasMore }, { refetch }] = usePaginatedQuery(getInventory_products, {
-    orderBy: { inventory_product_id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-  })
+  // const [{ inventory_products, hasMore }, { refetch }] = usePaginatedQuery(getInventory_products, {
+  //   orderBy: { inventory_product_id: "asc" },
+  //   skip: ITEMS_PER_PAGE * page,
+  //   take: ITEMS_PER_PAGE,
+  // })
 
   // console.log("inventory_products", inventory_products)
 
-  const [{ products }] = usePaginatedQuery(getProducts, {
-    orderBy: { product_id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-  })
+  // const [{ products }] = usePaginatedQuery(getProducts, {
+  //   orderBy: { product_id: "asc" },
+  //   skip: ITEMS_PER_PAGE * page,
+  //   take: ITEMS_PER_PAGE,
+  // })
+  const products = [
+    {
+      product_id: 1,
+      name: "Pi",
+      product_category: "3D Printer",
+      product_length: "40",
+      product_width: "80",
+      product_height: "08",
+      product_weight: "30",
+      product_Color: "Black",
+      product_brand: "brand",
+      product_taxcode: "12365479885",
+      product_gstcode: "08742784574",
+      product_hsnCode: "84439940",
+      product_tags: "tags",
+      product_costPrice: "200/-",
+      product_mrp: "400/-",
+      product_basePrice: "320/-",
+      product_enabled: "yes",
+      product_taxCalcuation: "tax calculation type",
+
+      description: "Pi-descasw",
+      product_type: "Electronics",
+      products_sku: "TIF001",
+      Price: 11,
+      product_unit: "pc",
+      vendor_products: [
+        {
+          vp_id: 1,
+          unit_price: 424,
+          vendor_vendor_id: 1,
+          products_product_id: 1,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "DA1002",
+        },
+        {
+          vp_id: 36,
+          unit_price: 756,
+          vendor_vendor_id: 4,
+          products_product_id: 1,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "TE417",
+        },
+        {
+          vp_id: 37,
+          unit_price: 454,
+          vendor_vendor_id: 5,
+          products_product_id: 1,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "TE420",
+        },
+        {
+          vp_id: 116,
+          unit_price: 85,
+          vendor_vendor_id: 3,
+          products_product_id: 1,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "TH4568",
+        },
+      ],
+    },
+    {
+      product_id: 2,
+      name: "ESP",
+      description: "esp-desc",
+      product_type: "Electronics",
+      products_sku: "TIF002",
+      Price: 142,
+      product_unit: "2pc set",
+      vendor_products: [
+        {
+          vp_id: 2,
+          unit_price: 10,
+          vendor_vendor_id: 1,
+          products_product_id: 2,
+          enabled: 1,
+          priority: 2,
+          vendor_sku: "DA1001",
+        },
+        {
+          vp_id: 33,
+          unit_price: 25,
+          vendor_vendor_id: 123,
+          products_product_id: 2,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "VJ338",
+        },
+        {
+          vp_id: 114,
+          unit_price: 41,
+          vendor_vendor_id: 147,
+          products_product_id: 2,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "FK490",
+        },
+      ],
+    },
+    {
+      product_id: 3,
+      name: "Waterproof Ultrasonic Sensor",
+      description: "water-desp",
+      product_type: "Sensors",
+      products_sku: "TIF003",
+      Price: 24,
+      product_unit: "combo",
+      vendor_products: [
+        {
+          vp_id: 5,
+          unit_price: 50,
+          vendor_vendor_id: 3,
+          products_product_id: 3,
+          enabled: 1,
+          priority: 4,
+          vendor_sku: "TE103",
+        },
+        {
+          vp_id: 79,
+          unit_price: 142,
+          vendor_vendor_id: 4,
+          products_product_id: 3,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "KA146",
+        },
+      ],
+    },
+    {
+      product_id: 4,
+      name: "E18-D80NK Infrared Sensor Module",
+      description: "description",
+      product_type: "Sensors",
+      products_sku: "TIF004",
+      Price: 42,
+      product_unit: null,
+      vendor_products: [
+        {
+          vp_id: 11,
+          unit_price: 83,
+          vendor_vendor_id: 1,
+          products_product_id: 4,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "DA102",
+        },
+        {
+          vp_id: 83,
+          unit_price: 0,
+          vendor_vendor_id: 3,
+          products_product_id: 4,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "TE104",
+        },
+        {
+          vp_id: 108,
+          unit_price: 45,
+          vendor_vendor_id: 123,
+          products_product_id: 4,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "VJ12345",
+        },
+        {
+          vp_id: 113,
+          unit_price: 40,
+          vendor_vendor_id: 147,
+          products_product_id: 4,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "FK491",
+        },
+      ],
+    },
+    {
+      product_id: 5,
+      name: "MQ-135 gas sensor Module",
+      description: "description 135",
+      product_type: "Sensors",
+      products_sku: "TIF005",
+      Price: 56,
+      product_unit: null,
+      vendor_products: [
+        {
+          vp_id: 20,
+          unit_price: 120,
+          vendor_vendor_id: 3,
+          products_product_id: 5,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "TE105",
+        },
+        {
+          vp_id: 105,
+          unit_price: 123,
+          vendor_vendor_id: 2,
+          products_product_id: 5,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "ssWW",
+        },
+        {
+          vp_id: 106,
+          unit_price: 111,
+          vendor_vendor_id: 170,
+          products_product_id: 5,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "qqq",
+        },
+      ],
+    },
+    {
+      product_id: 6,
+      name: "Turbidity Sensor",
+      description: "description sensor",
+      product_type: "Sensors",
+      products_sku: "TIF006",
+      Price: 67,
+      product_unit: null,
+      vendor_products: [
+        {
+          vp_id: 6,
+          unit_price: 905,
+          vendor_vendor_id: 3,
+          products_product_id: 6,
+          enabled: 1,
+          priority: 5,
+          vendor_sku: "TE106",
+        },
+        {
+          vp_id: 9,
+          unit_price: 88,
+          vendor_vendor_id: 4,
+          products_product_id: 6,
+          enabled: 1,
+          priority: 3,
+          vendor_sku: "KM106",
+        },
+        {
+          vp_id: 34,
+          unit_price: 120,
+          vendor_vendor_id: 5,
+          products_product_id: 6,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "TE1564",
+        },
+      ],
+    },
+    {
+      product_id: 7,
+      name: "Heat Flame Sensor",
+      description: "description heat",
+      product_type: "Sensors",
+      products_sku: "TIF007",
+      Price: 56,
+      product_unit: null,
+      vendor_products: [
+        {
+          vp_id: 8,
+          unit_price: 45,
+          vendor_vendor_id: 3,
+          products_product_id: 7,
+          enabled: 1,
+          priority: 2,
+          vendor_sku: "TE107",
+        },
+        {
+          vp_id: 10,
+          unit_price: 47,
+          vendor_vendor_id: 4,
+          products_product_id: 7,
+          enabled: 1,
+          priority: 2,
+          vendor_sku: "KM107",
+        },
+        {
+          vp_id: 35,
+          unit_price: 11,
+          vendor_vendor_id: 5,
+          products_product_id: 7,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "TE571",
+        },
+      ],
+    },
+    {
+      product_id: 8,
+      name: "Eye Blink Sensor",
+      description: "eye description",
+      product_type: "Sensors",
+      products_sku: "TIF008",
+      Price: 53,
+      product_unit: null,
+      vendor_products: [
+        {
+          vp_id: 29,
+          unit_price: 11,
+          vendor_vendor_id: 1,
+          products_product_id: 8,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "qws",
+        },
+      ],
+    },
+    {
+      product_id: 9,
+      name: "Laser Module",
+      description: "description laser",
+      product_type: "Sensors",
+      products_sku: "TIF009",
+      Price: 856,
+      product_unit: null,
+      vendor_products: [],
+    },
+    {
+      product_id: 10,
+      name: "Sound Sensor Module",
+      description: "sound description",
+      product_type: "Sensors",
+      products_sku: "TIF010",
+      Price: 56,
+      product_unit: null,
+      vendor_products: [],
+    },
+    {
+      product_id: 11,
+      name: "Servo Motor Pan-Tilt Setup",
+      description: "servo description",
+      product_type: "Motors and mechanical devices",
+      products_sku: "TIF011",
+      Price: 5657,
+      product_unit: null,
+      vendor_products: [],
+    },
+    {
+      product_id: 12,
+      name: "Micro Vibration Motor",
+      description: "micro  ",
+      product_type: "Motors and mechanical devices",
+      products_sku: "TIF012",
+      Price: 65,
+      product_unit: null,
+      vendor_products: [],
+    },
+    {
+      product_id: 13,
+      name: "A4988 Stepper Motor Driver",
+      description: "description pump",
+      product_type: "Motors and mechanical devices",
+      products_sku: "TIF013",
+      Price: 346,
+      product_unit: null,
+      vendor_products: [],
+    },
+    {
+      product_id: 14,
+      name: "R385 DC PUMP",
+      description: "R385 ",
+      product_type: "Motors and mechanical devices",
+      products_sku: "TIF014",
+      Price: 787,
+      product_unit: null,
+      vendor_products: [
+        {
+          vp_id: 104,
+          unit_price: 12,
+          vendor_vendor_id: 4,
+          products_product_id: 14,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "dewa",
+        },
+      ],
+    },
+    {
+      product_id: 15,
+      name: "Solenoid valve 12V",
+      description: "valve 12V",
+      product_type: "Motors and mechanical devices",
+      products_sku: "TIF015",
+      Price: 343,
+      product_unit: null,
+      vendor_products: [
+        {
+          vp_id: 81,
+          unit_price: 85,
+          vendor_vendor_id: 1,
+          products_product_id: 15,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "DA10456",
+        },
+      ],
+    },
+    {
+      product_id: 16,
+      name: "Neo 6M GPS Module",
+      description: "Neo 6M GPS",
+      product_type: "IOT & wireless devices",
+      products_sku: "TIF016",
+      Price: 657,
+      product_unit: null,
+      vendor_products: [],
+    },
+    {
+      product_id: 17,
+      name: "NRF24L01+PA+LNA",
+      description: "NRF24L01+PA+LNA",
+      product_type: "IOT & wireless devices",
+      products_sku: "TIF017",
+      Price: 786,
+      product_unit: null,
+      vendor_products: [],
+    },
+    {
+      product_id: 18,
+      name: "test",
+      description: "tes0123",
+      product_type: "IOT & wireless devices",
+      products_sku: "TIF018",
+      Price: 657,
+      product_unit: null,
+      vendor_products: [],
+    },
+    {
+      product_id: 19,
+      name: "ESP12E ESP8266 Wireless Transceiver Module",
+      description: "ESP12E ",
+      product_type: "IOT & wireless devices",
+      products_sku: "TIF019",
+      Price: 53,
+      product_unit: null,
+      vendor_products: [],
+    },
+    {
+      product_id: 20,
+      name: "dummy name",
+      description: "dummy name",
+      product_type: "dummy product type",
+      products_sku: "TIF000",
+      Price: 4,
+      product_unit: null,
+      vendor_products: [],
+    },
+    {
+      product_id: 21,
+      name: "Watermelon",
+      description:
+        "Water-melon is a flowering plant species of the Cucurbitaceae family orem ipsum dolor sit amet consectetur adipisicing elit. Maxime mollitia,\nmolestiae quas vel sint commodi repudiandae consequuntur voluptatum laborum",
+      product_type: "Fruit",
+      products_sku: "Test",
+      Price: 7,
+      product_unit: "kg",
+      vendor_products: [
+        {
+          vp_id: 102,
+          unit_price: 15,
+          vendor_vendor_id: 123,
+          products_product_id: 21,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "VJW1001",
+        },
+        {
+          vp_id: 112,
+          unit_price: 45,
+          vendor_vendor_id: 147,
+          products_product_id: 21,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "FK489",
+        },
+      ],
+    },
+    {
+      product_id: 23,
+      name: "Test CSV",
+      description: "Test CSV",
+      product_type: "CSV",
+      products_sku: "TestSKU",
+      Price: 67,
+      product_unit: null,
+      vendor_products: [
+        {
+          vp_id: 86,
+          unit_price: 12,
+          vendor_vendor_id: 1,
+          products_product_id: 23,
+          enabled: 1,
+          priority: 1,
+          vendor_sku: "aws",
+        },
+      ],
+    },
+    {
+      product_id: 64,
+      name: "boat",
+      description: "asdddasd",
+      product_type: "eleectric",
+      products_sku: "TI-100",
+      Price: 0,
+      product_unit: "Pc",
+      vendor_products: [],
+    },
+  ]
+
+  const inventory_products = [
+    {
+      inventory_product_id: 1,
+      product_description: "grade one",
+      price: 45622,
+      quantity: 150,
+      products_product_id: 4,
+      created_at: "2022-12-15T15:52:03.000Z",
+      good_stock: 121,
+      bad_stock: 50,
+
+      block_stock: 3,
+      available_stock: 71,
+      shelf: 60,
+      shelf_attributes: {
+        InventoryAlloction: "InventoryAlloction: true",
+        InventorySync: "Inventory Sync: true",
+        SkuMixing: "SKU Mixing: true",
+        ShelfHold: "Shelf on hold: false",
+      },
+      size: 70,
+      color: "Black",
+      brand: "Robodo",
+
+      products: {
+        product_id: 4,
+        name: "E18-D80NK Infrared Sensor Module",
+        description: "description",
+        product_type: "Sensors",
+        products_sku: "TIF004",
+        Price: 42,
+        product_unit: null,
+      },
+    },
+    {
+      inventory_product_id: 2,
+      product_description: "tester",
+      price: 3223,
+      quantity: 121,
+      products_product_id: 2,
+      created_at: "2022-12-15T15:52:52.000Z",
+      good_stock: 100,
+      bad_stock: 0,
+      products: {
+        product_id: 2,
+        name: "ESP",
+        description: "esp-desc",
+        product_type: "Electronics",
+        products_sku: "TIF002",
+        Price: 142,
+        product_unit: "2pc set",
+      },
+    },
+    {
+      inventory_product_id: 3,
+      product_description: "sensor",
+      price: 22,
+      quantity: 3434,
+      products_product_id: 3,
+      created_at: "2022-12-15T10:23:09.000Z",
+      good_stock: null,
+      bad_stock: 0,
+      products: {
+        product_id: 3,
+        name: "Waterproof Ultrasonic Sensor",
+        description: "water-desp",
+        product_type: "Sensors",
+        products_sku: "TIF003",
+        Price: 24,
+        product_unit: "combo",
+      },
+    },
+    {
+      inventory_product_id: 18,
+      product_description: "sound description",
+      price: 12,
+      quantity: 123,
+      products_product_id: 10,
+      created_at: "2022-12-26T12:48:16.000Z",
+      good_stock: null,
+      bad_stock: 0,
+      products: {
+        product_id: 10,
+        name: "Sound Sensor Module",
+        description: "sound description",
+        product_type: "Sensors",
+        products_sku: "TIF010",
+        Price: 56,
+        product_unit: null,
+      },
+    },
+    {
+      inventory_product_id: 38,
+      product_description: "valve 12V",
+      price: 11,
+      quantity: 11,
+      products_product_id: 15,
+      created_at: "2022-12-27T06:41:16.000Z",
+      good_stock: null,
+      bad_stock: 0,
+      products: {
+        product_id: 15,
+        name: "Solenoid valve 12V",
+        description: "valve 12V",
+        product_type: "Motors and mechanical devices",
+        products_sku: "TIF015",
+        Price: 343,
+        product_unit: null,
+      },
+    },
+    {
+      inventory_product_id: 40,
+      product_description: "e",
+      price: 0,
+      quantity: 23,
+      products_product_id: 1,
+      created_at: "2022-12-27T07:17:16.000Z",
+      good_stock: null,
+      bad_stock: 0,
+      products: {
+        product_id: 1,
+        name: "Pi",
+        description: "Pi-descasw",
+        product_type: "Electronics",
+        products_sku: "TIF001",
+        Price: 11,
+        product_unit: "pc",
+      },
+    },
+    {
+      inventory_product_id: 42,
+      product_description: "water-desp",
+      price: 123,
+      quantity: 12,
+      products_product_id: 3,
+      created_at: "2023-01-03T03:29:23.000Z",
+      good_stock: null,
+      bad_stock: 0,
+      products: {
+        product_id: 3,
+        name: "Waterproof Ultrasonic Sensor",
+        description: "water-desp",
+        product_type: "Sensors",
+        products_sku: "TIF003",
+        Price: 24,
+        product_unit: "combo",
+      },
+    },
+    {
+      inventory_product_id: 43,
+      product_description: "Pi-descasw",
+      price: 123,
+      quantity: 2,
+      products_product_id: 1,
+      created_at: "2023-01-03T03:34:02.000Z",
+      good_stock: null,
+      bad_stock: 0,
+      products: {
+        product_id: 1,
+        name: "Pi",
+        description: "Pi-descasw",
+        product_type: "Electronics",
+        products_sku: "TIF001",
+        Price: 11,
+        product_unit: "pc",
+      },
+    },
+    {
+      inventory_product_id: 46,
+      product_description: "servo description",
+      price: 234,
+      quantity: 123,
+      products_product_id: 11,
+      created_at: "2023-01-03T04:59:35.000Z",
+      good_stock: null,
+      bad_stock: 0,
+      products: {
+        product_id: 11,
+        name: "Servo Motor Pan-Tilt Setup",
+        description: "servo description",
+        product_type: "Motors and mechanical devices",
+        products_sku: "TIF011",
+        Price: 5657,
+        product_unit: null,
+      },
+    },
+    {
+      inventory_product_id: 47,
+      product_description: "Test CSV",
+      price: 123,
+      quantity: 12,
+      products_product_id: 23,
+      created_at: "2023-01-03T05:00:49.000Z",
+      good_stock: null,
+      bad_stock: 0,
+      products: {
+        product_id: 23,
+        name: "Test CSV",
+        description: "Test CSV",
+        product_type: "CSV",
+        products_sku: "TestSKU",
+        Price: 67,
+        product_unit: null,
+      },
+    },
+    {
+      inventory_product_id: 49,
+      product_description: "eye description",
+      price: 3,
+      quantity: 34,
+      products_product_id: 8,
+      created_at: "2023-01-03T05:01:43.000Z",
+      good_stock: null,
+      bad_stock: 0,
+      products: {
+        product_id: 8,
+        name: "Eye Blink Sensor",
+        description: "eye description",
+        product_type: "Sensors",
+        products_sku: "TIF008",
+        Price: 53,
+        product_unit: null,
+      },
+    },
+    {
+      inventory_product_id: 50,
+      product_description: "micro  ",
+      price: 897,
+      quantity: 657,
+      products_product_id: 12,
+      created_at: "2023-01-03T05:08:38.000Z",
+      good_stock: null,
+      bad_stock: 0,
+      products: {
+        product_id: 12,
+        name: "Micro Vibration Motor",
+        description: "micro  ",
+        product_type: "Motors and mechanical devices",
+        products_sku: "TIF012",
+        Price: 65,
+        product_unit: null,
+      },
+    },
+    {
+      inventory_product_id: 72,
+      product_description: "R385 ",
+      price: 879,
+      quantity: 13,
+      products_product_id: 14,
+      created_at: "2023-01-04T12:10:31.000Z",
+      good_stock: null,
+      bad_stock: 0,
+      products: {
+        product_id: 14,
+        name: "R385 DC PUMP",
+        description: "R385 ",
+        product_type: "Motors and mechanical devices",
+        products_sku: "TIF014",
+        Price: 787,
+        product_unit: null,
+      },
+    },
+    {
+      inventory_product_id: 73,
+      product_description: "Neo 6M GPS",
+      price: 563,
+      quantity: 60,
+      products_product_id: 16,
+      created_at: "2023-01-04T12:12:51.000Z",
+      good_stock: null,
+      bad_stock: 0,
+      products: {
+        product_id: 16,
+        name: "Neo 6M GPS Module",
+        description: "Neo 6M GPS",
+        product_type: "IOT & wireless devices",
+        products_sku: "TIF016",
+        Price: 657,
+        product_unit: null,
+      },
+    },
+    {
+      inventory_product_id: 74,
+      product_description: "NRF24L01+PA+LNA",
+      price: 14,
+      quantity: 60,
+      products_product_id: 17,
+      created_at: "2023-01-04T12:20:35.000Z",
+      good_stock: 56,
+      bad_stock: 4,
+      products: {
+        product_id: 17,
+        name: "NRF24L01+PA+LNA",
+        description: "NRF24L01+PA+LNA",
+        product_type: "IOT & wireless devices",
+        products_sku: "TIF017",
+        Price: 786,
+        product_unit: null,
+      },
+    },
+    {
+      inventory_product_id: 75,
+      product_description: "dummy name",
+      price: 21,
+      quantity: 21,
+      products_product_id: 20,
+      created_at: "2023-01-04T12:26:01.000Z",
+      good_stock: 20,
+      bad_stock: 1,
+      products: {
+        product_id: 20,
+        name: "dummy name",
+        description: "dummy name",
+        product_type: "dummy product type",
+        products_sku: "TIF000",
+        Price: 4,
+        product_unit: null,
+      },
+    },
+    {
+      inventory_product_id: 76,
+      product_description: "ESP12E ",
+      price: 123,
+      quantity: 123,
+      products_product_id: 19,
+      created_at: "2023-01-10T07:49:59.000Z",
+      good_stock: 100,
+      bad_stock: 0,
+      products: {
+        product_id: 19,
+        name: "ESP12E ESP8266 Wireless Transceiver Module",
+        description: "ESP12E ",
+        product_type: "IOT & wireless devices",
+        products_sku: "TIF019",
+        Price: 53,
+        product_unit: null,
+      },
+    },
+    {
+      inventory_product_id: 77,
+      product_description: "asdddasd",
+      price: 111,
+      quantity: 20,
+      products_product_id: 64,
+      created_at: "2023-01-19T09:27:38.000Z",
+      good_stock: 19,
+      bad_stock: 0,
+      products: {
+        product_id: 64,
+        name: "boat",
+        description: "asdddasd",
+        product_type: "eleectric",
+        products_sku: "TI-100",
+        Price: 0,
+        product_unit: "Pc",
+      },
+    },
+    {
+      inventory_product_id: 78,
+      product_description: "greate",
+      price: 12,
+      quantity: 12,
+      products_product_id: 12,
+      created_at: "2023-01-20T06:01:41.000Z",
+      good_stock: 10,
+      bad_stock: 0,
+      products: {
+        product_id: 12,
+        name: "Micro Vibration Motor",
+        description: "micro  ",
+        product_type: "Motors and mechanical devices",
+        products_sku: "TIF012",
+        Price: 65,
+        product_unit: null,
+      },
+    },
+  ]
 
   const productOptions = products.map(({ product_id, name, products_sku, description }) => {
     return {
@@ -220,7 +1112,21 @@ export const Inventory_productsList = () => {
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
   const goToNextPage = () => router.push({ query: { page: page + 1 } })
   const tableInventory = inventory_products.map(
-    ({ quantity, products, price, inventory_product_id, good_stock }) => {
+    ({
+      quantity,
+      bad_stock,
+      products,
+      color,
+      brand,
+      price,
+      size,
+      shelf_attributes,
+      shelf,
+      available_stock,
+      inventory_product_id,
+      good_stock,
+      block_stock,
+    }) => {
       return {
         products_sku: products?.products_sku,
         name: products?.name,
@@ -229,6 +1135,14 @@ export const Inventory_productsList = () => {
         price,
         inventory_product_id,
         good_stock,
+        block_stock,
+        available_stock,
+        shelf,
+        shelf_attributes,
+        size,
+        color,
+        bad_stock,
+        brand,
       }
     }
   )
@@ -673,12 +1587,66 @@ export const Inventory_productsList = () => {
             <Column
               field="bad_stock"
               header="Bad-Stock"
-              body={(rowdata) => rowdata.quantity - rowdata.good_stock}
+              // body={(rowdata) => rowdata.quantity - rowdata.good_stock}
               // className="text-center"
             />
-            <Column
+            {/* <Column
               field="quantity"
               header="Total-Stock"
+              // className="text-center"
+            /> */}
+
+            <Column
+              field="block_stock"
+              header="Block-Stock"
+              // className="text-center"
+            />
+
+            <Column
+              field="available_stock"
+              header="Available-Stock"
+              // className="text-center"
+            />
+
+            <Column
+              field="shelf"
+              header="Shelf"
+              // className="text-center"
+            />
+
+            <Column
+              field="shelf_attributes"
+              header="Shelf Attributes"
+              body={(rowdata) => {
+                const attributes = rowdata.shelf_attributes
+                console.log(attributes, "attributes")
+                return (
+                  <>
+                    <p>{attributes?.InventoryAlloction}</p>
+                    <p>{attributes?.InventorySync}</p>
+                    <p>{attributes?.SkuMixing}</p>
+                    <p>{attributes?.ShelfHold}</p>
+                  </>
+                )
+              }}
+              // className="text-center"
+            />
+
+            <Column
+              field="size"
+              header="Size"
+              // className="text-center"
+            />
+
+            <Column
+              field="color"
+              header="Color"
+              // className="text-center"
+            />
+
+            <Column
+              field="brand"
+              header="Brand"
               // className="text-center"
             />
 
@@ -737,9 +1705,9 @@ export const Inventory_productsList = () => {
 const Inventory_productsPage = () => {
   return (
     <Suspense fallback={<Loading />}>
-      <Layout>
-        <Inventory_productsList />
-      </Layout>
+      {/* <Layout> */}
+      <Inventory_productsList />
+      {/* </Layout> */}
     </Suspense>
   )
 }
