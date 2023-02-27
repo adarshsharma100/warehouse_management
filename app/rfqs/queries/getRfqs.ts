@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc"
 import db, { Prisma } from "db"
 
 interface GetRfqsInput
-  extends Pick<Prisma.RfqFindManyArgs, "where" | "orderBy" | "skip" | "take"> {}
+  extends Pick<Prisma.rfqFindManyArgs, "where" | "orderBy" | "skip" | "take"> {}
 
 export default resolver.pipe(
   resolver.authorize(),
@@ -17,21 +17,21 @@ export default resolver.pipe(
     } = await paginate({
       skip,
       take,
-      count: () => db.rfq.count({ where }),
+      count: () => db.rfq.count({ where }) ?? 1,
       query: (paginateArgs) =>
         db.rfq.findMany({
           ...paginateArgs,
           where,
           orderBy,
-          include: {
-            rfq_products: {
-              include: {
-                products: true,
-              },
-            },
-            rfq_sentto: true,
-            agreement_terms: true,
-          },
+          // include: {
+          //   rfq_products: {
+          //     include: {
+          //       products: true,
+          //     },
+          //   },
+          //   rfq_sentto: true,
+          //   agreement_terms: true,
+          // },
         }),
     })
 

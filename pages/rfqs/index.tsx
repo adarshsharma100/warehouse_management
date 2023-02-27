@@ -91,13 +91,11 @@ export const RfqsList = () => {
   const [{ rfqs }, { error: rfqError, refetch }] = useQuery(getRfqs, {
     orderBy: { id: "asc" },
   })
-  const [{ purchase_orders }, { error: getPoError }] = useQuery(getPurchase_orders, {
-    orderBy: { po_id: "desc" }, // Do not change the order this will affect on LatestPO function
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-  })
-
-  console.log("last po details", purchase_orders)
+  // const [{ purchase_orders }, { error: getPoError }] = useQuery(getPurchase_orders, {
+  //   orderBy: { po_id: "desc" }, // Do not change the order this will affect on LatestPO function
+  //   skip: ITEMS_PER_PAGE * page,
+  //   take: ITEMS_PER_PAGE,
+  // })
 
   const [{ products }, { error: productsError }] = usePaginatedQuery(getProducts, {
     orderBy: { product_id: "asc" },
@@ -1793,7 +1791,8 @@ export const RfqsList = () => {
         // activeRow={activeRow}
         // poEditState={poEditState}
       /> */}
-      <RFQPO
+
+      {/* <RFQPO
         products={products}
         vendors={vendors}
         purchaseDetails={purchaseDetails}
@@ -1803,7 +1802,8 @@ export const RfqsList = () => {
         setPurchaseDialog={setPurchaseDialog}
         setItemList={setPoItemList}
         initialItemState={initialPoItemState}
-      />
+      /> */}
+
       {/* <CreatePo
         rfqData={activeRow}
         productOptions={productOptions}
