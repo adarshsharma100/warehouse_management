@@ -27,10 +27,18 @@ import { InputNumber } from "primereact/inputnumber"
 import * as Yup from "yup"
 import classNames from "classnames"
 import { AutoComplete } from "primereact/autocomplete"
-import { createCSVFormat, createSearchFunction, tsuccess } from "app/constants"
+import { createCSVFormat, createSearchFunction, filterExistingValues, tsuccess } from "app/constants"
 import ErrorCard from "components/ErrorCard"
 import LoaderFullScreen from "components/LoaderFullScreen"
 import { FilterMatchMode, FilterOperator } from "primereact/api"
+import Link from "next/link"
+// import Creatable from "react-select/dist/declarations/src/Creatable"
+import Creatable from "react-select/creatable"
+import chroma from "chroma-js"
+import { Dropdown } from "primereact/dropdown"
+
+
+
 const ITEMS_PER_PAGE = 100
 
 export const ProductsList = () => {
@@ -47,34 +55,38 @@ export const ProductsList = () => {
 
   const intialProductDetails = {
     name: "",
+    productName:'',
     description: "",
-    Type: "",
-    sku: "",
-    unit: "",
-    category: "",
+    product_type: "",
+    products_sku: "",
+    product_unit: "",
+    product_category: "",
     productCode: "",
-    length: "",
-    width: "",
-    height: "",
-    weight: "",
-    Color: "",
-    brand: "",
-    taxcode: "",
-    gstcode: "",
-    hsnCode: "",
-    tags: "",
+    product_length: "",
+    product_width: "",
+    product_height: "",
+    product_weight: "",
+    product_Color: "",
+    product_brand: "",
+    product_taxcode: "",
+    product_gstcode: "",
+    product_hsnCode: "",
+    // product_tags: "",
+    tags: [],
     imageurl: "",
-    costPrice: "",
-    mrp: "",
-    basePrice: "",
-    enabled: "",
-    taxCalcuation: "",
+    product_costPrice: "",
+    product_mrp: "",
+    product_basePrice: "",
+    product_enabled: "",
+    product_taxCalcuation: "",
   }
 
   const products = [
+
     {
       product_id: 1,
       name: "Pi",
+      image: 'https://www.graylogix.in/wp-content/uploads/2021/05/IMG_20170619_150647.jpg',
       product_category: "3D Printer",
       product_length: "40",
       product_width: "80",
@@ -139,6 +151,7 @@ export const ProductsList = () => {
     {
       product_id: 2,
       name: "ESP",
+      image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTrkrwkcmjtxW1HW6-FVJPzHCyl04G7L4rtErv1qOPfpbWF6r5Z74QKuHWbOPkFzXAsPSg&usqp=CAU',
       description: "esp-desc",
       product_type: "Electronics",
       products_sku: "TIF002",
@@ -177,6 +190,7 @@ export const ProductsList = () => {
     {
       product_id: 3,
       name: "Waterproof Ultrasonic Sensor",
+      image: "https://cdn.shopify.com/s/files/1/0559/1970/6265/products/3_axis.jpg?v=1670581880",
       description: "water-desp",
       product_type: "Sensors",
       products_sku: "TIF003",
@@ -206,6 +220,7 @@ export const ProductsList = () => {
     {
       product_id: 4,
       name: "E18-D80NK Infrared Sensor Module",
+      image: 'https://m.media-amazon.com/images/I/41o00noHlhL.jpg',
       description: "description",
       product_type: "Sensors",
       products_sku: "TIF004",
@@ -585,14 +600,15 @@ export const ProductsList = () => {
       vendor_products: [],
     },
   ]
+  console.log('products: ', products.name);
   const columns = [
-    { field: "products_sku", header: "SKU" },
+    // { field: "image", header: "Image" },
+    // { field: "products_sku", header: "SKU" },
     { field: "name", header: "Name" },
     { field: "product_type", header: "Type" },
     { field: "description", header: "Description" },
     { field: "product_unit", header: "Unit" },
     { field: "product_category", header: "Category" },
-    // { field: 'product_productCode', header: 'Code' },
     { field: "product_length", header: "Length" },
     { field: "product_width", header: "Width" },
     { field: "product_height", header: "Height" },
@@ -610,12 +626,137 @@ export const ProductsList = () => {
     { field: "product_taxCalcuation", header: "Tax Calcuation" },
   ]
 
+  const styles4TagsComponent = {
+    control: (baseStyles, state) => ({
+      ...baseStyles,
+      borderColor: state.isFocused ? "#A5B4FC" : "#040d19",
+      backgroundColor: "#040d19",
+      color: "white",
+      opacity: state.isDisabled ? 0.4 : 1,
+    }),
+    menu: (baseStyles, state) => ({
+      ...baseStyles,
+      // borderColor: "red",
+      backgroundColor: "#040d19",
+    }),
+    input: (baseStyles, state) => ({
+      ...baseStyles,
+      // borderColor: "red",
+      backgroundColor: "#040d19",
+      color: "white",
+    }),
+    // option: (baseStyles, state) => ({
+    //   ...baseStyles,
+    //   backgroundColor: state.isFocused ? "grey" : "#040d19",
+    // }),
+    placeholder: (baseStyles, state) => ({
+      ...baseStyles,
+      color: "rgba(255, 255, 255, 0.6)",
+      zIndex: "1",
+    }),
+    option: (styles, { data, isDisabled, isFocused, isSelected }) => {
+      const color = chroma(data.color ?? "blue")
+
+      return {
+        ...styles,
+        backgroundColor: isDisabled
+          ? undefined
+          : isSelected
+            ? data.color
+            : isFocused
+              ? color.alpha(0.1).css()
+              : undefined,
+        color: isDisabled
+          ? "#ccc"
+          : isSelected
+            ? chroma.contrast(color, "white") > 2
+              ? "white"
+              : "black"
+            : data.color,
+        cursor: isDisabled ? "not-allowed" : "default",
+
+        ":active": {
+          ...styles[":active"],
+          backgroundColor: !isDisabled
+            ? isSelected
+              ? data.color
+              : color.alpha(0.3).css()
+            : undefined,
+        },
+      }
+    },
+    multiValue: (styles, { data }) => {
+      const color = chroma(data.color ?? "black")
+      return {
+        ...styles,
+        backgroundColor: color.alpha(0.1).css(),
+      }
+    },
+    multiValueLabel: (styles, { data }) => ({
+      ...styles,
+      color: data.color,
+    }),
+    multiValueRemove: (styles, { data }) => ({
+      ...styles,
+      color: data.color,
+      ":hover": {
+        backgroundColor: data.color,
+        color: "white",
+      },
+    }),
+  }
+
+  let tags
+  const existingTags = tags?.map((ele) => ({
+    value: ele.id,
+    label: ele.name,
+    color: ele.color,
+    // color: getRandomColor(),
+  }))
+
   const [productDetails, setProductDetails] = useState(intialProductDetails)
   const [productDialog, setProductDialog] = useState(false)
   const [productEditState, setProductEditState] = useState(false)
+  console.log('productEditState: ', productEditState);
+  const [productForm, setProductForm] = useState(false)
+  const [activeProduct, setActiveProduct] = useState(true)
   const [activeRowData, setActiveRowData] = useState({})
   const [errorProducts, setErrorProducts] = useState([])
   const [btnVisibility, setBtnVisibility] = useState(false)
+  const [filteredSuggestions, setFilteredSuggestions] = useState<any>(null)
+
+  const productOptions = products.map(({ product_id, name, products_sku, description }) => {
+    return {
+      name: `${products_sku} - ${name}`,
+      product_id,
+      description,
+    }
+  })
+
+
+  const productsId = products.map((ele, i) => ele.product_id)
+  const inventoryProductsId = products.map((ele, i) => ele.products_product_id)
+
+  const avilableProductsID = filterExistingValues(productsId, inventoryProductsId)
+
+  const avilableProducts = productOptions.filter((ele, i) =>
+    avilableProductsID.includes(ele.product_id)
+  )
+
+  const searchProducts = (event: { query: string }) => {
+    setTimeout(() => {
+      let _filteredSuggestions
+      if (!event.query.trim().length) {
+        _filteredSuggestions = [...avilableProducts]
+      } else {
+        _filteredSuggestions = avilableProducts.filter((element) => {
+          return element.name.toLowerCase().includes(event.query.toLowerCase())
+        })
+      }
+
+      setFilteredSuggestions(_filteredSuggestions)
+    }, 50)
+  }
   const toast = useRef(null)
   const scrolToTop = useRef<HTMLDivElement>(null)
   const clearUpload = useRef<FileUpload>(null)
@@ -626,6 +767,7 @@ export const ProductsList = () => {
   const [globalFilterValue, setGlobalFilterValue] = useState("")
 
   const [showData, setShowData] = useState([])
+  const [showProduct, setShowProduct] = useState([])
   const [selectedColumns, setSelectedColumns] = useState(columns)
 
   const onColumnToggle = (event) => {
@@ -665,6 +807,7 @@ export const ProductsList = () => {
       value: [
         { field: "products_sku", header: "SKU" },
         { field: "name", header: "Name" },
+        { field: "image", header: "Image" },
         { field: "product_type", header: "Type" },
         { field: "product_unit", header: "Unit" },
       ],
@@ -808,6 +951,7 @@ export const ProductsList = () => {
           "NAME",
           "Description",
           "SKU",
+          'Image',
           "Type",
           "Unit",
           "Product Code",
@@ -874,12 +1018,13 @@ export const ProductsList = () => {
     initialValues: productDetails,
     validationSchema: Yup.object().shape({
       name: Yup.string().required("*Required"),
-      category: Yup.mixed().required("*Required"),
-      sku: Yup.string().required("*Required"),
+      product_category: Yup.mixed().required("*Required"),
+      product_sku: Yup.string().required("*Required"),
     }),
     onSubmit: async (data) => {
       console.log("data", data)
       setShowData(<pre>{JSON.stringify(data, null, 2)}</pre>)
+      setShowProduct(<pre>{JSON.stringify(inputs, null, 2)}</pre>)
 
       return
 
@@ -939,6 +1084,7 @@ export const ProductsList = () => {
       "DESCRIPTION",
       "SKU",
       "TYPE",
+      'IMAGE',
       "UNIT",
       "CODE",
       "LENGTH",
@@ -985,6 +1131,61 @@ export const ProductsList = () => {
     msgArray.splice(i, 1)
     setErrorMsgs(msgArray)
   }
+
+  const [selectedStatus, setSelectedStatus] = useState(null);
+  // console.log('selectedStatus: ', selectedStatus);
+  const StatusCheck = [
+    { name: 'Simple' },
+    { name: 'Bundle' },
+  ];
+  // console.log('StatusCheck: ', StatusCheck);
+  const ProductOption = products.map(({ products_sku, name }) => { return { name: `${products_sku} - ${name}` } })
+  // const productOptions = products.map(({ product_id, name, products_sku, description }) => {
+  //   return {
+  //     name: `${products_sku} - ${name}`,
+  //     // product_id,
+  //     // description,
+  //   }
+  // })
+
+
+  // = [
+  //   'Pi', 'ESP', 'Waterproof Ultrasonic Sensor',
+  //   'E18-D80NK Infrared Sensor Module',
+  //   'MQ-135 gas sensor Module',
+  //   'Turbidity Sensor',
+  // ]
+
+  const [inputs, setInputs] = useState([{ product:'', quantity: '' }]);
+  // const [inputs,setInputs] = useState(products)
+  // console.log('inputs: ', inputs.map((i) => i.name));
+
+  // const handleAddInput = () => {
+  //   const lastInput = inputs[inputs.length - 1];
+  //   if (lastInput.product !== '' && lastInput.quantity !== '') {
+  //     setInputs([...inputs, { product: '', quantity: '' }]);
+  //   }
+  // };
+
+  const handleAddInput = () => {
+    setInputs([...inputs, { product: '', quantity: '' }]);
+  };
+
+
+  const handleRemoveInput = (index) => {
+    const newInputs = [...inputs];
+    newInputs.splice(index, 1);
+    setInputs(newInputs);
+  };
+
+
+  const handleInputChange = (event, index) => {
+    const { name, value } = event.target;
+    const newInputs = [...inputs];
+    newInputs[index][name] = value;
+    setInputs(newInputs);
+  };
+  
 
   return (
     <div className="grid w-full mr-0">
@@ -1060,8 +1261,11 @@ export const ProductsList = () => {
               label="Add Products"
               className="ml-1"
               onClick={() => {
+                setProductEditState(false)
+                setActiveProduct(false)
                 setProductDetails(intialProductDetails)
                 setProductDialog(!productDialog)
+
               }}
             />
             <span className=" flex justify-content-center align-items-center">
@@ -1105,11 +1309,10 @@ export const ProductsList = () => {
           ))}
       </div>
       <div
-        className={`col-12 ${
-          errorProducts.length
-            ? "visible scalein animation-duration-200"
-            : "hidden scaleout animation-duration-200"
-        }`}
+        className={`col-12 ${errorProducts.length
+          ? "visible scalein animation-duration-200"
+          : "hidden scaleout animation-duration-200"
+          }`}
       >
         <div className="card border-primary border-2 bg-primary-reverse">
           <h6>Following are a list of failed entries: </h6>
@@ -1134,14 +1337,30 @@ export const ProductsList = () => {
         </div>
       </div>
       <div
-        className={`col-12 ${
-          productDialog
-            ? "visible scalein animation-duration-200"
-            : "hidden scaleout animation-duration-200"
-        }`}
+        className={`col-12 ${productDialog
+          ? "visible scalein animation-duration-200"
+          : "hidden scaleout animation-duration-200"
+          }`}
       >
         <div className="card">
-          <h4>{productEditState ? "Update" : "Create"} Product</h4>
+          <div className="flex justify-content-between">
+            {/* {activeProduct ? 'Create': productEditState ? 'Update' :'Details'} */}
+
+            <h4>{activeProduct ? "Update" : "Create"} Product</h4>
+            <h4>
+              {/* {activeProduct ? 'Details' : productEditState ? 'Update' :'Create'} */}
+            </h4>
+
+            <h4>{productEditState ? <Button
+              icon="pi pi-pencil"
+              className="m-1"
+              onClick={() => setProductEditState(!productEditState)}
+            /> : <Button
+              icon="pi pi-pencil"
+              className="m-1"
+              onClick={() => setProductEditState(!productEditState)}
+            />}</h4>
+          </div>
           <form
             onSubmit={formik.handleSubmit}
             // onSubmit={async () => {
@@ -1164,117 +1383,87 @@ export const ProductsList = () => {
             className="p-fluid"
           >
             <div className="formgrid grid ">
-              {[
-                { type: "text", label: "Name*", field: "name" },
-                { type: "text", label: "SKU", field: "sku" },
-                { type: "text", label: "Type", field: "type" },
-                { type: "text", label: "Length", field: "length" },
-                { type: "text", label: "Width", field: "width" },
-                { type: "text", label: "Height", field: "height" },
-                { type: "text", label: "Weight", field: "weight" },
-                { type: "text", label: "Color", field: "Color" },
-                { type: "text", label: "Brand", field: "brand" },
-                { type: "text", label: "Tax type code", field: "taxcode" },
-                { type: "text", label: "Gst Tax type code", field: "gstcode" },
-                { type: "text", label: "HSN code", field: "hsnCode" },
-                { type: "text", label: "Tags", field: "tags" },
-                { type: "text", label: "Cost Price", field: "costPrice" },
-                { type: "text", label: "MRP", field: "mrp" },
-                { type: "text", label: "Base Price", field: "basePrice" },
-                { type: "text", label: "Enabled", field: "enabled" },
-                { type: "text", label: "Tax Calculation Type", field: "taxCalcuation" },
+              {
+                [
+                  { type: 'text', label: "Name*", field: "name", header: "Name" },
+                  { type: "text", label: "SKU", field: "products_sku", header: "SKU" },
+                  // { type: 'text', label: "Type", field: "product_type", header: "Type" },
+                  // { type:'text', label:"Description", field: "description", header: "Description" },
+                  { type: 'text', label: "Unit", field: "product_unit", header: "Unit" },
+                  // { type:'text', label:"Category", field: "product_category", header: "Category" },
+                  { type: 'text', label: "Length", field: "product_length", header: "Length" },
+                  { type: 'text', label: "Width", field: "product_width", header: "Width" },
+                  { type: 'text', label: "Height", field: "product_height", header: "Height" },
+                  { type: 'text', label: "Weight", field: "product_weight", header: "Weight" },
+                  { type: 'text', label: "Color", field: "product_Color", header: "Color" },
+                  { type: 'text', label: "Brand", field: "product_brand", header: "Brand" },
+                  { type: 'text', label: "Tax type code", field: "product_taxcode", header: "Tax code" },
+                  { type: 'text', label: "Gst Tax type code", field: "product_gstcode", header: "Gst Code" },
+                  { type: 'text', label: "HSN code", field: "product_hsnCode", header: "HSN Code" },
+                  // { type: 'text', label: "Tags", field: "product_tags", header: "Tags" },
+                  { type: 'text', label: "Cost Price", field: "product_costPrice", header: "Cost Price" },
+                  { type: 'text', label: "MRP", field: "product_mrp", header: "MRP" },
+                  { type: 'text', label: "Base Price", field: "product_basePrice", header: "Base Price" },
+                  { type: 'text', label: "Enabled", field: "product_enabled", header: "Enabled" },
+                  { type: 'text', label: "Tax Calculation Type", field: "product_taxCalcuation", header: "Tax Calcuation" },
+                ].map((ele, i) => {
+                  if (ele.type === "text") {
+                    return (
+                      <div key={`${ele.field}${i}`} className="field col-12 lg:col-3 md:col-6 mt-4">
+                        <span className="p-float-label">
+                          <InputText
+                            disabled={productEditState}
+                            id={ele.field}
+                            name={ele.field}
+                            value={formik.values[ele.field]}
+                            onChange={formik.handleChange}
+                            autoFocus
+                            className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
+                          />
+                          <label
+                            htmlFor={ele.field}
+                            className={classNames({ "p-error": isFormFieldValid(ele.field) })}
+                          >
+                            {ele.label}
+                          </label>
+                        </span>
+                        {getFormErrorMessage(ele.field)}
+                      </div>
+                    )
+                  } else {
+                    // return (
+                    //   <div key={`${ele.field}${i}`} className="field col-12 mt-4">
+                    //     <span className="p-float-label">
+                    //       <InputTextarea
+                    //         id={ele.field}
+                    //         rows={5}
+                    //         name={ele.field}
+                    //         value={formik.values.description}
+                    //         onChange={formik.handleChange}
+                    //         autoFocus
+                    //         className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
+                    //       />
+                    //       <label
+                    //         htmlFor={ele.field}
+                    //         className={classNames({ "p-error": isFormFieldValid(ele.field) })}
+                    //       >
+                    //         {ele.label}
+                    //       </label>
+                    //     </span>
+                    //     {getFormErrorMessage(ele.field)}
+                    //   </div>
+                    // )
+                  }
+                })}
 
-                // { type: "text", label: "Product Unit", field: "product_unit" },
-                // { type: "area", label: "Description", field: "description" },
-              ].map((ele, i) => {
-                if (ele.type === "text") {
-                  return (
-                    <div key={`${ele.field}${i}`} className="field col-12 lg:col-3 md:col-6 mt-4">
-                      <span className="p-float-label">
-                        <InputText
-                          id={ele.field}
-                          name={ele.field}
-                          value={formik.values[ele.field]}
-                          onChange={formik.handleChange}
-                          autoFocus
-                          className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
-                        />
-                        <label
-                          htmlFor={ele.field}
-                          className={classNames({ "p-error": isFormFieldValid(ele.field) })}
-                        >
-                          {ele.label}
-                        </label>
-                      </span>
-                      {getFormErrorMessage(ele.field)}
-                    </div>
-                  )
-                } else {
-                  // return (
-                  //   <div key={`${ele.field}${i}`} className="field col-12 mt-4">
-                  //     <span className="p-float-label">
-                  //       <InputTextarea
-                  //         id={ele.field}
-                  //         rows={5}
-                  //         name={ele.field}
-                  //         value={formik.values.description}
-                  //         onChange={formik.handleChange}
-                  //         autoFocus
-                  //         className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
-                  //       />
-                  //       <label
-                  //         htmlFor={ele.field}
-                  //         className={classNames({ "p-error": isFormFieldValid(ele.field) })}
-                  //       >
-                  //         {ele.label}
-                  //       </label>
-                  //     </span>
-                  //     {getFormErrorMessage(ele.field)}
-                  //   </div>
-                  // )
-                }
-              })}
 
-              {/* 
-              <div className="field col-12 lg:col-3 mt-4">
-                <div className="p-float-label">
-                  <AutoComplete
-                    id="product_unit"
-                    // disabled={editState}
-                    value={formik.values.product_unit}
-                    dropdown
-                    forceSelection
-                    suggestions={unitSuggestions}
-                    completeMethod={searchUnits}
-                    field="name"
-                    onChange={async (e) => {
-                      let product_unit = typeof e.value === "string" ? e.value : e.value?.name
-
-                      await formik.setValues({
-                        ...formik.values,
-                        product_unit,
-                      })
-                    }}
-                    aria-label="Product Unit"
-                    dropdownAriaLabel="Product Units"
-                    className={classNames({ "p-invalid": isFormFieldValid("product_unit") })}
-                  />
-
-                  <label
-                    htmlFor="product_unit"
-                    className={classNames({ "p-error": isFormFieldValid("product_unit") })}
-                  >
-                    Product Unit
-                  </label>
-                </div>
-                {getFormErrorMessage("product_unit")}
-              </div> */}
 
               <div className="field col-12 lg:col-3 mt-4">
                 <div className="p-float-label">
                   <AutoComplete
                     id="category"
                     // disabled={editState}
+                    disabled={productEditState}
                     value={formik?.values?.category?.name}
                     dropdown
                     forceSelection
@@ -1303,10 +1492,118 @@ export const ProductsList = () => {
                 </div>
                 {getFormErrorMessage("category")}
               </div>
+              <div className="mt-4">
+                <Dropdown disabled={productEditState} value={selectedStatus} onChange={(e) => setSelectedStatus(e.value)} options={StatusCheck} optionLabel="name"
+                  placeholder="Type" className="w-full md:w-14rem" />
+              </div>
+              <div className="field col-12  mt-4">
+
+                {selectedStatus?.name === 'Bundle' ?
+                  <div className="flex gap-3">
+
+                    {inputs.map((input, index) => (
+                      <div key={index} className='flex gap-2'>
+
+                         {/* <Dropdown
+                      //     options={ProductOption}
+                      //     placeholder='Select a product'
+                      //     name='product'
+                      //     value={input.product}
+                      //     onChange={(event) => handleInputChange(event, index)}
+                      //   /> */}
+                      
+
+                         <AutoComplete
+                          id="name"
+                          value={input.product}
+                          // value={formik.values.name}
+                          suggestions={filteredSuggestions}
+                          completeMethod={searchProducts}
+                          disabled={productEditState}
+                          dropdown
+                          forceSelection
+                          field="name"
+                          onChange={async (e) => {
+                            console.log(e.value, 'event')
+                            
+                            handleInputChange(e, index)
+                            const test = [...inputs]
+                            test[index] = { ...e.value }
+                            setInputs(test)
+                            // let name = typeof e.value === "string" ? e.value : e.value?.name
+                            // let products_product_id = e.value?.product_id
+                            // let product_description = e.value?.description
+
+                            // await formik.setValues({
+                            //   ...formik.values,
+                            //   name,
+                            //   products_product_id,
+                            //   product_description,
+                            // })
+                            // formik.values = { ...formik.values,}
+                          }}
+
+                          aria-label="products"
+                          dropdownAriaLabel="Select Product"
+                          className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                          style={{ width: '400px' }}
+                        />
+
+                        <InputText
+                          className=''
+                          type='text'
+                          placeholder='Quantity'
+                          name='quantity'
+                          value={input.quantity}
+                          onChange={(event) => handleInputChange(event, index)}
+                        />
+
+                        <Button
+                          icon="pi pi-minus"
+                          className="p-3 m-1"
+                          onClick={() => handleRemoveInput(index)}
+                        />
+                      </div>
+                    ))}
+
+                    <Button
+                      icon="pi pi-plus"
+                      className="m-1"
+                      onClick={handleAddInput}
+                    />
+                  </div>
+                  : null}
+              </div>
+
+
+
+              <div className="field col-12  mt-4">
+                <div className="p-float-label">
+                  <Creatable
+                    disabled={productEditState}
+                    classNamePrefix="tags"
+                    styles={styles4TagsComponent}
+                    isMulti
+                    options={existingTags}
+                    onChange={async (value) => {
+                      await formik.setValues({ ...formik.values, tags: value })
+                    }}
+                    value={formik.values.tags}
+                    // placeholder="Tags"
+                    isDisabled={productEditState}
+                  />
+
+                  <label htmlFor="tags" style={{ transform: "translateY(-230%)" }}>
+                    Tags
+                  </label>
+                </div>
+              </div>
+
 
               <div className="field col-12 mt-4">
                 <span className="p-float-label">
                   <InputTextarea
+                    disabled={productEditState}
                     id={"description"}
                     rows={5}
                     name={"description"}
@@ -1326,6 +1623,8 @@ export const ProductsList = () => {
               </div>
             </div>
 
+
+
             <div className="flex mt-4">
               <Button
                 type="submit"
@@ -1335,11 +1634,13 @@ export const ProductsList = () => {
               <Button
                 className="p-button-secondary"
                 type="button"
-                label="CANCLE"
+                label="CANCEL"
                 onClick={() => {
                   formik.resetForm()
                   setProductDialog(false)
                   setProductEditState(false)
+                  setActiveProduct(false)
+
                   // setProductForm(false)
                   // setVendorDetails(initialVendorState)
                 }}
@@ -1350,87 +1651,7 @@ export const ProductsList = () => {
       </div>
 
       <div>{showData}</div>
-
-      {/* <div className="col-12">
-        <div className="card">
-          <DataTable
-            value={products}
-            showGridlines
-            scrollable
-            // scrollHeight="60vh"
-            stripedRows
-            className="text-s datatable-responsive"
-            filters={filters}
-            header={header1}
-            filterDisplay="menu"
-            // globalFilterFields={["products_sku"]}
-            emptyMessage="No Results found."
-          >
-
-
-            {/* {prefix?.prefix && (
-              <Column
-                header="ID"
-                body={({ product_id }) => (
-                  <span>
-                    {prefix.prefix}_{product_id}
-                  </span>
-                )}
-              />
-            )} */}
-
-      {/* <Column field="products_sku" header="SKU" filter filterPlaceholder="Search by SKU" />
-      <Column field="name" header="Name" filter filterPlaceholder="Search by Name" />
-      <Column field="product_type" header="Type" filter filterPlaceholder="Search by Type" />
-      <Column
-        field="description"
-        header="Product Description"
-        filter
-        filterPlaceholder="Search by Description"
-      />
-      <Column field="product_unit" header="Unit" filter filterPlaceholder="Search by Unit" />
-      <Column
-        header="Action"
-        body={(rowData) => {
-          return (
-            <div>
-              <Button
-                icon="pi pi-pencil"
-                className="m-1"
-                onClick={async () => {
-                  setActiveRowData(rowData)
-                  setProductEditState(true)
-                  setProductDialog(true)
-                  await formik.setValues({
-                    ...rowData,
-                  })
-                  scrolToTop?.current && scrolToTop?.current.scrollIntoView()
-                }}
-              />
-              <Button
-                disabled={true}
-                icon="pi pi-trash"
-                className="m-1"
-                onClick={async () => {
-                  await deleteVendorMutation({ vendor_id: rowData.vendor_id })
-                  await refetch()
-                }}
-              />
-            </div>
-          )
-        }
-        }
-      />
-    
-
-      {/* </DataTable>
-        </div>
-      </div> */}
-
-      {/* <DataTable value={products} header={header} responsiveLayout="scroll">
-        
-        {columnComponents}
-      </DataTable> */}
+      {/* <div><pre>{JSON.stringify(inputs,null,2)}</pre></div> */}
 
       <div className="col-12">
         <div className="card">
@@ -1443,26 +1664,46 @@ export const ProductsList = () => {
             className="text-s datatable-responsive"
             filterDisplay="menu"
             emptyMessage="No Results found."
+
+            onRowClick={async (e) => {
+
+              setActiveRowData({ ...e.data })
+              setProductEditState(true)
+              setActiveProduct(true)
+              setProductDialog(true)
+              await formik.setValues({
+                ...e.data,
+              })
+              console.log('e.data: ', e.data);
+              scrolToTop?.current && scrolToTop?.current.scrollIntoView()
+            }}
+
           >
+
+            {/* <Column header="Image" body={rowData => <img src={rowData.image} alt={rowData.name} />} />, */}
+            <Column header="Image" body={rowData => <img src={rowData.image} alt="imageData" style={{ width: '300px', height: '220px' }} />} />
+            <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.products_sku} </a>} />
+
             {columnComponents}
             <Column
               header="Action"
               body={(rowData) => {
                 return (
                   <div>
-                    <Button
+                    {/* <Button
                       icon="pi pi-pencil"
                       className="m-1"
                       onClick={async () => {
                         setActiveRowData(rowData)
                         setProductEditState(true)
+                        setActiveProduct(true)
                         setProductDialog(true)
                         await formik.setValues({
                           ...rowData,
                         })
                         scrolToTop?.current && scrolToTop?.current.scrollIntoView()
                       }}
-                    />
+                    /> */}
                     <Button
                       disabled={true}
                       icon="pi pi-trash"
@@ -1487,7 +1728,7 @@ const ProductsPage = () => {
   return (
     <Suspense fallback={<Loading />}>
       <Layout>
-      <ProductsList />
+        <ProductsList />
       </Layout>
     </Suspense>
   )
