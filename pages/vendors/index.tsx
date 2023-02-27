@@ -693,6 +693,7 @@ export const VendorsList = () => {
   const initialVendorState = {
     vendor: "",
     vendor_code: "",
+    vendor_score:'',
     vendor_email: "",
     vendor_contact: "",
     vendor_gstin: "",
@@ -739,17 +740,17 @@ export const VendorsList = () => {
         backgroundColor: isDisabled
           ? undefined
           : isSelected
-          ? data.color
-          : isFocused
-          ? color.alpha(0.1).css()
-          : undefined,
+            ? data.color
+            : isFocused
+              ? color.alpha(0.1).css()
+              : undefined,
         color: isDisabled
           ? "#ccc"
           : isSelected
-          ? chroma.contrast(color, "white") > 2
-            ? "white"
-            : "black"
-          : data.color,
+            ? chroma.contrast(color, "white") > 2
+              ? "white"
+              : "black"
+            : data.color,
         cursor: isDisabled ? "not-allowed" : "default",
 
         ":active": {
@@ -812,6 +813,13 @@ export const VendorsList = () => {
     )
     setSelectedColumns(orderedSelectedColumns)
   }
+
+
+  const [selectedStatus, setSelectedStatus] = useState(null);
+  const StatusCheck = [
+    { name: 'Active'},
+    { name: 'InActive'},
+  ];
 
   const header = (
     <div style={{ textAlign: "left" }}>
@@ -1314,19 +1322,17 @@ export const VendorsList = () => {
       </div>
 
       <div
-        className={`col-12  ${
-          vendorDialog
+        className={`col-12  ${vendorDialog
             ? "visible scalein animation-duration-200"
             : "hidden scaleout animation-duration-200"
-        }`}
+          }`}
       >
         <div className="card p-4 mb-2 ">
           <form className="p-fluid" onSubmit={formik.handleSubmit}>
             {activeVendor && (
               <span
-                className={`badge status-${
-                  activeVendorData.status ? "active" : "inactive"
-                } mb-3 inline-block`}
+                className={`badge status-${activeVendorData.status ? "active" : "inactive"
+                  } mb-3 inline-block`}
               >
                 {activeVendorData.status ? "Active" : "Inactive"}
               </span>
@@ -1386,6 +1392,7 @@ export const VendorsList = () => {
               {[
                 { type: "text", label: "Name", field: "vendor" },
                 { type: "text", label: "Code", field: "vendor_code" },
+                { type: "text", label: "Vendor Score", field: "vendor_score" },
                 { type: "email", label: "Email", field: "vendor_email" },
                 { type: "text", label: "Contact Number", field: "vendor_contact" },
                 { type: "text", label: "GSTIN", field: "vendor_gstin" },
@@ -1416,8 +1423,10 @@ export const VendorsList = () => {
                       </label>
                     </span>
                     {getFormErrorMessage(ele.field)}
+
                   </div>
                 )
+
               })}
 
               <div className="field col-12 md:col-3 lg:col-2 mt-4">
@@ -1492,6 +1501,10 @@ export const VendorsList = () => {
                   </label>
                 </div>
               </div> */}
+              <div className="mt-4">
+                <Dropdown value={selectedStatus} onChange={(e) => setSelectedStatus(e.value)} options={StatusCheck} optionLabel="name"
+                  placeholder="Active InActive" className="w-full md:w-14rem" />
+              </div>
               <div className="field col-12  mt-4">
                 <div className="p-float-label">
                   <Creatable
@@ -1513,6 +1526,7 @@ export const VendorsList = () => {
                 </div>
               </div>
             </div>
+
 
             <div className="flex justify-content-end">
               {vendorEditState && (
@@ -1541,11 +1555,10 @@ export const VendorsList = () => {
       </div>
 
       <div
-        className={`col-12 ${
-          errorProducts.length
+        className={`col-12 ${errorProducts.length
             ? "visible scalein animation-duration-200"
             : "hidden scaleout animation-duration-200"
-        }`}
+          }`}
       >
         <div className="card border-primary border-2 bg-primary-reverse">
           <h6>Following are a list of failed entries: </h6>
@@ -1617,7 +1630,7 @@ export const VendorsList = () => {
               }}
               filter
               filterElement={statusFilterTemplate}
-              // className="text-center"
+            // className="text-center"
             />
           </DataTable>
         </div>
