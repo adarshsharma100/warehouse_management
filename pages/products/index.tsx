@@ -35,6 +35,7 @@ import Link from "next/link"
 // import Creatable from "react-select/dist/declarations/src/Creatable"
 import Creatable from "react-select/creatable"
 import chroma from "chroma-js"
+import { Dropdown } from "primereact/dropdown"
 
 
 
@@ -1091,6 +1092,16 @@ export const ProductsList = () => {
     setErrorMsgs(msgArray)
   }
 
+  const [selectedStatus, setSelectedStatus] = useState(null);
+  console.log('selectedStatus: ', selectedStatus);
+  const StatusCheck = [
+    { name: 'Simple' },
+    { name: 'Bundle' },
+  ];
+  console.log('StatusCheck: ', StatusCheck);
+
+
+
   return (
     <div className="grid w-full mr-0">
       <Toast ref={toast} />
@@ -1248,18 +1259,18 @@ export const ProductsList = () => {
       >
         <div className="card">
           <div className="flex justify-content-between">
-          <h4>{activeProduct ? "Update" : "Create"} Product</h4>
+            <h4>{activeProduct ? "Update" : "Create"} Product</h4>
 
 
-          <h4>{productEditState ? <Button
-            icon="pi pi-pencil"
-            className="m-1"
-            onClick={() => setProductEditState(!productEditState)}
-          /> : <Button
-            icon="pi pi-pencil"
-            className="m-1"
-            onClick={() => setProductEditState(!productEditState)}
-          />}</h4>
+            <h4>{productEditState ? <Button
+              icon="pi pi-pencil"
+              className="m-1"
+              onClick={() => setProductEditState(!productEditState)}
+            /> : <Button
+              icon="pi pi-pencil"
+              className="m-1"
+              onClick={() => setProductEditState(!productEditState)}
+            />}</h4>
           </div>
           <form
             onSubmit={formik.handleSubmit}
@@ -1287,7 +1298,7 @@ export const ProductsList = () => {
                 [
                   { type: 'text', label: "Name*", field: "name", header: "Name" },
                   { type: "text", label: "SKU", field: "products_sku", header: "SKU" },
-                  { type: 'text', label: "Type", field: "product_type", header: "Type" },
+                  // { type: 'text', label: "Type", field: "product_type", header: "Type" },
                   // { type:'text', label:"Description", field: "description", header: "Description" },
                   { type: 'text', label: "Unit", field: "product_unit", header: "Unit" },
                   // { type:'text', label:"Category", field: "product_category", header: "Category" },
@@ -1356,40 +1367,7 @@ export const ProductsList = () => {
                   }
                 })}
 
-              {/* 
-              <div className="field col-12 lg:col-3 mt-4">
-                <div className="p-float-label">
-                  <AutoComplete
-                    id="product_unit"
-                    // disabled={editState}
-                    value={formik.values.product_unit}
-                    dropdown
-                    forceSelection
-                    suggestions={unitSuggestions}
-                    completeMethod={searchUnits}
-                    field="name"
-                    onChange={async (e) => {
-                      let product_unit = typeof e.value === "string" ? e.value : e.value?.name
 
-                      await formik.setValues({
-                        ...formik.values,
-                        product_unit,
-                      })
-                    }}
-                    aria-label="Product Unit"
-                    dropdownAriaLabel="Product Units"
-                    className={classNames({ "p-invalid": isFormFieldValid("product_unit") })}
-                  />
-
-                  <label
-                    htmlFor="product_unit"
-                    className={classNames({ "p-error": isFormFieldValid("product_unit") })}
-                  >
-                    Product Unit
-                  </label>
-                </div>
-                {getFormErrorMessage("product_unit")}
-              </div> */}
 
               <div className="field col-12 lg:col-3 mt-4">
                 <div className="p-float-label">
@@ -1424,6 +1402,24 @@ export const ProductsList = () => {
                 </div>
                 {getFormErrorMessage("category")}
               </div>
+              <div className="mt-4">
+                <Dropdown value={selectedStatus} onChange={(e) => setSelectedStatus(e.value)} options={StatusCheck} optionLabel="name"
+                  placeholder="Type" className="w-full md:w-14rem" />
+              </div>
+              <div className="field col-12 lg:col-3 mt-4">
+
+                {selectedStatus?.name === 'Bundle' ?
+                  <div className="flex gap-3">
+
+                    <InputText type='text' placeholder="Products" />
+                    <InputText  className='' type='number' placeholder="Quantity" />
+                    <Button>+</Button>
+
+                  </div>
+                  : null}
+              </div>
+
+
 
               <div className="field col-12  mt-4">
                 <div className="p-float-label">
@@ -1437,7 +1433,7 @@ export const ProductsList = () => {
                     }}
                     value={formik.values.tags}
                     // placeholder="Tags"
-                   isDisabled={productEditState}
+                    isDisabled={productEditState}
                   />
 
                   <label htmlFor="tags" style={{ transform: "translateY(-230%)" }}>
@@ -1445,6 +1441,8 @@ export const ProductsList = () => {
                   </label>
                 </div>
               </div>
+
+
               <div className="field col-12 mt-4">
                 <span className="p-float-label">
                   <InputTextarea
@@ -1467,7 +1465,7 @@ export const ProductsList = () => {
               </div>
             </div>
 
-          
+
 
             <div className="flex mt-4">
               <Button
