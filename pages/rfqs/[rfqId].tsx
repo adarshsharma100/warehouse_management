@@ -1,21 +1,20 @@
-import { Suspense } from "react"
-import { Routes } from "@blitzjs/next"
-import Head from "next/head"
-import Link from "next/link"
-import { useRouter } from "next/router"
-import { useQuery, useMutation } from "@blitzjs/rpc"
-import { useParam } from "@blitzjs/next"
+import { Suspense } from "react";
+import { Routes } from "@blitzjs/next";
+import Head from "next/head";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { useQuery, useMutation } from "@blitzjs/rpc";
+import { useParam } from "@blitzjs/next";
 
-import Layout from "app/core/layouts/Layout"
-import getRfq from "app/rfqs/queries/getRfq"
-import deleteRfq from "app/rfqs/mutations/deleteRfq"
-import Loading from "components/loading"
+import Layout from "app/core/layouts/Layout";
+import getRfq from "app/rfqs/queries/getRfq";
+import deleteRfq from "app/rfqs/mutations/deleteRfq";
 
 export const Rfq = () => {
-  const router = useRouter()
-  const rfqId = useParam("rfqId", "number")
-  const [deleteRfqMutation] = useMutation(deleteRfq)
-  const [rfq] = useQuery(getRfq, { id: rfqId })
+  const router = useRouter();
+  const rfqId = useParam("rfqId", "number");
+  const [deleteRfqMutation] = useMutation(deleteRfq);
+  const [rfq] = useQuery(getRfq, { id: rfqId });
 
   return (
     <>
@@ -35,8 +34,8 @@ export const Rfq = () => {
           type="button"
           onClick={async () => {
             if (window.confirm("This will be deleted")) {
-              await deleteRfqMutation({ id: rfq.id })
-              await router.push(Routes.RfqsPage())
+              await deleteRfqMutation({ id: rfq.id });
+              router.push(Routes.RfqsPage());
             }
           }}
           style={{ marginLeft: "0.5rem" }}
@@ -45,8 +44,8 @@ export const Rfq = () => {
         </button>
       </div>
     </>
-  )
-}
+  );
+};
 
 const ShowRfqPage = () => {
   return (
@@ -57,14 +56,14 @@ const ShowRfqPage = () => {
         </Link>
       </p>
 
-      <Suspense fallback={<Loading />}>
+      <Suspense fallback={<div>Loading...</div>}>
         <Rfq />
       </Suspense>
     </div>
-  )
-}
+  );
+};
 
-ShowRfqPage.authenticate = true
-ShowRfqPage.getLayout = (page) => <Layout>{page}</Layout>
+ShowRfqPage.authenticate = true;
+ShowRfqPage.getLayout = (page) => <Layout>{page}</Layout>;
 
-export default ShowRfqPage
+export default ShowRfqPage;

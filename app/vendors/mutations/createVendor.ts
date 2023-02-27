@@ -12,6 +12,7 @@ const CreateVendor = z.object({
   vendor_code: z.string(),
   vendor_email: z.string(),
   vendor_city: z.string(),
+  vendor_state: z.string(),
   vendor_contact: z.string(),
   vendor_gstin: z.string(),
   vendor: z.string(),
@@ -24,30 +25,31 @@ export default resolver.pipe(resolver.zod(CreateVendor), resolver.authorize(), a
   // TODO: in multi-tenant app, you must add validation to ensure correct tenant
 
   let vendor = await db.vendor.create({ data: input })
-  vendor = await db.vendor.update({
-    where: { vendor_id: vendor.vendor_id },
-    data: {
-      vendor_id_helper: `TIF_VENDOR_${vendor.vendor_id}`,
-    },
-  })
-  const admins = await db.mutation_admin_mail.findMany({
-    where: {
-      mutations_functions: {
-        name: "createVendor",
-      },
-    },
-    select: {
-      id: true,
-      mutations_functions: true,
-      mutations_functions_id: true,
-      user: true,
-      user_id: true,
-    },
-  })
-  console.log("admins: ", admins)
-  const adminsEmails = admins.map(({ user }) => {
-    return user.email
-  })
-  console.log("adminsEmails: ", adminsEmails)
-  return { adminsEmails, vendor }
+  // vendor = await db.vendor.update({
+  //   where: { vendor_id: vendor.vendor_id },
+  //   data: {
+  //     vendor_id_helper: `TIF_VENDOR_${vendor.vendor_id}`,
+  //   },
+  // })
+  // const admins = await db.mutation_admin_mail.findMany({
+  //   where: {
+  //     mutations_functions: {
+  //       name: "createVendor",
+  //     },
+  //   },
+  //   select: {
+  //     id: true,
+  //     mutations_functions: true,
+  //     mutations_functions_id: true,
+  //     user: true,
+  //     user_id: true,
+  //   },
+  // })
+  // console.log("admins: ", admins)
+  // const adminsEmails = admins.map(({ user }) => {
+  //   return user.email
+  // })
+  // console.log("adminsEmails: ", adminsEmails)
+  // return { adminsEmails, vendor }
+  return vendor
 })

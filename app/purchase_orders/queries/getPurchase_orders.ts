@@ -7,7 +7,7 @@ interface GetPurchase_ordersInput
 
 export default resolver.pipe(
   resolver.authorize(),
-  async ({ where, orderBy, skip = 0, take = 100 }: GetPurchase_ordersInput) => {
+  async ({ where, orderBy, skip = 0, take = 250 }: GetPurchase_ordersInput) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const {
       items: purchase_orders,
@@ -23,27 +23,17 @@ export default resolver.pipe(
           ...paginateArgs,
           where,
           orderBy,
-          select: {
-            agreement: true,
-            approved_on: true,
-            created_at: true,
-            expected_delivery: true,
-            expiry_date: true,
-            from_party: true,
-            purchase_order_products: true,
-            // ordered_qty: true,
-            po_id: true,
-            po_description: true,
-            po_code: true,
-            // rfq_id: true,
-            // po_status: true,
-            po_type: true,
-            // received_qty: true,
-            purchase_order_status: true,
-            purchase_order_status_pos_id: true,
-            updated_on: true,
+          include: {
             vendor: true,
-            vendor_vendor_id: true,
+            purchase_order_products: {
+              include: {
+                vendor_products: {
+                  include: {
+                    products: true,
+                  },
+                },
+              },
+            },
           },
         }),
     })

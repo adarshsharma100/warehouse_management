@@ -6,7 +6,7 @@ interface GetProductsInput
   extends Pick<Prisma.productsFindManyArgs, "where" | "orderBy" | "skip" | "take"> {}
 
 export default resolver.pipe(
-  resolver.authorize(),
+  // resolver.authorize(),
   async ({ where, orderBy, skip = 0, take = 100 }: GetProductsInput) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const {
@@ -18,7 +18,15 @@ export default resolver.pipe(
       skip,
       take,
       count: () => db.products.count({ where }),
-      query: (paginateArgs) => db.products.findMany({ ...paginateArgs, where, orderBy }),
+      query: (paginateArgs) =>
+        db.products.findMany({
+          ...paginateArgs,
+          where,
+          orderBy,
+          include: {
+            vendor_products: true,
+          },
+        }),
     })
 
     return {

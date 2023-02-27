@@ -1,11 +1,11 @@
 import React from "react"
 import Layout from "layouts/Layout"
-const test = () => {
+const grn = () => {
   return (
     <Layout>
-      <div>test</div>
+      <div>grn</div>
     </Layout>
   )
 }
 
-export default test
+export default grn

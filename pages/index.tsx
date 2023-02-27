@@ -111,5 +111,6 @@ const Home: BlitzPage = () => {
     </section>
   )
 }
+Home.redirectAuthenticatedTo = "/vendors"
 
 export default Home

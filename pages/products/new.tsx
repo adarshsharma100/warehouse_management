@@ -43,6 +43,6 @@ const NewProductPage = () => {
   )
 }
 
-NewProductPage.authenticate = true
+NewProductPage.authenticate = false
 
 export default NewProductPage

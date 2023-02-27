@@ -1,4 +1,4 @@
-import { Suspense, useState } from "react"
+import { Suspense, useEffect, useRef, useState } from "react"
 import { Routes } from "@blitzjs/next"
 import Head from "next/head"
 import Link from "next/link"
@@ -6,13 +6,15 @@ import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
 import getVendors from "app/vendors/queries/getVendors"
 import Layout from "layouts/Layout"
+import { Toast } from "primereact/toast"
 import { Button } from "primereact/button"
 import { DataTable } from "primereact/datatable"
 import { Column } from "primereact/column"
 import { Dialog } from "primereact/dialog"
 import classNames from "classnames"
 import { InputText } from "primereact/inputtext"
-import { useFormik } from "formik"
+import { Chip } from "primereact/Chip"
+import { MultiSelect } from "primereact/multiselect"
 import createVendor from "app/vendors/mutations/createVendor"
 import updateVendor from "app/vendors/mutations/updateVendor"
 import deleteVendor from "app/vendors/mutations/deleteVendor"
@@ -24,36 +26,838 @@ import Loading from "components/loading"
 import nodemailer from "nodemailer"
 import { mail } from "helperFunctions/mail"
 import axios from "axios"
+
+import {
+  cities,
+  filterExistingValues,
+  isTrue,
+  removeKeyFromObj,
+  tError,
+  tsuccess,
+} from "app/constants"
+import { createCSVFormat } from "app/constants"
+import { AutoComplete } from "primereact/autocomplete"
+import ErrorCard from "components/ErrorCard"
+import { useFormik, Field, FieldArray, Formik, Form } from "formik"
+import * as Yup from "yup"
+import ErrorComponent from "components/ErrorComponent"
+import LoaderFullScreen from "components/LoaderFullScreen"
+import { FilterMatchMode, FilterOperator } from "primereact/api"
+import { Dropdown } from "primereact/dropdown"
+import createTag from "app/tags/mutations/createTag"
+import { Chips } from "primereact/chips"
+import { InputTextarea } from "primereact/inputtextarea"
+import getTags from "app/tags/queries/getTags"
+import Creatable from "react-select/creatable"
+import chroma from "chroma-js"
+
 const ITEMS_PER_PAGE = 100
 
 export const VendorsList = () => {
   const router = useRouter()
   const page = Number(router.query.page) || 0
-  const [{ vendors, hasMore }, { refetch }] = usePaginatedQuery(getVendors, {
-    orderBy: { vendor_id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-  })
-  // const [mutation_function] = useQuery(getMutations_functions, { name:""})
-  console.log("vendors: ", vendors)
-  const [createVendorMutation] = useMutation(createVendor)
-  const [updateVendorMutation] = useMutation(updateVendor)
-  const [deleteVendorMutation] = useMutation(deleteVendor)
-  const [vendorDialog, setVendorDialog] = useState(false)
-  const [vendorDetails, setVendorDetails] = useState({
+  // const [{ vendors, hasMore }, { refetch, error: getVendorError }] = usePaginatedQuery(getVendors, {
+  //   orderBy: { vendor_id: "asc" },
+  //   skip: ITEMS_PER_PAGE * page,
+  //   take: ITEMS_PER_PAGE,
+  // })
+
+  // console.log("vendors", vendors[0])
+
+  let getVendorError
+  const vendors = [
+    {
+      vendor_id: 1,
+      vendor_code: "DA",
+      vendor_email: "mdatif796@gmail.com",
+      vendor_city: "Panaji",
+      vendor_contact: "4562879123",
+      vendor_state: "Goa",
+      vendor_gstin: "GSTRIO783211111",
+      vendor: "Dylan Alisson",
+      address: "Rio ",
+      credit_period: "411",
+      lead_time: "471",
+      status: false,
+      vendor_tags: [
+        {
+          id: 52,
+          vendor_vendor_id: 1,
+          tags_id: 1,
+          tags: {
+            id: 1,
+            name: "best",
+            color: "#ffcdd2",
+          },
+        },
+        {
+          id: 51,
+          vendor_vendor_id: 1,
+          tags_id: 21,
+          tags: {
+            id: 21,
+            name: "specializations",
+            color: "A9927D",
+          },
+        },
+      ],
+    },
+    {
+      vendor_id: 2,
+      vendor_code: "UE",
+      vendor_email: "udederson@gmail.com",
+      vendor_city: "Manuguru",
+      vendor_contact: "8956237845",
+      vendor_state: "Andhra Pradesh",
+      vendor_gstin: "GSTMAN012541111",
+      vendor: "Ud Ederson",
+      address: "Manaus",
+      credit_period: "5",
+      lead_time: "4",
+      status: true,
+      vendor_tags: [
+        {
+          id: 12,
+          vendor_vendor_id: 2,
+          tags_id: 1,
+          tags: {
+            id: 1,
+            name: "best",
+            color: "#ffcdd2",
+          },
+        },
+        {
+          id: 3,
+          vendor_vendor_id: 2,
+          tags_id: 2,
+          tags: {
+            id: 2,
+            name: "poor",
+            color: "#FCFF4B",
+          },
+        },
+        {
+          id: 29,
+          vendor_vendor_id: 2,
+          tags_id: 6,
+          tags: {
+            id: 6,
+            name: "priority",
+            color: "F1A208",
+          },
+        },
+      ],
+    },
+    {
+      vendor_id: 3,
+      vendor_code: "TE",
+      vendor_email: "thomasEdison@gmail.com",
+      vendor_city: "Miraj",
+      vendor_contact: "8954236172",
+      vendor_state: "Maharashtra",
+      vendor_gstin: "GSTMIL009222222",
+      vendor: "Thomas Edison",
+      address: "Milan",
+      credit_period: "4",
+      lead_time: "4",
+      status: false,
+      vendor_tags: [
+        {
+          id: 7,
+          vendor_vendor_id: 3,
+          tags_id: 1,
+          tags: {
+            id: 1,
+            name: "best",
+            color: "#ffcdd2",
+          },
+        },
+        {
+          id: 30,
+          vendor_vendor_id: 3,
+          tags_id: 4,
+          tags: {
+            id: 4,
+            name: "delivery time",
+            color: "#FFFFFF",
+          },
+        },
+      ],
+    },
+    {
+      vendor_id: 4,
+      vendor_code: "KM",
+      vendor_email: "kamehameha@gmail.com",
+      vendor_city: "Tonk",
+      vendor_contact: "7856124391",
+      vendor_state: "Rajasthan",
+      vendor_gstin: "GSTTK0097811111",
+      vendor: "Kamehameha",
+      address: "Tokyo",
+      credit_period: "7",
+      lead_time: "4",
+      status: true,
+      vendor_tags: [
+        {
+          id: 9,
+          vendor_vendor_id: 4,
+          tags_id: 1,
+          tags: {
+            id: 1,
+            name: "best",
+            color: "#ffcdd2",
+          },
+        },
+        {
+          id: 31,
+          vendor_vendor_id: 4,
+          tags_id: 10,
+          tags: {
+            id: 10,
+            name: "certifications",
+            color: "5E4352",
+          },
+        },
+        {
+          id: 33,
+          vendor_vendor_id: 4,
+          tags_id: 21,
+          tags: {
+            id: 21,
+            name: "specializations",
+            color: "A9927D",
+          },
+        },
+        {
+          id: 32,
+          vendor_vendor_id: 4,
+          tags_id: 25,
+          tags: {
+            id: 25,
+            name: "awards",
+            color: null,
+          },
+        },
+        {
+          id: 19,
+          vendor_vendor_id: 4,
+          tags_id: 26,
+          tags: {
+            id: 26,
+            name: "inventory",
+            color: "A1B5D8",
+          },
+        },
+      ],
+    },
+    {
+      vendor_id: 5,
+      vendor_code: "RH",
+      vendor_email: "rahul@gmail.com",
+      vendor_city: "Dumka",
+      vendor_contact: "4556788925",
+      vendor_state: "Jharkhand",
+      vendor_gstin: "GSTDUB012541111",
+      vendor: "Rahul",
+      address: "Dubai",
+      credit_period: "3",
+      lead_time: "4",
+      status: true,
+      vendor_tags: [
+        {
+          id: 16,
+          vendor_vendor_id: 5,
+          tags_id: 12,
+          tags: {
+            id: 12,
+            name: "customer service",
+            color: "427AA1",
+          },
+        },
+        {
+          id: 20,
+          vendor_vendor_id: 5,
+          tags_id: 14,
+          tags: {
+            id: 14,
+            name: "payment options",
+            color: "D9F9A5",
+          },
+        },
+      ],
+    },
+    {
+      vendor_id: 123,
+      vendor_code: "VJ",
+      vendor_email: "varunram.66@gmail.com",
+      vendor_city: "Bangalore",
+      vendor_contact: "7892496089",
+      vendor_state: "Karnataka",
+      vendor_gstin: "GSTN97313398111",
+      vendor: "Varun",
+      address: "Hennur",
+      credit_period: "12",
+      lead_time: "21",
+      status: false,
+      vendor_tags: [
+        {
+          id: 21,
+          vendor_vendor_id: 123,
+          tags_id: 2,
+          tags: {
+            id: 2,
+            name: "poor",
+            color: "#FCFF4B",
+          },
+        },
+      ],
+    },
+    {
+      vendor_id: 133,
+      vendor_code: "iotif",
+      vendor_email: "iot@gmail.com",
+      vendor_city: "Gopalganj",
+      vendor_contact: "4567892567",
+      vendor_state: "Bihar",
+      vendor_gstin: "GSTO14562398745",
+      vendor: "TIF",
+      address: "banglore",
+      credit_period: "10",
+      lead_time: "12",
+      status: false,
+      vendor_tags: [
+        {
+          id: 5,
+          vendor_vendor_id: 133,
+          tags_id: 1,
+          tags: {
+            id: 1,
+            name: "best",
+            color: "#ffcdd2",
+          },
+        },
+        {
+          id: 22,
+          vendor_vendor_id: 133,
+          tags_id: 30,
+          tags: {
+            id: 30,
+            name: "logistics",
+            color: "b908c9",
+          },
+        },
+      ],
+    },
+    {
+      vendor_id: 134,
+      vendor_code: "KR",
+      vendor_email: "kar@gmail.com",
+      vendor_city: "Cambay",
+      vendor_contact: "8987634523",
+      vendor_state: "Gujarat",
+      vendor_gstin: "GSTI87640111111",
+      vendor: "Karan",
+      address: "12th street ",
+      credit_period: "4",
+      lead_time: "5",
+      status: true,
+      vendor_tags: [
+        {
+          id: 53,
+          vendor_vendor_id: 134,
+          tags_id: 4,
+          tags: {
+            id: 4,
+            name: "delivery time",
+            color: "#FFFFFF",
+          },
+        },
+        {
+          id: 54,
+          vendor_vendor_id: 134,
+          tags_id: 16,
+          tags: {
+            id: 16,
+            name: "warranty",
+            color: "679436",
+          },
+        },
+        {
+          id: 23,
+          vendor_vendor_id: 134,
+          tags_id: 20,
+          tags: {
+            id: 20,
+            name: "lead time",
+            color: "EAC5D8",
+          },
+        },
+        {
+          id: 55,
+          vendor_vendor_id: 134,
+          tags_id: 22,
+          tags: {
+            id: 22,
+            name: "availability",
+            color: "D9F9A5",
+          },
+        },
+        {
+          id: 56,
+          vendor_vendor_id: 134,
+          tags_id: 101,
+          tags: {
+            id: 101,
+            name: "awesome",
+            color: "5E0035",
+          },
+        },
+      ],
+    },
+    {
+      vendor_id: 135,
+      vendor_code: "RA",
+      vendor_email: "raj@gail.com",
+      vendor_city: "banglor",
+      vendor_contact: "1546237964",
+      vendor_state: "Karnataka",
+      vendor_gstin: "GSTI14254572222",
+      vendor: "Raj",
+      address: "11th street",
+      credit_period: "11",
+      lead_time: "12",
+      status: true,
+      vendor_tags: [
+        {
+          id: 6,
+          vendor_vendor_id: 135,
+          tags_id: 1,
+          tags: {
+            id: 1,
+            name: "best",
+            color: "#ffcdd2",
+          },
+        },
+      ],
+    },
+    {
+      vendor_id: 147,
+      vendor_code: "FK",
+      vendor_email: "xylene8@gmail.com",
+      vendor_city: "Salur",
+      vendor_contact: "4567891238",
+      vendor_state: "Andhra Pradesh",
+      vendor_gstin: "GSTIN6786543467",
+      vendor: "Frank",
+      address: "11",
+      credit_period: "11",
+      lead_time: "11",
+      status: true,
+      vendor_tags: [
+        {
+          id: 25,
+          vendor_vendor_id: 147,
+          tags_id: 2,
+          tags: {
+            id: 2,
+            name: "poor",
+            color: "#FCFF4B",
+          },
+        },
+      ],
+    },
+    {
+      vendor_id: 168,
+      vendor_code: "z",
+      vendor_email: "z@g.com",
+      vendor_city: "Chirala",
+      vendor_contact: "1456987856",
+      vendor_state: "Andhra Pradesh",
+      vendor_gstin: "145698712345698",
+      vendor: "z",
+      address: "asd",
+      credit_period: "45",
+      lead_time: "56",
+      status: true,
+      vendor_tags: [
+        {
+          id: 35,
+          vendor_vendor_id: 168,
+          tags_id: 5,
+          tags: {
+            id: 5,
+            name: "location",
+            color: "#E4D6A7",
+          },
+        },
+        {
+          id: 26,
+          vendor_vendor_id: 168,
+          tags_id: 26,
+          tags: {
+            id: 26,
+            name: "inventory",
+            color: "A1B5D8",
+          },
+        },
+      ],
+    },
+    {
+      vendor_id: 170,
+      vendor_code: "asq",
+      vendor_email: "d@c.com",
+      vendor_city: "Wanaparthy",
+      vendor_contact: "1234567894",
+      vendor_state: "Andhra Pradesh",
+      vendor_gstin: "123456789568745",
+      vendor: "q",
+      address: "sda",
+      credit_period: "12",
+      lead_time: "45",
+      status: true,
+      vendor_tags: [
+        {
+          id: 18,
+          vendor_vendor_id: 170,
+          tags_id: 15,
+          tags: {
+            id: 15,
+            name: "return policy",
+            color: "A9927D",
+          },
+        },
+        {
+          id: 36,
+          vendor_vendor_id: 170,
+          tags_id: 19,
+          tags: {
+            id: 19,
+            name: "quantity discounts",
+            color: "005C69",
+          },
+        },
+      ],
+    },
+    {
+      vendor_id: 171,
+      vendor_code: "m",
+      vendor_email: "m2@G.COM",
+      vendor_city: "Zahirabad",
+      vendor_contact: "1456239875",
+      vendor_state: "Andhra Pradesh",
+      vendor_gstin: "123654789632145",
+      vendor: "m",
+      address: "WSAQ",
+      credit_period: "45",
+      lead_time: "69",
+      status: true,
+      vendor_tags: [
+        {
+          id: 17,
+          vendor_vendor_id: 171,
+          tags_id: 2,
+          tags: {
+            id: 2,
+            name: "poor",
+            color: "#FCFF4B",
+          },
+        },
+        {
+          id: 34,
+          vendor_vendor_id: 171,
+          tags_id: 19,
+          tags: {
+            id: 19,
+            name: "quantity discounts",
+            color: "005C69",
+          },
+        },
+      ],
+    },
+    {
+      vendor_id: 173,
+      vendor_code: "SWD",
+      vendor_email: "SD@GMAIL.COM",
+      vendor_city: "Bellampalle",
+      vendor_contact: "7895263654",
+      vendor_state: "Andhra Pradesh",
+      vendor_gstin: "SDEF412C5D6E3S6",
+      vendor: "vj",
+      address: "STRING ",
+      credit_period: "56",
+      lead_time: "85",
+      status: true,
+      vendor_tags: [
+        {
+          id: 27,
+          vendor_vendor_id: 173,
+          tags_id: 21,
+          tags: {
+            id: 21,
+            name: "specializations",
+            color: "A9927D",
+          },
+        },
+        {
+          id: 13,
+          vendor_vendor_id: 173,
+          tags_id: 22,
+          tags: {
+            id: 22,
+            name: "availability",
+            color: "D9F9A5",
+          },
+        },
+      ],
+    },
+    {
+      vendor_id: 192,
+      vendor_code: "AS",
+      vendor_email: "AS@gmail.com",
+      vendor_city: "AS",
+      vendor_contact: "AS",
+      vendor_state: "AS",
+      vendor_gstin: "AS",
+      vendor: "AS",
+      address: "AS",
+      credit_period: "AS",
+      lead_time: "AS",
+      status: true,
+      vendor_tags: [],
+    },
+  ]
+
+  const columns = [
+    { field: "vendor", header: "Vendor" },
+    { field: "vendor_code", header: "Code" },
+    { field: "branch_code", header: "BranchCode" },
+    { field: "vendor_email", header: "Email" },
+    { field: "vendor_city", header: "City" },
+    { field: "vendor_state", header: "State" },
+    { field: "vendor_contact", header: "Contact" },
+    { field: "vendor_gstin", header: "GSTIN" },
+    { field: "address", header: "Address" },
+    { field: "lead_time", header: "Lead Time" },
+    // { field: '', header: 'Credit Time' },
+    { field: "credit_period", header: "Credit Peroid" },
+    { field: "status", header: "Status" },
+  ]
+  // const [{ tags }, { refetch: refeatchTags }] = useQuery(getTags, {
+  //   orderBy: { id: "asc" },
+  //   skip: ITEMS_PER_PAGE * page,
+  //   take: ITEMS_PER_PAGE,
+  // })
+
+  function getRandomColor() {
+    // const array = [
+    //   "#A1B5D8",
+    //   "#B3CBB9",
+    //   "#72B01D",
+    //   "#E6C0E9",
+    //   "#8D89A6",
+    //   "#9BBEC7",
+    //   "#F6E27F",
+    //   "#9BBEC7",
+    //   "#8491A3",
+    //   "#8491A3",
+    //   "#679436",
+    //   "#427AA1",
+    //   "#5D2E46",
+    //   "#5E0035",
+    //   "#005C69",
+    //   "#EAC5D8",
+    //   "#A9927D",
+    //   "#D9F9A5",
+    //   "#96C0B7",
+    //   "#E43F6F",
+    //   "#F56476",
+    //   "#5E4352",
+    //   "#50A2A7",
+    //   "#E4D6A7",
+    //   "#F1A208",
+    //   "#06A77D",
+    //   "#F0E100",
+    //   "#FCFF4B",
+    // ]
+
+    const colors = tags?.map((ele) => ele.color)
+    return colors[Math.floor(Math.random() * colors.length)]
+  }
+  let tags
+  const existingTags = tags?.map((ele) => ({
+    value: ele.id,
+    label: ele.name,
+    color: ele.color,
+    // color: getRandomColor(),
+  }))
+
+  const initialVendorState = {
+    vendor: "",
     vendor_code: "",
-    // vendor_sku: "",
+    vendor_score:'',
     vendor_email: "",
-    vendor_city: "",
     vendor_contact: "",
     vendor_gstin: "",
-    vendor: "",
-    address: "",
     credit_period: "",
     lead_time: "",
-  })
-  console.log("vendorDetails: ", vendorDetails)
+    address: "",
+    vendor_city: "",
+    vendor_state: "",
+    tags: [],
+  }
+  const styles4TagsComponent = {
+    control: (baseStyles, state) => ({
+      ...baseStyles,
+      borderColor: state.isFocused ? "#A5B4FC" : "#040d19",
+      backgroundColor: "#040d19",
+      color: "white",
+      opacity: state.isDisabled ? 0.4 : 1,
+    }),
+    menu: (baseStyles, state) => ({
+      ...baseStyles,
+      // borderColor: "red",
+      backgroundColor: "#040d19",
+    }),
+    input: (baseStyles, state) => ({
+      ...baseStyles,
+      // borderColor: "red",
+      backgroundColor: "#040d19",
+      color: "white",
+    }),
+    // option: (baseStyles, state) => ({
+    //   ...baseStyles,
+    //   backgroundColor: state.isFocused ? "grey" : "#040d19",
+    // }),
+    placeholder: (baseStyles, state) => ({
+      ...baseStyles,
+      color: "rgba(255, 255, 255, 0.6)",
+      zIndex: "1",
+    }),
+    option: (styles, { data, isDisabled, isFocused, isSelected }) => {
+      const color = chroma(data.color ?? "blue")
+
+      return {
+        ...styles,
+        backgroundColor: isDisabled
+          ? undefined
+          : isSelected
+            ? data.color
+            : isFocused
+              ? color.alpha(0.1).css()
+              : undefined,
+        color: isDisabled
+          ? "#ccc"
+          : isSelected
+            ? chroma.contrast(color, "white") > 2
+              ? "white"
+              : "black"
+            : data.color,
+        cursor: isDisabled ? "not-allowed" : "default",
+
+        ":active": {
+          ...styles[":active"],
+          backgroundColor: !isDisabled
+            ? isSelected
+              ? data.color
+              : color.alpha(0.3).css()
+            : undefined,
+        },
+      }
+    },
+    multiValue: (styles, { data }) => {
+      const color = chroma(data.color ?? "black")
+      return {
+        ...styles,
+        backgroundColor: color.alpha(0.1).css(),
+      }
+    },
+    multiValueLabel: (styles, { data }) => ({
+      ...styles,
+      color: data.color,
+    }),
+    multiValueRemove: (styles, { data }) => ({
+      ...styles,
+      color: data.color,
+      ":hover": {
+        backgroundColor: data.color,
+        color: "white",
+      },
+    }),
+  }
+
+  const [createVendorMutation, { error: vendorCreationError, isLoading: creatingVendor }] =
+    useMutation(createVendor)
+  const [updateVendorMutation, { error: vendorUpdationError, isLoading: updatingVendor }] =
+    useMutation(updateVendor)
+
+  const [createTags] = useMutation(createTag)
+
+  const [deleteVendorMutation] = useMutation(deleteVendor)
+  const [vendorDialog, setVendorDialog] = useState(false)
+  const [vendorDetails, setVendorDetails] = useState(initialVendorState)
+  const [errorProducts, setErrorProducts] = useState([])
   const [activeVendor, setActiveVendor] = useState(false)
+  console.log("activeVendor", activeVendor)
+  const [activeVendorData, setActiveVendorData] = useState({})
+  const [vendorEditState, setVendorEditState] = useState(false)
+  const [activeRowData, setActiveRowData] = useState({})
+  const [productEditState, setProductEditState] = useState(false)
+  const [productDialog, setProductDialog] = useState(false)
+  const scrolToTop = useRef<HTMLDivElement>(null)
+  const [showData, setShowData] = useState([])
+  const [selectedColumns, setSelectedColumns] = useState(columns)
+
+  const onColumnToggle = (event) => {
+    let selectedColumns = event.value
+    let orderedSelectedColumns = columns.filter((col) =>
+      selectedColumns.some((sCol) => sCol.field === col.field)
+    )
+    setSelectedColumns(orderedSelectedColumns)
+  }
+
+
+  const [selectedStatus, setSelectedStatus] = useState(null);
+  const StatusCheck = [
+    { name: 'Active'},
+    { name: 'InActive'},
+  ];
+
+  const header = (
+    <div style={{ textAlign: "left" }}>
+      <MultiSelect
+        value={selectedColumns}
+        options={columns}
+        optionLabel="header"
+        onChange={onColumnToggle}
+        style={{ width: "20em" }}
+      />
+    </div>
+  )
+
+  const columnComponents = selectedColumns.map((col) => {
+    return (
+      <Column
+        key={col.field}
+        field={col.field}
+        header={col.header}
+        filter
+        filterPlaceholder="Search...."
+      />
+    )
+  })
+
+  useEffect(() => {
+    const obj = {
+      value: [
+        { field: "vendor", header: "Vendor" },
+        { field: "vendor_code", header: "Code" },
+        { field: "vendor_email", header: "Email" },
+        { field: "vendor_city", header: "City" },
+      ],
+    }
+    onColumnToggle(obj)
+  }, [])
+
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
   const goToNextPage = () => router.push({ query: { page: page + 1 } })
   const renderFooter = () => {
@@ -63,43 +867,353 @@ export const VendorsList = () => {
       </div>
     )
   }
+  console.log("active", activeVendorData)
 
+  const [filters, setFilters] = useState({})
+  const [globalFilterValue, setGlobalFilterValue] = useState("")
+
+  const clearFilter = () => {
+    initFilters()
+  }
+  const onGlobalFilterChange = (e) => {
+    const value = e.target.value
+    let _filters1 = { ...filters }
+    _filters1["global"].value = value
+
+    setFilters(_filters1)
+    setGlobalFilterValue(value)
+  }
+  const initFilters = () => {
+    setFilters({
+      global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+
+      vendor: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      vendor_code: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      vendor_email: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      vendor_city: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      vendor_state: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      vendor_contact: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      vendor_gstin: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      address: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+      },
+      status: {
+        operator: FilterOperator.OR,
+        constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }],
+      },
+    })
+    setGlobalFilterValue("")
+  }
+  const statuses = [true, false]
+
+  const statusFilterTemplate = (options) => {
+    return (
+      <Dropdown
+        value={options.value}
+        options={statuses}
+        onChange={(e) => options.filterCallback(e.value, options.index)}
+        itemTemplate={statusItemTemplate}
+        placeholder="Select a Status"
+        className="p-column-filter"
+        showClear
+      />
+    )
+  }
+  const statusItemTemplate = (option) => {
+    return (
+      <span className={`badge status-${option ? "active" : "inactive"}`}>
+        {option ? "Active" : "Inactive"}
+      </span>
+    )
+  }
+
+  const renderHeader = () => {
+    return (
+      <div className="flex justify-content-between">
+        <MultiSelect
+          value={selectedColumns}
+          options={columns}
+          optionLabel="header"
+          onChange={onColumnToggle}
+          style={{ width: "20em" }}
+        />
+        <div className="flex gap-4">
+          <span className="p-input-icon-left">
+            <i className="pi pi-search" />
+            <InputText
+              value={globalFilterValue}
+              onChange={onGlobalFilterChange}
+              placeholder="Keyword Search"
+            />
+          </span>
+          <Button
+            type="button"
+            icon="pi pi-filter-slash"
+            label="Clear"
+            className="p-button-outlined"
+            onClick={clearFilter}
+          />
+        </div>
+      </div>
+    )
+  }
+  const header1 = renderHeader()
+  const toast = useRef(null)
+  const scrollToTop = useRef<HTMLDivElement>(null)
+
+  const vCsvFormatDetails = {
+    headers: [
+      "CODE",
+      "EMAIL",
+      "CITY",
+      "STATE",
+      "CONTACT",
+      "GSTIN",
+      "NAME",
+      "ADDRESS",
+      "CREDIT_PERIOD",
+      "LEAD_TIME",
+    ],
+    name: "Vendor-format.csv",
+  }
+  const [btnVisibility, setBtnVisibility] = useState(false)
+  const clearUpload = useRef<FileUpload>(null)
+  const onBasicUpload = async (e) => {
+    const csv = [] // this will contain all the data of imported csv file
+    papa.parse(e.files[0], {
+      header: true,
+      skipEmptyLines: true,
+      step: async ({ data }, parser) => {
+        let index = 2
+        setErrorProducts([])
+        const missingKey = [
+          "CODE",
+          "EMAIL",
+          "CITY",
+          "STATE",
+          "CONTACT",
+          "GSTIN",
+          "NAME",
+          "ADDRESS",
+          "CREDIT_PERIOD",
+          "LEAD_TIME",
+        ].find((key) => !(key in data))
+        if (missingKey) {
+          setErrorProducts([...errorProducts, { message: `Column ${missingKey} missing.` }])
+          parser.abort()
+        }
+        await createVendorMutation(
+          {
+            vendor_code: data["CODE"],
+            vendor_email: data["EMAIL"],
+            vendor_city: data["CITY"],
+            vendor_state: data["STATE"],
+            vendor_contact: data["CONTACT"],
+            vendor_gstin: data["GSTIN"],
+            vendor: data["NAME"],
+            address: data["ADDRESS"],
+            credit_period: data["CREDIT_PERIOD"],
+            lead_time: data["LEAD_TIME"],
+          },
+          {
+            onSuccess: () => {
+              toast?.current?.show({
+                severity: "success",
+                summary: "Product Created",
+                detail: "Product created successfully.",
+                life: 3000,
+              })
+            },
+            onError: (error) => {
+              console.log("Product failed: ", data)
+              console.log("error: ", error)
+              setErrorProducts([
+                ...errorProducts,
+                { ...data, message: error.message, rowNum: index },
+              ])
+            },
+          }
+        )
+        await refetch()
+      },
+    })
+  }
+
+  const [filteredSuggestions, setFilteredSuggestions] = useState<any>(null)
+
+  const searchCities = (event: { query: string }) => {
+    setTimeout(() => {
+      let _filteredSuggestions
+      if (!event.query.trim().length) {
+        _filteredSuggestions = [...cities]
+      } else {
+        _filteredSuggestions = cities.filter((element) => {
+          return element.city.toLowerCase().startsWith(event.query.toLowerCase())
+        })
+      }
+
+      setFilteredSuggestions(_filteredSuggestions)
+    }, 50)
+  }
+  const [ErrorMsgs, setErrorMsgs] = useState([])
+  useEffect(() => {
+    const ErrorArray = [vendorCreationError, vendorUpdationError, getVendorError]
+
+    const msg = []
+
+    for (let err of ErrorArray) {
+      // console.log(err?.message)
+      if (err) {
+        msg.push(err)
+      }
+    }
+    setErrorMsgs(msg)
+  }, [vendorUpdationError, vendorCreationError, getVendorError])
+
+  const removeErrorBox = (i) => {
+    const msgArray = [...ErrorMsgs]
+    msgArray.splice(i, 1)
+    setErrorMsgs(msgArray)
+  }
+
+  // console.log("ErrorMsgs", ErrorMsgs[0])
   const formik = useFormik({
-    initialValues: {
-      name: "",
-      email: "",
-      password: "",
-      date: null,
-      country: null,
-      accept: false,
-    },
-    validate: (data) => {
-      let errors: any = {}
+    initialValues: vendorDetails,
+    validationSchema: Yup.object().shape({
+      vendor: Yup.string().required("*Required"),
+      vendor_email: Yup.string().email("Enter valid email").required("*Required"),
+      vendor_contact: Yup.string()
+        .min(10, "Enter Valid 10 digit Number")
+        .max(10, "Enter Valid 10 digit Number")
+        .required("*Required"),
+      vendor_gstin: Yup.string().min(15, "Enter correct GST No. ").max(15, "Enter correct GST No."),
 
-      if (!data.name) {
-        errors.name = "Name is required."
+      address: Yup.string().required("*Required"),
+      vendor_city: Yup.string().required("*Required"),
+      vendor_state: Yup.string().required("*Required"),
+    }),
+    onSubmit: async (data) => {
+      console.log("data", data)
+
+      setShowData(<pre>{JSON.stringify(data, null, 2)}</pre>)
+
+      return
+      const { vendor_id, tags, vendor_tags } = data
+      const newTags = data.tags.filter((ele) => ele?.__isNew__)
+
+      const existingTagIds = activeVendorData?.vendor_tags?.map(({ tags }, i) => tags.id)
+
+      const tagsToFilter = tags
+        .filter((ele, i) => typeof ele?.value === "number")
+        .map((ele) => ele.value)
+      console.log("tagsToFilter", tagsToFilter)
+
+      const tagsToConnect = filterExistingValues(tagsToFilter, existingTagIds).map((ele) => ({
+        tags_id: ele,
+      }))
+
+      const tagsToDelete = filterExistingValues(existingTagIds, tagsToFilter).map((ele) => ele)
+
+      console.log("Connecting", {
+        tagsToConnect,
+        existingTagIds,
+        tagsToDelete,
+      })
+
+      try {
+        await Promise.all(
+          newTags.map(
+            async (ele) =>
+              await createTags(
+                { name: ele.label },
+                {
+                  onSuccess: async ({ id }) =>
+                    await updateVendorMutation(
+                      {
+                        vendor_id,
+                        vendor_tags: {
+                          create: [
+                            {
+                              tags_id: id,
+                            },
+                          ],
+                        },
+                      }
+                      // {
+                      //   onSuccess: (data) => {
+                      //     toast?.current?.show(tsuccess(null, JSON.stringify(data, null, 2)))
+                      //   },
+                      //   onError: (data) =>
+                      //     toast?.current?.show(tsuccess(null, JSON.stringify(data, null, 2))),
+                      // }
+                    ),
+                }
+              )
+          )
+        )
+        await refeatchTags()
+
+        if (!activeVendor) {
+          await createVendorMutation(
+            { ...data },
+            {
+              onSuccess: () => {
+                toast?.current?.show(tsuccess(null, "Vendor Created successfully"))
+              },
+            }
+          )
+        } else {
+          console.log(data)
+          removeKeyFromObj(data, "vendor_tags", "tags")
+          await updateVendorMutation(
+            {
+              ...data,
+              vendor_tags: {
+                create: tagsToConnect,
+                deleteMany: {
+                  tags_id: {
+                    in: tagsToDelete,
+                  },
+                },
+              },
+            },
+            {
+              onSuccess: () => {
+                toast?.current?.show(tsuccess("Updated", "Vendor updated successfully"))
+              },
+            }
+          )
+        }
+      } catch (error) {
+        console.log(error)
       }
-
-      if (!data.email) {
-        errors.email = "Email is required."
-      } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(data.email)) {
-        errors.email = "Invalid email address. E.g. example@email.com"
-      }
-
-      if (!data.password) {
-        errors.password = "Password is required."
-      }
-
-      if (!data.accept) {
-        errors.accept = "You need to agree to the terms and conditions."
-      }
-
-      return errors
-    },
-    onSubmit: (data) => {
-      // setFormData(data)
-      // setShowMessage(true)
-
+      await refetch()
+      await refeatchTags()
+      setActiveVendor(false)
+      setVendorDialog(false)
+      setVendorEditState(false)
       formik.resetForm()
     },
   })
@@ -108,367 +1222,585 @@ export const VendorsList = () => {
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
-  const onBasicUpload = async (e) => {
-    console.log("FileUpload", e)
-    // await papa.parse(e.files[0], (data) => {
-    //   console.log("FileUpload", data)
-    // })
-    const csv = [] // this will contain all the data of imported csv file
-    papa.parse(e.files[0], {
-      header: true,
-      step: function (result) {
-        csv.push(result.data)
-      },
-      complete: async function (results, file) {
-        console.log("Complete", csv.length, "records.  ", results, "csvVendor", csv)
-        csv.pop() // to remove the last index value from csv (empty object)
-        const finalResults = csv.map(async (el) => {
-          console.log("testing", el)
 
-          // checking for null values
-          let flag = true // flag true means we are ready to call vendor mutation and vice-versa
-          let a = {}
+  useEffect(() => {
+    initFilters()
+  }, [])
 
-          // function to validate the csv file
-          const checkError = () => {
-            let errors = " " // this will contain all the error
+  console.log("formik values", formik.values)
 
-            // checking if the vendor code, vendor email and vendor gstin are unique or not
-            vendors.forEach(({ vendor_code, vendor_email, vendor_gstin }) => {
-              vendor_code.toString() === el["vendor_code"].toString()
-                ? (errors += "vendor_code should be unique. ")
-                : ""
-              vendor_email.toString() === el["vendor_email"].toString()
-                ? (errors += "vendor_email should be unique. ")
-                : ""
-              vendor_gstin.toString() === el["vendor_gstin"].toString()
-                ? (errors += "vendor_gstin should be unique. ")
-                : ""
-            })
-
-            // checking for null values
-            Object.keys(el).forEach((e) => {
-              if (!el[e]) {
-                errors += `${e} is empty. `
-              }
-            })
-
-            // destructuring el
-            const {
-              vendor,
-              vendor_city,
-              vendor_code,
-              vendor_contact,
-              vendor_email,
-              vendor_gstin,
-              address,
-              credit_period,
-              lead_time,
-            } = el
-
-            let a = {
-              vendor,
-              vendor_city,
-              vendor_code,
-              vendor_contact,
-              vendor_email,
-              vendor_gstin,
-              address,
-              credit_period,
-              lead_time,
-              error: errors,
-            }
-
-            return a
-          }
-
-          // if any of the column is empty in csv file
-          Object.keys(el).forEach((e) => {
-            if (!el[e]) {
-              flag = false
-              a = checkError()
-            }
-          })
-
-          try {
-            // flag && const adminsEmails = await createVendorMutation(el)
-            if (flag) {
-              const adminsEmails = await createVendorMutation(el)
-              if (adminsEmails.adminsEmails.length > 0) {
-                const data = JSON.stringify({
-                  to: adminsEmails.adminsEmails,
-                  subject: "testing",
-                  message: "Hey!! I don't know the message.",
-                })
-                var config = {
-                  method: "post",
-                  url: "http://localhost:3000/api/vendor",
-                  headers: {
-                    "Content-Type": "application/json",
-                    // Cookie:
-                    //   "industrial-poc_sAnonymousSessionToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJibGl0empzIjp7ImlzQW5vbnltb3VzIjp0cnVlLCJoYW5kbGUiOiJqckZqQ2MwblE5UEVvYV92d25teEs3WGU0bjRoeDhySTphand0IiwicHVibGljRGF0YSI6eyJ1c2VySWQiOm51bGx9LCJhbnRpQ1NSRlRva2VuIjoiZGRWaTNNU1M3WE1GLWlBS1E5YTFJRmtkWnJMdThfWlUifSwiaWF0IjoxNjY0NzcyNTk2LCJhdWQiOiJibGl0empzIiwiaXNzIjoiYmxpdHpqcyIsInN1YiI6ImFub255bW91cyJ9.tn2TauSX_KSb4BbavfsXnOkn_m1fe_x0UCx8woCYZdk; industrial-poc_sAntiCsrfToken=ddVi3MSS7XMF-iAKQ9a1IFkdZrLu8_ZU; industrial-poc_sPublicDataToken=eyJ1c2VySWQiOm51bGx9",
-                  },
-                  data: data,
-                }
-
-                // uncomment it when you need
-
-                axios(config)
-                  .then(function (response) {
-                    console.log("response: ", response)
-                    console.log(JSON.stringify(response.data))
-                  })
-                  .catch(function (error) {
-                    console.log(error)
-                  })
-              }
-            }
-            flag && (await refetch())
-            return a
-          } catch (error) {
-            console.log("error: ", error)
-            return checkError()
-          }
-        })
-        let failedCsv = await Promise.all(finalResults)
-
-        // removing the empty object from failedCsv
-        failedCsv = failedCsv.filter((ele) => {
-          return Object.getOwnPropertyNames(ele).length !== 0
-        })
-
-        console.log("failedCsv: ", failedCsv)
-
-        // exporting failed csv file as downloadable
-        const columns = {
-          vendor: "vendor",
-          vendor_city: "vendor_city",
-          vendor_code: "vendor_code",
-          vendor_contact: "vendor_contact",
-          vendor_email: "vendor_email",
-          vendor_gstin: "vendor_gstin",
-          address: "address",
-          credit_period: "credit_period",
-          lead_time: "lead_time",
-          error: "error",
-        }
-        await downloadCsv(failedCsv, columns, "failed vendors")
-      },
-    })
+  {
+    /*  for multiple inputs */
   }
+  const [inputs, setInputs] = useState([{ id: 1, value: "" }])
+  const [nextId, setNextId] = useState(2)
+  console.log(inputs, "inputs")
+
+  const handleAddInput = () => {
+    const lastInput: any = inputs[inputs.length - 1]
+    if (lastInput.value !== "") {
+      const newInputs = [...inputs, { id: nextId, value: "" }]
+      setInputs(newInputs)
+      setNextId(nextId + 1)
+    }
+  }
+
+  const handleInputChange = (id, value) => {
+    const newInputs = inputs.map((input) => {
+      if (input.id === id) {
+        return { id, value }
+      }
+      return input
+    })
+    setInputs(newInputs)
+  }
+  {
+    /* finish function for multiple inputs  */
+  }
+
+  const contactInfo = inputs.map((ele, i) => ({
+    number: ele,
+    id: i + 1,
+  }))
+
   return (
-    <div>
-      <Dialog
-        header="Add Vendors"
-        // visible={vendorDialog}
-        style={{ width: "50vw" }}
-        // footer={renderFooter}
-        onHide={() => setVendorDialog(false)}
-      >
-        <form
-          // onSubmit={formik.handleSubmit}
-          onSubmit={async () => {
-            console.log(vendorDetails)
-            console.log("vendorDetails: ", vendorDetails)
-            if (!activeVendor) {
-              await createVendorMutation({
-                ...vendorDetails,
-              })
-            } else {
-              await updateVendorMutation({ ...vendorDetails })
-            }
-            await refetch()
-            setActiveVendor(false)
-          }}
-          className="p-fluid"
-        >
-          <div className="formgrid grid">
-            {[
-              { type: "text", label: "Vendor", field: "vendor" },
-              { type: "text", label: "Vendor Code", field: "vendor_code" },
-              // { type: "text", label: "Vendor SKU", field: "vendor_sku" },
-              { type: "email", label: "Vendor Email", field: "vendor_email" },
-              { type: "text", label: "Vendor City", field: "vendor_city" },
-              { type: "text", label: "Vendor Contact", field: "vendor_contact" },
-              { type: "text", label: "Vendor GSTIN", field: "vendor_gstin" },
-              { type: "text", label: "Address", field: "address" },
-              { type: "text", label: "Credit Period", field: "credit_period" },
-              { type: "text", label: "Lead Time", field: "lead_time" },
-            ].map((ele, i) => {
-              return (
-                <div key={`${ele.field}${i}`} className="field col-6 mt-4">
-                  <span className="p-float-label">
-                    <InputText
-                      id={ele.field}
-                      name={ele.field}
-                      value={vendorDetails[ele.field]}
-                      onChange={(e) => {
-                        setVendorDetails({ ...vendorDetails, [ele.field]: e.target.value })
-                      }}
-                      // value={formik.values.name}
-                      // onChange={formik.handleChange}
-                      // value=
-                      autoFocus
-                      // className={classNames({ "p-invalid": isFormFieldValid("name") })}
-                    />
-                    <label
-                      htmlFor={ele.field}
-                      className={classNames({ "p-error": isFormFieldValid("name") })}
-                    >
-                      {ele.label}
-                    </label>
-                  </span>
-                  {/* {getFormErrorMessage("name")} */}
-                </div>
-              )
-            })}
+    <div className="grid w-full mr-0" ref={scrollToTop}>
+      {(creatingVendor || updatingVendor) && <LoaderFullScreen />}
+      <Toast ref={toast} />
+      <div className="col-12">
+        <div className="card flex justify-content-between mb-2  ">
+          <h2 className="mb-0">Vendor</h2>
+          <div className="flex">
+            <Button
+              icon="pi pi-plus"
+              label="Add Vendors"
+              className="ml-1"
+              onClick={() => {
+                setVendorDetails(initialVendorState)
+                setVendorDialog(true)
+                setVendorEditState(true)
+              }}
+            ></Button>
+            <span className=" flex justify-content-center align-items-center">
+              <FileUpload
+                className="ml-2 inline-block "
+                mode="basic"
+                accept=".csv"
+                customUpload
+                maxFileSize={1000000}
+                uploadHandler={(e) => onBasicUpload(e)}
+                ref={clearUpload}
+                onSelect={() => setBtnVisibility(true)}
+                onBeforeSelect={() => setBtnVisibility(false)}
+                onClear={() => setBtnVisibility(false)}
+              />
+              <Button
+                visible={btnVisibility}
+                style={{ backgroundColor: "var(--red-400)", border: "var(--red-400)" }}
+                icon="pi pi-file-excel                "
+                className=" ml-2"
+                onClick={() => {
+                  clearUpload?.current.clear()
+                  setErrorProducts([])
+                  setErrorMsgs([])
+                }}
+                tooltip="Clear the File"
+                tooltipOptions={{ position: "top" }}
+              />
+            </span>
+            <Button
+              icon="pi pi-download"
+              className="ml-2"
+              label="CSV format"
+              onClick={() => createCSVFormat(vCsvFormatDetails)}
+            />
           </div>
-          <div className="flex justify-content-end">
-            <Button type="submit" className="mr-2 mt-2" label="ADD" />
-          </div>
-        </form>
-      </Dialog>
-      <h2>Vendor List</h2>
-      <div className="flex justify-content-end mb-2 ">
-        <FileUpload
-          mode="basic"
-          accept=".csv"
-          customUpload
-          // name="demo[]"
-          // url="https://primefaces.org/primereact/showcase/upload.php"
-          // accept="image/*"
-          maxFileSize={1000000}
-          uploadHandler={(e) => onBasicUpload(e)}
-          // onUpload={(e) => onBasicUpload(e)}
-        />
-        <Button
-          icon="pi pi-plus"
-          label="Add Vendors"
-          className="ml-1"
-          onClick={() => {
-            setVendorDetails({
-              vendor_code: "",
-              // vendor_sku: "",
-              vendor_email: "",
-              vendor_city: "",
-              vendor_contact: "",
-              vendor_gstin: "",
-              vendor: "",
-            })
-            setVendorDialog(!vendorDialog)
-          }}
-        ></Button>
+        </div>
+        {!errorProducts.length &&
+          ErrorMsgs.map((ele, i) => (
+            <ErrorCard ErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
+          ))}
       </div>
+
       <div
-        className={`card ${
-          vendorDialog
+        className={`col-12  ${vendorDialog
             ? "visible scalein animation-duration-200"
             : "hidden scaleout animation-duration-200"
-        }`}
+          }`}
       >
-        <VendorForm />
+        <div className="card p-4 mb-2 ">
+          <form className="p-fluid" onSubmit={formik.handleSubmit}>
+            {activeVendor && (
+              <span
+                className={`badge status-${activeVendorData.status ? "active" : "inactive"
+                  } mb-3 inline-block`}
+              >
+                {activeVendorData.status ? "Active" : "Inactive"}
+              </span>
+            )}
+            <div className="mb2 flex justify-content-between">
+              <h4 className="mb0 align-self-center">
+                {<span>{activeVendor ? "Update " : "Create "}</span>}
+                Vendor Details
+              </h4>
+              {activeVendor && (
+                <div>
+                  <Button
+                    // label="Edit"
+                    icon="pi pi-pencil"
+                    className="m-1"
+                    onClick={async (e) => {
+                      e.preventDefault()
+                      setActiveVendor(true)
+                      setVendorEditState(!vendorEditState)
+                    }}
+                    tooltip="Edit Form"
+                    tooltipOptions={{ position: "top" }}
+                  />
+                  <Button
+                    disabled={!vendorEditState}
+                    icon="bi bi-subtract"
+                    className="m-1"
+                    tooltip={`Make ${activeVendorData.status === false ? "Active" : "Inactive"}`}
+                    tooltipOptions={{ position: "top" }}
+                    onClick={async (e) => {
+                      e.preventDefault()
+                      // e.stopPropagation()
+
+                      await updateVendorMutation(
+                        {
+                          vendor_id: activeVendorData?.vendor_id,
+                          status: activeVendorData?.status === false ? true : false,
+                        },
+                        {
+                          onSuccess: (data) => {
+                            toast?.current?.show(tsuccess(null, JSON.stringify(data, null, 2)))
+                            activeVendorData.status = data.status
+                          },
+                          onError: (data) =>
+                            toast?.current?.show(tError(null, JSON.stringify(data, null, 2))),
+                        }
+                      )
+
+                      await refetch()
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="formgrid grid">
+              {[
+                { type: "text", label: "Name", field: "vendor" },
+                { type: "text", label: "Code", field: "vendor_code" },
+                { type: "text", label: "BranchCode", field: "branch_code" },
+                { type: "text", label: "Vendor Score", field: "vendor_score" },
+                { type: "email", label: "Email", field: "vendor_email" },
+                { type: "text", label: "Contact Number", field: "vendor_contact" },
+                { type: "text", label: "GSTIN", field: "vendor_gstin" },
+                { type: "text", label: "Credit Period", field: "credit_period" },
+                { type: "text", label: "Lead Time", field: "lead_time" },
+                { type: "text", label: "Address", field: "address" },
+              ].map((ele, i) => {
+                return (
+                  <div
+                    key={`create-${ele.field}-${i}`}
+                    className="field col-12 md:col-3 lg:col-2 mt-4"
+                  >
+                    <span className="p-float-label">
+                      <InputText
+                        id={ele.field}
+                        name={ele.field}
+                        value={formik.values[ele.field]}
+                        onChange={formik.handleChange}
+                        autoFocus
+                        className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
+                        disabled={!vendorEditState}
+                      />
+                      <label
+                        htmlFor={ele.field}
+                        className={classNames({ "p-error": isFormFieldValid(ele.field) })}
+                      >
+                        {ele.label}
+                      </label>
+                    </span>
+                    {getFormErrorMessage(ele.field)}
+
+                  </div>
+                )
+
+              })}
+
+              <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                <div className="p-float-label">
+                  <AutoComplete
+                    id="vendor_city"
+                    value={formik.values.vendor_city}
+                    suggestions={filteredSuggestions}
+                    completeMethod={searchCities}
+                    field="city"
+                    onChange={async (e) => {
+                      let vendor_city = typeof e.value === "string" ? e.value : e.value.city
+                      let vendor_state = typeof e.value === "string" ? " " : e.value.state
+
+                      await formik.setValues({ ...formik.values, vendor_city, vendor_state })
+                    }}
+                    aria-label="cities"
+                    dropdownAriaLabel="Select City"
+                    className={classNames({ "p-invalid": isFormFieldValid("vendor_city") })}
+                    disabled={!vendorEditState}
+                  />
+
+                  <label
+                    htmlFor="vendor_city"
+                    className={classNames({ "p-error": isFormFieldValid("vendor_city") })}
+                  >
+                    City
+                  </label>
+                </div>
+                {getFormErrorMessage("vendor_city")}
+              </div>
+
+              <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                <span className="p-float-label">
+                  <InputText
+                    id="vendor_state"
+                    value={formik.values.vendor_state}
+                    className={classNames({ "p-invalid": isFormFieldValid("vendor_state") })}
+                    disabled={!vendorEditState}
+                    onChange={formik.handleChange}
+                  />
+                  <label
+                    htmlFor="vendor_state"
+                    className={classNames({ "p-error": isFormFieldValid("vendor_state") })}
+                  >
+                    State
+                  </label>
+                </span>
+                {getFormErrorMessage("vendor_state")}
+              </div>
+
+              {/* <div className="field col-12  mt-4">
+                <div className="p-float-label">
+                  <Chips
+                    className="min-w-min"
+                    id="tags"
+                    value={formik.values.tags}
+                    onChange={async (e) => {
+                      const tags = e.value
+                      await formik.setValues({
+                        ...formik.values,
+                        tags,
+                      })
+                    }}
+                  ></Chips>
+
+                  <label
+                    htmlFor="tags"
+                    className={classNames({ "p-error": isFormFieldValid("vendor_city") })}
+                  >
+                    Tags
+                  </label>
+                </div>
+              </div> */}
+              <div className="mt-4">
+                <Dropdown value={selectedStatus} onChange={(e) => setSelectedStatus(e.value)} options={StatusCheck} optionLabel="name"
+                  placeholder="Active InActive" className="w-full md:w-14rem" />
+              </div>
+              <div className="field col-12  mt-4">
+                <div className="p-float-label">
+                  <Creatable
+                    classNamePrefix="tags"
+                    styles={styles4TagsComponent}
+                    isMulti
+                    options={existingTags}
+                    onChange={async (value) => {
+                      await formik.setValues({ ...formik.values, tags: value })
+                    }}
+                    value={formik.values.tags}
+                    // placeholder="Tags"
+                    isDisabled={!vendorEditState}
+                  />
+
+                  <label htmlFor="tags" style={{ transform: "translateY(-230%)" }}>
+                    Tags
+                  </label>
+                </div>
+              </div>
+            </div>
+
+
+            <div className="flex justify-content-end">
+              {vendorEditState && (
+                <Button
+                  type="submit"
+                  className="mr-2"
+                  label={activeVendor ? "UPDATE" : "ADD VENDOR"}
+                />
+              )}
+              <Button
+                className="p-button-secondary flex-grow-0"
+                style={{ maxWidth: "50%" }}
+                type="button"
+                label="Cancel"
+                onClick={() => {
+                  formik.resetForm()
+                  setActiveVendor(false)
+                  setVendorDialog(false)
+                  setVendorDetails(initialVendorState)
+                  setVendorEditState(false)
+                }}
+              />
+            </div>
+          </form>
+        </div>
       </div>
-      <DataTable
-        value={vendors}
-        showGridlines
-        // scrollable
-        // scrollHeight="60vh"
-        // header={renderHeader}
-        stripedRows
-        className="text-s datatable-responsive"
-        // paginator
-        // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
-        // rows={PAGINATION_VARIABLES.rows}
-        // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
-        // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
+
+      <div
+        className={`col-12 ${errorProducts.length
+            ? "visible scalein animation-duration-200"
+            : "hidden scaleout animation-duration-200"
+          }`}
       >
-        {/* <Column
+        <div className="card border-primary border-2 bg-primary-reverse">
+          <h6>Following are a list of failed entries: </h6>
+          <ul>
+            {errorProducts.map(({ rowNum, message }, index) => {
+              if (rowNum)
+                return (
+                  <li key={"error-" + index}>
+                    Row Number {rowNum}:{" "}
+                    <ul>
+                      <li>{message}</li>
+                    </ul>
+                  </li>
+                )
+              return (
+                <li key={"error-" + index}>
+                  <li>{message}</li>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      </div>
+
+      <div>{showData}</div>
+
+      <div className="col-12">
+        <div className="card">
+          <DataTable
+            value={vendors}
+            showGridlines
+            stripedRows
+            className="text-s datatable-responsive"
+            responsiveLayout="scroll"
+            filters={filters}
+            header={header1}
+            filterDisplay="menu"
+            onRowClick={async (e) => {
+              setActiveVendorData({ ...e.data })
+              console.log(activeVendorData, "datavendor")
+              const tags = e.data.vendor_tags.map(({ tags }, i) => ({
+                value: tags.id,
+                label: tags.name,
+                color: tags.color,
+              }))
+              console.log("tags", e.data)
+              setVendorDialog(true)
+              setActiveVendor(true)
+              console.log(e.data)
+              await formik.setValues({
+                ...e.data,
+                tags,
+              })
+              scrollToTop?.current.scrollIntoView()
+            }}
+          >
+            {columnComponents}
+
+            <Column
+              field="status"
+              header="Status"
+              body={(rowData) => {
+                // console.log("rowData", rowData.status)
+                return (
+                  <span className={`badge status-${rowData.status ? "active" : "inactive"}`}>
+                    {rowData.status ? "Active" : "Inactive"}
+                  </span>
+                )
+              }}
+              filter
+              filterElement={statusFilterTemplate}
+            // className="text-center"
+            />
+          </DataTable>
+        </div>
+      </div>
+
+      {/* <div className="col-12">
+        <div className="card">
+          <DataTable
+            value={vendors}
+            showGridlines
+            // scrollable
+            // scrollHeight="60vh"
+            // header={renderHeader}
+            stripedRows
+            className="text-s datatable-responsive"
+            responsiveLayout="scroll"
+            // paginator
+            // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
+            // rows={PAGINATION_VARIABLES.rows}
+            // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
+            // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
+            filters={filters}
+            header={header1}
+            filterDisplay="menu"
+            onRowClick={async (e) => {
+              setActiveVendorData({ ...e.data })
+              const tags = e.data.vendor_tags.map(({ tags }, i) => ({
+                value: tags.id,
+                label: tags.name,
+                color: tags.color,
+              }))
+              console.log("tags", e.data)
+              setVendorDialog(true)
+              setActiveVendor(true)
+              console.log(e.data)
+              await formik.setValues({
+                ...e.data,
+                tags,
+              })
+              scrollToTop?.current.scrollIntoView()
+            }}
+          >
+            <Column
           field="vendor_id"
           header="Vendor ID"
           // className="text-center"
-        /> */}
-        <Column
-          field="vendor"
-          header="Vendor"
-          // className="text-center"
-        />
-        <Column
-          field="vendor_code"
-          header="Vendor Code"
-          // className="text-center"
-        />
-        {/* <Column
-          field="vendor_sku"
-          header="Vendor Sku"
-          // className="text-center"
-        /> */}
-        <Column
-          field="vendor_email"
-          header="Vendor Email"
-          // className="text-center"
-        />
-        <Column
-          field="vendor_city"
-          header="Vendor City"
-          // className="text-center"
-        />
-        <Column
-          field="vendor_contact"
-          header="Vendor Contact"
-          // className="text-center"
-        />
-        <Column
-          field="vendor_gstin"
-          header="Vendor GSTIN"
-          // className="text-center"
-        />
-        <Column
-          field="address"
-          header="Address"
-          // className="text-center"
-        />
-        <Column
-          field="lead_time"
-          header="Lead Time"
-          // className="text-center"
-        />
-        <Column
-          field="credit_period"
-          header="Credit Period"
-          // className="text-center"
-        />
-        <Column
-          // field="vendor_gstin"
-          header="Action"
-          body={(rowData) => {
-            return (
-              <div>
-                <Button
-                  // label="Edit"
-                  icon="pi pi-pencil"
-                  className="m-1"
-                  onClick={() => {
-                    setActiveVendor(true)
-                    setVendorDetails({ ...rowData })
-                    setVendorDialog(true)
-                  }}
-                />
-                <Button
-                  // label="Delete"
-                  disabled={false}
-                  icon="pi pi-trash"
-                  className="m-1"
-                  onClick={async () => {
-                    await deleteVendorMutation({ vendor_id: rowData.vendor_id })
-                    await refetch()
-                  }}
-                />
-              </div>
-            )
-          }}
-          // className="text-center"
-        />
-      </DataTable>
+        /> 
+             <Column
+              field="vendor"
+              header="Vendor"
+              filter
+              filterPlaceholder="Search by Vendor"
+            // className="text-center"
+            // className="hidden"
+            />
+            <Column
+              field="vendor_code"
+              header="Code"
+              filter
+              filterPlaceholder="Search by Code"
+            // className="text-center"
+            /> 
+
+            <Column
+              field="vendor_email"
+              header="Vendor Email"
+              filter
+              filterPlaceholder="Search by Email"
+            // className="text-center"
+            />
+            <Column
+              field="vendor_city"
+              header="Vendor City"
+              filter
+              filterPlaceholder="Search by City"
+            // className="text-center"
+            />
+            <Column
+              field="vendor_state"
+              header="Vendor State"
+              filter
+              filterPlaceholder="Search by State"
+            // className="text-center"
+            />
+            <Column
+              field="vendor_contact"
+              header="Vendor Contact"
+              filter
+              filterPlaceholder="Search by Contact"
+            // className="text-center"
+            />
+            <Column
+              field="vendor_gstin"
+              header="Vendor GSTIN"
+              filter
+              filterPlaceholder="Search by GSTIN No."
+            // className="text-center"
+            />
+            <Column
+              field="address"
+              header="Address"
+              filter
+              filterPlaceholder="Search by Address"
+            // className="text-center"
+            />
+            <Column
+              field="lead_time"
+              header="Lead Time"
+            // className="text-center"
+            />
+            <Column
+              field="credit_period"
+              header="Credit Period"
+            // className="text-center"
+            />
+            <Column
+              field="status"
+              header="Status"
+              body={(rowData) => {
+                // console.log("rowData", rowData.status)
+                return (
+                  <span className={`badge status-${rowData.status ? "active" : "inactive"}`}>
+                    {rowData.status ? "Active" : "Inactive"}
+                  </span>
+                )
+              }}
+              filter
+              filterElement={statusFilterTemplate}
+            // className="text-center"
+            /> 
+             <Column
+              header="Action"
+              body={(rowData) => {
+                return (
+                  <div className="flex">
+                    <Button
+                      icon="pi pi-pencil"
+                      className="m-1"
+                      onClick={async () => {
+                        setActiveVendor(true)
+
+                        await formik.setValues({ ...rowData })
+                        setVendorDialog(true)
+                        scrollToTop?.current.scrollIntoView()
+                      }}
+                    />
+
+                    <Button
+                      // label="Delete"
+                      disabled={false}
+                      icon="pi pi-info-circle"
+                      className="m-1"
+                      onClick={async () => {
+                        await updateVendorMutation({
+                          vendor_id: rowData.vendor_id,
+                          status: rowData.status === false ? true : false,
+                        })
+
+                        await refetch()
+                      }}
+                    />
+                  </div>
+                )
+              }}
+            />
+           </DataTable>
+        </div> 
+       </div>   */}
     </div>
   )
 }

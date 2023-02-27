@@ -23,21 +23,28 @@ export default resolver.pipe(
           ...paginateArgs,
           where,
           orderBy,
-          select: {
-            vendor: true,
-            vendor_city: true,
-            vendor_code: true,
-            vendor_contact: true,
-            vendor_email: true,
-            vendor_gstin: true,
-            vendor_id: true,
-            // vendor_sku: true,
-            vendor_products: true,
-            address: true,
-            credit_period: true,
-            lead_time: true,
-            vendor_id_helper: true,
+          include: {
+            vendor_tags: {
+              include: {
+                tags: true,
+              },
+            },
           },
+          // select: {
+          //   vendor: true,
+          //   vendor_city: true,
+          //   vendor_code: true,
+          //   vendor_contact: true,
+          //   vendor_email: true,
+          //   vendor_gstin: true,
+          //   vendor_id: true,
+          //   // vendor_sku: true,
+          //   vendor_products: true,
+          //   address: true,
+          //   credit_period: true,
+          //   lead_time: true,
+          //   // vendor_id_helper: true,
+          // },
         }),
     })
 

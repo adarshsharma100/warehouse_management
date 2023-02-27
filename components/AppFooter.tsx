@@ -3,7 +3,7 @@ import moment from "moment"
 
 export const AppFooter = (props) => {
   return (
-    <div className="layout-footer sticky card">
+    <div className="layout-footer sticky card pr-3">
       {/* <img
         src={
           props.layoutColorMode === "light"

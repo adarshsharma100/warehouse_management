@@ -10,6 +10,7 @@ import { CSSTransition } from "react-transition-group"
 import { Tooltip } from "primereact/tooltip"
 import Image from "next/image"
 import logo from "../Assets/Images/tif.png"
+import SideBarIcons from "components/SideBarMenu"
 
 const Layout = ({ children }) => {
   const [layoutMode, setLayoutMode] = useState("static")
@@ -34,9 +35,11 @@ const Layout = ({ children }) => {
 
   useEffect(() => {
     if (mobileMenuActive) {
-      addClass(document.body, "body-overflow-hidden")
+      // addClass(document.body, "body-overflow-hidden")
+      // addClass(document.querySelector(".layout-sidebar"), "layout-sidebar-inactive")
     } else {
-      removeClass(document.body, "body-overflow-hidden")
+      // removeClass(document.body, "body-overflow-hidden")
+      // removeClass(document.querySelector(".layout-sidebar"), "layout-sidebar-inactive")
     }
   }, [mobileMenuActive])
 
@@ -77,7 +80,8 @@ const Layout = ({ children }) => {
 
   const onToggleMenuClick = (event) => {
     menuClick = true
-
+    setStaticMenuInactive((prevState) => !prevState)
+    return
     if (isDesktop()) {
       if (layoutMode === "overlay") {
         if (mobileMenuActive === true) {
@@ -171,6 +175,11 @@ const Layout = ({ children }) => {
           label: "Products",
           icon: "pi pi-fw pi-shopping-bag",
           to: "/products",
+        },
+        {
+          label: "Orders",
+          icon: "pi pi-fw pi-money-bill",
+          to: "/orders",
         },
       ],
     },
@@ -335,7 +344,8 @@ const Layout = ({ children }) => {
       />
       <div className="layout-sidebar" onClick={onSidebarClick}>
         <Image src={logo} height="35px" width="35px" alt="logo" />
-        <AppMenu model={menu} onMenuItemClick={onMenuItemClick} layoutColorMode={layoutColorMode} />
+        <SideBarIcons />
+        {/* <AppMenu model={menu} onMenuItemClick={onMenuItemClick} layoutColorMode={layoutColorMode} /> */}
       </div>
 
       <div className="layout-main-container">
@@ -353,14 +363,14 @@ const Layout = ({ children }) => {
           onColorModeChange={onColorModeChange}
         /> */}
 
-        <CSSTransition
+        {/* <CSSTransition
           classNames="layout-mask"
           timeout={{ enter: 200, exit: 200 }}
           in={mobileMenuActive}
           unmountOnExit
         >
           <div className="layout-mask p-component-overlay"></div>
-        </CSSTransition>
+        </CSSTransition> */}
       </div>
     </div>
   )

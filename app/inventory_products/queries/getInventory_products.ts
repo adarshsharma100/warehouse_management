@@ -23,12 +23,15 @@ export default resolver.pipe(
           ...paginateArgs,
           where,
           orderBy,
-          select: {
-            inventory_product_id: true,
-            products_product_id: true,
+          include: {
             products: true,
-            quantity: true,
           },
+          // select: {
+          //   inventory_product_id: true,
+          //   products_product_id: true,
+          //   products: true,
+          //   quantity: true,
+          // },
         }),
     })
 

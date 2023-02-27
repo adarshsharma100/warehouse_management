@@ -29,7 +29,7 @@ export default resolver.pipe(
             price_per_unit: true,
             // purchase_order: true,
             purchase_order_po_id: true,
-            purchase_order_purchase_order_status_pos_id: true,
+
             purchase_order_vendor_vendor_id: true,
             quantity: true,
             received_quantity: true,

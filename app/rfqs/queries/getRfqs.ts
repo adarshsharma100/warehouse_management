@@ -17,19 +17,20 @@ export default resolver.pipe(
     } = await paginate({
       skip,
       take,
-      count: () => db.rfq.count({ where }),
+      count: () => db.rfq.count({ where }) ?? 1,
       query: (paginateArgs) =>
         db.rfq.findMany({
           ...paginateArgs,
           where,
           orderBy,
-          // select: {
-          //   id: true,
-          //   expected_dod: true,
-          //   created_at: true,
-          //   updated_at: true,
-          //   rfc_code: true,
-          //   rfc_name:true,
+          // include: {
+          //   rfq_products: {
+          //     include: {
+          //       products: true,
+          //     },
+          //   },
+          //   rfq_sentto: true,
+          //   agreement_terms: true,
           // },
         }),
     })

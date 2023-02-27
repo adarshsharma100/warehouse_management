@@ -15,6 +15,9 @@ export default resolver.pipe(
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const inventory_product = await db.inventory_products.findFirst({
       where: { inventory_product_id },
+      include: {
+        products: true,
+      },
     })
 
     if (!inventory_product) throw new NotFoundError()
