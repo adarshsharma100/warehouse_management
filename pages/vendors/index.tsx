@@ -630,6 +630,7 @@ export const VendorsList = () => {
   const columns = [
     { field: "vendor", header: "Vendor" },
     { field: "vendor_code", header: "Code" },
+    { field: "branch_code", header: "BranchCode" },
     { field: "vendor_email", header: "Email" },
     { field: "vendor_city", header: "City" },
     { field: "vendor_state", header: "State" },
@@ -1392,6 +1393,7 @@ export const VendorsList = () => {
               {[
                 { type: "text", label: "Name", field: "vendor" },
                 { type: "text", label: "Code", field: "vendor_code" },
+                { type: "text", label: "BranchCode", field: "branch_code" },
                 { type: "text", label: "Vendor Score", field: "vendor_score" },
                 { type: "email", label: "Email", field: "vendor_email" },
                 { type: "text", label: "Contact Number", field: "vendor_contact" },

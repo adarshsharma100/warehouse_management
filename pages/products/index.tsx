@@ -27,7 +27,7 @@ import { InputNumber } from "primereact/inputnumber"
 import * as Yup from "yup"
 import classNames from "classnames"
 import { AutoComplete } from "primereact/autocomplete"
-import { createCSVFormat, createSearchFunction, tsuccess } from "app/constants"
+import { createCSVFormat, createSearchFunction, filterExistingValues, tsuccess } from "app/constants"
 import ErrorCard from "components/ErrorCard"
 import LoaderFullScreen from "components/LoaderFullScreen"
 import { FilterMatchMode, FilterOperator } from "primereact/api"
@@ -55,6 +55,7 @@ export const ProductsList = () => {
 
   const intialProductDetails = {
     name: "",
+    productName:'',
     description: "",
     product_type: "",
     products_sku: "",
@@ -81,6 +82,7 @@ export const ProductsList = () => {
   }
 
   const products = [
+
     {
       product_id: 1,
       name: "Pi",
@@ -598,6 +600,7 @@ export const ProductsList = () => {
       vendor_products: [],
     },
   ]
+  console.log('products: ', products.name);
   const columns = [
     // { field: "image", header: "Image" },
     // { field: "products_sku", header: "SKU" },
@@ -714,11 +717,46 @@ export const ProductsList = () => {
   const [productDetails, setProductDetails] = useState(intialProductDetails)
   const [productDialog, setProductDialog] = useState(false)
   const [productEditState, setProductEditState] = useState(false)
+  console.log('productEditState: ', productEditState);
   const [productForm, setProductForm] = useState(false)
   const [activeProduct, setActiveProduct] = useState(true)
   const [activeRowData, setActiveRowData] = useState({})
   const [errorProducts, setErrorProducts] = useState([])
   const [btnVisibility, setBtnVisibility] = useState(false)
+  const [filteredSuggestions, setFilteredSuggestions] = useState<any>(null)
+
+  const productOptions = products.map(({ product_id, name, products_sku, description }) => {
+    return {
+      name: `${products_sku} - ${name}`,
+      product_id,
+      description,
+    }
+  })
+
+
+  const productsId = products.map((ele, i) => ele.product_id)
+  const inventoryProductsId = products.map((ele, i) => ele.products_product_id)
+
+  const avilableProductsID = filterExistingValues(productsId, inventoryProductsId)
+
+  const avilableProducts = productOptions.filter((ele, i) =>
+    avilableProductsID.includes(ele.product_id)
+  )
+
+  const searchProducts = (event: { query: string }) => {
+    setTimeout(() => {
+      let _filteredSuggestions
+      if (!event.query.trim().length) {
+        _filteredSuggestions = [...avilableProducts]
+      } else {
+        _filteredSuggestions = avilableProducts.filter((element) => {
+          return element.name.toLowerCase().includes(event.query.toLowerCase())
+        })
+      }
+
+      setFilteredSuggestions(_filteredSuggestions)
+    }, 50)
+  }
   const toast = useRef(null)
   const scrolToTop = useRef<HTMLDivElement>(null)
   const clearUpload = useRef<FileUpload>(null)
@@ -729,6 +767,7 @@ export const ProductsList = () => {
   const [globalFilterValue, setGlobalFilterValue] = useState("")
 
   const [showData, setShowData] = useState([])
+  const [showProduct, setShowProduct] = useState([])
   const [selectedColumns, setSelectedColumns] = useState(columns)
 
   const onColumnToggle = (event) => {
@@ -985,6 +1024,7 @@ export const ProductsList = () => {
     onSubmit: async (data) => {
       console.log("data", data)
       setShowData(<pre>{JSON.stringify(data, null, 2)}</pre>)
+      setShowProduct(<pre>{JSON.stringify(inputs, null, 2)}</pre>)
 
       return
 
@@ -1093,14 +1133,59 @@ export const ProductsList = () => {
   }
 
   const [selectedStatus, setSelectedStatus] = useState(null);
-  console.log('selectedStatus: ', selectedStatus);
+  // console.log('selectedStatus: ', selectedStatus);
   const StatusCheck = [
     { name: 'Simple' },
     { name: 'Bundle' },
   ];
-  console.log('StatusCheck: ', StatusCheck);
+  // console.log('StatusCheck: ', StatusCheck);
+  const ProductOption = products.map(({ products_sku, name }) => { return { name: `${products_sku} - ${name}` } })
+  // const productOptions = products.map(({ product_id, name, products_sku, description }) => {
+  //   return {
+  //     name: `${products_sku} - ${name}`,
+  //     // product_id,
+  //     // description,
+  //   }
+  // })
 
 
+  // = [
+  //   'Pi', 'ESP', 'Waterproof Ultrasonic Sensor',
+  //   'E18-D80NK Infrared Sensor Module',
+  //   'MQ-135 gas sensor Module',
+  //   'Turbidity Sensor',
+  // ]
+
+  const [inputs, setInputs] = useState([{ product:'', quantity: '' }]);
+  // const [inputs,setInputs] = useState(products)
+  // console.log('inputs: ', inputs.map((i) => i.name));
+
+  // const handleAddInput = () => {
+  //   const lastInput = inputs[inputs.length - 1];
+  //   if (lastInput.product !== '' && lastInput.quantity !== '') {
+  //     setInputs([...inputs, { product: '', quantity: '' }]);
+  //   }
+  // };
+
+  const handleAddInput = () => {
+    setInputs([...inputs, { product: '', quantity: '' }]);
+  };
+
+
+  const handleRemoveInput = (index) => {
+    const newInputs = [...inputs];
+    newInputs.splice(index, 1);
+    setInputs(newInputs);
+  };
+
+
+  const handleInputChange = (event, index) => {
+    const { name, value } = event.target;
+    const newInputs = [...inputs];
+    newInputs[index][name] = value;
+    setInputs(newInputs);
+  };
+  
 
   return (
     <div className="grid w-full mr-0">
@@ -1259,8 +1344,12 @@ export const ProductsList = () => {
       >
         <div className="card">
           <div className="flex justify-content-between">
-            <h4>{activeProduct ? "Update" : "Create"} Product</h4>
+            {/* {activeProduct ? 'Create': productEditState ? 'Update' :'Details'} */}
 
+            <h4>{activeProduct ? "Update" : "Create"} Product</h4>
+            <h4>
+              {/* {activeProduct ? 'Details' : productEditState ? 'Update' :'Create'} */}
+            </h4>
 
             <h4>{productEditState ? <Button
               icon="pi pi-pencil"
@@ -1374,6 +1463,7 @@ export const ProductsList = () => {
                   <AutoComplete
                     id="category"
                     // disabled={editState}
+                    disabled={productEditState}
                     value={formik?.values?.category?.name}
                     dropdown
                     forceSelection
@@ -1403,18 +1493,84 @@ export const ProductsList = () => {
                 {getFormErrorMessage("category")}
               </div>
               <div className="mt-4">
-                <Dropdown value={selectedStatus} onChange={(e) => setSelectedStatus(e.value)} options={StatusCheck} optionLabel="name"
+                <Dropdown disabled={productEditState} value={selectedStatus} onChange={(e) => setSelectedStatus(e.value)} options={StatusCheck} optionLabel="name"
                   placeholder="Type" className="w-full md:w-14rem" />
               </div>
-              <div className="field col-12 lg:col-3 mt-4">
+              <div className="field col-12  mt-4">
 
                 {selectedStatus?.name === 'Bundle' ?
                   <div className="flex gap-3">
 
-                    <InputText type='text' placeholder="Products" />
-                    <InputText  className='' type='number' placeholder="Quantity" />
-                    <Button>+</Button>
+                    {inputs.map((input, index) => (
+                      <div key={index} className='flex gap-2'>
 
+                         {/* <Dropdown
+                      //     options={ProductOption}
+                      //     placeholder='Select a product'
+                      //     name='product'
+                      //     value={input.product}
+                      //     onChange={(event) => handleInputChange(event, index)}
+                      //   /> */}
+                      
+
+                         <AutoComplete
+                          id="name"
+                          value={input.product}
+                          // value={formik.values.name}
+                          suggestions={filteredSuggestions}
+                          completeMethod={searchProducts}
+                          disabled={productEditState}
+                          dropdown
+                          forceSelection
+                          field="name"
+                          onChange={async (e) => {
+                            console.log(e.value, 'event')
+                            
+                            handleInputChange(e, index)
+                            const test = [...inputs]
+                            test[index] = { ...e.value }
+                            setInputs(test)
+                            // let name = typeof e.value === "string" ? e.value : e.value?.name
+                            // let products_product_id = e.value?.product_id
+                            // let product_description = e.value?.description
+
+                            // await formik.setValues({
+                            //   ...formik.values,
+                            //   name,
+                            //   products_product_id,
+                            //   product_description,
+                            // })
+                            // formik.values = { ...formik.values,}
+                          }}
+
+                          aria-label="products"
+                          dropdownAriaLabel="Select Product"
+                          className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                          style={{ width: '400px' }}
+                        />
+
+                        <InputText
+                          className=''
+                          type='text'
+                          placeholder='Quantity'
+                          name='quantity'
+                          value={input.quantity}
+                          onChange={(event) => handleInputChange(event, index)}
+                        />
+
+                        <Button
+                          icon="pi pi-minus"
+                          className="p-3 m-1"
+                          onClick={() => handleRemoveInput(index)}
+                        />
+                      </div>
+                    ))}
+
+                    <Button
+                      icon="pi pi-plus"
+                      className="m-1"
+                      onClick={handleAddInput}
+                    />
                   </div>
                   : null}
               </div>
@@ -1424,6 +1580,7 @@ export const ProductsList = () => {
               <div className="field col-12  mt-4">
                 <div className="p-float-label">
                   <Creatable
+                    disabled={productEditState}
                     classNamePrefix="tags"
                     styles={styles4TagsComponent}
                     isMulti
@@ -1446,6 +1603,7 @@ export const ProductsList = () => {
               <div className="field col-12 mt-4">
                 <span className="p-float-label">
                   <InputTextarea
+                    disabled={productEditState}
                     id={"description"}
                     rows={5}
                     name={"description"}
@@ -1493,6 +1651,7 @@ export const ProductsList = () => {
       </div>
 
       <div>{showData}</div>
+      {/* <div><pre>{JSON.stringify(inputs,null,2)}</pre></div> */}
 
       <div className="col-12">
         <div className="card">
@@ -1526,12 +1685,12 @@ export const ProductsList = () => {
             <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.products_sku} </a>} />
 
             {columnComponents}
-            {/* <Column
+            <Column
               header="Action"
               body={(rowData) => {
                 return (
                   <div>
-                    <Button
+                    {/* <Button
                       icon="pi pi-pencil"
                       className="m-1"
                       onClick={async () => {
@@ -1544,7 +1703,7 @@ export const ProductsList = () => {
                         })
                         scrolToTop?.current && scrolToTop?.current.scrollIntoView()
                       }}
-                    />
+                    /> */}
                     <Button
                       disabled={true}
                       icon="pi pi-trash"
@@ -1557,7 +1716,7 @@ export const ProductsList = () => {
                   </div>
                 )
               }}
-            /> */}
+            />
           </DataTable>
         </div>
       </div>
