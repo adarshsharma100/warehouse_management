@@ -1,13 +1,23 @@
 import { resolver } from "@blitzjs/rpc"
 import db from "db"
-import { z } from "zod"
+import { optional, z } from "zod"
 
 const CreateProduct = z.object({
   name: z.string(),
   description: z.string(),
-  product_type: z.string(),
-  products_sku: z.string(),
-  product_unit: z.string(),
+  sku: z.string(),
+  length:z.unknown().optional(),
+  width: z.unknown().optional(),
+  height:z.unknown().optional(),
+  weight:z.unknown().optional(),
+  color:z.unknown().optional(),
+  hsnCode:z.unknown().optional(),
+  imageUrl:z.unknown().optional(),
+  gstTaxTypeCode:z.unknown().optional(),
+  taxCalcType:z.unknown().optional(),
+  category:z.unknown().optional(),
+  brand:z.unknown().optional()
+ 
 })
 
 export default resolver.pipe(

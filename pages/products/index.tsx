@@ -36,6 +36,9 @@ import Link from "next/link"
 import Creatable from "react-select/creatable"
 import chroma from "chroma-js"
 import { Dropdown } from "primereact/dropdown"
+import { number } from "zod"
+import getProduct_categories from "app/product_categories/queries/getProduct_categories"
+import moment from "moment"
 
 
 
@@ -44,587 +47,81 @@ const ITEMS_PER_PAGE = 100
 export const ProductsList = () => {
   const router = useRouter()
   const page = Number(router.query.page) || 0
-  // const [{ products }, { isLoading: isProductsLoading, refetch }] = useQuery(getProducts, {
-  //   orderBy: { product_id: "asc" },
-  // })
+  const [{ products }, { isLoading: isProductsLoading, refetch }] = useQuery(getProducts, {
+    orderBy: { id: "asc" },
+  })
+  const [{ product_categories },] = useQuery(getProduct_categories, {
+    orderBy: { id: "asc" },
+  })
   // const [prefix, { isLoading }] = useQuery(getPrefix, { name: "PRODUCT" })
   const [createProductMutation, { error: productCreationError, isLoading: creatingProduct }] =
     useMutation(createProduct)
+
   const [updateProductMutation, { error: productUpdationError, isLoading: updatingProduct }] =
     useMutation(updateProduct)
 
+
+
   const intialProductDetails = {
     name: "",
-    productName:'',
+    productName: '',
     description: "",
-    product_type: "",
-    products_sku: "",
-    product_unit: "",
-    product_category: "",
+    type: "",
+    sku: "",
+    unit: "",
+    category: "",
     productCode: "",
-    product_length: "",
-    product_width: "",
-    product_height: "",
-    product_weight: "",
-    product_Color: "",
-    product_brand: "",
-    product_taxcode: "",
-    product_gstcode: "",
-    product_hsnCode: "",
-    // product_tags: "",
+    length: "",
+    width: "",
+    height: "",
+    weight: "",
+    color: "",
+    brand: "",
+    taxcode: "",
+    gstcode: "",
+    hsnCode: "",
+    // tags: "",
     tags: [],
     imageurl: "",
-    product_costPrice: "",
-    product_mrp: "",
-    product_basePrice: "",
-    product_enabled: "",
-    product_taxCalcuation: "",
+    costPrice: "",
+    mrp: "",
+    basePrice: "",
+    enabled: "",
+    taxCalcuation: "",
   }
+  const dateFormat = (dateObj: Date | string) =>
+    moment(new Date(dateObj)).format("DD-MM-YYYY, hh:mm")
 
-  const products = [
 
-    {
-      product_id: 1,
-      name: "Pi",
-      image: 'https://www.graylogix.in/wp-content/uploads/2021/05/IMG_20170619_150647.jpg',
-      product_category: "3D Printer",
-      product_length: "40",
-      product_width: "80",
-      product_height: "08",
-      product_weight: "30",
-      product_Color: "Black",
-      product_brand: "brand",
-      product_taxcode: "12365479885",
-      product_gstcode: "08742784574",
-      product_hsnCode: "84439940",
-      product_tags: "tags",
-      product_costPrice: "200/-",
-      product_mrp: "400/-",
-      product_basePrice: "320/-",
-      product_enabled: "yes",
-      product_taxCalcuation: "tax calculation type",
 
-      description: "Pi-descasw",
-      product_type: "Electronics",
-      products_sku: "TIF001",
-      Price: 11,
-      product_unit: "pc",
-      vendor_products: [
-        {
-          vp_id: 1,
-          unit_price: 424,
-          vendor_vendor_id: 1,
-          products_product_id: 1,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "DA1002",
-        },
-        {
-          vp_id: 36,
-          unit_price: 756,
-          vendor_vendor_id: 4,
-          products_product_id: 1,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "TE417",
-        },
-        {
-          vp_id: 37,
-          unit_price: 454,
-          vendor_vendor_id: 5,
-          products_product_id: 1,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "TE420",
-        },
-        {
-          vp_id: 116,
-          unit_price: 85,
-          vendor_vendor_id: 3,
-          products_product_id: 1,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "TH4568",
-        },
-      ],
-    },
-    {
-      product_id: 2,
-      name: "ESP",
-      image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTrkrwkcmjtxW1HW6-FVJPzHCyl04G7L4rtErv1qOPfpbWF6r5Z74QKuHWbOPkFzXAsPSg&usqp=CAU',
-      description: "esp-desc",
-      product_type: "Electronics",
-      products_sku: "TIF002",
-      Price: 142,
-      product_unit: "2pc set",
-      vendor_products: [
-        {
-          vp_id: 2,
-          unit_price: 10,
-          vendor_vendor_id: 1,
-          products_product_id: 2,
-          enabled: 1,
-          priority: 2,
-          vendor_sku: "DA1001",
-        },
-        {
-          vp_id: 33,
-          unit_price: 25,
-          vendor_vendor_id: 123,
-          products_product_id: 2,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "VJ338",
-        },
-        {
-          vp_id: 114,
-          unit_price: 41,
-          vendor_vendor_id: 147,
-          products_product_id: 2,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "FK490",
-        },
-      ],
-    },
-    {
-      product_id: 3,
-      name: "Waterproof Ultrasonic Sensor",
-      image: "https://cdn.shopify.com/s/files/1/0559/1970/6265/products/3_axis.jpg?v=1670581880",
-      description: "water-desp",
-      product_type: "Sensors",
-      products_sku: "TIF003",
-      Price: 24,
-      product_unit: "combo",
-      vendor_products: [
-        {
-          vp_id: 5,
-          unit_price: 50,
-          vendor_vendor_id: 3,
-          products_product_id: 3,
-          enabled: 1,
-          priority: 4,
-          vendor_sku: "TE103",
-        },
-        {
-          vp_id: 79,
-          unit_price: 142,
-          vendor_vendor_id: 4,
-          products_product_id: 3,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "KA146",
-        },
-      ],
-    },
-    {
-      product_id: 4,
-      name: "E18-D80NK Infrared Sensor Module",
-      image: 'https://m.media-amazon.com/images/I/41o00noHlhL.jpg',
-      description: "description",
-      product_type: "Sensors",
-      products_sku: "TIF004",
-      Price: 42,
-      product_unit: null,
-      vendor_products: [
-        {
-          vp_id: 11,
-          unit_price: 83,
-          vendor_vendor_id: 1,
-          products_product_id: 4,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "DA102",
-        },
-        {
-          vp_id: 83,
-          unit_price: 0,
-          vendor_vendor_id: 3,
-          products_product_id: 4,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "TE104",
-        },
-        {
-          vp_id: 108,
-          unit_price: 45,
-          vendor_vendor_id: 123,
-          products_product_id: 4,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "VJ12345",
-        },
-        {
-          vp_id: 113,
-          unit_price: 40,
-          vendor_vendor_id: 147,
-          products_product_id: 4,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "FK491",
-        },
-      ],
-    },
-    {
-      product_id: 5,
-      name: "MQ-135 gas sensor Module",
-      description: "description 135",
-      product_type: "Sensors",
-      products_sku: "TIF005",
-      Price: 56,
-      product_unit: null,
-      vendor_products: [
-        {
-          vp_id: 20,
-          unit_price: 120,
-          vendor_vendor_id: 3,
-          products_product_id: 5,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "TE105",
-        },
-        {
-          vp_id: 105,
-          unit_price: 123,
-          vendor_vendor_id: 2,
-          products_product_id: 5,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "ssWW",
-        },
-        {
-          vp_id: 106,
-          unit_price: 111,
-          vendor_vendor_id: 170,
-          products_product_id: 5,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "qqq",
-        },
-      ],
-    },
-    {
-      product_id: 6,
-      name: "Turbidity Sensor",
-      description: "description sensor",
-      product_type: "Sensors",
-      products_sku: "TIF006",
-      Price: 67,
-      product_unit: null,
-      vendor_products: [
-        {
-          vp_id: 6,
-          unit_price: 905,
-          vendor_vendor_id: 3,
-          products_product_id: 6,
-          enabled: 1,
-          priority: 5,
-          vendor_sku: "TE106",
-        },
-        {
-          vp_id: 9,
-          unit_price: 88,
-          vendor_vendor_id: 4,
-          products_product_id: 6,
-          enabled: 1,
-          priority: 3,
-          vendor_sku: "KM106",
-        },
-        {
-          vp_id: 34,
-          unit_price: 120,
-          vendor_vendor_id: 5,
-          products_product_id: 6,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "TE1564",
-        },
-      ],
-    },
-    {
-      product_id: 7,
-      name: "Heat Flame Sensor",
-      description: "description heat",
-      product_type: "Sensors",
-      products_sku: "TIF007",
-      Price: 56,
-      product_unit: null,
-      vendor_products: [
-        {
-          vp_id: 8,
-          unit_price: 45,
-          vendor_vendor_id: 3,
-          products_product_id: 7,
-          enabled: 1,
-          priority: 2,
-          vendor_sku: "TE107",
-        },
-        {
-          vp_id: 10,
-          unit_price: 47,
-          vendor_vendor_id: 4,
-          products_product_id: 7,
-          enabled: 1,
-          priority: 2,
-          vendor_sku: "KM107",
-        },
-        {
-          vp_id: 35,
-          unit_price: 11,
-          vendor_vendor_id: 5,
-          products_product_id: 7,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "TE571",
-        },
-      ],
-    },
-    {
-      product_id: 8,
-      name: "Eye Blink Sensor",
-      description: "eye description",
-      product_type: "Sensors",
-      products_sku: "TIF008",
-      Price: 53,
-      product_unit: null,
-      vendor_products: [
-        {
-          vp_id: 29,
-          unit_price: 11,
-          vendor_vendor_id: 1,
-          products_product_id: 8,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "qws",
-        },
-      ],
-    },
-    {
-      product_id: 9,
-      name: "Laser Module",
-      description: "description laser",
-      product_type: "Sensors",
-      products_sku: "TIF009",
-      Price: 856,
-      product_unit: null,
-      vendor_products: [],
-    },
-    {
-      product_id: 10,
-      name: "Sound Sensor Module",
-      description: "sound description",
-      product_type: "Sensors",
-      products_sku: "TIF010",
-      Price: 56,
-      product_unit: null,
-      vendor_products: [],
-    },
-    {
-      product_id: 11,
-      name: "Servo Motor Pan-Tilt Setup",
-      description: "servo description",
-      product_type: "Motors and mechanical devices",
-      products_sku: "TIF011",
-      Price: 5657,
-      product_unit: null,
-      vendor_products: [],
-    },
-    {
-      product_id: 12,
-      name: "Micro Vibration Motor",
-      description: "micro  ",
-      product_type: "Motors and mechanical devices",
-      products_sku: "TIF012",
-      Price: 65,
-      product_unit: null,
-      vendor_products: [],
-    },
-    {
-      product_id: 13,
-      name: "A4988 Stepper Motor Driver",
-      description: "description pump",
-      product_type: "Motors and mechanical devices",
-      products_sku: "TIF013",
-      Price: 346,
-      product_unit: null,
-      vendor_products: [],
-    },
-    {
-      product_id: 14,
-      name: "R385 DC PUMP",
-      description: "R385 ",
-      product_type: "Motors and mechanical devices",
-      products_sku: "TIF014",
-      Price: 787,
-      product_unit: null,
-      vendor_products: [
-        {
-          vp_id: 104,
-          unit_price: 12,
-          vendor_vendor_id: 4,
-          products_product_id: 14,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "dewa",
-        },
-      ],
-    },
-    {
-      product_id: 15,
-      name: "Solenoid valve 12V",
-      description: "valve 12V",
-      product_type: "Motors and mechanical devices",
-      products_sku: "TIF015",
-      Price: 343,
-      product_unit: null,
-      vendor_products: [
-        {
-          vp_id: 81,
-          unit_price: 85,
-          vendor_vendor_id: 1,
-          products_product_id: 15,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "DA10456",
-        },
-      ],
-    },
-    {
-      product_id: 16,
-      name: "Neo 6M GPS Module",
-      description: "Neo 6M GPS",
-      product_type: "IOT & wireless devices",
-      products_sku: "TIF016",
-      Price: 657,
-      product_unit: null,
-      vendor_products: [],
-    },
-    {
-      product_id: 17,
-      name: "NRF24L01+PA+LNA",
-      description: "NRF24L01+PA+LNA",
-      product_type: "IOT & wireless devices",
-      products_sku: "TIF017",
-      Price: 786,
-      product_unit: null,
-      vendor_products: [],
-    },
-    {
-      product_id: 18,
-      name: "test",
-      description: "tes0123",
-      product_type: "IOT & wireless devices",
-      products_sku: "TIF018",
-      Price: 657,
-      product_unit: null,
-      vendor_products: [],
-    },
-    {
-      product_id: 19,
-      name: "ESP12E ESP8266 Wireless Transceiver Module",
-      description: "ESP12E ",
-      product_type: "IOT & wireless devices",
-      products_sku: "TIF019",
-      Price: 53,
-      product_unit: null,
-      vendor_products: [],
-    },
-    {
-      product_id: 20,
-      name: "dummy name",
-      description: "dummy name",
-      product_type: "dummy product type",
-      products_sku: "TIF000",
-      Price: 4,
-      product_unit: null,
-      vendor_products: [],
-    },
-    {
-      product_id: 21,
-      name: "Watermelon",
-      description:
-        "Water-melon is a flowering plant species of the Cucurbitaceae family orem ipsum dolor sit amet consectetur adipisicing elit. Maxime mollitia,\nmolestiae quas vel sint commodi repudiandae consequuntur voluptatum laborum",
-      product_type: "Fruit",
-      products_sku: "Test",
-      Price: 7,
-      product_unit: "kg",
-      vendor_products: [
-        {
-          vp_id: 102,
-          unit_price: 15,
-          vendor_vendor_id: 123,
-          products_product_id: 21,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "VJW1001",
-        },
-        {
-          vp_id: 112,
-          unit_price: 45,
-          vendor_vendor_id: 147,
-          products_product_id: 21,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "FK489",
-        },
-      ],
-    },
-    {
-      product_id: 23,
-      name: "Test CSV",
-      description: "Test CSV",
-      product_type: "CSV",
-      products_sku: "TestSKU",
-      Price: 67,
-      product_unit: null,
-      vendor_products: [
-        {
-          vp_id: 86,
-          unit_price: 12,
-          vendor_vendor_id: 1,
-          products_product_id: 23,
-          enabled: 1,
-          priority: 1,
-          vendor_sku: "aws",
-        },
-      ],
-    },
-    {
-      product_id: 64,
-      name: "boat",
-      description: "asdddasd",
-      product_type: "eleectric",
-      products_sku: "TI-100",
-      Price: 0,
-      product_unit: "Pc",
-      vendor_products: [],
-    },
-  ]
-  console.log('products: ', products.name);
+
   const columns = [
-    // { field: "image", header: "Image" },
-    // { field: "products_sku", header: "SKU" },
     { field: "name", header: "Name" },
-    { field: "product_type", header: "Type" },
+    // { field: "type", header: "Type" },
     { field: "description", header: "Description" },
-    { field: "product_unit", header: "Unit" },
-    { field: "product_category", header: "Category" },
-    { field: "product_length", header: "Length" },
-    { field: "product_width", header: "Width" },
-    { field: "product_height", header: "Height" },
-    { field: "product_weight", header: "Weight" },
-    { field: "product_Color", header: "Color" },
-    { field: "product_brand", header: "Brand" },
-    { field: "product_taxcode", header: "Tax code" },
-    { field: "product_gstcode", header: "Gst Code" },
-    { field: "product_hsnCode", header: "HSN Code" },
-    { field: "product_tags", header: "Tags" },
-    { field: "product_costPrice", header: "Cost Price" },
-    { field: "product_mrp", header: "MRP" },
-    { field: "product_basePrice", header: "Base Price" },
-    { field: "product_enabled", header: "Enabled" },
-    { field: "product_taxCalcuation", header: "Tax Calcuation" },
+    { field: "unit", header: "Unit" },
+    { field: "category", header: "Category" },
+    { field: "length", header: "Length" },
+    { field: "width", header: "Width" },
+    { field: "height", header: "Height" },
+    { field: "weight", header: "Weight" },
+    { field: "color", header: "Color" },
+    { field: "brand", header: "Brand" },
+    { field: "taxcode", header: "Tax code" },
+    { field: "gstcode", header: "Gst Code" },
+    { field: "hsnCode", header: "HSN Code" },
+    // { field: "tags", header: "Tags" },
+    // { field: "costPrice", header: "Cost Price" },
+    // { field: "mrp", header: "MRP" },
+    // { field: "basePrice", header: "Base Price" },
+    // { field: "enabled", header: "Enabled" },
+    { field: "taxCalcuation", header: "Tax Calcuation" },
+    {
+      header: "Created On",
+      body: (rowData) => <div>{dateFormat(rowData.createdAt)}</div>,
+    },
   ]
+
 
   const styles4TagsComponent = {
     control: (baseStyles, state) => ({
@@ -714,9 +211,12 @@ export const ProductsList = () => {
     // color: getRandomColor(),
   }))
 
+  const [categories_options, setCategoriesOption] = useState(product_categories)
+  console.log('categories_options: ', categories_options);
   const [productDetails, setProductDetails] = useState(intialProductDetails)
   const [productDialog, setProductDialog] = useState(false)
   const [productEditState, setProductEditState] = useState(false)
+  const [disableField] = useState(true)
   console.log('productEditState: ', productEditState);
   const [productForm, setProductForm] = useState(false)
   const [activeProduct, setActiveProduct] = useState(true)
@@ -757,6 +257,7 @@ export const ProductsList = () => {
       setFilteredSuggestions(_filteredSuggestions)
     }, 50)
   }
+
   const toast = useRef(null)
   const scrolToTop = useRef<HTMLDivElement>(null)
   const clearUpload = useRef<FileUpload>(null)
@@ -768,7 +269,9 @@ export const ProductsList = () => {
 
   const [showData, setShowData] = useState([])
   const [showProduct, setShowProduct] = useState([])
+  // const [selectedColumns, setSelectedColumns] = useState(columns)
   const [selectedColumns, setSelectedColumns] = useState(columns)
+
 
   const onColumnToggle = (event) => {
     let selectedColumns = event.value
@@ -777,6 +280,7 @@ export const ProductsList = () => {
     )
     setSelectedColumns(orderedSelectedColumns)
   }
+
 
   const header = (
     <div style={{ textAlign: "left" }}>
@@ -805,11 +309,11 @@ export const ProductsList = () => {
   useEffect(() => {
     const obj = {
       value: [
-        { field: "products_sku", header: "SKU" },
+        { field: "sku", header: "SKU" },
         { field: "name", header: "Name" },
         { field: "image", header: "Image" },
-        { field: "product_type", header: "Type" },
-        { field: "product_unit", header: "Unit" },
+        { field: "description", header: "Description" },
+        // { field: "product_unit", header: "Unit" },
       ],
     }
     onColumnToggle(obj)
@@ -894,8 +398,7 @@ export const ProductsList = () => {
     name: ele,
   }))
 
-  const categorys = [
-    "Display",
+  const categorys = ["Display",
     "3D Printer",
     "Controllers",
     "Wireless Communication",
@@ -931,14 +434,17 @@ export const ProductsList = () => {
     "Machine Tools",
     "Oscilloscope & Signal Generator",
   ]
+
   const categoryOptions = categorys.map((ele, i) => ({
     name: ele,
     id: i + 1,
   }))
 
+  console.log('categoryOptions: ', categoryOptions);
+
   const searchUnits = createSearchFunction(unitOptions, setUnitSuggestions)
 
-  const searchCategory = createSearchFunction(categoryOptions, setCategorySuggestions)
+  const searchCategory = createSearchFunction(categories_options, setCategorySuggestions)
 
   const onBasicUpload = async (e) => {
     let index = 2
@@ -1014,17 +520,102 @@ export const ProductsList = () => {
     await refetch()
   }
 
+  const [editUpdateProduct, setEditUpdateProduct] = useState(false)
+  console.log('editUpdateProduct: ', editUpdateProduct);
+  const [createNewProduct] = useMutation(createProduct)
+  const [updateActiveProduct] = useMutation(updateProduct)
+
+
   const formik = useFormik({
     initialValues: productDetails,
     validationSchema: Yup.object().shape({
       name: Yup.string().required("*Required"),
-      product_category: Yup.mixed().required("*Required"),
-      product_sku: Yup.string().required("*Required"),
+      // product_category: Yup.mixed().required("*Required"),
+      // product_sku: Yup.string().required("*Required"),
     }),
     onSubmit: async (data) => {
-      console.log("data", data)
-      setShowData(<pre>{JSON.stringify(data, null, 2)}</pre>)
-      setShowProduct(<pre>{JSON.stringify(inputs, null, 2)}</pre>)
+      console.log("++data", data)
+      // setShowData(<pre>{JSON.stringify(data, null, 2)}</pre>)
+      // setShowProduct(<pre>{JSON.stringify(inputs, null, 2)}</pre>)
+      const { name, description, sku, length, width,
+        hsnCode, imageurl, taxCalcuation,
+        height, weight, gstcode,
+        category, brand
+        , color, } = data
+      const { id: activeProductId } = activeRowData
+      console.log('activeRowData: ', activeRowData);
+      console.log('updatingProduct: ', updatingProduct);
+
+      if (editUpdateProduct) {
+        try {
+          await updateActiveProduct({
+            id: activeProductId,
+            name: name,
+            description,
+            length: Number(length),
+            width: Number(width),
+            height: Number(height),
+            weight: Number(weight),
+            color: color,
+            // hsnCode: hsnCode,
+            // imageUrl: imageurl,
+            // gstTaxTypeCode: gstcode,
+            // taxCalcType: taxCalcuation,
+            // category: category,
+            brand: brand
+          }, {
+            onSuccess: () => {
+              alert('Update Done')
+            },
+            onError: (data) => {
+              alert(`error ${data}`)
+              console.log('error', data)
+            }
+          })
+          await refetch()
+
+        } catch (error) {
+          alert('Error', error)
+          console.log('Error ', error);
+        }
+      }
+      else {
+        try {
+          await createNewProduct(
+            {
+              name: name,
+              description: description,
+              sku,
+              length: Number(length),
+              width: Number(width),
+              height: Number(height),
+              weight: Number(weight),
+              color: color,
+              hsnCode: hsnCode,
+              // imageUrl: imageurl,
+              // gstTaxTypeCode: gstcode,
+              // taxCalcType: taxCalcuation,
+              // category: category,
+              brand: brand
+            },
+            {
+              onSuccess: () => {
+                alert('success')
+              },
+              onError: (data) => {
+                alert(`error ${data}`)
+                console.log('error', data)
+              }
+            }
+          )
+          // await refetch()
+        } catch (err) {
+          console.log('err: ', err);
+
+        }
+      }
+
+
 
       return
 
@@ -1037,7 +628,7 @@ export const ProductsList = () => {
             {
               onSuccess: () => {
                 toast?.current?.show(
-                  tsuccess("Product Created", `${data.products_sku} created successfully`)
+                  tsuccess("Product Created", `${data.sku} created successfully`)
                 )
               },
             }
@@ -1054,7 +645,7 @@ export const ProductsList = () => {
             {
               onSuccess: (data) => {
                 toast?.current?.show(
-                  tsuccess("Updated", `${data.products_sku} updated successfully`)
+                  tsuccess("Updated", `${data.sku} updated successfully`)
                 )
               },
             }
@@ -1109,18 +700,18 @@ export const ProductsList = () => {
     initFilters()
   }, [])
 
-  useEffect(() => {
-    const ErrorArray = [productUpdationError, productCreationError]
+  // useEffect(() => {
+  //   const ErrorArray = [productUpdationError, productCreationError]
 
-    const msg = []
+  //   const msg = []
 
-    for (let err of ErrorArray) {
-      if (err) {
-        msg.push(err)
-      }
-    }
-    setErrorMsgs(msg)
-  }, [productCreationError, productUpdationError])
+  //   for (let err of ErrorArray) {
+  //     if (err) {
+  //       msg.push(err)
+  //     }
+  //   }
+  //   setErrorMsgs(msg)
+  // }, [productCreationError, productUpdationError])
 
   // if (isLoading || isProductsLoading) {
   //   return <Loading />
@@ -1156,7 +747,9 @@ export const ProductsList = () => {
   //   'Turbidity Sensor',
   // ]
 
-  const [inputs, setInputs] = useState([{ product:'', quantity: '' }]);
+  const [inputs, setInputs] = useState([{ product: '', quantity: '' }]);
+  console.log('inputs: ', inputs);
+
   // const [inputs,setInputs] = useState(products)
   // console.log('inputs: ', inputs.map((i) => i.name));
 
@@ -1185,7 +778,14 @@ export const ProductsList = () => {
     newInputs[index][name] = value;
     setInputs(newInputs);
   };
-  
+  // let category = typeof e.target.value === "string" ? e.value : e.value
+
+  // await formik.setValues({
+  //   ...formik.values,
+  //   category,
+  // })
+
+
 
   return (
     <div className="grid w-full mr-0">
@@ -1354,7 +954,7 @@ export const ProductsList = () => {
             <h4>{productEditState ? <Button
               icon="pi pi-pencil"
               className="m-1"
-              onClick={() => setProductEditState(!productEditState)}
+              onClick={() => { setProductEditState(!productEditState); setEditUpdateProduct(!editUpdateProduct) }}
             /> : <Button
               icon="pi pi-pencil"
               className="m-1"
@@ -1383,29 +983,42 @@ export const ProductsList = () => {
             className="p-fluid"
           >
             <div className="formgrid grid ">
+              <div className="">
+                <div style={{ fontSize: '12px', marginLeft: '15px' }}>sku</div>
+                <InputText
+                  disabled={disableField}
+                  id={"sku"}
+                  placeholder='SKU'
+                  name={"sku"}
+                  value={formik.values.sku}
+                  autoFocus
+                  style={{ marginTop: '8px', }}
+                  className={classNames({ "p-invalid ": isFormFieldValid("description") })}
+                />
+              </div>
               {
                 [
                   { type: 'text', label: "Name*", field: "name", header: "Name" },
-                  { type: "text", label: "SKU", field: "products_sku", header: "SKU" },
+                  // { type: "text", label: "SKU", field: "sku", header: "SKU" },
                   // { type: 'text', label: "Type", field: "product_type", header: "Type" },
                   // { type:'text', label:"Description", field: "description", header: "Description" },
-                  { type: 'text', label: "Unit", field: "product_unit", header: "Unit" },
-                  // { type:'text', label:"Category", field: "product_category", header: "Category" },
-                  { type: 'text', label: "Length", field: "product_length", header: "Length" },
-                  { type: 'text', label: "Width", field: "product_width", header: "Width" },
-                  { type: 'text', label: "Height", field: "product_height", header: "Height" },
-                  { type: 'text', label: "Weight", field: "product_weight", header: "Weight" },
-                  { type: 'text', label: "Color", field: "product_Color", header: "Color" },
-                  { type: 'text', label: "Brand", field: "product_brand", header: "Brand" },
-                  { type: 'text', label: "Tax type code", field: "product_taxcode", header: "Tax code" },
-                  { type: 'text', label: "Gst Tax type code", field: "product_gstcode", header: "Gst Code" },
-                  { type: 'text', label: "HSN code", field: "product_hsnCode", header: "HSN Code" },
-                  // { type: 'text', label: "Tags", field: "product_tags", header: "Tags" },
-                  { type: 'text', label: "Cost Price", field: "product_costPrice", header: "Cost Price" },
-                  { type: 'text', label: "MRP", field: "product_mrp", header: "MRP" },
-                  { type: 'text', label: "Base Price", field: "product_basePrice", header: "Base Price" },
-                  { type: 'text', label: "Enabled", field: "product_enabled", header: "Enabled" },
-                  { type: 'text', label: "Tax Calculation Type", field: "product_taxCalcuation", header: "Tax Calcuation" },
+                  // { type: 'text', label: "Unit", field: "unit", header: "Unit" },
+                  // { type:'text', label:"Category", field: "category", header: "Category" },
+                  { type: 'text', label: "Length", field: "length", header: "Length" },
+                  { type: 'text', label: "Width", field: "width", header: "Width" },
+                  { type: 'text', label: "Height", field: "height", header: "Height" },
+                  { type: 'text', label: "Weight", field: "weight", header: "Weight" },
+                  { type: 'text', label: "Color", field: "Color", header: "Color" },
+                  { type: 'text', label: "Brand", field: "brand", header: "Brand" },
+                  { type: 'text', label: "Tax type code", field: "taxcode", header: "Tax code" },
+                  { type: 'text', label: "Gst Tax type code", field: "gstcode", header: "Gst Code" },
+                  { type: 'text', label: "HSN code", field: "hsnCode", header: "HSN Code" },
+                  // { type: 'text', label: "Tags", field: "tags", header: "Tags" },
+                  { type: 'text', label: "Cost Price", field: "costPrice", header: "Cost Price" },
+                  // { type: 'text', label: "MRP", field: "mrp", header: "MRP" },
+                  // { type: 'text', label: "Base Price", field: "basePrice", header: "Base Price" },
+                  // { type: 'text', label: "Enabled", field: "enabled", header: "Enabled" },
+                  { type: 'text', label: "Tax Calculation Type", field: "taxCalcuation", header: "Tax Calcuation" },
                 ].map((ele, i) => {
                   if (ele.type === "text") {
                     return (
@@ -1456,8 +1069,6 @@ export const ProductsList = () => {
                   }
                 })}
 
-
-
               <div className="field col-12 lg:col-3 mt-4">
                 <div className="p-float-label">
                   <AutoComplete
@@ -1471,10 +1082,12 @@ export const ProductsList = () => {
                     completeMethod={searchCategory}
                     field="name"
                     onChange={async (e) => {
+                      let sku = `TIF ${formik?.values?.category?.name}`
                       let category = typeof e.target.value === "string" ? e.value : e.value
 
                       await formik.setValues({
                         ...formik.values,
+                        sku,
                         category,
                       })
                     }}
@@ -1499,33 +1112,25 @@ export const ProductsList = () => {
               <div className="field col-12  mt-4">
 
                 {selectedStatus?.name === 'Bundle' ?
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 flex-wrap">
 
                     {inputs.map((input, index) => (
-                      <div key={index} className='flex gap-2'>
-
-                         {/* <Dropdown
-                      //     options={ProductOption}
-                      //     placeholder='Select a product'
-                      //     name='product'
-                      //     value={input.product}
-                      //     onChange={(event) => handleInputChange(event, index)}
-                      //   /> */}
-                      
-
-                         <AutoComplete
+                      <div key={index} className=''>
+                        <AutoComplete
                           id="name"
-                          value={input.product}
+                          value={input.name}
                           // value={formik.values.name}
-                          suggestions={filteredSuggestions}
-                          completeMethod={searchProducts}
+                          // suggestions={filteredSuggestions}
+                          // completeMethod={searchProducts}
+                          suggestions={categorySuggestions}
+                          completeMethod={searchCategory}
                           disabled={productEditState}
                           dropdown
                           forceSelection
                           field="name"
                           onChange={async (e) => {
                             console.log(e.value, 'event')
-                            
+
                             handleInputChange(e, index)
                             const test = [...inputs]
                             test[index] = { ...e.value }
@@ -1550,7 +1155,7 @@ export const ProductsList = () => {
                         />
 
                         <InputText
-                          className=''
+                          className='mt-3'
                           type='text'
                           placeholder='Quantity'
                           name='quantity'
@@ -1560,7 +1165,7 @@ export const ProductsList = () => {
 
                         <Button
                           icon="pi pi-minus"
-                          className="p-3 m-1"
+                          className="p-2 m-1"
                           onClick={() => handleRemoveInput(index)}
                         />
                       </div>
@@ -1570,6 +1175,7 @@ export const ProductsList = () => {
                       icon="pi pi-plus"
                       className="m-1"
                       onClick={handleAddInput}
+                      style={{height:'40px'}}
                     />
                   </div>
                   : null}
@@ -1629,7 +1235,8 @@ export const ProductsList = () => {
               <Button
                 type="submit"
                 className="mr-2 "
-                label={productEditState ? "UPDATE" : "SUBMIT"}
+                // label={productEditState ? "UPDATE" : "SUBMIT"}
+                label={editUpdateProduct ? 'update' : 'Submit'}
               />
               <Button
                 className="p-button-secondary"
@@ -1666,6 +1273,7 @@ export const ProductsList = () => {
             emptyMessage="No Results found."
 
             onRowClick={async (e) => {
+              console.log(e.data, 'e.data')
 
               setActiveRowData({ ...e.data })
               setProductEditState(true)
@@ -1682,15 +1290,16 @@ export const ProductsList = () => {
 
             {/* <Column header="Image" body={rowData => <img src={rowData.image} alt={rowData.name} />} />, */}
             <Column header="Image" body={rowData => <img src={rowData.image} alt="imageData" style={{ width: '300px', height: '220px' }} />} />
-            <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.products_sku} </a>} />
+            <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} />
 
             {columnComponents}
-            <Column
+
+            {/* <Column
               header="Action"
               body={(rowData) => {
                 return (
                   <div>
-                    {/* <Button
+                    <Button
                       icon="pi pi-pencil"
                       className="m-1"
                       onClick={async () => {
@@ -1703,7 +1312,7 @@ export const ProductsList = () => {
                         })
                         scrolToTop?.current && scrolToTop?.current.scrollIntoView()
                       }}
-                    /> */}
+                    />
                     <Button
                       disabled={true}
                       icon="pi pi-trash"
@@ -1716,7 +1325,8 @@ export const ProductsList = () => {
                   </div>
                 )
               }}
-            />
+            /> */}
+            
           </DataTable>
         </div>
       </div>
