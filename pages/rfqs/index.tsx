@@ -97,54 +97,4254 @@ export const RfqsList = () => {
   //   take: ITEMS_PER_PAGE,
   // })
 
+  //DB-8.0
+
   const [{ products }, { error: productsError }] = usePaginatedQuery(getProducts, {
-    orderBy: { product_id: "asc" },
+    orderBy: { id: "asc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
+  console.log('products: ', products);
+
 
   // const [{ rfq_products }, { refetch: fetchRfqProducts }] = usePaginatedQuery(getRfq_products, {
   //   orderBy: { rfq_products_id: "asc" },
   //   skip: ITEMS_PER_PAGE * page,
   //   take: ITEMS_PER_PAGE,
   // })
-  const [{ rfq_products }, { refetch: fetchRfqProducts, error: getRfq_productsError }] = useQuery(
-    getRfq_products,
-    {
-      orderBy: { rfq_products_id: "asc" },
-      // skip: 0,
-      // take: ITEMS_PER_PAGE,
-    }
-  )
-  const [{ vendors }, { error: getVendorsError }] = usePaginatedQuery(getVendors, {
-    orderBy: { vendor_id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-  })
-  const [{ vendor_products }, { error: getVendorsProductsError }] = usePaginatedQuery(
-    getVendor_products,
-    {
-      orderBy: { vp_id: "asc" },
-      skip: ITEMS_PER_PAGE * page,
-      take: ITEMS_PER_PAGE,
-    }
-  )
 
-  const [{ prefixes }, { error: getPrefixesError }] = useQuery(getPrefixes, {
-    orderBy: { id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-  })
-  const [{ rfq_senttos }, { error: getRfq_senttosError }] = useQuery(getRfq_senttos, {
-    orderBy: { id: "asc" },
-  })
-  const [{ agreement_terms: rfqTerms }, { error: agreementTermsError }] = useQuery(
-    getAgreement_terms,
+
+  // const [{ rfq_products }, { refetch: fetchRfqProducts, error: getRfq_productsError }] = useQuery(
+  //   getRfq_products,
+  //   {
+  //     orderBy: { rfq_products_id: "asc" },
+  //     // skip: 0,
+  //     // take: ITEMS_PER_PAGE,
+  //   }
+  // )
+
+  const data = {
+    "rfq_products": [
+      {
+        "price_per_unit": 856,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 0,
+        "rfq_products_id": 11,
+        "rfq_id": 17,
+        "products_product_id": 1
+      },
+      {
+        "price_per_unit": 78,
+        "products": {
+          "product_id": 7,
+          "name": "Heat Flame Sensor",
+          "description": "description heat",
+          "product_type": "Sensors",
+          "products_sku": "TIF007",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 70,
+        "rfq_products_id": 13,
+        "rfq_id": 18,
+        "products_product_id": 7
+      },
+      {
+        "price_per_unit": 24,
+        "products": {
+          "product_id": 2,
+          "name": "ESP",
+          "description": "esp-desc",
+          "product_type": "Electronics",
+          "products_sku": "TIF002",
+          "Price": 142,
+          "product_unit": "2pc set"
+        },
+        "quantity": 4,
+        "rfq_products_id": 15,
+        "rfq_id": 19,
+        "products_product_id": 2
+      },
+      {
+        "price_per_unit": 220,
+        "products": {
+          "product_id": 14,
+          "name": "R385 DC PUMP",
+          "description": "R385 ",
+          "product_type": "Motors and mechanical devices",
+          "products_sku": "TIF014",
+          "Price": 787,
+          "product_unit": null
+        },
+        "quantity": 30,
+        "rfq_products_id": 16,
+        "rfq_id": 22,
+        "products_product_id": 14
+      },
+      {
+        "price_per_unit": 5,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 6,
+        "rfq_products_id": 110,
+        "rfq_id": 161,
+        "products_product_id": 1
+      },
+      {
+        "price_per_unit": 12,
+        "products": {
+          "product_id": 20,
+          "name": "dummy name",
+          "description": "dummy name",
+          "product_type": "dummy product type",
+          "products_sku": "TIF000",
+          "Price": 4,
+          "product_unit": null
+        },
+        "quantity": 13,
+        "rfq_products_id": 135,
+        "rfq_id": 192,
+        "products_product_id": 20
+      },
+      {
+        "price_per_unit": 78,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 74,
+        "rfq_products_id": 136,
+        "rfq_id": 192,
+        "products_product_id": 1
+      },
+      {
+        "price_per_unit": 10,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 10,
+        "rfq_products_id": 137,
+        "rfq_id": 193,
+        "products_product_id": 1
+      },
+      {
+        "price_per_unit": 99,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 8,
+        "rfq_products_id": 138,
+        "rfq_id": 194,
+        "products_product_id": 1
+      },
+      {
+        "price_per_unit": 7,
+        "products": {
+          "product_id": 2,
+          "name": "ESP",
+          "description": "esp-desc",
+          "product_type": "Electronics",
+          "products_sku": "TIF002",
+          "Price": 142,
+          "product_unit": "2pc set"
+        },
+        "quantity": 8,
+        "rfq_products_id": 163,
+        "rfq_id": 161,
+        "products_product_id": 2
+      },
+      {
+        "price_per_unit": 99,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 8,
+        "rfq_products_id": 170,
+        "rfq_id": 194,
+        "products_product_id": 1
+      },
+      {
+        "price_per_unit": 856,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 0,
+        "rfq_products_id": 171,
+        "rfq_id": 17,
+        "products_product_id": 1
+      },
+      {
+        "price_per_unit": 24,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 213,
+        "rfq_id": 16,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 1,
+        "products": {
+          "product_id": 2,
+          "name": "ESP",
+          "description": "esp-desc",
+          "product_type": "Electronics",
+          "products_sku": "TIF002",
+          "Price": 142,
+          "product_unit": "2pc set"
+        },
+        "quantity": 11,
+        "rfq_products_id": 219,
+        "rfq_id": 238,
+        "products_product_id": 2
+      },
+      {
+        "price_per_unit": 34,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 45,
+        "rfq_products_id": 220,
+        "rfq_id": 239,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 67,
+        "rfq_products_id": 221,
+        "rfq_id": 239,
+        "products_product_id": 1
+      },
+      {
+        "price_per_unit": 0,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 100,
+        "rfq_products_id": 222,
+        "rfq_id": 240,
+        "products_product_id": 1
+      },
+      {
+        "price_per_unit": 78,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 8,
+        "rfq_products_id": 225,
+        "rfq_id": 241,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 0,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 226,
+        "rfq_id": 243,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 12,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 1,
+        "rfq_products_id": 227,
+        "rfq_id": 244,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 24,
+        "products": {
+          "product_id": 2,
+          "name": "ESP",
+          "description": "esp-desc",
+          "product_type": "Electronics",
+          "products_sku": "TIF002",
+          "Price": 142,
+          "product_unit": "2pc set"
+        },
+        "quantity": 0,
+        "rfq_products_id": 228,
+        "rfq_id": 16,
+        "products_product_id": 2
+      },
+      {
+        "price_per_unit": 45,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 45,
+        "rfq_products_id": 229,
+        "rfq_id": 245,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 45,
+        "products": {
+          "product_id": 2,
+          "name": "ESP",
+          "description": "esp-desc",
+          "product_type": "Electronics",
+          "products_sku": "TIF002",
+          "Price": 142,
+          "product_unit": "2pc set"
+        },
+        "quantity": 45,
+        "rfq_products_id": 230,
+        "rfq_id": 245,
+        "products_product_id": 2
+      },
+      {
+        "price_per_unit": 45,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 45,
+        "rfq_products_id": 231,
+        "rfq_id": 245,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 34,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 56,
+        "rfq_products_id": 232,
+        "rfq_id": 246,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 23,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "quantity": 40,
+        "rfq_products_id": 233,
+        "rfq_id": 247,
+        "products_product_id": 3
+      },
+      {
+        "price_per_unit": 3,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 3,
+        "rfq_products_id": 234,
+        "rfq_id": 248,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 12,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 13,
+        "rfq_products_id": 235,
+        "rfq_id": 249,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 58,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 59,
+        "rfq_products_id": 236,
+        "rfq_id": 249,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 7,
+          "name": "Heat Flame Sensor",
+          "description": "description heat",
+          "product_type": "Sensors",
+          "products_sku": "TIF007",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 1,
+        "rfq_products_id": 237,
+        "rfq_id": 250,
+        "products_product_id": 7
+      },
+      {
+        "price_per_unit": 42,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 2,
+        "rfq_products_id": 238,
+        "rfq_id": 252,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 1,
+        "rfq_products_id": 239,
+        "rfq_id": 253,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 240,
+        "rfq_id": 254,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 42,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 1,
+        "rfq_products_id": 241,
+        "rfq_id": 255,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 242,
+        "rfq_id": 256,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 243,
+        "rfq_id": 257,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 24,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "quantity": 0,
+        "rfq_products_id": 244,
+        "rfq_id": 258,
+        "products_product_id": 3
+      },
+      {
+        "price_per_unit": 0,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "quantity": 0,
+        "rfq_products_id": 245,
+        "rfq_id": 259,
+        "products_product_id": 3
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 246,
+        "rfq_id": 260,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 247,
+        "rfq_id": 261,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 24,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "quantity": 0,
+        "rfq_products_id": 248,
+        "rfq_id": 262,
+        "products_product_id": 3
+      },
+      {
+        "price_per_unit": 67,
+        "products": {
+          "product_id": 6,
+          "name": "Turbidity Sensor",
+          "description": "description sensor",
+          "product_type": "Sensors",
+          "products_sku": "TIF006",
+          "Price": 67,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 249,
+        "rfq_id": 263,
+        "products_product_id": 6
+      },
+      {
+        "price_per_unit": 67,
+        "products": {
+          "product_id": 6,
+          "name": "Turbidity Sensor",
+          "description": "description sensor",
+          "product_type": "Sensors",
+          "products_sku": "TIF006",
+          "Price": 67,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 250,
+        "rfq_id": 264,
+        "products_product_id": 6
+      },
+      {
+        "price_per_unit": 42,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 40,
+        "rfq_products_id": 251,
+        "rfq_id": 265,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 142,
+        "products": {
+          "product_id": 2,
+          "name": "ESP",
+          "description": "esp-desc",
+          "product_type": "Electronics",
+          "products_sku": "TIF002",
+          "Price": 142,
+          "product_unit": "2pc set"
+        },
+        "quantity": 140,
+        "rfq_products_id": 252,
+        "rfq_id": 265,
+        "products_product_id": 2
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 50,
+        "rfq_products_id": 253,
+        "rfq_id": 265,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 42,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 254,
+        "rfq_id": 266,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 142,
+        "products": {
+          "product_id": 2,
+          "name": "ESP",
+          "description": "esp-desc",
+          "product_type": "Electronics",
+          "products_sku": "TIF002",
+          "Price": 142,
+          "product_unit": "2pc set"
+        },
+        "quantity": 0,
+        "rfq_products_id": 255,
+        "rfq_id": 266,
+        "products_product_id": 2
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 256,
+        "rfq_id": 266,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 257,
+        "rfq_id": 267,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 42,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 10,
+        "rfq_products_id": 258,
+        "rfq_id": 268,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 24,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "quantity": 0,
+        "rfq_products_id": 259,
+        "rfq_id": 306,
+        "products_product_id": 3
+      },
+      {
+        "price_per_unit": 42,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 260,
+        "rfq_id": 306,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 24,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "quantity": 0,
+        "rfq_products_id": 261,
+        "rfq_id": 306,
+        "products_product_id": 3
+      },
+      {
+        "price_per_unit": 24,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "quantity": 2,
+        "rfq_products_id": 262,
+        "rfq_id": 307,
+        "products_product_id": 3
+      },
+      {
+        "price_per_unit": 42,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 1,
+        "rfq_products_id": 263,
+        "rfq_id": 307,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 24,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 264,
+        "rfq_id": 16,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 12,
+        "rfq_products_id": 265,
+        "rfq_id": 308,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 24,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "quantity": 10,
+        "rfq_products_id": 266,
+        "rfq_id": 308,
+        "products_product_id": 3
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 267,
+        "rfq_id": 309,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 42,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 268,
+        "rfq_id": 309,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 24,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "quantity": 0,
+        "rfq_products_id": 269,
+        "rfq_id": 309,
+        "products_product_id": 3
+      },
+      {
+        "price_per_unit": 142,
+        "products": {
+          "product_id": 2,
+          "name": "ESP",
+          "description": "esp-desc",
+          "product_type": "Electronics",
+          "products_sku": "TIF002",
+          "Price": 142,
+          "product_unit": "2pc set"
+        },
+        "quantity": 0,
+        "rfq_products_id": 270,
+        "rfq_id": 309,
+        "products_product_id": 2
+      },
+      {
+        "price_per_unit": 11,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 0,
+        "rfq_products_id": 271,
+        "rfq_id": 309,
+        "products_product_id": 1
+      },
+      {
+        "price_per_unit": 24,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "quantity": 0,
+        "rfq_products_id": 272,
+        "rfq_id": 311,
+        "products_product_id": 3
+      },
+      {
+        "price_per_unit": 24,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "quantity": 0,
+        "rfq_products_id": 273,
+        "rfq_id": 311,
+        "products_product_id": 3
+      },
+      {
+        "price_per_unit": 142,
+        "products": {
+          "product_id": 2,
+          "name": "ESP",
+          "description": "esp-desc",
+          "product_type": "Electronics",
+          "products_sku": "TIF002",
+          "Price": 142,
+          "product_unit": "2pc set"
+        },
+        "quantity": 0,
+        "rfq_products_id": 274,
+        "rfq_id": 311,
+        "products_product_id": 2
+      },
+      {
+        "price_per_unit": 142,
+        "products": {
+          "product_id": 2,
+          "name": "ESP",
+          "description": "esp-desc",
+          "product_type": "Electronics",
+          "products_sku": "TIF002",
+          "Price": 142,
+          "product_unit": "2pc set"
+        },
+        "quantity": 21,
+        "rfq_products_id": 275,
+        "rfq_id": 315,
+        "products_product_id": 2
+      },
+      {
+        "price_per_unit": 24,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "quantity": 0,
+        "rfq_products_id": 276,
+        "rfq_id": 317,
+        "products_product_id": 3
+      },
+      {
+        "price_per_unit": 142,
+        "products": {
+          "product_id": 2,
+          "name": "ESP",
+          "description": "esp-desc",
+          "product_type": "Electronics",
+          "products_sku": "TIF002",
+          "Price": 142,
+          "product_unit": "2pc set"
+        },
+        "quantity": 0,
+        "rfq_products_id": 277,
+        "rfq_id": 320,
+        "products_product_id": 2
+      },
+      {
+        "price_per_unit": 11,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 0,
+        "rfq_products_id": 278,
+        "rfq_id": 321,
+        "products_product_id": 1
+      },
+      {
+        "price_per_unit": 11,
+        "products": {
+          "product_id": 2,
+          "name": "ESP",
+          "description": "esp-desc",
+          "product_type": "Electronics",
+          "products_sku": "TIF002",
+          "Price": 142,
+          "product_unit": "2pc set"
+        },
+        "quantity": 0,
+        "rfq_products_id": 279,
+        "rfq_id": 322,
+        "products_product_id": 2
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 12,
+        "rfq_products_id": 280,
+        "rfq_id": 323,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 24,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "quantity": 0,
+        "rfq_products_id": 281,
+        "rfq_id": 323,
+        "products_product_id": 3
+      },
+      {
+        "price_per_unit": 11,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 12,
+        "rfq_products_id": 282,
+        "rfq_id": 324,
+        "products_product_id": 1
+      },
+      {
+        "price_per_unit": 0,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 283,
+        "rfq_id": 325,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 856,
+        "products": {
+          "product_id": 9,
+          "name": "Laser Module",
+          "description": "description laser",
+          "product_type": "Sensors",
+          "products_sku": "TIF009",
+          "Price": 856,
+          "product_unit": null
+        },
+        "quantity": 70,
+        "rfq_products_id": 284,
+        "rfq_id": 325,
+        "products_product_id": 9
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 33,
+        "rfq_products_id": 285,
+        "rfq_id": 326,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 33,
+        "rfq_products_id": 286,
+        "rfq_id": 327,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 33,
+        "rfq_products_id": 287,
+        "rfq_id": 328,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 14,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 10,
+        "rfq_products_id": 288,
+        "rfq_id": 329,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 142,
+        "products": {
+          "product_id": 2,
+          "name": "ESP",
+          "description": "esp-desc",
+          "product_type": "Electronics",
+          "products_sku": "TIF002",
+          "Price": 142,
+          "product_unit": "2pc set"
+        },
+        "quantity": 241,
+        "rfq_products_id": 291,
+        "rfq_id": 329,
+        "products_product_id": 2
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 10,
+          "name": "Sound Sensor Module",
+          "description": "sound description",
+          "product_type": "Sensors",
+          "products_sku": "TIF010",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 4,
+        "rfq_products_id": 292,
+        "rfq_id": 19,
+        "products_product_id": 10
+      },
+      {
+        "price_per_unit": 343,
+        "products": {
+          "product_id": 15,
+          "name": "Solenoid valve 12V",
+          "description": "valve 12V",
+          "product_type": "Motors and mechanical devices",
+          "products_sku": "TIF015",
+          "Price": 343,
+          "product_unit": null
+        },
+        "quantity": 8,
+        "rfq_products_id": 293,
+        "rfq_id": 19,
+        "products_product_id": 15
+      },
+      {
+        "price_per_unit": 5657,
+        "products": {
+          "product_id": 11,
+          "name": "Servo Motor Pan-Tilt Setup",
+          "description": "servo description",
+          "product_type": "Motors and mechanical devices",
+          "products_sku": "TIF011",
+          "Price": 5657,
+          "product_unit": null
+        },
+        "quantity": 6,
+        "rfq_products_id": 294,
+        "rfq_id": 19,
+        "products_product_id": 11
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 4,
+        "rfq_products_id": 295,
+        "rfq_id": 19,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 24,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "quantity": 2,
+        "rfq_products_id": 296,
+        "rfq_id": 19,
+        "products_product_id": 3
+      },
+      {
+        "price_per_unit": 42,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 1,
+        "rfq_products_id": 297,
+        "rfq_id": 19,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 299,
+        "rfq_id": 339,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 11,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 0,
+        "rfq_products_id": 300,
+        "rfq_id": 339,
+        "products_product_id": 1
+      },
+      {
+        "price_per_unit": 42,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 301,
+        "rfq_id": 339,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 142,
+        "products": {
+          "product_id": 2,
+          "name": "ESP",
+          "description": "esp-desc",
+          "product_type": "Electronics",
+          "products_sku": "TIF002",
+          "Price": 142,
+          "product_unit": "2pc set"
+        },
+        "quantity": 0,
+        "rfq_products_id": 302,
+        "rfq_id": 339,
+        "products_product_id": 2
+      },
+      {
+        "price_per_unit": 0,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 23,
+        "rfq_products_id": 303,
+        "rfq_id": 340,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 0,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "quantity": 1,
+        "rfq_products_id": 304,
+        "rfq_id": 340,
+        "products_product_id": 3
+      },
+      {
+        "price_per_unit": 42,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 2,
+        "rfq_products_id": 305,
+        "rfq_id": 341,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "quantity": 0,
+        "rfq_products_id": 306,
+        "rfq_id": 342,
+        "products_product_id": 3
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 12,
+        "rfq_products_id": 307,
+        "rfq_id": 343,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 42,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 308,
+        "rfq_id": 344,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 42,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 325,
+        "rfq_id": 361,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 142,
+        "products": {
+          "product_id": 2,
+          "name": "ESP",
+          "description": "esp-desc",
+          "product_type": "Electronics",
+          "products_sku": "TIF002",
+          "Price": 142,
+          "product_unit": "2pc set"
+        },
+        "quantity": 0,
+        "rfq_products_id": 326,
+        "rfq_id": 362,
+        "products_product_id": 2
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 12,
+        "rfq_products_id": 327,
+        "rfq_id": 363,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 24,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "quantity": 1,
+        "rfq_products_id": 328,
+        "rfq_id": 364,
+        "products_product_id": 3
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 12,
+        "rfq_products_id": 329,
+        "rfq_id": 365,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 11,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 0,
+        "rfq_products_id": 330,
+        "rfq_id": 366,
+        "products_product_id": 1
+      },
+      {
+        "price_per_unit": 42,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 12,
+        "rfq_products_id": 331,
+        "rfq_id": 367,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 11,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 0,
+        "rfq_products_id": 332,
+        "rfq_id": 368,
+        "products_product_id": 1
+      },
+      {
+        "price_per_unit": 42,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 333,
+        "rfq_id": 369,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 334,
+        "rfq_id": 370,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 335,
+        "rfq_id": 370,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 11,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 342,
+        "rfq_id": 322,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 11,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 343,
+        "rfq_id": 322,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 11,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 0,
+        "rfq_products_id": 344,
+        "rfq_id": 322,
+        "products_product_id": 1
+      },
+      {
+        "price_per_unit": 3398,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 345,
+        "rfq_id": 342,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 346,
+        "products": {
+          "product_id": 13,
+          "name": "A4988 Stepper Motor Driver",
+          "description": "description pump",
+          "product_type": "Motors and mechanical devices",
+          "products_sku": "TIF013",
+          "Price": 346,
+          "product_unit": null
+        },
+        "quantity": 12,
+        "rfq_products_id": 346,
+        "rfq_id": 374,
+        "products_product_id": 13
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 347,
+        "rfq_id": 375,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 348,
+        "rfq_id": 376,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 349,
+        "rfq_id": 377,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 24,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "quantity": 0,
+        "rfq_products_id": 350,
+        "rfq_id": 378,
+        "products_product_id": 3
+      },
+      {
+        "price_per_unit": 11,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 0,
+        "rfq_products_id": 351,
+        "rfq_id": 379,
+        "products_product_id": 1
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 352,
+        "rfq_id": 380,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 353,
+        "rfq_id": 381,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 11,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 0,
+        "rfq_products_id": 354,
+        "rfq_id": 382,
+        "products_product_id": 1
+      },
+      {
+        "price_per_unit": 11,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 45,
+        "rfq_products_id": 355,
+        "rfq_id": 383,
+        "products_product_id": 1
+      },
+      {
+        "price_per_unit": 856,
+        "products": {
+          "product_id": 9,
+          "name": "Laser Module",
+          "description": "description laser",
+          "product_type": "Sensors",
+          "products_sku": "TIF009",
+          "Price": 856,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 356,
+        "rfq_id": 17,
+        "products_product_id": 9
+      },
+      {
+        "price_per_unit": 42,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 0,
+        "rfq_products_id": 357,
+        "rfq_id": 17,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 142,
+        "products": {
+          "product_id": 2,
+          "name": "ESP",
+          "description": "esp-desc",
+          "product_type": "Electronics",
+          "products_sku": "TIF002",
+          "Price": 142,
+          "product_unit": "2pc set"
+        },
+        "quantity": 0,
+        "rfq_products_id": 361,
+        "rfq_id": 17,
+        "products_product_id": 2
+      },
+      {
+        "price_per_unit": 24,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "quantity": 0,
+        "rfq_products_id": 362,
+        "rfq_id": 16,
+        "products_product_id": 3
+      },
+      {
+        "price_per_unit": 142,
+        "products": {
+          "product_id": 2,
+          "name": "ESP",
+          "description": "esp-desc",
+          "product_type": "Electronics",
+          "products_sku": "TIF002",
+          "Price": 142,
+          "product_unit": "2pc set"
+        },
+        "quantity": 0,
+        "rfq_products_id": 363,
+        "rfq_id": 16,
+        "products_product_id": 2
+      },
+      {
+        "price_per_unit": 11,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 0,
+        "rfq_products_id": 366,
+        "rfq_id": 384,
+        "products_product_id": 1
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 6,
+        "rfq_products_id": 367,
+        "rfq_id": 385,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 65,
+        "products": {
+          "product_id": 12,
+          "name": "Micro Vibration Motor",
+          "description": "micro  ",
+          "product_type": "Motors and mechanical devices",
+          "products_sku": "TIF012",
+          "Price": 65,
+          "product_unit": null
+        },
+        "quantity": 5,
+        "rfq_products_id": 368,
+        "rfq_id": 385,
+        "products_product_id": 12
+      },
+      {
+        "price_per_unit": 56,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "quantity": 21,
+        "rfq_products_id": 369,
+        "rfq_id": 385,
+        "products_product_id": 5
+      },
+      {
+        "price_per_unit": 42,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "quantity": 42,
+        "rfq_products_id": 370,
+        "rfq_id": 385,
+        "products_product_id": 4
+      },
+      {
+        "price_per_unit": 11,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "quantity": 34,
+        "rfq_products_id": 371,
+        "rfq_id": 385,
+        "products_product_id": 1
+      }
+    ],
+    "vendors": [
+      {
+        "vendor_id": 1,
+        "vendor_code": "DA",
+        "vendor_email": "mdatif796@gmail.com",
+        "vendor_city": "Panaji",
+        "vendor_contact": "4562879123",
+        "vendor_state": "Goa",
+        "vendor_gstin": "GSTRIO783211111",
+        "vendor": "Dylan Alisson",
+        "address": "Rio ",
+        "credit_period": "411",
+        "lead_time": "471",
+        "status": false,
+        "vendor_tags": [
+          {
+            "id": 52,
+            "vendor_vendor_id": 1,
+            "tags_id": 1,
+            "tags": {
+              "id": 1,
+              "name": "best",
+              "color": "#ffcdd2"
+            }
+          },
+          {
+            "id": 51,
+            "vendor_vendor_id": 1,
+            "tags_id": 21,
+            "tags": {
+              "id": 21,
+              "name": "specializations",
+              "color": "A9927D"
+            }
+          }
+        ]
+      },
+      {
+        "vendor_id": 2,
+        "vendor_code": "UE",
+        "vendor_email": "udederson@gmail.com",
+        "vendor_city": "Manuguru",
+        "vendor_contact": "8956237845",
+        "vendor_state": "Andhra Pradesh",
+        "vendor_gstin": "GSTMAN012541111",
+        "vendor": "Ud Ederson",
+        "address": "Manaus",
+        "credit_period": "5",
+        "lead_time": "4",
+        "status": true,
+        "vendor_tags": [
+          {
+            "id": 12,
+            "vendor_vendor_id": 2,
+            "tags_id": 1,
+            "tags": {
+              "id": 1,
+              "name": "best",
+              "color": "#ffcdd2"
+            }
+          },
+          {
+            "id": 3,
+            "vendor_vendor_id": 2,
+            "tags_id": 2,
+            "tags": {
+              "id": 2,
+              "name": "poor",
+              "color": "#FCFF4B"
+            }
+          },
+          {
+            "id": 29,
+            "vendor_vendor_id": 2,
+            "tags_id": 6,
+            "tags": {
+              "id": 6,
+              "name": "priority",
+              "color": "F1A208"
+            }
+          }
+        ]
+      },
+      {
+        "vendor_id": 3,
+        "vendor_code": "TE",
+        "vendor_email": "thomasEdison@gmail.com",
+        "vendor_city": "Miraj",
+        "vendor_contact": "8954236172",
+        "vendor_state": "Maharashtra",
+        "vendor_gstin": "GSTMIL009222222",
+        "vendor": "Thomas Edison",
+        "address": "Milan",
+        "credit_period": "4",
+        "lead_time": "4",
+        "status": false,
+        "vendor_tags": [
+          {
+            "id": 7,
+            "vendor_vendor_id": 3,
+            "tags_id": 1,
+            "tags": {
+              "id": 1,
+              "name": "best",
+              "color": "#ffcdd2"
+            }
+          },
+          {
+            "id": 30,
+            "vendor_vendor_id": 3,
+            "tags_id": 4,
+            "tags": {
+              "id": 4,
+              "name": "delivery time",
+              "color": "#FFFFFF"
+            }
+          }
+        ]
+      },
+      {
+        "vendor_id": 4,
+        "vendor_code": "KM",
+        "vendor_email": "kamehameha@gmail.com",
+        "vendor_city": "Tonk",
+        "vendor_contact": "7856124391",
+        "vendor_state": "Rajasthan",
+        "vendor_gstin": "GSTTK0097811111",
+        "vendor": "Kamehameha",
+        "address": "Tokyo",
+        "credit_period": "7",
+        "lead_time": "4",
+        "status": true,
+        "vendor_tags": [
+          {
+            "id": 9,
+            "vendor_vendor_id": 4,
+            "tags_id": 1,
+            "tags": {
+              "id": 1,
+              "name": "best",
+              "color": "#ffcdd2"
+            }
+          },
+          {
+            "id": 31,
+            "vendor_vendor_id": 4,
+            "tags_id": 10,
+            "tags": {
+              "id": 10,
+              "name": "certifications",
+              "color": "5E4352"
+            }
+          },
+          {
+            "id": 33,
+            "vendor_vendor_id": 4,
+            "tags_id": 21,
+            "tags": {
+              "id": 21,
+              "name": "specializations",
+              "color": "A9927D"
+            }
+          },
+          {
+            "id": 32,
+            "vendor_vendor_id": 4,
+            "tags_id": 25,
+            "tags": {
+              "id": 25,
+              "name": "awards",
+              "color": null
+            }
+          },
+          {
+            "id": 19,
+            "vendor_vendor_id": 4,
+            "tags_id": 26,
+            "tags": {
+              "id": 26,
+              "name": "inventory",
+              "color": "A1B5D8"
+            }
+          }
+        ]
+      },
+      {
+        "vendor_id": 5,
+        "vendor_code": "RH",
+        "vendor_email": "rahul@gmail.com",
+        "vendor_city": "Dumka",
+        "vendor_contact": "4556788925",
+        "vendor_state": "Jharkhand",
+        "vendor_gstin": "GSTDUB012541111",
+        "vendor": "Rahul",
+        "address": "Dubai",
+        "credit_period": "3",
+        "lead_time": "4",
+        "status": true,
+        "vendor_tags": [
+          {
+            "id": 16,
+            "vendor_vendor_id": 5,
+            "tags_id": 12,
+            "tags": {
+              "id": 12,
+              "name": "customer service",
+              "color": "427AA1"
+            }
+          },
+          {
+            "id": 20,
+            "vendor_vendor_id": 5,
+            "tags_id": 14,
+            "tags": {
+              "id": 14,
+              "name": "payment options",
+              "color": "D9F9A5"
+            }
+          }
+        ]
+      },
+      {
+        "vendor_id": 123,
+        "vendor_code": "VJ",
+        "vendor_email": "varunram.66@gmail.com",
+        "vendor_city": "Bangalore",
+        "vendor_contact": "7892496089",
+        "vendor_state": "Karnataka",
+        "vendor_gstin": "GSTN97313398111",
+        "vendor": "Varun",
+        "address": "Hennur",
+        "credit_period": "12",
+        "lead_time": "21",
+        "status": false,
+        "vendor_tags": [
+          {
+            "id": 21,
+            "vendor_vendor_id": 123,
+            "tags_id": 2,
+            "tags": {
+              "id": 2,
+              "name": "poor",
+              "color": "#FCFF4B"
+            }
+          }
+        ]
+      },
+      {
+        "vendor_id": 133,
+        "vendor_code": "iotif",
+        "vendor_email": "iot@gmail.com",
+        "vendor_city": "Gopalganj",
+        "vendor_contact": "4567892567",
+        "vendor_state": "Bihar",
+        "vendor_gstin": "GSTO14562398745",
+        "vendor": "TIF",
+        "address": "banglore",
+        "credit_period": "10",
+        "lead_time": "12",
+        "status": false,
+        "vendor_tags": [
+          {
+            "id": 5,
+            "vendor_vendor_id": 133,
+            "tags_id": 1,
+            "tags": {
+              "id": 1,
+              "name": "best",
+              "color": "#ffcdd2"
+            }
+          },
+          {
+            "id": 22,
+            "vendor_vendor_id": 133,
+            "tags_id": 30,
+            "tags": {
+              "id": 30,
+              "name": "logistics",
+              "color": "b908c9"
+            }
+          }
+        ]
+      },
+      {
+        "vendor_id": 134,
+        "vendor_code": "KR",
+        "vendor_email": "kar@gmail.com",
+        "vendor_city": "Cambay",
+        "vendor_contact": "8987634523",
+        "vendor_state": "Gujarat",
+        "vendor_gstin": "GSTI87640111111",
+        "vendor": "Karan",
+        "address": "12th street ",
+        "credit_period": "4",
+        "lead_time": "5",
+        "status": true,
+        "vendor_tags": [
+          {
+            "id": 53,
+            "vendor_vendor_id": 134,
+            "tags_id": 4,
+            "tags": {
+              "id": 4,
+              "name": "delivery time",
+              "color": "#FFFFFF"
+            }
+          },
+          {
+            "id": 54,
+            "vendor_vendor_id": 134,
+            "tags_id": 16,
+            "tags": {
+              "id": 16,
+              "name": "warranty",
+              "color": "679436"
+            }
+          },
+          {
+            "id": 23,
+            "vendor_vendor_id": 134,
+            "tags_id": 20,
+            "tags": {
+              "id": 20,
+              "name": "lead time",
+              "color": "EAC5D8"
+            }
+          },
+          {
+            "id": 55,
+            "vendor_vendor_id": 134,
+            "tags_id": 22,
+            "tags": {
+              "id": 22,
+              "name": "availability",
+              "color": "D9F9A5"
+            }
+          },
+          {
+            "id": 56,
+            "vendor_vendor_id": 134,
+            "tags_id": 101,
+            "tags": {
+              "id": 101,
+              "name": "awesome",
+              "color": "5E0035"
+            }
+          }
+        ]
+      },
+      {
+        "vendor_id": 135,
+        "vendor_code": "RA",
+        "vendor_email": "raj@gail.com",
+        "vendor_city": "banglor",
+        "vendor_contact": "1546237964",
+        "vendor_state": "Karnataka",
+        "vendor_gstin": "GSTI14254572222",
+        "vendor": "Raj",
+        "address": "11th street",
+        "credit_period": "11",
+        "lead_time": "12",
+        "status": true,
+        "vendor_tags": [
+          {
+            "id": 6,
+            "vendor_vendor_id": 135,
+            "tags_id": 1,
+            "tags": {
+              "id": 1,
+              "name": "best",
+              "color": "#ffcdd2"
+            }
+          }
+        ]
+      },
+      {
+        "vendor_id": 147,
+        "vendor_code": "FK",
+        "vendor_email": "xylene8@gmail.com",
+        "vendor_city": "Salur",
+        "vendor_contact": "4567891238",
+        "vendor_state": "Andhra Pradesh",
+        "vendor_gstin": "GSTIN6786543467",
+        "vendor": "Frank",
+        "address": "11",
+        "credit_period": "11",
+        "lead_time": "11",
+        "status": true,
+        "vendor_tags": [
+          {
+            "id": 25,
+            "vendor_vendor_id": 147,
+            "tags_id": 2,
+            "tags": {
+              "id": 2,
+              "name": "poor",
+              "color": "#FCFF4B"
+            }
+          }
+        ]
+      },
+      {
+        "vendor_id": 168,
+        "vendor_code": "z",
+        "vendor_email": "z@g.com",
+        "vendor_city": "Chirala",
+        "vendor_contact": "1456987856",
+        "vendor_state": "Andhra Pradesh",
+        "vendor_gstin": "145698712345698",
+        "vendor": "z",
+        "address": "asd",
+        "credit_period": "45",
+        "lead_time": "56",
+        "status": true,
+        "vendor_tags": [
+          {
+            "id": 35,
+            "vendor_vendor_id": 168,
+            "tags_id": 5,
+            "tags": {
+              "id": 5,
+              "name": "location",
+              "color": "#E4D6A7"
+            }
+          },
+          {
+            "id": 26,
+            "vendor_vendor_id": 168,
+            "tags_id": 26,
+            "tags": {
+              "id": 26,
+              "name": "inventory",
+              "color": "A1B5D8"
+            }
+          }
+        ]
+      },
+      {
+        "vendor_id": 170,
+        "vendor_code": "asq",
+        "vendor_email": "d@c.com",
+        "vendor_city": "Wanaparthy",
+        "vendor_contact": "1234567894",
+        "vendor_state": "Andhra Pradesh",
+        "vendor_gstin": "123456789568745",
+        "vendor": "q",
+        "address": "sda",
+        "credit_period": "12",
+        "lead_time": "45",
+        "status": true,
+        "vendor_tags": [
+          {
+            "id": 18,
+            "vendor_vendor_id": 170,
+            "tags_id": 15,
+            "tags": {
+              "id": 15,
+              "name": "return policy",
+              "color": "A9927D"
+            }
+          },
+          {
+            "id": 36,
+            "vendor_vendor_id": 170,
+            "tags_id": 19,
+            "tags": {
+              "id": 19,
+              "name": "quantity discounts",
+              "color": "005C69"
+            }
+          }
+        ]
+      },
+      {
+        "vendor_id": 171,
+        "vendor_code": "m",
+        "vendor_email": "m2@G.COM",
+        "vendor_city": "Zahirabad",
+        "vendor_contact": "1456239875",
+        "vendor_state": "Andhra Pradesh",
+        "vendor_gstin": "123654789632145",
+        "vendor": "m",
+        "address": "WSAQ",
+        "credit_period": "45",
+        "lead_time": "69",
+        "status": true,
+        "vendor_tags": [
+          {
+            "id": 17,
+            "vendor_vendor_id": 171,
+            "tags_id": 2,
+            "tags": {
+              "id": 2,
+              "name": "poor",
+              "color": "#FCFF4B"
+            }
+          },
+          {
+            "id": 34,
+            "vendor_vendor_id": 171,
+            "tags_id": 19,
+            "tags": {
+              "id": 19,
+              "name": "quantity discounts",
+              "color": "005C69"
+            }
+          }
+        ]
+      },
+      {
+        "vendor_id": 173,
+        "vendor_code": "SWD",
+        "vendor_email": "SD@GMAIL.COM",
+        "vendor_city": "Bellampalle",
+        "vendor_contact": "7895263654",
+        "vendor_state": "Andhra Pradesh",
+        "vendor_gstin": "SDEF412C5D6E3S6",
+        "vendor": "vj",
+        "address": "STRING ",
+        "credit_period": "56",
+        "lead_time": "85",
+        "status": true,
+        "vendor_tags": [
+          {
+            "id": 27,
+            "vendor_vendor_id": 173,
+            "tags_id": 21,
+            "tags": {
+              "id": 21,
+              "name": "specializations",
+              "color": "A9927D"
+            }
+          },
+          {
+            "id": 13,
+            "vendor_vendor_id": 173,
+            "tags_id": 22,
+            "tags": {
+              "id": 22,
+              "name": "availability",
+              "color": "D9F9A5"
+            }
+          }
+        ]
+      },
+      {
+        "vendor_id": 192,
+        "vendor_code": "AS",
+        "vendor_email": "AS@gmail.com",
+        "vendor_city": "AS",
+        "vendor_contact": "AS",
+        "vendor_state": "AS",
+        "vendor_gstin": "AS",
+        "vendor": "AS",
+        "address": "AS",
+        "credit_period": "AS",
+        "lead_time": "AS",
+        "status": true,
+        "vendor_tags": []
+      }
+    ],
+    "vendor_products": [
+      {
+        "vp_id": 1,
+        "unit_price": 424,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "vendor": {
+          "vendor_id": 1,
+          "vendor_code": "DA",
+          "vendor_email": "mdatif796@gmail.com",
+          "vendor_city": "Panaji",
+          "vendor_contact": "4562879123",
+          "vendor_state": "Goa",
+          "vendor_gstin": "GSTRIO783211111",
+          "vendor": "Dylan Alisson",
+          "address": "Rio ",
+          "credit_period": "411",
+          "lead_time": "471",
+          "status": false
+        },
+        "vendor_vendor_id": 1,
+        "products_product_id": 1,
+        "vendor_sku": "DA1002"
+      },
+      {
+        "vp_id": 2,
+        "unit_price": 10,
+        "products": {
+          "product_id": 2,
+          "name": "ESP",
+          "description": "esp-desc",
+          "product_type": "Electronics",
+          "products_sku": "TIF002",
+          "Price": 142,
+          "product_unit": "2pc set"
+        },
+        "vendor": {
+          "vendor_id": 1,
+          "vendor_code": "DA",
+          "vendor_email": "mdatif796@gmail.com",
+          "vendor_city": "Panaji",
+          "vendor_contact": "4562879123",
+          "vendor_state": "Goa",
+          "vendor_gstin": "GSTRIO783211111",
+          "vendor": "Dylan Alisson",
+          "address": "Rio ",
+          "credit_period": "411",
+          "lead_time": "471",
+          "status": false
+        },
+        "vendor_vendor_id": 1,
+        "products_product_id": 2,
+        "vendor_sku": "DA1001"
+      },
+      {
+        "vp_id": 5,
+        "unit_price": 50,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "vendor": {
+          "vendor_id": 3,
+          "vendor_code": "TE",
+          "vendor_email": "thomasEdison@gmail.com",
+          "vendor_city": "Miraj",
+          "vendor_contact": "8954236172",
+          "vendor_state": "Maharashtra",
+          "vendor_gstin": "GSTMIL009222222",
+          "vendor": "Thomas Edison",
+          "address": "Milan",
+          "credit_period": "4",
+          "lead_time": "4",
+          "status": false
+        },
+        "vendor_vendor_id": 3,
+        "products_product_id": 3,
+        "vendor_sku": "TE103"
+      },
+      {
+        "vp_id": 6,
+        "unit_price": 905,
+        "products": {
+          "product_id": 6,
+          "name": "Turbidity Sensor",
+          "description": "description sensor",
+          "product_type": "Sensors",
+          "products_sku": "TIF006",
+          "Price": 67,
+          "product_unit": null
+        },
+        "vendor": {
+          "vendor_id": 3,
+          "vendor_code": "TE",
+          "vendor_email": "thomasEdison@gmail.com",
+          "vendor_city": "Miraj",
+          "vendor_contact": "8954236172",
+          "vendor_state": "Maharashtra",
+          "vendor_gstin": "GSTMIL009222222",
+          "vendor": "Thomas Edison",
+          "address": "Milan",
+          "credit_period": "4",
+          "lead_time": "4",
+          "status": false
+        },
+        "vendor_vendor_id": 3,
+        "products_product_id": 6,
+        "vendor_sku": "TE106"
+      },
+      {
+        "vp_id": 8,
+        "unit_price": 45,
+        "products": {
+          "product_id": 7,
+          "name": "Heat Flame Sensor",
+          "description": "description heat",
+          "product_type": "Sensors",
+          "products_sku": "TIF007",
+          "Price": 56,
+          "product_unit": null
+        },
+        "vendor": {
+          "vendor_id": 3,
+          "vendor_code": "TE",
+          "vendor_email": "thomasEdison@gmail.com",
+          "vendor_city": "Miraj",
+          "vendor_contact": "8954236172",
+          "vendor_state": "Maharashtra",
+          "vendor_gstin": "GSTMIL009222222",
+          "vendor": "Thomas Edison",
+          "address": "Milan",
+          "credit_period": "4",
+          "lead_time": "4",
+          "status": false
+        },
+        "vendor_vendor_id": 3,
+        "products_product_id": 7,
+        "vendor_sku": "TE107"
+      },
+      {
+        "vp_id": 9,
+        "unit_price": 88,
+        "products": {
+          "product_id": 6,
+          "name": "Turbidity Sensor",
+          "description": "description sensor",
+          "product_type": "Sensors",
+          "products_sku": "TIF006",
+          "Price": 67,
+          "product_unit": null
+        },
+        "vendor": {
+          "vendor_id": 4,
+          "vendor_code": "KM",
+          "vendor_email": "kamehameha@gmail.com",
+          "vendor_city": "Tonk",
+          "vendor_contact": "7856124391",
+          "vendor_state": "Rajasthan",
+          "vendor_gstin": "GSTTK0097811111",
+          "vendor": "Kamehameha",
+          "address": "Tokyo",
+          "credit_period": "7",
+          "lead_time": "4",
+          "status": true
+        },
+        "vendor_vendor_id": 4,
+        "products_product_id": 6,
+        "vendor_sku": "KM106"
+      },
+      {
+        "vp_id": 10,
+        "unit_price": 47,
+        "products": {
+          "product_id": 7,
+          "name": "Heat Flame Sensor",
+          "description": "description heat",
+          "product_type": "Sensors",
+          "products_sku": "TIF007",
+          "Price": 56,
+          "product_unit": null
+        },
+        "vendor": {
+          "vendor_id": 4,
+          "vendor_code": "KM",
+          "vendor_email": "kamehameha@gmail.com",
+          "vendor_city": "Tonk",
+          "vendor_contact": "7856124391",
+          "vendor_state": "Rajasthan",
+          "vendor_gstin": "GSTTK0097811111",
+          "vendor": "Kamehameha",
+          "address": "Tokyo",
+          "credit_period": "7",
+          "lead_time": "4",
+          "status": true
+        },
+        "vendor_vendor_id": 4,
+        "products_product_id": 7,
+        "vendor_sku": "KM107"
+      },
+      {
+        "vp_id": 11,
+        "unit_price": 83,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "vendor": {
+          "vendor_id": 1,
+          "vendor_code": "DA",
+          "vendor_email": "mdatif796@gmail.com",
+          "vendor_city": "Panaji",
+          "vendor_contact": "4562879123",
+          "vendor_state": "Goa",
+          "vendor_gstin": "GSTRIO783211111",
+          "vendor": "Dylan Alisson",
+          "address": "Rio ",
+          "credit_period": "411",
+          "lead_time": "471",
+          "status": false
+        },
+        "vendor_vendor_id": 1,
+        "products_product_id": 4,
+        "vendor_sku": "DA102"
+      },
+      {
+        "vp_id": 20,
+        "unit_price": 120,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "vendor": {
+          "vendor_id": 3,
+          "vendor_code": "TE",
+          "vendor_email": "thomasEdison@gmail.com",
+          "vendor_city": "Miraj",
+          "vendor_contact": "8954236172",
+          "vendor_state": "Maharashtra",
+          "vendor_gstin": "GSTMIL009222222",
+          "vendor": "Thomas Edison",
+          "address": "Milan",
+          "credit_period": "4",
+          "lead_time": "4",
+          "status": false
+        },
+        "vendor_vendor_id": 3,
+        "products_product_id": 5,
+        "vendor_sku": "TE105"
+      },
+      {
+        "vp_id": 29,
+        "unit_price": 11,
+        "products": {
+          "product_id": 8,
+          "name": "Eye Blink Sensor",
+          "description": "eye description",
+          "product_type": "Sensors",
+          "products_sku": "TIF008",
+          "Price": 53,
+          "product_unit": null
+        },
+        "vendor": {
+          "vendor_id": 1,
+          "vendor_code": "DA",
+          "vendor_email": "mdatif796@gmail.com",
+          "vendor_city": "Panaji",
+          "vendor_contact": "4562879123",
+          "vendor_state": "Goa",
+          "vendor_gstin": "GSTRIO783211111",
+          "vendor": "Dylan Alisson",
+          "address": "Rio ",
+          "credit_period": "411",
+          "lead_time": "471",
+          "status": false
+        },
+        "vendor_vendor_id": 1,
+        "products_product_id": 8,
+        "vendor_sku": "qws"
+      },
+      {
+        "vp_id": 33,
+        "unit_price": 25,
+        "products": {
+          "product_id": 2,
+          "name": "ESP",
+          "description": "esp-desc",
+          "product_type": "Electronics",
+          "products_sku": "TIF002",
+          "Price": 142,
+          "product_unit": "2pc set"
+        },
+        "vendor": {
+          "vendor_id": 123,
+          "vendor_code": "VJ",
+          "vendor_email": "varunram.66@gmail.com",
+          "vendor_city": "Bangalore",
+          "vendor_contact": "7892496089",
+          "vendor_state": "Karnataka",
+          "vendor_gstin": "GSTN97313398111",
+          "vendor": "Varun",
+          "address": "Hennur",
+          "credit_period": "12",
+          "lead_time": "21",
+          "status": false
+        },
+        "vendor_vendor_id": 123,
+        "products_product_id": 2,
+        "vendor_sku": "VJ338"
+      },
+      {
+        "vp_id": 34,
+        "unit_price": 120,
+        "products": {
+          "product_id": 6,
+          "name": "Turbidity Sensor",
+          "description": "description sensor",
+          "product_type": "Sensors",
+          "products_sku": "TIF006",
+          "Price": 67,
+          "product_unit": null
+        },
+        "vendor": {
+          "vendor_id": 5,
+          "vendor_code": "RH",
+          "vendor_email": "rahul@gmail.com",
+          "vendor_city": "Dumka",
+          "vendor_contact": "4556788925",
+          "vendor_state": "Jharkhand",
+          "vendor_gstin": "GSTDUB012541111",
+          "vendor": "Rahul",
+          "address": "Dubai",
+          "credit_period": "3",
+          "lead_time": "4",
+          "status": true
+        },
+        "vendor_vendor_id": 5,
+        "products_product_id": 6,
+        "vendor_sku": "TE1564"
+      },
+      {
+        "vp_id": 35,
+        "unit_price": 11,
+        "products": {
+          "product_id": 7,
+          "name": "Heat Flame Sensor",
+          "description": "description heat",
+          "product_type": "Sensors",
+          "products_sku": "TIF007",
+          "Price": 56,
+          "product_unit": null
+        },
+        "vendor": {
+          "vendor_id": 5,
+          "vendor_code": "RH",
+          "vendor_email": "rahul@gmail.com",
+          "vendor_city": "Dumka",
+          "vendor_contact": "4556788925",
+          "vendor_state": "Jharkhand",
+          "vendor_gstin": "GSTDUB012541111",
+          "vendor": "Rahul",
+          "address": "Dubai",
+          "credit_period": "3",
+          "lead_time": "4",
+          "status": true
+        },
+        "vendor_vendor_id": 5,
+        "products_product_id": 7,
+        "vendor_sku": "TE571"
+      },
+      {
+        "vp_id": 36,
+        "unit_price": 756,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "vendor": {
+          "vendor_id": 4,
+          "vendor_code": "KM",
+          "vendor_email": "kamehameha@gmail.com",
+          "vendor_city": "Tonk",
+          "vendor_contact": "7856124391",
+          "vendor_state": "Rajasthan",
+          "vendor_gstin": "GSTTK0097811111",
+          "vendor": "Kamehameha",
+          "address": "Tokyo",
+          "credit_period": "7",
+          "lead_time": "4",
+          "status": true
+        },
+        "vendor_vendor_id": 4,
+        "products_product_id": 1,
+        "vendor_sku": "TE417"
+      },
+      {
+        "vp_id": 37,
+        "unit_price": 454,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "vendor": {
+          "vendor_id": 5,
+          "vendor_code": "RH",
+          "vendor_email": "rahul@gmail.com",
+          "vendor_city": "Dumka",
+          "vendor_contact": "4556788925",
+          "vendor_state": "Jharkhand",
+          "vendor_gstin": "GSTDUB012541111",
+          "vendor": "Rahul",
+          "address": "Dubai",
+          "credit_period": "3",
+          "lead_time": "4",
+          "status": true
+        },
+        "vendor_vendor_id": 5,
+        "products_product_id": 1,
+        "vendor_sku": "TE420"
+      },
+      {
+        "vp_id": 79,
+        "unit_price": 142,
+        "products": {
+          "product_id": 3,
+          "name": "Waterproof Ultrasonic Sensor",
+          "description": "water-desp",
+          "product_type": "Sensors",
+          "products_sku": "TIF003",
+          "Price": 24,
+          "product_unit": "combo"
+        },
+        "vendor": {
+          "vendor_id": 4,
+          "vendor_code": "KM",
+          "vendor_email": "kamehameha@gmail.com",
+          "vendor_city": "Tonk",
+          "vendor_contact": "7856124391",
+          "vendor_state": "Rajasthan",
+          "vendor_gstin": "GSTTK0097811111",
+          "vendor": "Kamehameha",
+          "address": "Tokyo",
+          "credit_period": "7",
+          "lead_time": "4",
+          "status": true
+        },
+        "vendor_vendor_id": 4,
+        "products_product_id": 3,
+        "vendor_sku": "KA146"
+      },
+      {
+        "vp_id": 81,
+        "unit_price": 85,
+        "products": {
+          "product_id": 15,
+          "name": "Solenoid valve 12V",
+          "description": "valve 12V",
+          "product_type": "Motors and mechanical devices",
+          "products_sku": "TIF015",
+          "Price": 343,
+          "product_unit": null
+        },
+        "vendor": {
+          "vendor_id": 1,
+          "vendor_code": "DA",
+          "vendor_email": "mdatif796@gmail.com",
+          "vendor_city": "Panaji",
+          "vendor_contact": "4562879123",
+          "vendor_state": "Goa",
+          "vendor_gstin": "GSTRIO783211111",
+          "vendor": "Dylan Alisson",
+          "address": "Rio ",
+          "credit_period": "411",
+          "lead_time": "471",
+          "status": false
+        },
+        "vendor_vendor_id": 1,
+        "products_product_id": 15,
+        "vendor_sku": "DA10456"
+      },
+      {
+        "vp_id": 83,
+        "unit_price": 0,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "vendor": {
+          "vendor_id": 3,
+          "vendor_code": "TE",
+          "vendor_email": "thomasEdison@gmail.com",
+          "vendor_city": "Miraj",
+          "vendor_contact": "8954236172",
+          "vendor_state": "Maharashtra",
+          "vendor_gstin": "GSTMIL009222222",
+          "vendor": "Thomas Edison",
+          "address": "Milan",
+          "credit_period": "4",
+          "lead_time": "4",
+          "status": false
+        },
+        "vendor_vendor_id": 3,
+        "products_product_id": 4,
+        "vendor_sku": "TE104"
+      },
+      {
+        "vp_id": 86,
+        "unit_price": 12,
+        "products": {
+          "product_id": 23,
+          "name": "Test CSV",
+          "description": "Test CSV",
+          "product_type": "CSV",
+          "products_sku": "TestSKU",
+          "Price": 67,
+          "product_unit": null
+        },
+        "vendor": {
+          "vendor_id": 1,
+          "vendor_code": "DA",
+          "vendor_email": "mdatif796@gmail.com",
+          "vendor_city": "Panaji",
+          "vendor_contact": "4562879123",
+          "vendor_state": "Goa",
+          "vendor_gstin": "GSTRIO783211111",
+          "vendor": "Dylan Alisson",
+          "address": "Rio ",
+          "credit_period": "411",
+          "lead_time": "471",
+          "status": false
+        },
+        "vendor_vendor_id": 1,
+        "products_product_id": 23,
+        "vendor_sku": "aws"
+      },
+      {
+        "vp_id": 102,
+        "unit_price": 15,
+        "products": {
+          "product_id": 21,
+          "name": "Watermelon",
+          "description": "Water-melon is a flowering plant species of the Cucurbitaceae family orem ipsum dolor sit amet consectetur adipisicing elit. Maxime mollitia,\nmolestiae quas vel sint commodi repudiandae consequuntur voluptatum laborum",
+          "product_type": "Fruit",
+          "products_sku": "Test",
+          "Price": 7,
+          "product_unit": "kg"
+        },
+        "vendor": {
+          "vendor_id": 123,
+          "vendor_code": "VJ",
+          "vendor_email": "varunram.66@gmail.com",
+          "vendor_city": "Bangalore",
+          "vendor_contact": "7892496089",
+          "vendor_state": "Karnataka",
+          "vendor_gstin": "GSTN97313398111",
+          "vendor": "Varun",
+          "address": "Hennur",
+          "credit_period": "12",
+          "lead_time": "21",
+          "status": false
+        },
+        "vendor_vendor_id": 123,
+        "products_product_id": 21,
+        "vendor_sku": "VJW1001"
+      },
+      {
+        "vp_id": 104,
+        "unit_price": 12,
+        "products": {
+          "product_id": 14,
+          "name": "R385 DC PUMP",
+          "description": "R385 ",
+          "product_type": "Motors and mechanical devices",
+          "products_sku": "TIF014",
+          "Price": 787,
+          "product_unit": null
+        },
+        "vendor": {
+          "vendor_id": 4,
+          "vendor_code": "KM",
+          "vendor_email": "kamehameha@gmail.com",
+          "vendor_city": "Tonk",
+          "vendor_contact": "7856124391",
+          "vendor_state": "Rajasthan",
+          "vendor_gstin": "GSTTK0097811111",
+          "vendor": "Kamehameha",
+          "address": "Tokyo",
+          "credit_period": "7",
+          "lead_time": "4",
+          "status": true
+        },
+        "vendor_vendor_id": 4,
+        "products_product_id": 14,
+        "vendor_sku": "dewa"
+      },
+      {
+        "vp_id": 105,
+        "unit_price": 123,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "vendor": {
+          "vendor_id": 2,
+          "vendor_code": "UE",
+          "vendor_email": "udederson@gmail.com",
+          "vendor_city": "Manuguru",
+          "vendor_contact": "8956237845",
+          "vendor_state": "Andhra Pradesh",
+          "vendor_gstin": "GSTMAN012541111",
+          "vendor": "Ud Ederson",
+          "address": "Manaus",
+          "credit_period": "5",
+          "lead_time": "4",
+          "status": true
+        },
+        "vendor_vendor_id": 2,
+        "products_product_id": 5,
+        "vendor_sku": "ssWW"
+      },
+      {
+        "vp_id": 106,
+        "unit_price": 111,
+        "products": {
+          "product_id": 5,
+          "name": "MQ-135 gas sensor Module",
+          "description": "description 135",
+          "product_type": "Sensors",
+          "products_sku": "TIF005",
+          "Price": 56,
+          "product_unit": null
+        },
+        "vendor": {
+          "vendor_id": 170,
+          "vendor_code": "asq",
+          "vendor_email": "d@c.com",
+          "vendor_city": "Wanaparthy",
+          "vendor_contact": "1234567894",
+          "vendor_state": "Andhra Pradesh",
+          "vendor_gstin": "123456789568745",
+          "vendor": "q",
+          "address": "sda",
+          "credit_period": "12",
+          "lead_time": "45",
+          "status": true
+        },
+        "vendor_vendor_id": 170,
+        "products_product_id": 5,
+        "vendor_sku": "qqq"
+      },
+      {
+        "vp_id": 108,
+        "unit_price": 45,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "vendor": {
+          "vendor_id": 123,
+          "vendor_code": "VJ",
+          "vendor_email": "varunram.66@gmail.com",
+          "vendor_city": "Bangalore",
+          "vendor_contact": "7892496089",
+          "vendor_state": "Karnataka",
+          "vendor_gstin": "GSTN97313398111",
+          "vendor": "Varun",
+          "address": "Hennur",
+          "credit_period": "12",
+          "lead_time": "21",
+          "status": false
+        },
+        "vendor_vendor_id": 123,
+        "products_product_id": 4,
+        "vendor_sku": "VJ12345"
+      },
+      {
+        "vp_id": 112,
+        "unit_price": 45,
+        "products": {
+          "product_id": 21,
+          "name": "Watermelon",
+          "description": "Water-melon is a flowering plant species of the Cucurbitaceae family orem ipsum dolor sit amet consectetur adipisicing elit. Maxime mollitia,\nmolestiae quas vel sint commodi repudiandae consequuntur voluptatum laborum",
+          "product_type": "Fruit",
+          "products_sku": "Test",
+          "Price": 7,
+          "product_unit": "kg"
+        },
+        "vendor": {
+          "vendor_id": 147,
+          "vendor_code": "FK",
+          "vendor_email": "xylene8@gmail.com",
+          "vendor_city": "Salur",
+          "vendor_contact": "4567891238",
+          "vendor_state": "Andhra Pradesh",
+          "vendor_gstin": "GSTIN6786543467",
+          "vendor": "Frank",
+          "address": "11",
+          "credit_period": "11",
+          "lead_time": "11",
+          "status": true
+        },
+        "vendor_vendor_id": 147,
+        "products_product_id": 21,
+        "vendor_sku": "FK489"
+      },
+      {
+        "vp_id": 113,
+        "unit_price": 40,
+        "products": {
+          "product_id": 4,
+          "name": "E18-D80NK Infrared Sensor Module",
+          "description": "description",
+          "product_type": "Sensors",
+          "products_sku": "TIF004",
+          "Price": 42,
+          "product_unit": null
+        },
+        "vendor": {
+          "vendor_id": 147,
+          "vendor_code": "FK",
+          "vendor_email": "xylene8@gmail.com",
+          "vendor_city": "Salur",
+          "vendor_contact": "4567891238",
+          "vendor_state": "Andhra Pradesh",
+          "vendor_gstin": "GSTIN6786543467",
+          "vendor": "Frank",
+          "address": "11",
+          "credit_period": "11",
+          "lead_time": "11",
+          "status": true
+        },
+        "vendor_vendor_id": 147,
+        "products_product_id": 4,
+        "vendor_sku": "FK491"
+      },
+      {
+        "vp_id": 114,
+        "unit_price": 41,
+        "products": {
+          "product_id": 2,
+          "name": "ESP",
+          "description": "esp-desc",
+          "product_type": "Electronics",
+          "products_sku": "TIF002",
+          "Price": 142,
+          "product_unit": "2pc set"
+        },
+        "vendor": {
+          "vendor_id": 147,
+          "vendor_code": "FK",
+          "vendor_email": "xylene8@gmail.com",
+          "vendor_city": "Salur",
+          "vendor_contact": "4567891238",
+          "vendor_state": "Andhra Pradesh",
+          "vendor_gstin": "GSTIN6786543467",
+          "vendor": "Frank",
+          "address": "11",
+          "credit_period": "11",
+          "lead_time": "11",
+          "status": true
+        },
+        "vendor_vendor_id": 147,
+        "products_product_id": 2,
+        "vendor_sku": "FK490"
+      },
+      {
+        "vp_id": 116,
+        "unit_price": 85,
+        "products": {
+          "product_id": 1,
+          "name": "Pi",
+          "description": "Pi-descasw",
+          "product_type": "Electronics",
+          "products_sku": "TIF001",
+          "Price": 11,
+          "product_unit": "pc"
+        },
+        "vendor": {
+          "vendor_id": 3,
+          "vendor_code": "TE",
+          "vendor_email": "thomasEdison@gmail.com",
+          "vendor_city": "Miraj",
+          "vendor_contact": "8954236172",
+          "vendor_state": "Maharashtra",
+          "vendor_gstin": "GSTMIL009222222",
+          "vendor": "Thomas Edison",
+          "address": "Milan",
+          "credit_period": "4",
+          "lead_time": "4",
+          "status": false
+        },
+        "vendor_vendor_id": 3,
+        "products_product_id": 1,
+        "vendor_sku": "TH4568"
+      }
+    ],
+    "prefixes": [
+      {
+        "id": 1,
+        "name": "PRODUCT",
+        "prefix": "PROD"
+      },
+      {
+        "id": 2,
+        "name": "RFQ",
+        "prefix": "RFQ"
+      },
+      {
+        "id": 3,
+        "name": "PO",
+        "prefix": "PO"
+      },
+      {
+        "id": 4,
+        "name": "GRN",
+        "prefix": "GRN"
+      }
+    ],
+    "rfq_senttos": [
+      {
+        "id": 11,
+        "email": "dylan.p@tiflabs.in",
+        "rfq_id": 191
+      },
+      {
+        "id": 15,
+        "email": "test@gmail.com",
+        "rfq_id": 201
+      },
+      {
+        "id": 16,
+        "email": "test45@gmail.com",
+        "rfq_id": 201
+      },
+      {
+        "id": 28,
+        "email": "QUID@g.com",
+        "rfq_id": 209
+      },
+      {
+        "id": 57,
+        "email": "vj@gmail.com",
+        "rfq_id": 238
+      },
+      {
+        "id": 58,
+        "email": "ss",
+        "rfq_id": 239
+      },
+      {
+        "id": 59,
+        "email": "saa",
+        "rfq_id": 240
+      },
+      {
+        "id": 60,
+        "email": "vj@gmail.com",
+        "rfq_id": 241
+      },
+      {
+        "id": 62,
+        "email": "asd",
+        "rfq_id": 243
+      },
+      {
+        "id": 63,
+        "email": "sdfds",
+        "rfq_id": 244
+      },
+      {
+        "id": 64,
+        "email": "wefwe",
+        "rfq_id": 245
+      },
+      {
+        "id": 65,
+        "email": "wewe",
+        "rfq_id": 245
+      },
+      {
+        "id": 66,
+        "email": "sfsd",
+        "rfq_id": 246
+      },
+      {
+        "id": 67,
+        "email": "fasf",
+        "rfq_id": 246
+      },
+      {
+        "id": 68,
+        "email": "dfg",
+        "rfq_id": 247
+      },
+      {
+        "id": 69,
+        "email": "ser",
+        "rfq_id": 247
+      },
+      {
+        "id": 70,
+        "email": "dsds",
+        "rfq_id": 248
+      },
+      {
+        "id": 71,
+        "email": "dfdfs",
+        "rfq_id": 248
+      },
+      {
+        "id": 72,
+        "email": "dfs",
+        "rfq_id": 249
+      },
+      {
+        "id": 73,
+        "email": "sdf",
+        "rfq_id": 249
+      },
+      {
+        "id": 74,
+        "email": "sdsd",
+        "rfq_id": 250
+      },
+      {
+        "id": 75,
+        "email": "ds",
+        "rfq_id": 250
+      },
+      {
+        "id": 78,
+        "email": "saa",
+        "rfq_id": 252
+      },
+      {
+        "id": 79,
+        "email": "dsdsa",
+        "rfq_id": 252
+      },
+      {
+        "id": 80,
+        "email": "dfg",
+        "rfq_id": 253
+      },
+      {
+        "id": 81,
+        "email": "gds",
+        "rfq_id": 253
+      },
+      {
+        "id": 97,
+        "email": "kamehameha@gmail.com",
+        "rfq_id": 311
+      },
+      {
+        "id": 101,
+        "email": "kamehameha@gmail.com",
+        "rfq_id": 315
+      },
+      {
+        "id": 115,
+        "email": "udederson@gmail.com",
+        "rfq_id": 329
+      },
+      {
+        "id": 122,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 329
+      },
+      {
+        "id": 123,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 326
+      },
+      {
+        "id": 125,
+        "email": "kamehameha@gmail.com",
+        "rfq_id": 342
+      },
+      {
+        "id": 126,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 343
+      },
+      {
+        "id": 128,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 344
+      },
+      {
+        "id": 149,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 19
+      },
+      {
+        "id": 150,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 22
+      },
+      {
+        "id": 151,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 209
+      },
+      {
+        "id": 154,
+        "email": "F@gmail.com",
+        "rfq_id": 209
+      },
+      {
+        "id": 155,
+        "email": "F@gmail.com",
+        "rfq_id": 240
+      },
+      {
+        "id": 160,
+        "email": "xylene8@gmail.com",
+        "rfq_id": 362
+      },
+      {
+        "id": 175,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 370
+      },
+      {
+        "id": 176,
+        "email": "kar@gmail.com",
+        "rfq_id": 371
+      },
+      {
+        "id": 180,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 322
+      },
+      {
+        "id": 181,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 374
+      },
+      {
+        "id": 182,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 16
+      },
+      {
+        "id": 183,
+        "email": "xylene8@gmail.com",
+        "rfq_id": 16
+      },
+      {
+        "id": 184,
+        "email": "z@g.com",
+        "rfq_id": 16
+      },
+      {
+        "id": 185,
+        "email": "d@c.com",
+        "rfq_id": 16
+      },
+      {
+        "id": 186,
+        "email": "m2@G.COM",
+        "rfq_id": 16
+      },
+      {
+        "id": 187,
+        "email": "kar@gmail.com",
+        "rfq_id": 16
+      },
+      {
+        "id": 188,
+        "email": "raj@gmail,com",
+        "rfq_id": 16
+      },
+      {
+        "id": 189,
+        "email": "udederson@gmail.com",
+        "rfq_id": 16
+      },
+      {
+        "id": 190,
+        "email": "m2@G.COM",
+        "rfq_id": 311
+      },
+      {
+        "id": 191,
+        "email": "d@c.com",
+        "rfq_id": 311
+      },
+      {
+        "id": 192,
+        "email": "z@g.com",
+        "rfq_id": 311
+      },
+      {
+        "id": 193,
+        "email": "xylene8@gmail.com",
+        "rfq_id": 311
+      },
+      {
+        "id": 194,
+        "email": "raj@gmail,com",
+        "rfq_id": 311
+      },
+      {
+        "id": 195,
+        "email": "kar@gmail.com",
+        "rfq_id": 311
+      },
+      {
+        "id": 196,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 311
+      },
+      {
+        "id": 197,
+        "email": "xylene8@gmail.com",
+        "rfq_id": 309
+      },
+      {
+        "id": 198,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 161
+      },
+      {
+        "id": 199,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 375
+      },
+      {
+        "id": 200,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 376
+      },
+      {
+        "id": 201,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 377
+      },
+      {
+        "id": 202,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 379
+      },
+      {
+        "id": 203,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 380
+      },
+      {
+        "id": 204,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 381
+      },
+      {
+        "id": 205,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 324
+      },
+      {
+        "id": 206,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 17
+      },
+      {
+        "id": 207,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 18
+      },
+      {
+        "id": 208,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 240
+      },
+      {
+        "id": 211,
+        "email": "mdatif796@gmail.com",
+        "rfq_id": 17
+      },
+      {
+        "id": 212,
+        "email": "varunram.66@gmail.com",
+        "rfq_id": 385
+      },
+      {
+        "id": 213,
+        "email": "mdatif796@gmail.com",
+        "rfq_id": 385
+      }
+    ],
+    "rfqTerms": [
+      {
+        "id": 9,
+        "name": "RFQ-terms",
+        "description": "RFQ-terms",
+        "for": "rfq"
+      },
+      {
+        "id": 10,
+        "name": "High and Critical",
+        "description": "High and Critical",
+        "for": "rfq"
+      },
+      {
+        "id": 11,
+        "name": "Priority",
+        "description": "Priority",
+        "for": "rfq"
+      },
+      {
+        "id": 12,
+        "name": "Quotation Validity",
+        "description": "Quotation Validity",
+        "for": "rfq"
+      }
+    ]
+  }
+
+
+
+  const { rfqTerms, rfq_senttos, prefixes, vendor_products, rfq_products } = data
+
+  // const [{ vendors }, { error: getVendorsError }] = usePaginatedQuery(getVendors, {
+  //   orderBy: { vendor_id: "asc" },
+  //   skip: ITEMS_PER_PAGE * page,
+  //   take: ITEMS_PER_PAGE,
+  // })
+
+  const vendors = [
     {
-      where: { for: "rfq" },
-      orderBy: { id: "asc" },
+      "vendor_id": 1,
+      "vendor_code": "DA",
+      "vendor_email": "mdatif796@gmail.com",
+      "vendor_city": "Panaji",
+      "vendor_contact": "4562879123",
+      "vendor_state": "Goa",
+      "vendor_gstin": "GSTRIO783211111",
+      "vendor": "Dylan Alisson",
+      "address": "Rio ",
+      "credit_period": "411",
+      "lead_time": "471",
+      "status": 0
+    },
+    {
+      "vendor_id": 2,
+      "vendor_code": "UE",
+      "vendor_email": "udederson@gmail.com",
+      "vendor_city": "Manuguru",
+      "vendor_contact": "8956237845",
+      "vendor_state": "Andhra Pradesh",
+      "vendor_gstin": "GSTMAN012541111",
+      "vendor": "Ud Ederson",
+      "address": "Manaus",
+      "credit_period": "5",
+      "lead_time": "4",
+      "status": 1
+    },
+    {
+      "vendor_id": 3,
+      "vendor_code": "TE",
+      "vendor_email": "thomasEdison@gmail.com",
+      "vendor_city": "Miraj",
+      "vendor_contact": "8954236172",
+      "vendor_state": "Maharashtra",
+      "vendor_gstin": "GSTMIL009222222",
+      "vendor": "Thomas Edison",
+      "address": "Milan",
+      "credit_period": "4",
+      "lead_time": "4",
+      "status": 0
+    },
+    {
+      "vendor_id": 4,
+      "vendor_code": "KM",
+      "vendor_email": "kamehameha@gmail.com",
+      "vendor_city": "Tonk",
+      "vendor_contact": "7856124391",
+      "vendor_state": "Rajasthan",
+      "vendor_gstin": "GSTTK0097811111",
+      "vendor": "Kamehameha",
+      "address": "Tokyo",
+      "credit_period": "7",
+      "lead_time": "4",
+      "status": 1
+    },
+    {
+      "vendor_id": 5,
+      "vendor_code": "RH",
+      "vendor_email": "rahul@gmail.com",
+      "vendor_city": "Dumka",
+      "vendor_contact": "4556788925",
+      "vendor_state": "Jharkhand",
+      "vendor_gstin": "GSTDUB012541111",
+      "vendor": "Rahul",
+      "address": "Dubai",
+      "credit_period": "3",
+      "lead_time": "4",
+      "status": 1
+    },
+    {
+      "vendor_id": 123,
+      "vendor_code": "VJ",
+      "vendor_email": "varunram.66@gmail.com",
+      "vendor_city": "Bangalore",
+      "vendor_contact": "7892496089",
+      "vendor_state": "Karnataka",
+      "vendor_gstin": "GSTN97313398111",
+      "vendor": "Varun",
+      "address": "Hennur",
+      "credit_period": "12",
+      "lead_time": "21",
+      "status": 0
+    },
+    {
+      "vendor_id": 133,
+      "vendor_code": "iotif",
+      "vendor_email": "iot@gmail.com",
+      "vendor_city": "Gopalganj",
+      "vendor_contact": "4567892567",
+      "vendor_state": "Bihar",
+      "vendor_gstin": "GSTO14562398745",
+      "vendor": "TIF",
+      "address": "banglore",
+      "credit_period": "10",
+      "lead_time": "12",
+      "status": 0
+    },
+    {
+      "vendor_id": 134,
+      "vendor_code": "KR",
+      "vendor_email": "kar@gmail.com",
+      "vendor_city": "Cambay",
+      "vendor_contact": "8987634523",
+      "vendor_state": "Gujarat",
+      "vendor_gstin": "GSTI87640111111",
+      "vendor": "Karan",
+      "address": "12th street ",
+      "credit_period": "4",
+      "lead_time": "5",
+      "status": 1
+    },
+    {
+      "vendor_id": 135,
+      "vendor_code": "RA",
+      "vendor_email": "raj@gail.com",
+      "vendor_city": "banglor",
+      "vendor_contact": "1546237964",
+      "vendor_state": "Karnataka",
+      "vendor_gstin": "GSTI14254572222",
+      "vendor": "Raj",
+      "address": "11th street",
+      "credit_period": "11",
+      "lead_time": "12",
+      "status": 1
+    },
+    {
+      "vendor_id": 147,
+      "vendor_code": "FK",
+      "vendor_email": "xylene8@gmail.com",
+      "vendor_city": "Salur",
+      "vendor_contact": "4567891238",
+      "vendor_state": "Andhra Pradesh",
+      "vendor_gstin": "GSTIN6786543467",
+      "vendor": "Frank",
+      "address": "11",
+      "credit_period": "11",
+      "lead_time": "11",
+      "status": 1
+    },
+    {
+      "vendor_id": 168,
+      "vendor_code": "z",
+      "vendor_email": "z@g.com",
+      "vendor_city": "Chirala",
+      "vendor_contact": "1456987856",
+      "vendor_state": "Andhra Pradesh",
+      "vendor_gstin": "145698712345698",
+      "vendor": "z",
+      "address": "asd",
+      "credit_period": "45",
+      "lead_time": "56",
+      "status": 1
+    },
+    {
+      "vendor_id": 170,
+      "vendor_code": "asq",
+      "vendor_email": "d@c.com",
+      "vendor_city": "Wanaparthy",
+      "vendor_contact": "1234567894",
+      "vendor_state": "Andhra Pradesh",
+      "vendor_gstin": "123456789568745",
+      "vendor": "q",
+      "address": "sda",
+      "credit_period": "12",
+      "lead_time": "45",
+      "status": 1
+    },
+    {
+      "vendor_id": 171,
+      "vendor_code": "m",
+      "vendor_email": "m2@G.COM",
+      "vendor_city": "Zahirabad",
+      "vendor_contact": "1456239875",
+      "vendor_state": "Andhra Pradesh",
+      "vendor_gstin": "123654789632145",
+      "vendor": "m",
+      "address": "WSAQ",
+      "credit_period": "45",
+      "lead_time": "69",
+      "status": 1
+    },
+    {
+      "vendor_id": 173,
+      "vendor_code": "SWD",
+      "vendor_email": "SD@GMAIL.COM",
+      "vendor_city": "Bellampalle",
+      "vendor_contact": "7895263654",
+      "vendor_state": "Andhra Pradesh",
+      "vendor_gstin": "SDEF412C5D6E3S6",
+      "vendor": "vj",
+      "address": "STRING ",
+      "credit_period": "56",
+      "lead_time": "85",
+      "status": 1
+    },
+    {
+      "vendor_id": 192,
+      "vendor_code": "AS",
+      "vendor_email": "AS@gmail.com",
+      "vendor_city": "AS",
+      "vendor_contact": "AS",
+      "vendor_state": "AS",
+      "vendor_gstin": "AS",
+      "vendor": "AS",
+      "address": "AS",
+      "credit_period": "AS",
+      "lead_time": "AS",
+      "status": 1
     }
-  )
+  ]
+  // const [{ vendor_products }, { error: getVendorsProductsError }] = usePaginatedQuery(
+  //   getVendor_products,
+  //   {
+  //     orderBy: { vp_id: "asc" },
+  //     skip: ITEMS_PER_PAGE * page,
+  //     take: ITEMS_PER_PAGE,
+  //   }
+  // )
+
+  // const [{ prefixes }, { error: getPrefixesError }] = useQuery(getPrefixes, {
+  //   orderBy: { id: "asc" },
+  //   skip: ITEMS_PER_PAGE * page,
+  //   take: ITEMS_PER_PAGE,
+  // })
+
+
+  // const [{ rfq_senttos }, { error: getRfq_senttosError }] = useQuery(getRfq_senttos, {
+  //   orderBy: { id: "asc" },
+  // })
+
+
+  // const [{ agreement_terms: rfqTerms }, { error: agreementTermsError }] = useQuery(
+  //   getAgreement_terms,
+  //   {
+  //     where: { for: "rfq" },
+  //     orderBy: { id: "asc" },
+  //   }
+  // )
 
   const [sendDialog, setSendDialog] = useState(false)
   const [createRFQMutation, { isLoading: creatingRfq, error: createRFQMutationError }] =
@@ -159,13 +4359,35 @@ export const RfqsList = () => {
   // const [updateManyRfqProductsMutation] = useMutation(updateManyRfq_products)
   const [updateRfqProductMutation] = useMutation(updateRfq_product)
   const [createPurchaseOrderMutation] = useMutation(createPurchase_order)
+
+  //   {
+  //     "id": 3,
+  //     "name": "Machine Tools",
+  //     "sku": "tif-001",
+  //     "description": "Machine Tools update::",
+  //     "length": null,
+  //     "width": null,
+  //     "height": null,
+  //     "weight": null,
+  //     "color": null,
+  //     "hsnCode": null,
+  //     "imageUrl": null,
+  //     "createdAT": null,
+  //     "updatedAT": null,
+  //     "customDuty": null,
+  //     "gstTaxTypeCode": null,
+  //     "taxCalcType": null,
+  //     "status": "Active",
+  //     "category": null,
+  //     "brand": null
+  // }
   const productOptions = products.map(
-    ({ product_id, name, products_sku, vendor_products, Price }) => {
+    ({ id, name, sku, vendor_products, costPrice }) => {
       return {
-        name: `${products_sku} - ${name}`,
-        product_id,
-        vendorID: vendor_products.map((ele) => ele.vendor_vendor_id),
-        Price,
+        name: `${sku} - ${name}`,
+        id,
+        // vendorID: vendor_products?.map((ele) => ele.vendor_vendor_id),
+        costPrice
       }
     }
   )
@@ -270,7 +4492,7 @@ export const RfqsList = () => {
 
   const searchTerms = createSearchFunction(rfqTerms, setRfqTermsSuggestions)
 
-  const tableRfqProducts = rfq_products.map((ele) => {
+  const tableRfqProducts = rfq_products?.map((ele) => {
     return {
       ...ele,
       product_name: ele.products.name,
@@ -884,33 +5106,33 @@ export const RfqsList = () => {
           // header={renderHeader}
           stripedRows
           className="text-s datatable-responsive"
-          // paginator
-          // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
-          // rows={PAGINATION_VARIABLES.rows}
-          // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
-          // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
+        // paginator
+        // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
+        // rows={PAGINATION_VARIABLES.rows}
+        // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
+        // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
         >
           <Column field="rfq_products_id" header="ID" style={{ paddingTop: "0.5rem" }} />
           <Column
             field="products.products_sku"
             header="Product SKU"
-            // className="text-center"
+          // className="text-center"
           />
 
           <Column
             field="products.name"
             header="Name"
-            // className="text-center"
+          // className="text-center"
           />
           <Column
             field="price_per_unit"
             header="Target Price / Unit"
-            // className="text-center"
+          // className="text-center"
           />
           <Column
             field="quantity"
             header="Quantity"
-            // className="text-center"
+          // className="text-center"
           />
         </DataTable>
       </div>
@@ -1073,7 +5295,7 @@ export const RfqsList = () => {
 
   useEffect(() => {
     //to rerender from while working with item list
-    ;(async () => {
+    ; (async () => {
       await formik.setValues({ ...formik.values })
     })()
       // .then((res) => console.log(res))
@@ -1086,11 +5308,11 @@ export const RfqsList = () => {
       createRFQMutationError,
       rfqError,
       productsError,
-      getRfq_senttosError,
-      getPrefixesError,
-      getVendorsProductsError,
-      getVendorsError,
-      getRfq_productsError,
+      // getRfq_senttosError,
+      // getPrefixesError,
+      // getVendorsProductsError,
+      // getVendorsError,
+      // getRfq_productsError,
     ]
 
     const msg = []
@@ -1106,11 +5328,11 @@ export const RfqsList = () => {
     createRFQMutationError,
     rfqError,
     productsError,
-    getRfq_senttosError,
-    getPrefixesError,
-    getVendorsProductsError,
-    getVendorsError,
-    getRfq_productsError,
+    // getRfq_senttosError,
+    // getPrefixesError,
+    // getVendorsProductsError,
+    // getVendorsError,
+    // getRfq_productsError,
   ])
 
   const allowExpansion = (rowData) => {
@@ -1292,11 +5514,10 @@ export const RfqsList = () => {
       </div>
       {/* {activeRow && <pre>{JSON.stringify(activeRow, null, 2)}</pre>} */}
       <div
-        className={`col-12 ${
-          rfqDialog
-            ? "visible scalein animation-duration-200"
-            : "hidden scaleout animation-duration-200"
-        } `}
+        className={`col-12 ${rfqDialog
+          ? "visible scalein animation-duration-200"
+          : "hidden scaleout animation-duration-200"
+          } `}
       >
         <div className={` card `}>
           <form className="p-fluid" onSubmit={formik.handleSubmit}>
@@ -1585,18 +5806,18 @@ export const RfqsList = () => {
                             console.log("event understand", e.value)
                             let product_id = typeof e.value === "string" ? "" : e.value?.product_id
                             let name = typeof e.value === "string" ? e.value : e.value?.name
-                            let price_per_unit = typeof e.value === "string" ? 0 : e.value?.Price
+                            let price_per_unit = typeof e.value === "string" ? 0 : e.value?.costPrice
                             let data = [...itemList]
 
-                            const lastPo = LatestPO(purchase_orders, product_id)
-                            const avg_price = AverageCostPrice(purchase_orders, product_id)
+                            // const lastPo = LatestPO(purchase_orders, product_id)
+                            // const avg_price = AverageCostPrice(purchase_orders, product_id)
 
                             data[i].product_name = name
                             data[i].products_product_id = product_id
-                            data[i].price_per_unit = price_per_unit || lastPo?.prod_price || ""
-                            data[i].last_po_price = lastPo?.prod_price || ""
-                            data[i].last_vendor = lastPo?.vendor || ""
-                            data[i].avg_price = avg_price || ""
+                            data[i].price_per_unit = price_per_unit
+                            // data[i].last_po_price = lastPo?.prod_price || ""
+                            // data[i].last_vendor = lastPo?.vendor || ""
+                            // data[i].avg_price = avg_price || ""
 
                             let itemsLength = !e.value?.name ? false : true
                             await formik.setValues({ ...formik.values, itemsLength })
@@ -1605,12 +5826,12 @@ export const RfqsList = () => {
                           }}
                           aria-label="products"
                           dropdownAriaLabel="Select Product"
-                          //   className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                        //   className={classNames({ "p-invalid": isFormFieldValid("name") })}
                         />
 
                         <label
                           htmlFor="name"
-                          //   className={classNames({ "p-error": isFormFieldValid("name") })}
+                        //   className={classNames({ "p-error": isFormFieldValid("name") })}
                         >
                           Select Product
                         </label>
@@ -1625,7 +5846,7 @@ export const RfqsList = () => {
                           value={Number(ele.price_per_unit)}
                           disabled={readOnlyForm}
                           onChange={(e) => handleFormChange(e, i)}
-                          // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                        // className={classNames({ "p-invalid": isFormFieldValid("name") })}
                         />
                         <label
                         // className="labelpos_1"
@@ -1643,7 +5864,7 @@ export const RfqsList = () => {
                           disabled={readOnlyForm}
                           value={Number(ele.quantity)}
                           onChange={(e) => handleFormChange(e, i)}
-                          // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                        // className={classNames({ "p-invalid": isFormFieldValid("name") })}
                         />
                         <label
                         // className={classNames({ "p-error": isFormFieldValid("name") })}
@@ -1661,7 +5882,7 @@ export const RfqsList = () => {
                           disabled
                           value={ele.last_po_price}
                           onChange={(e) => handleFormChange(e, i)}
-                          // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                        // className={classNames({ "p-invalid": isFormFieldValid("name") })}
                         />
                         <label
                         // className="labelpos_1"
@@ -1680,7 +5901,7 @@ export const RfqsList = () => {
                           disabled
                           value={ele.avg_price}
                           onChange={(e) => handleFormChange(e, i)}
-                          // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                        // className={classNames({ "p-invalid": isFormFieldValid("name") })}
                         />
                         <label
                         // className="labelpos_1"
@@ -1699,7 +5920,7 @@ export const RfqsList = () => {
                           value={ele.last_vendor}
                           disabled
                           onChange={(e) => handleFormChange(e, i)}
-                          // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                        // className={classNames({ "p-invalid": isFormFieldValid("name") })}
                         />
                         <label
                         // className={classNames({ "p-error": isFormFieldValid("name") })}
@@ -1738,7 +5959,7 @@ export const RfqsList = () => {
                   type="submit"
                   className="mr-2"
                   label={rfqEditState ? "UPDATE" : "SUBMIT"}
-                  onClick={async (e) => {}}
+                  onClick={async (e) => { }}
                 />
               )}
               <Button
