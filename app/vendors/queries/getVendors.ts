@@ -17,19 +17,19 @@ export default resolver.pipe(
     } = await paginate({
       skip,
       take,
-      count: () => db.vendor.count({ where }),
+      count: () => db.vendors.count({ where }),
       query: (paginateArgs) =>
-        db.vendor.findMany({
+        db.vendors.findMany({
           ...paginateArgs,
           where,
           orderBy,
-          include: {
-            vendor_tags: {
-              include: {
-                tags: true,
-              },
-            },
-          },
+          // include: {
+          //   vendor_tags: {
+          //     include: {
+          //       tags: true,
+          //     },
+          //   },
+          // },
           // select: {
           //   vendor: true,
           //   vendor_city: true,

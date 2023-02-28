@@ -6,6 +6,7 @@ const UpdateProduct = z.object({
   id: z.number(),
   name: z.string().optional(),
   description: z.string().optional(),
+  color:z.string().optional(),
 })
 // const UpdateProduct = z.unknown()
 

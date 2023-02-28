@@ -111,7 +111,7 @@ export const ProductsList = () => {
     { field: "gstcode", header: "Gst Code" },
     { field: "hsnCode", header: "HSN Code" },
     // { field: "tags", header: "Tags" },
-    // { field: "costPrice", header: "Cost Price" },
+    { field: "costPrice", header: "Cost Price" },
     // { field: "mrp", header: "MRP" },
     // { field: "basePrice", header: "Base Price" },
     // { field: "enabled", header: "Enabled" },
@@ -535,13 +535,22 @@ export const ProductsList = () => {
     }),
     onSubmit: async (data) => {
       console.log("++data", data)
+
       // setShowData(<pre>{JSON.stringify(data, null, 2)}</pre>)
       // setShowProduct(<pre>{JSON.stringify(inputs, null, 2)}</pre>)
       const { name, description, sku, length, width,
         hsnCode, imageurl, taxCalcuation,
-        height, weight, gstcode,
-        category, brand
+        height, weight, gstcode, costPrice,
+        category, brand, tags
         , color, } = data
+
+      const tagsValue = tags.map(({ value }) => value)
+      console.log('tagsVAlue: ', tagsValue);
+
+
+
+
+
       const { id: activeProductId } = activeRowData
       console.log('activeRowData: ', activeRowData);
       console.log('updatingProduct: ', updatingProduct);
@@ -552,20 +561,22 @@ export const ProductsList = () => {
             id: activeProductId,
             name: name,
             description,
+            color,
             length: Number(length),
             width: Number(width),
             height: Number(height),
             weight: Number(weight),
-            color: color,
             // hsnCode: hsnCode,
             // imageUrl: imageurl,
             // gstTaxTypeCode: gstcode,
             // taxCalcType: taxCalcuation,
             // category: category,
-            brand: brand
+            // brand: brand
           }, {
             onSuccess: () => {
               alert('Update Done')
+
+
             },
             onError: (data) => {
               alert(`error ${data}`)
@@ -586,25 +597,45 @@ export const ProductsList = () => {
               name: name,
               description: description,
               sku,
+              costPrice: Number(costPrice),
+              color,
               length: Number(length),
               width: Number(width),
               height: Number(height),
               weight: Number(weight),
-              color: color,
               hsnCode: hsnCode,
+              // product_tags:{create:tagsValue}
               // imageUrl: imageurl,
               // gstTaxTypeCode: gstcode,
               // taxCalcType: taxCalcuation,
               // category: category,
-              brand: brand
+              // brand: brand
             },
             {
-              onSuccess: () => {
+              onSuccess: async (data) => {
                 alert('success')
+
+                console.log('successdata: ', data);
+
+                const { id } = data
+                try {
+                  await updateActiveProduct({
+                    id,
+                    product_tags: {
+                      create: tagsValue.map(tag => ({ tags: tag, product: id }))
+                    }
+
+                  })
+
+                } catch (error) {
+                  console.log('error:update ', error);
+
+                }
+
               },
               onError: (data) => {
-                alert(`error ${data}`)
-                console.log('error', data)
+                // alert(`error ${data}`)
+                console.log('error123', data)
               }
             }
           )
@@ -1082,7 +1113,9 @@ export const ProductsList = () => {
                     completeMethod={searchCategory}
                     field="name"
                     onChange={async (e) => {
-                      let sku = `TIF ${formik?.values?.category?.name}`
+                      console.log('valueE ', e.value);
+
+                      let sku = `TIF${e.value?.code}`
                       let category = typeof e.target.value === "string" ? e.value : e.value
 
                       await formik.setValues({
@@ -1175,7 +1208,7 @@ export const ProductsList = () => {
                       icon="pi pi-plus"
                       className="m-1"
                       onClick={handleAddInput}
-                      style={{height:'40px'}}
+                      style={{ height: '40px' }}
                     />
                   </div>
                   : null}
@@ -1326,7 +1359,7 @@ export const ProductsList = () => {
                 )
               }}
             /> */}
-            
+
           </DataTable>
         </div>
       </div>

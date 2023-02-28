@@ -6,6 +6,8 @@ const CreateProduct = z.object({
   name: z.string(),
   description: z.string(),
   sku: z.string(),
+  product_tags:z.unknown(),
+  costPrice:z.number(),
   length:z.unknown().optional(),
   width: z.unknown().optional(),
   height:z.unknown().optional(),

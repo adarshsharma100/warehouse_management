@@ -9,22 +9,23 @@ import { z } from "zod"
 // const ITEMS_PER_PAGE = 100
 
 const CreateVendor = z.object({
-  vendor_code: z.string(),
-  vendor_email: z.string(),
-  vendor_city: z.string(),
-  vendor_state: z.string(),
-  vendor_contact: z.string(),
-  vendor_gstin: z.string(),
-  vendor: z.string(),
-  address: z.string(),
-  credit_period: z.string(),
-  lead_time: z.string(),
+  code: z.string(),
+  name: z.string(),
+  creditPeriod: z.number(),
+  status:z.string(),
+  gstin: z.string().optional(),
+  // email: z.string().optional(),
+  // city: z.string().optional(),
+  // state: z.string().optional(),
+  // contact: z.string().optional(),
+  // address: z.string().optional(),
+  // lead_time: z.string().optional(), 
 })
 
 export default resolver.pipe(resolver.zod(CreateVendor), resolver.authorize(), async (input) => {
   // TODO: in multi-tenant app, you must add validation to ensure correct tenant
 
-  let vendor = await db.vendor.create({ data: input })
+  let vendor = await db.vendors.create({ data: input })
   // vendor = await db.vendor.update({
   //   where: { vendor_id: vendor.vendor_id },
   //   data: {
