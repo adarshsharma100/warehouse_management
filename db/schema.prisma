@@ -391,6 +391,7 @@ model product_tags {
   product  Int
   products products @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_tags_products1")
 
+  @@unique([tags, product], map: "tags_product")
   @@index([product], map: "fk_product_tags_products1_idx")
 }
 

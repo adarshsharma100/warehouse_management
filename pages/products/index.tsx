@@ -39,6 +39,7 @@ import { Dropdown } from "primereact/dropdown"
 import { number } from "zod"
 import getProduct_categories from "app/product_categories/queries/getProduct_categories"
 import moment from "moment"
+import createProduct_tag from "app/product_tags/mutations/createProduct_tag"
 
 
 
@@ -59,6 +60,10 @@ export const ProductsList = () => {
 
   const [updateProductMutation, { error: productUpdationError, isLoading: updatingProduct }] =
     useMutation(updateProduct)
+
+  const [createProductTags] = useMutation(createProduct_tag)
+
+
 
 
 
@@ -536,6 +541,25 @@ export const ProductsList = () => {
     onSubmit: async (data) => {
       console.log("++data", data)
 
+      // try {
+      //   createProductTags({
+      //     tags: "awesome",
+      //     products: {
+      //       connect: {
+      //         id: 3
+      //       }
+      //     }
+      //   }, {
+      //     onSuccess: (data) => alert(`Success - ${data}`),
+      //     onError: (data) => alert(`Success - ${data}`)
+      //   })
+      // } catch (error) {
+      //   console.log('createProductTagserror: ', error);
+
+      // }
+
+
+
       // setShowData(<pre>{JSON.stringify(data, null, 2)}</pre>)
       // setShowProduct(<pre>{JSON.stringify(inputs, null, 2)}</pre>)
       const { name, description, sku, length, width,
@@ -592,7 +616,7 @@ export const ProductsList = () => {
       }
       else {
         try {
-          await createNewProduct(
+          await createProductMutation(
             {
               name: name,
               description: description,
@@ -604,7 +628,7 @@ export const ProductsList = () => {
               height: Number(height),
               weight: Number(weight),
               hsnCode: hsnCode,
-              // product_tags:{create:tagsValue}
+              product_tags: { create: tagsValue.map((e) => ({ tags: e })) }
               // imageUrl: imageurl,
               // gstTaxTypeCode: gstcode,
               // taxCalcType: taxCalcuation,
@@ -614,24 +638,7 @@ export const ProductsList = () => {
             {
               onSuccess: async (data) => {
                 alert('success')
-
                 console.log('successdata: ', data);
-
-                const { id } = data
-                try {
-                  await updateActiveProduct({
-                    id,
-                    product_tags: {
-                      create: tagsValue.map(tag => ({ tags: tag, product: id }))
-                    }
-
-                  })
-
-                } catch (error) {
-                  console.log('error:update ', error);
-
-                }
-
               },
               onError: (data) => {
                 // alert(`error ${data}`)
@@ -1115,7 +1122,7 @@ export const ProductsList = () => {
                     onChange={async (e) => {
                       console.log('valueE ', e.value);
 
-                      let sku = `TIF${e.value?.code}`
+                      let sku = `TIF${e.value?.code}${products.length + 1}`
                       let category = typeof e.target.value === "string" ? e.value : e.value
 
                       await formik.setValues({
@@ -1322,7 +1329,7 @@ export const ProductsList = () => {
           >
 
             {/* <Column header="Image" body={rowData => <img src={rowData.image} alt={rowData.name} />} />, */}
-            <Column header="Image" body={rowData => <img src={rowData.image} alt="imageData" style={{ width: '300px', height: '220px' }} />} />
+            <Column header="Image" body={rowData => <img src={`${rowData.imageUrl}`} alt="imageData" style={{ width: '300px', height: '220px' }} />} />
             <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} />
 
             {columnComponents}
