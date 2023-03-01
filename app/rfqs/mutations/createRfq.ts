@@ -5,12 +5,13 @@ import { mail } from "helperFunctions/mail"
 import sendEmail from "helperFunctions/rfqMail"
 
 const CreateRfq = z.object({
-  rfq_code: z.string(),
-  rfq_description: z.string(),
-  expected_dod: z.string(),
+  rfqNumber: z.string(),
+  description: z.string(),
+  expectedDod: z.date(),
   rfq_products: z.unknown(),
   rfq_sentto: z.unknown(),
-  agreement_terms_id: z.number(),
+  agreement: z.string(),
+  status: z.string(),
 })
 
 export default resolver.pipe(resolver.zod(CreateRfq), resolver.authorize(), async (input) => {
