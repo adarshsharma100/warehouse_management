@@ -19,9 +19,8 @@ const CreateProduct = z.object({
   taxCalcType: z.unknown().optional(),
   category: z.unknown().optional(),
   brand: z.unknown().optional(),
-  product_tags: z.unknown(),
 })
-
+ 
 export default resolver.pipe(
   resolver.zod(CreateProduct),
   // resolver.authorize(),

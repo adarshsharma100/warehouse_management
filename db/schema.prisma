@@ -9,7 +9,7 @@ datasource db {
 
 model grn {
   id              Int             @id @default(autoincrement())
-  number          String          @db.VarChar(45)
+  grnNumber       String          @db.VarChar(45)
   createdAt       DateTime
   invoiceNo       String          @db.VarChar(45)
   invoiceDate     DateTime        @db.DateTime(0)
@@ -55,8 +55,8 @@ model products {
   color                 String?              @db.VarChar(7)
   hsnCode               String?              @db.VarChar(15)
   imageUrl              String?              @db.VarChar(300)
-  createdAT             DateTime?
-  updatedAT             DateTime?
+  createdAT             DateTime?            @default(now()) @db.DateTime(0)
+  updatedAT             DateTime?            @default(now()) @db.DateTime(0)
   customDuty            String?              @db.VarChar(45)
   gstTaxTypeCode        String?              @db.VarChar(45)
   taxCalcType           String?              @db.VarChar(45)
@@ -93,13 +93,13 @@ model vendor_products {
 
 model rfq {
   id              Int               @id
-  number          String            @db.VarChar(45)
-  description     String?           @db.LongText
+  rfqNumber       String            @db.VarChar(45)
+  description     String?           @db.VarChar(100)
   status          rfq_status        @default(Created)
   expectedDod     DateTime?
-  agreement       String?           @db.VarChar(200)
-  createdAT       DateTime
-  updatedAT       DateTime
+  agreement       String?           @db.VarChar(45)
+  createdAt       DateTime          @default(now()) @db.DateTime(0)
+  updatedAt       DateTime          @default(now()) @db.DateTime(0)
   purchase_orders purchase_orders[]
   rfq_products    rfq_products[]
   rfq_sentto      rfq_sentto?
@@ -153,7 +153,7 @@ model token {
 
 model rfq_products {
   id                    Int      @id @default(autoincrement())
-  qty                   Int
+  quantity              Int
   price                 Int?
   rfq                   Int
   product               Int
@@ -265,7 +265,7 @@ model po_terms {
 
 model purchase_orders {
   id                                   Int           @id @default(autoincrement())
-  number                               String        @db.VarChar(45)
+  poNumber                             String        @db.VarChar(45)
   agreement                            String?       @db.VarChar(100)
   description                          String?       @db.VarChar(45)
   expectedDod                          DateTime?     @db.DateTime(0)
@@ -312,6 +312,7 @@ model vendors {
   creditPeriod    Int
   leadTime        Int?
   status          vendors_status    @default(Active)
+  vendorScore     Int?
   branch_code     branch_code[]
   purchase_orders purchase_orders[]
   vendor_products vendor_products[]
@@ -348,24 +349,24 @@ model addresses {
 }
 
 model branch_code {
-  id           Int       @id @default(autoincrement())
-  vendor       Int
-  addresses_id Int
-  addresses    addresses @relation(fields: [addresses_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_branch_code_addresses1")
-  vendors      vendors   @relation(fields: [vendor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_branch_code_vendors1")
+  id        Int       @id @default(autoincrement())
+  vendor    Int
+  address   Int
+  addresses addresses @relation(fields: [address], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_branch_code_addresses1")
+  vendors   vendors   @relation(fields: [vendor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_branch_code_vendors1")
 
-  @@index([addresses_id], map: "fk_branch_code_addresses1_idx")
+  @@index([address], map: "fk_branch_code_addresses1_idx")
   @@index([vendor], map: "fk_branch_code_vendors1_idx")
 }
 
 model contact_number {
-  id           Int                 @id @default(autoincrement())
-  type         contact_number_type
-  number       Int                 @unique(map: "number_vendorAddress")
-  addresses_id Int
-  addresses    addresses           @relation(fields: [addresses_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_contact_Number_addresses1")
+  id        Int                 @id @default(autoincrement())
+  type      contact_number_type
+  number    Int                 @unique(map: "number_vendorAddress")
+  address   Int
+  addresses addresses           @relation(fields: [address], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_contact_Number_addresses1")
 
-  @@index([addresses_id], map: "fk_contact_Number_addresses1_idx")
+  @@index([address], map: "fk_contact_Number_addresses1_idx")
 }
 
 model country {
@@ -400,11 +401,6 @@ enum products_status {
   Inactive
 }
 
-enum rfq_status {
-  Completed
-  Created
-}
-
 enum vendor_products_status {
   Active
   Inactive
@@ -419,4 +415,10 @@ enum contact_number_type {
   mobile
   landline
   other
+}
+
+enum rfq_status {
+  Completed
+  Created
+  Processing
 }

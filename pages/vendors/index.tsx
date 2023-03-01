@@ -634,14 +634,14 @@ export const VendorsList = () => {
     { field: "name", header: "Vendor" },
     { field: "code", header: "Code" },
     { field: "branch_code", header: "BranchCode" },
-    { field: "vendor_email", header: "Email" },
+    { field: "email", header: "Email" },
     { field: "vendor_city", header: "City" },
     { field: "vendor_state", header: "State" },
-    { field: "vendor_contact", header: "Contact" },
+    { field: "contact", header: "Contact" },
     { field: "gstin", header: "GSTIN" },
     { field: "address", header: "Address" },
-    { field: "lead_time", header: "Lead Time" },
-    // { field: '', header: 'Credit Time' },
+    { field: "leadTime", header: "Lead Time" },
+    { field: 'vendorScore', header: 'Vendor Score ' },
     { field: "creditPeriod", header: "Credit Peroid" },
     { field: "status", header: "Status" },
   ]
@@ -695,18 +695,19 @@ export const VendorsList = () => {
   }))
 
   const initialVendorState = {
-    vendor: "",
-    vendor_code: "",
-    vendor_score: '',
-    vendor_email: "",
-    vendor_contact: "",
-    vendor_gstin: "",
-    credit_period: "",
-    lead_time: "",
+    name: "",
+    code: "",
+    vendorScore: '',
+    email: "",
+    contact: "",
+    gstin: "",
+    creditPeriod: "",
+    leadTime: "",
     address: "",
     vendor_city: "",
     vendor_state: "",
     tags: [],
+    // addresses:
   }
   const styles4TagsComponent = {
     control: (baseStyles, state) => ({
@@ -802,7 +803,7 @@ export const VendorsList = () => {
   const [activeVendor, setActiveVendor] = useState(false)
   console.log("activeVendor", activeVendor)
   const [activeVendorData, setActiveVendorData] = useState({})
-  // console.log('activeVendorData: ', activeVendorData);
+  console.log('activeVendorData: ', activeVendorData);
   const [vendorEditState, setVendorEditState] = useState(false)
   const [activeRowData, setActiveRowData] = useState({})
   const [productEditState, setProductEditState] = useState(false)
@@ -855,6 +856,8 @@ export const VendorsList = () => {
       value: [
         { field: "name", header: "Vendor" },
         { field: "code", header: "Code" },
+        { field: 'vendorScore', header: 'Vendor Score ' },
+        { field: "gstin", header: "GSTIN" },
         { field: "creditPeriod", header: "credit Peroid" },
       ],
     }
@@ -1110,36 +1113,41 @@ export const VendorsList = () => {
   const formik = useFormik({
     initialValues: vendorDetails,
     validationSchema: Yup.object().shape({
-      vendor: Yup.string().required("*Required"),
-      vendor_email: Yup.string().email("Enter valid email").required("*Required"),
-      vendor_contact: Yup.string()
-        .min(10, "Enter Valid 10 digit Number")
-        .max(10, "Enter Valid 10 digit Number")
-        .required("*Required"),
-      vendor_gstin: Yup.string().min(15, "Enter correct GST No. ").max(15, "Enter correct GST No."),
+      name: Yup.string().required("*Required"),
+      // vendor_email: Yup.string().email("Enter valid email").required("*Required"),
+      // vendor_contact: Yup.string()
+      //   .min(10, "Enter Valid 10 digit Number")
+      //   .max(10, "Enter Valid 10 digit Number")
+      //   .required("*Required"),
+      // vendor_gstin: Yup.string().min(15, "Enter correct GST No. ").max(15, "Enter correct GST No."),
 
-      address: Yup.string().required("*Required"),
-      vendor_city: Yup.string().required("*Required"),
-      vendor_state: Yup.string().required("*Required"),
+      // address: Yup.string().required("*Required"),
+      // vendor_city: Yup.string().required("*Required"),
+      // vendor_state: Yup.string().required("*Required"),
     }),
+
     onSubmit: async (data) => {
-      console.log("data", data)
-      const {id: activeVendorId} = activeVendorData
-      const { vendor, vendor_code, vendor_state, credit_period, vendor_gstin } = data
+      console.log("data++", data)
+      const { id: activeVendorId } = activeVendorData
+      const { name, code, vendorScore ,contact, creditPeriod, leadTime, gstin, email } = data
       if (activeVendor) {
         try {
           await updateActiveVender({
-            id: activeVendor,
-            name: vendor,
-            status: 'Active',
-            creditPeriod: Number(credit_period),
-            gstin: vendor_gstin,
-          },{
-            onSuccess:()=>{
+            id: activeVendorId,
+            name,
+            code,
+            status: "Active",
+            vendorScore : Number(vendorScore),
+            creditPeriod: Number(creditPeriod),
+            gstin,
+            leadTime: Number(leadTime)
+          }, {
+            onSuccess: () => {
               alert('update Done')
             },
-            onError:()=>{
-              alert('error',data)
+            onError: (data) => {
+              // alert('error', data)
+              console.log(data, 'dataError')
             }
           }
           )
@@ -1149,29 +1157,37 @@ export const VendorsList = () => {
         }
       } else {
         try {
-          await createNewVendors(
+          await createVendorMutation(
             {
-              name: vendor,
-              code: vendor_code,
+              name,
+              code,
               status: "Active",
-              creditPeriod: Number(credit_period),
-              gstin: vendor_gstin,
+              creditPeriod: Number(creditPeriod),
+              gstin,
+              vendorScore : Number(vendorScore),
+              leadTime: Number(leadTime),
             }, {
             onSuccess: () => {
               alert('create successfully')
             },
             onError: () => {
-              // alert(`error: ${data}`)
-              console.log('error::', data)
+              alert(`error: ${data}`)
+              console.log('error:', data)
             }
           }
           )
-          // await refetch()
+          await refetch()
         } catch (error) {
-          // alert('error++')
+          alert('error++')
           console.log(error, 'error')
         }
       }
+      await refetch()
+      // await refeatchTags()
+      setActiveVendor(false)
+      setVendorDialog(false)
+      setVendorEditState(false)
+      formik.resetForm()
 
 
       // setShowData(<pre>{JSON.stringify(data, null, 2)}</pre>)
@@ -1276,6 +1292,11 @@ export const VendorsList = () => {
       formik.resetForm()
     },
   })
+
+  console.log('formik.errors: ', formik.errors);
+  console.log('formik.values: ', formik.values);
+
+
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
@@ -1453,12 +1474,12 @@ export const VendorsList = () => {
                 { type: "text", label: "Name", field: "name" },
                 { type: "text", label: "Code", field: "code" },
                 { type: "text", label: "BranchCode", field: "branch_code" },
-                { type: "text", label: "Vendor Score", field: "vendor_score" },
-                { type: "email", label: "Email", field: "vendor_email" },
-                { type: "text", label: "Contact Number", field: "vendor_contact" },
-                { type: "text", label: "GSTIN", field: "vendor_gstin" },
+                { type: "text", label: "Vendor Score", field: "vendorScore" },
+                { type: "email", label: "Email", field: "email" },
+                { type: "text", label: "Contact Number", field: "contact" },
+                { type: "text", label: "GSTIN", field: "gstin" },
                 { type: "text", label: "Credit Period", field: "creditPeriod" },
-                { type: "text", label: "Lead Time", field: "lead_time" },
+                { type: "text", label: "Lead Time", field: "leadTime" },
                 { type: "text", label: "Address", field: "address" },
               ].map((ele, i) => {
                 return (

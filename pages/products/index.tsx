@@ -13,7 +13,7 @@ import { Dialog } from "primereact/dialog"
 import { InputText } from "primereact/inputtext"
 import { InputTextarea } from "primereact/inputtextarea"
 import { FileUpload } from "primereact/fileupload"
-import { Toast } from "primereact/toast"
+import { Toast } from "primereact/toast" 
 
 import createProduct from "app/products/mutations/createProduct"
 import updateProduct from "app/products/mutations/updateProduct"
@@ -318,6 +318,12 @@ export const ProductsList = () => {
         { field: "name", header: "Name" },
         { field: "image", header: "Image" },
         { field: "description", header: "Description" },
+        { field: "color", header: "Color" },
+        { field: "height", header: "Height" },
+        { field: "hsnCode", header: "HSNCode" },
+
+
+
         // { field: "product_unit", header: "Unit" },
       ],
     }
@@ -541,23 +547,6 @@ export const ProductsList = () => {
     onSubmit: async (data) => {
       console.log("++data", data)
 
-      // try {
-      //   createProductTags({
-      //     tags: "awesome",
-      //     products: {
-      //       connect: {
-      //         id: 3
-      //       }
-      //     }
-      //   }, {
-      //     onSuccess: (data) => alert(`Success - ${data}`),
-      //     onError: (data) => alert(`Success - ${data}`)
-      //   })
-      // } catch (error) {
-      //   console.log('createProductTagserror: ', error);
-
-      // }
-
 
 
       // setShowData(<pre>{JSON.stringify(data, null, 2)}</pre>)
@@ -570,37 +559,25 @@ export const ProductsList = () => {
 
       const tagsValue = tags.map(({ value }) => value)
       console.log('tagsVAlue: ', tagsValue);
-
-
-
-
-
       const { id: activeProductId } = activeRowData
       console.log('activeRowData: ', activeRowData);
       console.log('updatingProduct: ', updatingProduct);
-
       if (editUpdateProduct) {
         try {
           await updateActiveProduct({
             id: activeProductId,
             name: name,
-            description,
-            color,
-            length: Number(length),
-            width: Number(width),
-            height: Number(height),
-            weight: Number(weight),
-            // hsnCode: hsnCode,
-            // imageUrl: imageurl,
-            // gstTaxTypeCode: gstcode,
-            // taxCalcType: taxCalcuation,
-            // category: category,
-            // brand: brand
+              description: description,
+              color,
+              height: Number(height),
+              weight: Number(weight),
+              product_tags: { 
+                create: tagsValue.map((e) => ({ tags: e })),
+                // deleteTags:tagsValue.map((e) => ({id}))
+              }
           }, {
             onSuccess: () => {
               alert('Update Done')
-
-
             },
             onError: (data) => {
               alert(`error ${data}`)
@@ -628,7 +605,8 @@ export const ProductsList = () => {
               height: Number(height),
               weight: Number(weight),
               hsnCode: hsnCode,
-              product_tags: { create: tagsValue.map((e) => ({ tags: e })) }
+              product_tags: { create: tagsValue.map((e) => ({ tags: e })) ,
+            }
               // imageUrl: imageurl,
               // gstTaxTypeCode: gstcode,
               // taxCalcType: taxCalcuation,
@@ -637,7 +615,6 @@ export const ProductsList = () => {
             },
             {
               onSuccess: async (data) => {
-                alert('success')
                 console.log('successdata: ', data);
               },
               onError: (data) => {
@@ -652,6 +629,10 @@ export const ProductsList = () => {
 
         }
       }
+      await refetch()
+      setProductEditState(false)
+      setProductDialog(false)
+      formik.resetForm()
 
 
 
@@ -1046,7 +1027,7 @@ export const ProductsList = () => {
                   { type: 'text', label: "Width", field: "width", header: "Width" },
                   { type: 'text', label: "Height", field: "height", header: "Height" },
                   { type: 'text', label: "Weight", field: "weight", header: "Weight" },
-                  { type: 'text', label: "Color", field: "Color", header: "Color" },
+                  { type: 'text', label: "Color", field: "color", header: "Color" },
                   { type: 'text', label: "Brand", field: "brand", header: "Brand" },
                   { type: 'text', label: "Tax type code", field: "taxcode", header: "Tax code" },
                   { type: 'text', label: "Gst Tax type code", field: "gstcode", header: "Gst Code" },
@@ -1328,8 +1309,7 @@ export const ProductsList = () => {
 
           >
 
-            {/* <Column header="Image" body={rowData => <img src={rowData.image} alt={rowData.name} />} />, */}
-            <Column header="Image" body={rowData => <img src={`${rowData.imageUrl}`} alt="imageData" style={{ width: '300px', height: '220px' }} />} />
+            {/* <Column header="Image" body={rowData => <img src={`${rowData.imageUrl}`} alt="imageData" style={{ width: '300px', height: '220px' }} />} /> */}
             <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} />
 
             {columnComponents}

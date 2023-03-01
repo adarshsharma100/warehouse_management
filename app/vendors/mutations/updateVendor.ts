@@ -15,7 +15,7 @@ import { z } from "zod"
 //   credit_period: z.string().optional(),
 //   lead_time: z.string().optional(),
 //   status: z.boolean().optional(),
-// }) 
+// })  
 const UpdateVendor = z.unknown()
 
 export default resolver.pipe(

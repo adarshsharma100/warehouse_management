@@ -14,14 +14,11 @@ const CreateVendor = z.object({
   creditPeriod: z.number(),
   status:z.string(),
   gstin: z.string().optional(),
-  // email: z.string().optional(),
-  // city: z.string().optional(),
-  // state: z.string().optional(),
-  // contact: z.string().optional(),
-  // address: z.string().optional(),
-  // lead_time: z.string().optional(), 
+  vendorScore:z.number().optional(),
+  leadTime: z.number().optional(), 
+  addresses:z.unknown(),
 })
-
+ 
 export default resolver.pipe(resolver.zod(CreateVendor), resolver.authorize(), async (input) => {
   // TODO: in multi-tenant app, you must add validation to ensure correct tenant
 
