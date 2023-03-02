@@ -4078,39 +4078,14 @@ export const RfqsList = () => {
         "rfq_id": 385
       }
     ],
-    "rfqTerms": [
-      {
-        "id": 9,
-        "name": "RFQ-terms",
-        "description": "RFQ-terms",
-        "for": "rfq"
-      },
-      {
-        "id": 10,
-        "name": "High and Critical",
-        "description": "High and Critical",
-        "for": "rfq"
-      },
-      {
-        "id": 11,
-        "name": "Priority",
-        "description": "Priority",
-        "for": "rfq"
-      },
-      {
-        "id": 12,
-        "name": "Quotation Validity",
-        "description": "Quotation Validity",
-        "for": "rfq"
-      }
-    ]
+
   }
 
   const [selectedRfqs, setSelectedRfqs] = useState(null);
 
 
 
-  const { rfqTerms, rfq_senttos, prefixes, vendor_products, rfq_products } = data
+  const { rfq_senttos, prefixes, rfq_products } = data
 
   // const [{ vendors }, { error: getVendorsError }] = usePaginatedQuery(getVendors, {
   //   orderBy: { vendor_id: "asc" },
@@ -4518,7 +4493,7 @@ export const RfqsList = () => {
   })
   const statuses = ["1", "0"]
 
-  const termsOptions = rfqTerms.map((ele) => ele.name)
+  // const termsOptions = rfqTerms.map((ele) => ele.name)
   const dateFilterTemplate = (options) => {
     return (
       <Calendar
@@ -4530,20 +4505,20 @@ export const RfqsList = () => {
       />
     )
   }
-  const statusFilterTemplate = (options) => {
-    console.log("options", options)
-    return (
-      <Dropdown
-        value={options.value}
-        options={statuses}
-        onChange={(e) => options.filterCallback(e.value, options.index)}
-        itemTemplate={statusItemTemplate}
-        placeholder="Select a Status"
-        className="p-column-filter"
-        showClear
-      />
-    )
-  }
+  // const statusFilterTemplate = (options) => {
+  //   console.log("options", options)
+  //   return (
+  //     <Dropdown
+  //       value={options.value}
+  //       options={statuses}
+  //       onChange={(e) => options.filterCallback(e.value, options.index)}
+  //       itemTemplate={statusItemTemplate}
+  //       placeholder="Select a Status"
+  //       className="p-column-filter"
+  //       showClear
+  //     />
+  //   )
+  // }
   const statusItemTemplate = (option) => {
     return (
       <span className={`badge status-${option === "1" ? "active" : "inactive"}`}>
@@ -4552,20 +4527,20 @@ export const RfqsList = () => {
     )
   }
 
-  const termsFilterTemplate = (options) => {
-    console.log("rfqTerms", rfqTerms)
-    return (
-      <Dropdown
-        value={options.value}
-        options={termsOptions}
-        onChange={(e) => options.filterCallback(e.value, options.index)}
-        itemTemplate={termsItemTemplate}
-        placeholder="Select a Status"
-        className="p-column-filter"
-        showClear
-      />
-    )
-  }
+  // const termsFilterTemplate = (options) => {
+  //   console.log("rfqTerms", rfqTerms)
+  //   return (
+  //     <Dropdown
+  //       value={options.value}
+  //       options={termsOptions}
+  //       onChange={(e) => options.filterCallback(e.value, options.index)}
+  //       itemTemplate={termsItemTemplate}
+  //       placeholder="Select a Status"
+  //       className="p-column-filter"
+  //       showClear
+  //     />
+  //   )
+  // }
   const termsItemTemplate = (option) => {
     return <span>{option}</span>
   }
@@ -4902,13 +4877,13 @@ export const RfqsList = () => {
             className="p-button-outlined"
             onClick={clearFilter}
           />
-          <Button
+          {/* <Button
             icon="pi pi-sync"
             className="m-1"
             onClick={async (e) => {
 
             }}
-            tooltip="Update Status" />
+            tooltip="Update Status" /> */}
 
         </div>
       </div>
@@ -5354,9 +5329,6 @@ export const RfqsList = () => {
             console.log("rfq_AmmendingError :", error)
           }
         }
-
-
-
         setRfqDialog(false)
         formik.resetForm()
       } else {
@@ -5535,15 +5507,7 @@ export const RfqsList = () => {
         style={{ width: "50vw" }}
         onHide={() => setSendDialog(false)}
       >
-        {/* <MultiSelect
-          style={{ minWidth: "33%" }}
-          value={rfqDetails.rfq_email}
-          options={vendorEmailOptions}
-          onChange={(e) => setRfqDetails({ ...rfqDetails, rfq_email: e.value })}
-          optionLabel="name"
-          placeholder="Select a Vendor"
-          display="chip"
-        /> */}
+
 
         <span className="p-float-label w-full">
           <h2>Emails</h2>
@@ -5567,46 +5531,86 @@ export const RfqsList = () => {
             icon="pi pi-send"
             label="Send"
             onClick={async () => {
-              const existingEmails = rfq_senttos
-                .filter((item) => item.rfq_id === activeRow.id)
-                .map((item) => item.email)
 
-              const newEmails = rfqDetails?.rfq_email
 
-              const mails = filterExistingValues(newEmails, existingEmails)
+
+              // const existingEmails = rfq_senttos
+              //   .filter((item) => item.rfq_id === activeRow.id)
+              //   .map((item) => item.email)
+
+              //   [
+              //     {
+              //         "id": 67,
+              //         "email": 1,
+              //         "rfq": 80,
+              //         "sentOn": "2023-03-02T10:00:41.000Z",
+              //         "emails": {
+              //             "id": 1,
+              //             "email": "varunram.66@gmail.com",
+              //             "addresses": 1
+              //         }
+              //     },
+              //     {
+              //         "id": 68,
+              //         "email": 3,
+              //         "rfq": 80,
+              //         "sentOn": "2023-03-02T10:00:41.000Z",
+              //         "emails": {
+              //             "id": 3,
+              //             "email": "da@gmail.com",
+              //             "addresses": 3
+              //         }
+              //     }
+              // ]
+
+
+              const existingEmails = activeRow?.rfq_sentto.map(({ emails: { email } }) => (email))
+
+
+
+              console.log('existingEmails: ', { existingEmails, activeRow });
+
+
+
+
+              const selectedEmails = rfqDetails?.rfq_email.map((email) => email.name)
+              // console.log('newEmails: ', newEmails);
+
+              const newMails = filterExistingValues(selectedEmails, existingEmails)
+              // console.log('mails: ', mails);
+
+              const sentoEmails = newMails?.length
+                ? newMails?.map((mail, i) => ({
+                  emails: {
+                    connect: {
+                      id: mail?.value ?? findEmailId(mail)
+                    }
+                  }
+                }))
+                : undefined
+
 
               const update = await updateRFQMutation({
                 id: activeRow.id,
-
                 rfq_sentto: {
-                  create: mails?.length ? mails?.map((email) => ({ email })) : undefined,
+                  create: sentoEmails
                 },
               })
 
               const uniquerfq = rfqs.find((ele) => ele.id === activeRow.id)
 
-              // const data = JSON.stringify({
-              //   to: "varunram.66@gmail.com",
-              //   subject: "mailDetails.subject123",
-              //   message: "mailDetails.message",
-              // })
-
-              // var config = {
-              //   method: "post",
-              //   url: "http://localhost:3000/api/rfq",
-              //   headers: {
-              //     "Content-Type": "application/json",
-              //   },
-              //   data: data,
-              // }
 
               const requestData = JSON.stringify({
                 data: {
-                  rfq_sentto: {
-                    create: rfqDetails?.rfq_email.length
-                      ? rfqDetails?.rfq_email?.map((item, i) => ({ email: item }))
-                      : undefined,
-                  },
+
+                  SendtoMails: rfqDetails?.rfq_email
+
+
+                  // rfq_sentto: {
+                  //   create: rfqDetails?.rfq_email.length
+                  //     ? rfqDetails?.rfq_email?.map((item, i) => ({ email: item }))
+                  //     : undefined,
+                  // },
                 },
                 rfq: uniquerfq,
               })
