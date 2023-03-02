@@ -58,6 +58,7 @@ import {
   filterExistingValues,
   tsuccess,
   calenderDateFormat,
+  tError,
 } from "app/constants"
 import getMutation_admin_mail from "app/mutation_admin_mails/queries/getMutation_admin_mail"
 import { Toast } from "primereact/toast"
@@ -74,6 +75,11 @@ import getAgreement_terms from "app/agreement_terms/queries/getAgreement_terms"
 import { spawn } from "child_process"
 import RFQPO from "components/RFQPO"
 import getEmails from "app/emails/queries/getEmails"
+import { Chip } from "primereact/Chip"
+// import Image from "next/image"
+import { Image } from "blitz"
+
+import db from "db"
 
 const ITEMS_PER_PAGE = 100
 
@@ -4100,6 +4106,9 @@ export const RfqsList = () => {
     ]
   }
 
+  const [selectedRfqs, setSelectedRfqs] = useState(null);
+
+
 
   const { rfqTerms, rfq_senttos, prefixes, vendor_products, rfq_products } = data
 
@@ -4406,7 +4415,7 @@ export const RfqsList = () => {
   const [productDialog, setProductDialog] = useState(false)
   const [purchaseDialog, setPurchaseDialog] = useState(false)
   const [purchaseProductOption, setPurchaseProductOption] = useState([])
-  const [vendorChangeState, setVendorChangeState] = useState(false)
+  // const [vendorChangeState, setVendorChangeState] = useState(false)
   const [newRFQCode, setNewRFQCode] = useState("")
   const initialRfqState = {
     rfqNumber: newRFQCode,
@@ -4416,6 +4425,7 @@ export const RfqsList = () => {
     itemsLength: false,
     agreement: "",
     id: "",
+    status: "Created"
   }
   const [rfqDetails, setRfqDetails] = useState(initialRfqState)
   const [rfqEditState, setRfqEditState] = useState(false)
@@ -4492,9 +4502,12 @@ export const RfqsList = () => {
   const [RFQCodechecked, setRFQCodeChecked] = useState<boolean>(true)
   const [scanner, setScanner] = useState<boolean>(false)
   const scrollToRfq = useRef<HTMLHeadingElement>(null)
-  const [rfqTermsSuggestions, setRfqTermsSuggestions] = useState<any>(null)
+  const [rfqStatusSuggestions, setrfqStatusSuggestions] = useState<any>(null)
 
-  const searchTerms = createSearchFunction(rfqTerms, setRfqTermsSuggestions)
+  const rfqStatus = ["Created", "Processing", "Completed"]
+    .map((term) => ({ name: term, value: term }))
+
+  const searchStatus = createSearchFunction(rfqStatus, setrfqStatusSuggestions)
 
   const tableRfqProducts = rfq_products?.map((ele) => {
     return {
@@ -4593,35 +4606,35 @@ export const RfqsList = () => {
       field: "status",
       header: "Status",
       filter: true,
-      body: (rowData) => (
-
-        <span>
-          {rowData.status}
-        </span>
-      ),
-      filterElement: statusFilterTemplate,
+      // body: (rowData) => (
+      //   <span>
+      //     {rowData.status}
+      //   </span>
+      // ),
+      // filterElement: statusFilterTemplate,
+      filterPlaceholder: "Search by status"
     },
-    {
-      field: "rfq_sentto",
-      header: "Vendors",
-      // filter: true,
-      body: (rowData) => {
-        console.log("rowData", rowData)
+    // {
+    //   field: "rfq_sentto",
+    //   header: "Vendors",
+    //   // filter: true,
+    //   body: (rowData) => {
+    //     console.log("rowData", rowData)
 
-        const sentMails = rowData.rfq_sentto?.map((ele) => ele.email)
-        const uniqueMails = [...new Set(sentMails)]
-        console.log("uniqueMails: ", uniqueMails)
+    //     const sentMails = rowData.rfq_sentto?.map((ele) => ele.email)
+    //     const uniqueMails = [...new Set(sentMails)]
+    //     console.log("uniqueMails: ", uniqueMails)
 
-        const sentVendors = vendors
-          .filter((ele, i) => uniqueMails.includes(ele.vendor_email))
-          .map((ele) => ele.vendor)
-        return (
-          <div className="tooltip-pr">
-            <span className="tooltiptext-pr">{sentVendors.join(" , ")}</span>
-          </div>
-        )
-      },
-    },
+    //     const sentVendors = vendors
+    //       .filter((ele, i) => uniqueMails.includes(ele.vendor_email))
+    //       .map((ele) => ele.vendor)
+    //     return (
+    //       <div className="tooltip-pr">
+    //         <span className="tooltiptext-pr">{sentVendors.join(" , ")}</span>
+    //       </div>
+    //     )
+    //   },
+    // },
     // {
     //   field: "agreement_terms_id",
     //   header: "Terms",
@@ -4689,41 +4702,41 @@ export const RfqsList = () => {
     return avgPrice
   }
 
-  useEffect(() => {
-    const active = tableRfqProducts.filter(({ rfq_id }) => {
-      return Number(rfq_id) === Number(activeRfqId)
-    })
-    const activeProducts = active.map(({ products }) => {
-      return products.product_id
-    })
+  // useEffect(() => {
+  //   const active = tableRfqProducts.filter(({ rfq_id }) => {
+  //     return Number(rfq_id) === Number(activeRfqId)
+  //   })
+  //   const activeProducts = active.map(({ products }) => {
+  //     return products.product_id
+  //   })
 
-    const activeProductsdetails = vendor_products
+  //   const activeProductsdetails = vendor_products
 
-      .filter(({ products, vendor }) => {
-        return (
-          activeProducts.includes(products.product_id) &&
-          Number(vendor.vendor_id) === Number(purchaseDetails.vendor_vendor_id)
-        )
-      })
-      .map((ele) => {
-        return {
-          purchase_order_po_id: "",
-          purchase_order_purchase_order_status_pos_id: 1,
-          purchase_order_vendor_vendor_id: ele.vendor.vendor_id,
-          vendor_products_vp_id: ele.vp_id,
-          vendor_products_vendor_vendor_id: ele.vendor.vendor_id,
-          vendor_products_products_product_id: ele.products.product_id,
-          quantity: "",
-          price_per_unit: ele.unit_price,
-          received_quantity: 0,
-          product_name: ele.products.name,
-          vendor_unit_price: ele.unit_price,
-          product_id: ele.products.product_id,
-        }
-      })
+  //     .filter(({ products, vendor }) => {
+  //       return (
+  //         activeProducts.includes(products.product_id) &&
+  //         Number(vendor.vendor_id) === Number(purchaseDetails.vendor_vendor_id)
+  //       )
+  //     })
+  //     .map((ele) => {
+  //       return {
+  //         purchase_order_po_id: "",
+  //         purchase_order_purchase_order_status_pos_id: 1,
+  //         purchase_order_vendor_vendor_id: ele.vendor.vendor_id,
+  //         vendor_products_vp_id: ele.vp_id,
+  //         vendor_products_vendor_vendor_id: ele.vendor.vendor_id,
+  //         vendor_products_products_product_id: ele.products.product_id,
+  //         quantity: "",
+  //         price_per_unit: ele.unit_price,
+  //         received_quantity: 0,
+  //         product_name: ele.products.name,
+  //         vendor_unit_price: ele.unit_price,
+  //         product_id: ele.products.product_id,
+  //       }
+  //     })
 
-    // setProductItemList(activeProductsdetails)
-  }, [vendorChangeState])
+  //   // setProductItemList(activeProductsdetails)
+  // }, [vendorChangeState])
 
   const tableRFQ = rfqs.map((ele) => {
     // console.log(ele.created_at)
@@ -4747,12 +4760,23 @@ export const RfqsList = () => {
   //     value: vendor_email,
   //   }
   // })
-  const optionsForVendorEmails = vendors.map(({ vendor, vendor_email, vendor_code }) => {
+
+
+  const optionsForVendorEmails = emails.map(({ id, email }) => {
     return {
-      name: ` ${vendor_code}: ${vendor}`,
-      value: vendor_email,
+      name: email,
+      value: id,
     }
   })
+
+  const findEmailId = (mail) => {
+    const ID = emails?.find(({ email }) => mail === email)?.id
+    return ID
+  }
+
+  console.log('findEmailId: ', findEmailId("vj@gmail.com"));
+
+
   const rfqOptions = rfqs.map(({ rfqNumber, rfq_description, id }) => {
     return {
       name: `${rfqNumber}: ${rfq_description}`,
@@ -4792,7 +4816,7 @@ export const RfqsList = () => {
         operator: FilterOperator.AND,
         constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
       },
-      rfq_description: {
+      description: {
         operator: FilterOperator.AND,
         constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
       },
@@ -4811,6 +4835,10 @@ export const RfqsList = () => {
       agreement_terms_id: {
         operator: FilterOperator.OR,
         constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }],
+      },
+      status: {
+        operator: FilterOperator.AND,
+        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
       },
     })
     setGlobalFilterValue("")
@@ -4874,6 +4902,14 @@ export const RfqsList = () => {
             className="p-button-outlined"
             onClick={clearFilter}
           />
+          <Button
+            icon="pi pi-sync"
+            className="m-1"
+            onClick={async (e) => {
+
+            }}
+            tooltip="Update Status" />
+
         </div>
       </div>
     )
@@ -5108,8 +5144,10 @@ export const RfqsList = () => {
   const rowExpansionTemplate = (data) => {
     return (
       <div className="w-full expandTable">
-        <h3>Products List:</h3>
 
+        <h3>Sent To:</h3>
+        {data.rfq_sentto.map(({ emails: { email } }, i) => <Chip className="mr-3" key={i} label={email} />)}
+        <h3>Products List:</h3>
         <DataTable
           value={data.rfq_products}
           responsiveLayout="scroll"
@@ -5117,16 +5155,24 @@ export const RfqsList = () => {
           // header={renderHeader}
           stripedRows
           className="text-s datatable-responsive"
+
         // paginator
         // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
         // rows={PAGINATION_VARIABLES.rows}
         // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
         // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
         >
-          <Column field="rfq_products_id" header="ID" style={{ paddingTop: "0.5rem" }} />
+          {/* <Column field="rfq_products_id" header="ID" style={{ paddingTop: "0.5rem" }} /> */}
+          <Column field="products.imageUrl" header="Image" body={(rowdata) => <img src={rowdata?.products?.imageUrl} alt="Product Image" height="100" width="100" />} />
           <Column
-            field="products.products_sku"
+            field="products.sku"
             header="Product SKU"
+          // className="text-center"
+          />
+          <Column
+            field=""
+            header="PO"
+            body={() => <a href='/purchase_orders/id'>PO Num </a>}
           // className="text-center"
           />
 
@@ -5136,7 +5182,7 @@ export const RfqsList = () => {
           // className="text-center"
           />
           <Column
-            field="price_per_unit"
+            field="price"
             header="Target Price / Unit"
           // className="text-center"
           />
@@ -5162,96 +5208,160 @@ export const RfqsList = () => {
     }),
     onSubmit: async (data) => {
       console.log("onSubmit", data)
+      console.log("itemList", itemList)
+      const selectedProducts = itemList.filter((prod) => prod?.product_id)
 
-
-
-      // console.log("activeRow", activeRow)
-      const { rfqNumber, rfq_description, rfq_email, expectedDod, agreement } = data
-
+      if (selectedProducts.length === 0) {
+        const msg = {
+          message: "You should at least select 1 product from the select products List ",
+        }
+        setRfqErrorMsgs([...rfqErrorMsgs, msg])
+        return
+      }
+      const { rfqNumber, rfq_description, rfq_email, expectedDod, agreement, status } = data
+      console.log('rfq_email: ', rfq_email);
+      const rfqToMails = rfq_email?.length
+        ? rfq_email?.map(({ name }, i) => name) : null
 
       // const dateToString = expectedDod.toString()
       const sentoEmails = rfq_email?.length
-        ? rfq_email?.map((item, i) => ({ email: item.value }))
+        ? rfq_email?.map((mail, i) => ({
+          emails: {
+            connect: {
+              id: mail?.value ?? findEmailId(mail)
+            }
+          }
+        }))
         : undefined
 
+      console.log('sentoEmails: ', sentoEmails);
+
+
+
       if (rfqEditState) {
-        // const currentProducts = [...itemList.map(({ rfq_products_id }) => rfq_products_id)]
-        const newProductList = itemList.filter((item) => !item.rfq_products_id)
-        const removemail = { ...rfqDetails }
-        const delProductList = currentRfqitemsID.filter(
-          (x) => !itemList.map(({ rfq_products_id }) => rfq_products_id).includes(x)
-        )
-        delete removemail.rfq_email
-        const update = await updateRFQMutation(
-          {
-            id: activeRow.id,
-            rfqNumber,
-            rfq_description,
-            expectedDod,
-            active: 1,
-            agreement_terms_id: Number(terms.id),
-            rfq_products: {
-              create: newProductList.map((ele) => ({
-                price_per_unit: Number(ele.price_per_unit),
-                quantity: Number(ele.quantity),
-                products: {
-                  connect: {
-                    product_id: Number(ele.products_product_id),
+        console.log('activeRow: ', activeRow);
+
+
+        if (activeRow?.rfq_sentto?.length === 0) {
+
+          console.log('Ran updation ');
+          const newProductList = itemList.filter((item) => !item.rfq_products_id)
+          const removemail = { ...rfqDetails }
+          const delProductList = currentRfqitemsID.filter(
+            (x) => !itemList.map(({ rfq_products_id }) => rfq_products_id).includes(x)
+          )
+          delete removemail.rfq_email
+
+          try {
+            const updatRfqStatus = updateRFQMutation({
+              id: activeRow.id,
+              rfqNumber,
+              description: rfq_description,
+              expectedDod,
+              agreement,
+              rfq_products: {
+                create: newProductList.map((ele) => ({
+                  price: Number(ele.costPrice),
+                  quantity: Number(ele.quantity),
+                  products: {
+                    connect: {
+                      id: Number(ele.product_id),
+                    },
+                  },
+                })),
+                updateMany: itemList.map((ele) => ({
+                  where: {
+                    id: ele.rfq_products_id,
+                  },
+                  data: {
+                    price: Number(ele.costPrice),
+                    quantity: Number(ele.quantity),
+                  },
+                })),
+                deleteMany: {
+                  id: {
+                    in: delProductList,
                   },
                 },
-              })),
-              updateMany: itemList.map((ele) => ({
-                where: {
-                  rfq_products_id: ele.rfq_products_id,
-                },
-                data: {
-                  price_per_unit: Number(ele.price_per_unit),
-                  quantity: Number(ele.quantity),
-                },
-              })),
-              deleteMany: {
-                rfq_products_id: {
-                  in: delProductList,
-                },
               },
-            },
-            rfq_sentto: {
-              create: sentoEmails,
-            },
-          },
-          {
-            onSuccess: async (data) => {
-              const rfqNumber = data?.rfqNumber
-
-              toast?.current.show(
-                tsuccess("Updated", `${rfqNumber} is now updated sucessfully`),
-                await createNotificationsMutations({
-                  user_id: id,
-                  user_name: name,
-                  user_email: email,
-                  mutations: `${rfqNumber} is Updated`,
-                  created_at: new Date().toString(),
-                })
-              )
-            },
+            }, {
+              onSuccess: async (data) => {
+                const rfqNumber = data?.rfqNumber
+                toast?.current.show(
+                  tsuccess("Updated", `${rfqNumber} is now updated sucessfully`),
+                  // await createNotificationsMutations({
+                  //   user_id: id,
+                  //   user_name: name,
+                  //   user_email: email,
+                  //   mutations: `${rfqNumber} is Updated`,
+                  //   created_at: new Date().toString(),
+                  // })
+                  setActiveRow({})
+                )
+              },
+              onError: (data) => {
+                const rfqNumber = data?.rfqNumber
+                toast?.current.show(
+                  tError("Updated", `${rfqNumber} Could not Update`),
+                )
+              },
+            })
+          } catch (error) {
+            console.log('While Updating RFQ:', error);
           }
-        )
-        console.log(data)
+        } else {
+          console.log('Ran updation from Amendblcok block  ');
+          try {
+            const newRfqData = await createRFQMutation(
+              {
+                rfqNumber,
+                description: rfq_description,
+                expectedDod,
+                status: "Created",
+                agreement,
+                rfq_products: {
+                  create: selectedProducts.map((ele) => ({
+                    price: Number(ele.costPrice),
+                    quantity: Number(ele.quantity),
+                    products: {
+                      connect: {
+                        id: Number(ele.product_id),
+                      },
+                    },
+                  })),
+                },
+                rfq_sentto: {
+                  create: sentoEmails
+                },
+                rfq: {
+                  connect: {
+                    id: activeRow?.id
+                  }
+                }
+              },
+              {
+                onSuccess: async (data) => {
+                  const rfqNumber = data?.rfqNumber
+                  toast?.current?.show(tsuccess(null, `${rfqNumber} created successfully.`))
+
+
+                },
+              }
+            )
+            setRfqDialog(false)
+            formik.resetForm()
+          } catch (error) {
+            console.log("rfq_AmmendingError :", error)
+          }
+        }
+
+
+
         setRfqDialog(false)
         formik.resetForm()
       } else {
         // removing emptyFields
-        const selectedProducts = itemList.filter((prod) => prod?.product_id)
-
-        if (selectedProducts.length === 0) {
-          const msg = {
-            message: "You should at least select 1 product from the select products List ",
-          }
-          setRfqErrorMsgs([...rfqErrorMsgs, msg])
-          return
-        }
         try {
-          const toDateObj = moment(expectedDod).toDate()
           const newRfqData = await createRFQMutation(
             {
               rfqNumber,
@@ -5271,20 +5381,35 @@ export const RfqsList = () => {
                 })),
               },
               rfq_sentto: {
-                create: sentoEmails,
+                // create: [{
+                //   emails: {
+                //     connect: {
+                //       id: 3
+                //     }
+                //   }
+                // }, {
+                //   emails: {
+                //     connect: {
+                //       id: 2
+                //     }
+                //   }
+                // }]
+                create: sentoEmails
+
               },
             },
             {
               onSuccess: async (data) => {
                 const rfqNumber = data?.rfqNumber
                 toast?.current?.show(tsuccess(null, `${rfqNumber} created successfully.`))
-                await createNotificationsMutations({
-                  user_id: id,
-                  user_name: name,
-                  user_email: email,
-                  mutations: `${rfqNumber} is Created`,
-                  created_at: new Date().toString(),
-                })
+
+                // await createNotificationsMutations({
+                //   user_id: id,
+                //   user_name: name,
+                //   user_email: email,
+                //   mutations: `${rfqNumber} is Created`,
+                //   created_at: new Date().toString(),
+                // })
               },
             }
           )
@@ -5299,6 +5424,7 @@ export const RfqsList = () => {
     },
   })
   // console.log(formik.values)
+  console.log("Formik", formik.errors)
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
@@ -5409,7 +5535,7 @@ export const RfqsList = () => {
         style={{ width: "50vw" }}
         onHide={() => setSendDialog(false)}
       >
-        <MultiSelect
+        {/* <MultiSelect
           style={{ minWidth: "33%" }}
           value={rfqDetails.rfq_email}
           options={vendorEmailOptions}
@@ -5417,7 +5543,24 @@ export const RfqsList = () => {
           optionLabel="name"
           placeholder="Select a Vendor"
           display="chip"
-        />
+        /> */}
+
+        <span className="p-float-label w-full">
+          <h2>Emails</h2>
+          <AutoComplete
+            style={{ minWidth: "33%", height: "auto" }}
+            value={rfqDetails.rfq_email}
+            suggestions={vendorEmailSuggestions}
+            completeMethod={emailsuggestions}
+            field="name"
+            multiple
+            onChange={(e) => setRfqDetails({ ...rfqDetails, rfq_email: e.value })}
+            aria-label="Vendor-Emails"
+            dropdownAriaLabel="Select Email"
+
+          />
+          <label htmlFor="autocomplete">Emails</label>
+        </span>
 
         <div className="w-full flex justify-content-end mt-2 pl-2">
           <Button
@@ -5517,14 +5660,7 @@ export const RfqsList = () => {
                 setReadOnlyForm(false)
               }}
             ></Button>
-            <Button
-              className="ml-2"
-              icon="pi pi-qrcode"
-              label="Scan Mode"
-              onClick={(e) => {
-                setScanner(!scanner)
-              }}
-            ></Button>
+
           </div>
         </div>
         {rfqErrorMsgs.map((ele, i) => (
@@ -5586,7 +5722,7 @@ export const RfqsList = () => {
                     tooltip="Send RFQ"
                     tooltipOptions={{ position: "top" }}
                   />
-                  <Button
+                  {/* <Button
                     icon="bi bi-subtract"
                     className="m-1"
                     onClick={async (e) => {
@@ -5619,7 +5755,7 @@ export const RfqsList = () => {
                     }}
                     tooltip="Update-Status"
                     tooltipOptions={{ position: "top" }}
-                  />
+                  /> */}
                   <Button
                     icon="pi pi-arrow-down"
                     className="m-1"
@@ -5629,7 +5765,7 @@ export const RfqsList = () => {
                       console.log("rfq_prods: ", rfq_prods)
                       // return
 
-                      const csvHeader = "Sl No,SKU,Item,Image,Qty,Cost Price,Target Price\n"
+                      const csvHeader = "Sl No,SKU,Item,Image,Qty,CostPrice,Target Price\n"
 
                       const csvBody = rfq_prods.map((ele, i) => {
                         const {
@@ -5638,6 +5774,7 @@ export const RfqsList = () => {
                           products_product_id: productId,
                           products: { name: item, description, products_sku: sku },
                         } = ele
+                        // const price = LatestPO(purchase_orders, productId).prod_price
                         const price = LatestPO(purchase_orders, productId).prod_price
 
                         return (
@@ -5659,7 +5796,7 @@ export const RfqsList = () => {
             </div>
             <div className="formgrid grid p-4">
               <div className="col-12">
-                <h6>RFQ Details:</h6>
+                {/* <h6>RFQ Details:</h6> */}
               </div>
               <div className="field col-12 lg:col-4 mt-2 ">
                 <span className="p-float-label ">
@@ -5746,39 +5883,67 @@ export const RfqsList = () => {
                 {getFormErrorMessage("expectedDod")}
               </div>
 
-              {/* <div className="field col-12 lg:col-4 mt-2">
+              <div className="field col-12 lg:col-4 mt-2">
                 <div className="p-float-label">
                   <AutoComplete
-                    id="terms"
+                    id="status"
                     // disabled={fieldDisable}
-                    value={formik.values?.terms?.name}
-                    suggestions={rfqTermsSuggestions}
-                    completeMethod={searchTerms}
+                    value={formik.values?.status}
+                    suggestions={rfqStatusSuggestions}
+                    completeMethod={searchStatus}
                     disabled={readOnlyForm}
                     dropdown
                     field="name"
                     onChange={async (e) => {
-                      let terms = typeof e.value === "string" ? e.value : e.value
+                      let status = typeof e.value === "string" ? e.value : e.value.name
 
                       await formik.setValues({
                         ...formik.values,
-                        terms,
+                        status
                       })
+
+                      if (rfqEditState) {
+                        try {
+                          const updatRfqStatus = updateRFQMutation({
+                            id: activeRow.id,
+                            status,
+
+                          }, {
+                            onSuccess: async (data) => {
+                              const rfqNumber = data?.rfqNumber
+                              toast?.current.show(
+                                tsuccess(`Status Updated to ${status}`, `${rfqNumber} is now updated sucessfully`),
+
+                              )
+                            },
+                            onError: (data) => {
+                              const rfqNumber = data?.rfqNumber
+                              toast?.current.show(
+                                tError("Updated", `${rfqNumber} Could not Update`),
+                              )
+                            },
+                          })
+                        } catch (error) {
+                          console.log('While Updating RFQ:', error);
+                        }
+                      }
+
+
                     }}
                     aria-label="Agreement Terms"
                     dropdownAriaLabel="Agreement Terms"
-                    className={classNames({ "p-invalid": isFormFieldValid("terms") })}
+                    className={classNames({ "p-invalid": isFormFieldValid("status") })}
                   />
 
                   <label
-                    htmlFor="terms"
-                    className={classNames({ "p-error": isFormFieldValid("terms") })}
+                    htmlFor="status"
+                    className={classNames({ "p-error": isFormFieldValid("status") })}
                   >
-                    Terms
+                    Status
                   </label>
                 </div>
-                {getFormErrorMessage("terms")}
-              </div> */}
+                {getFormErrorMessage("status")}
+              </div>
 
               <div className="field col-12 lg:col-4 my-2">
                 <span className="p-float-label">
@@ -5812,7 +5977,7 @@ export const RfqsList = () => {
                   value={formik.values.rfq_email}
                   suggestions={vendorEmailSuggestions}
                   completeMethod={emailsuggestions}
-                  disabled={readOnlyForm}
+                  disabled={readOnlyForm || rfqEditState}
                   field="name"
                   multiple
                   onChange={async (e) => {
@@ -5830,7 +5995,7 @@ export const RfqsList = () => {
               {itemList.map((ele, i) => (
                 <>
                   <div className="col-12 grid mt-1" key={`RFQ-product-${i}`}>
-                    <div className="field col-12 lg:col-5 mt-2">
+                    <div className="field col-12 lg:col-6 mt-2">
                       <div className="p-float-label">
                         <AutoComplete
                           id="name"
@@ -5931,30 +6096,12 @@ export const RfqsList = () => {
                         // className="labelpos_1"
                         // className={classNames({ "p-error": isFormFieldValid("name") })}
                         >
-                          Latest Price
+                          Last PO Price
                         </label>
                       </span>
                       {/* {getFormErrorMessage("name")} */}
                     </div>
-                    <div className="field col-12 lg:col-1 mt-2">
-                      <span className="p-float-label">
-                        <InputNumber
-                          id="avg_price"
-                          name="avg_price"
-                          disabled
-                          value={ele.avg_price}
-                          onChange={(e) => handleFormChange(e, i)}
-                        // className={classNames({ "p-invalid": isFormFieldValid("name") })}
-                        />
-                        <label
-                        // className="labelpos_1"
-                        // className={classNames({ "p-error": isFormFieldValid("name") })}
-                        >
-                          Avg. Price
-                        </label>
-                      </span>
-                      {/* {getFormErrorMessage("name")} */}
-                    </div>
+
                     <div className="field col-12 lg:col-2 mt-2">
                       <span className="p-float-label">
                         <InputText
@@ -5974,21 +6121,21 @@ export const RfqsList = () => {
                       {/* {getFormErrorMessage("name")} */}
                     </div>
                     <div className="field col-6 lg:col-1 mt-2">
-                      <span className="p-buttonset">
+                      {!readOnlyForm && <span className="p-buttonset ">
                         {i === itemList.length - 1 && (
                           <Button type="button" label="+" onClick={addFields} />
                         )}
                         {itemList.length > 1 && (
                           <Button
                             type="button"
-                            label="-"
+                            label="x"
                             className="p-button-secondary"
                             onClick={(e) => {
                               removeFields(i)
                             }}
                           />
                         )}
-                      </span>
+                      </span>}
                     </div>
                   </div>
                 </>
@@ -6029,7 +6176,7 @@ export const RfqsList = () => {
           </form>
         </div>
       </div>
-      <ScannedProducts
+      {/* <ScannedProducts
         products={products}
         scanner={scanner}
         setScanner={setScanner}
@@ -6038,7 +6185,7 @@ export const RfqsList = () => {
         newRFQCode={newRFQCode}
         setRfqDetails={setRfqDetails}
         rfqDetails={rfqDetails}
-      />
+      /> */}
       {/* <CreateNewPo
         products={products}
         purchaseDialog={purchaseDialog}
@@ -6102,85 +6249,117 @@ export const RfqsList = () => {
             emptyMessage="No Results found."
             onRowClick={async (e) => {
               scrollToRfq?.current?.scrollIntoView()
+              window.scroll(100, 100)
               setActiveRow(e.data)
               console.log("rowdata", e.data)
-              // example e.data
               let obj = {
-                id: 18,
-                createdAt: "2022-11-15T08:57:48.405Z",
-                updatedAt: "2022-11-15T08:57:48.405Z",
-                expectedDod: "2022-12-30T18:30:00.000Z",
-                rfqNumber: "RFQ007",
-                rfq_description: "Sensor Bundle",
-                active: 1,
-                agreement_terms_id: 12,
-                rfq_products: [
+                "id": 26,
+                "rfqNumber": "RFQ#25",
+                "description": "",
+                "status": "Created",
+                "expectedDod": "2023-03-02T18:30:00.000Z",
+                "agreement": "",
+                "createdAt": "2023-03-01T13:04:00.000Z",
+                "updatedAt": "2023-03-01T13:04:00.000Z",
+                "rfq_products": [
                   {
-                    rfq_products_id: 13,
-                    rfq_id: 18,
-                    products_product_id: 7,
-                    quantity: 70,
-                    price_per_unit: 78,
-                    products: {
-                      product_id: 7,
-                      name: "Heat Flame Sensor",
-                      description: "description heat",
-                      product_type: "Sensors",
-                      products_sku: "TIF007",
-                      Price: 56,
-                      product_unit: null,
-                    },
-                  },
+                    "id": 22,
+                    "quantity": 0,
+                    "price": 10,
+                    "rfq": 26,
+                    "product": 3,
+                    "products": {
+                      "id": 3,
+                      "name": "Machine Tools",
+                      "sku": "TIFMT11",
+                      "description": "Machine Tools update::",
+                      "length": null,
+                      "width": null,
+                      "height": null,
+                      "weight": null,
+                      "color": null,
+                      "hsnCode": null,
+                      "imageUrl": "https://loremflickr.com/320/240/device?random=1",
+                      "createdAT": null,
+                      "updatedAT": null,
+                      "customDuty": null,
+                      "gstTaxTypeCode": null,
+                      "taxCalcType": null,
+                      "status": "Active",
+                      "category": null,
+                      "brand": null,
+                      "costPrice": 10
+                    }
+                  }
                 ],
-                rfq_sentto: [
+                "rfq_sentto": [
                   {
-                    id: 207,
-                    email: "varunram.66@gmail.com",
-                    rfq_id: 18,
+                    "id": 33,
+                    "email": 4,
+                    "rfq": 26,
+                    "sentOn": "2023-03-01T13:04:00.000Z",
+                    "emails": {
+                      "id": 4,
+                      "email": "vj@gmail.com",
+                      "addresses": 2
+                    }
                   },
-                ],
-                agreement_terms: {
-                  id: 12,
-                  name: "Quotation Validity",
-                  description: "Quotation Validity",
-                  for: "rfq",
-                },
+                  {
+                    "id": 34,
+                    "email": 1,
+                    "rfq": 26,
+                    "sentOn": "2023-03-01T13:04:00.000Z",
+                    "emails": {
+                      "id": 1,
+                      "email": "varunram.66@gmail.com",
+                      "addresses": 1
+                    }
+                  }
+                ]
               }
               const rfqProducts = e.data.rfq_products
 
               let active = rfqProducts.map(
-                ({ products, quantity, price_per_unit, rfq_products_id }) => {
+                ({ id: rfq_products_id, products: { id: product_id, sku, name }, quantity, price, }) => {
                   return {
-                    products_product_id: products.product_id,
+                    product_id,
                     quantity: quantity,
-                    price_per_unit: price_per_unit,
+                    costPrice: price,
                     rfq_products_id,
-                    product_name: `${products.products_sku} - ${products.name}`,
+                    product_name: `${sku} - ${name}`,
+
                   }
                 }
               )
               setItemList(active)
 
-              const { rfqNumber, rfq_description, expectedDod, id, agreement_terms } = e.data
+              const { rfqNumber, description: rfq_description, expectedDod, id, agreement, status } = e.data
 
-              const _expectedDod = new Date(expectedDod)
-              const sentToEmails = e.data.rfq_sentto.map((ele) => ele.email)
+              const _expectedDod = moment(expectedDod).toDate()
+              const sentToEmails = e.data.rfq_sentto.map(({ emails: { email } }) => email)
 
               await formik.setValues({
                 rfqNumber: rfqNumber,
-                rfq_description: rfq_description,
-                expectedDod: _expectedDod,
+                rfq_description,
                 id,
                 itemsLength: true,
-                terms: agreement_terms,
+                agreement,
                 rfq_email: sentToEmails,
+                expectedDod: _expectedDod,
+                status,
               })
 
               setRfqDialog(true)
               setReadOnlyForm(true)
             }}
+            selectionMode='checkbox'
+            selection={selectedRfqs}
+            onSelectionChange={(e) => setSelectedRfqs(e.value)}
+          // tableStyle={{ minWidth: '50rem' }}
           >
+            <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
             <Column expander={allowExpansion} style={{ width: "3em" }} />
+
             {/* <Column
               field="rfqNumber"
               header="RFQ No."
@@ -6268,7 +6447,7 @@ export const RfqsList = () => {
           </DataTable>
         </div>
       </div>
-    </div>
+    </div >
   )
 }
 

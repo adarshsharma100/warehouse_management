@@ -23,9 +23,6 @@ export default resolver.pipe(
           ...paginateArgs,
           where,
           orderBy,
-          include: {
-            addresses_emails_addressesToaddresses: true,
-          },
         }),
     })
 
