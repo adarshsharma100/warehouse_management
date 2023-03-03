@@ -59,31 +59,176 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     setSendPoDialog,
   } = props
 
-  const [{ prefixes }, { error: getPrefixesError }] = useQuery(getPrefixes, {
-    orderBy: { id: "asc" },
-  })
+  // const [{ prefixes }, { error: getPrefixesError }] = useQuery(getPrefixes, {
+  //   orderBy: { id: "asc" },
+  // })
   // const [{ purchase_orders }, { error: getPoError }] = useQuery(getPurchase_orders, {
   //   orderBy: { po_id: "asc" },
   // })
-  const [{ purchase_order_products }, { error: getPoProductsError }] = useQuery(
-    getPurchase_order_products,
+  // const [{ purchase_order_products }, { error: getPoProductsError }] = useQuery(
+  //   getPurchase_order_products,
+  //   {
+  //     orderBy: { pop_id: "asc" },
+  //   }
+  // )
+  // const [{ agreement_terms: poTerms }, { error: agreementTermsError }] = useQuery(
+  //   getAgreement_terms,
+  //   {
+  //     where: { for: "po" },
+  //     orderBy: { id: "asc" },
+  //   }
+  // )
+  // const [{ purchase_order_statuses: poStatusList }, { error: PO_statusError }] = useQuery(
+  //   getPurchase_order_statuses,
+  //   {
+  //     orderBy: { id: "asc" },
+  //   }
+  // )
+  const poStatusList = [
     {
-      orderBy: { pop_id: "asc" },
-    }
-  )
-  const [{ agreement_terms: poTerms }, { error: agreementTermsError }] = useQuery(
-    getAgreement_terms,
+      "id": 1,
+      "name": "Created ",
+      "description": "The PO has been successfully created."
+    },
     {
-      where: { for: "po" },
-      orderBy: { id: "asc" },
-    }
-  )
-  const [{ purchase_order_statuses: poStatusList }, { error: PO_statusError }] = useQuery(
-    getPurchase_order_statuses,
+      "id": 2,
+      "name": "Waiting for approval",
+      "description": "The PO is sent for approval and waiting to be"
+    },
     {
-      orderBy: { id: "asc" },
+      "id": 3,
+      "name": "Approved",
+      "description": "The PO has been approved to be placed with/em"
+    },
+    {
+      "id": 4,
+      "name": "Completed ",
+      "description": "All the items in the Purchase Order have been"
+    },
+    {
+      "id": 5,
+      "name": "Cancelled ",
+      "description": " All items in the PO have been cancelled befo"
+    },
+    {
+      "id": 6,
+      "name": "Rejected ",
+      "description": "The PO has been rejected."
+    },
+    {
+      "id": 7,
+      "name": "Amended",
+      "description": "The PO has been updated/edited after being ap"
+    },
+    {
+      "id": 8,
+      "name": "In-transit",
+      "description": null
+    },
+    {
+      "id": 9,
+      "name": "Partially Fulfilled",
+      "description": null
     }
-  )
+  ]
+
+  const poTerms = [
+    {
+      "id": 1,
+      "name": "Net-07",
+      "description": "Net-07",
+      "for": "po"
+    },
+    {
+      "id": 2,
+      "name": "Net-30",
+      "description": "Net-30",
+      "for": "po"
+    },
+    {
+      "id": 3,
+      "name": "100% Advance",
+      "description": "100% Advance",
+      "for": "po"
+    },
+    {
+      "id": 4,
+      "name": "Net-50",
+      "description": "Net-50",
+      "for": "po"
+    },
+    {
+      "id": 5,
+      "name": "Net-45",
+      "description": "Net-45",
+      "for": "po"
+    },
+    {
+      "id": 6,
+      "name": "50% Advance",
+      "description": "50% Advance",
+      "for": "po"
+    },
+    {
+      "id": 7,
+      "name": "Bought Against",
+      "description": "Bought Against",
+      "for": "po"
+    },
+    {
+      "id": 8,
+      "name": "Delivery",
+      "description": "Delivery",
+      "for": "po"
+    },
+    {
+      "id": 9,
+      "name": "RFQ-terms",
+      "description": "RFQ-terms",
+      "for": "rfq"
+    },
+    {
+      "id": 10,
+      "name": "High and Critical",
+      "description": "High and Critical",
+      "for": "rfq"
+    },
+    {
+      "id": 11,
+      "name": "Priority",
+      "description": "Priority",
+      "for": "rfq"
+    },
+    {
+      "id": 12,
+      "name": "Quotation Validity",
+      "description": "Quotation Validity",
+      "for": "rfq"
+    }
+  ]
+
+  const prefixes = [
+    {
+      "id": 1,
+      "name": "PRODUCT",
+      "prefix": "PROD"
+    },
+    {
+      "id": 2,
+      "name": "RFQ",
+      "prefix": "RFQ"
+    },
+    {
+      "id": 3,
+      "name": "PO",
+      "prefix": "PO"
+    },
+    {
+      "id": 4,
+      "name": "GRN",
+      "prefix": "GRN"
+    }
+  ]
 
   // console.log("activeRow form po component", activeRow)
 
@@ -188,18 +333,18 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     setItemList(itemList.filter((data, i) => index !== i))
   }
 
-  useEffect(() => {
-    const ErrorArray = [updatingMutationError, creatingMutationError, getPoProductsError]
+  // useEffect(() => {
+  //   const ErrorArray = [updatingMutationError, creatingMutationError, getPoProductsError]
 
-    const msg = []
+  //   const msg = []
 
-    for (let err of ErrorArray) {
-      if (err) {
-        msg.push(err)
-      }
-    }
-    setErrorMsgs(msg)
-  }, [updatingMutationError, creatingMutationError, getPoProductsError])
+  //   for (let err of ErrorArray) {
+  //     if (err) {
+  //       msg.push(err)
+  //     }
+  //   }
+  //   setErrorMsgs(msg)
+  // }, [updatingMutationError, creatingMutationError, getPoProductsError])
 
   useEffect(() => {
     createNewPOCode()
@@ -517,11 +662,10 @@ const CreateNewPo = React.forwardRef((props, ref) => {
 
   return (
     <div
-      className={`col-12 ${
-        purchaseDialog
-          ? "visible scalein animation-duration-200"
-          : "hidden scaleout animation-duration-200"
-      }`}
+      className={`col-12 ${purchaseDialog
+        ? "visible scalein animation-duration-200"
+        : "hidden scaleout animation-duration-200"
+        }`}
     >
       {creatingPO && <LoaderFullScreen />}
       {UpdatingPO && <LoaderFullScreen />}
@@ -823,7 +967,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                     onChange={formik.handleChange}
                     // className={classNames({ "p-invalid": isFormFieldValid("ammendedNotes") })}
                     rows={3}
-                    // cols={10}
+                  // cols={10}
                   />
                   <label
                     htmlFor="ammendedNotes"
@@ -970,12 +1114,12 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                       }}
                       aria-label="products"
                       dropdownAriaLabel="Select Product"
-                      //   className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                    //   className={classNames({ "p-invalid": isFormFieldValid("name") })}
                     />
 
                     <label
                       htmlFor="name"
-                      //   className={classNames({ "p-error": isFormFieldValid("name") })}
+                    //   className={classNames({ "p-error": isFormFieldValid("name") })}
                     >
                       Select Product
                     </label>

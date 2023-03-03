@@ -2680,37 +2680,37 @@ export const Purchase_ordersList = () => {
                 // header={renderHeader}
                 stripedRows
                 className="text-s datatable-responsive w-full mt-5"
-                // paginator
-                // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
-                // rows={PAGINATION_VARIABLES.rows}
-                // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
-                // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
+              // paginator
+              // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
+              // rows={PAGINATION_VARIABLES.rows}
+              // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
+              // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
               >
                 <Column
                   field="pop_id"
                   header="ID"
-                  // className="text-center"
+                // className="text-center"
                 />
                 <Column
                   field="vendor_products.products.products_sku"
                   header="Product SKU"
-                  // className="text-center"
+                // className="text-center"
                 />
 
                 <Column
                   field="vendor_products.products.name"
                   header="Name"
-                  // className="text-center"
+                // className="text-center"
                 />
                 <Column
                   field="price_per_unit"
                   header="Price / Unit"
-                  // className="text-center"
+                // className="text-center"
                 />
                 <Column
                   field="quantity"
                   header="Quantity"
-                  // className="text-center"
+                // className="text-center"
                 />
               </DataTable>
             </div>
@@ -2926,7 +2926,7 @@ export const Purchase_ordersList = () => {
         onChange={(e) => options.filterCallback(e.value, options.index)}
         dateFormat={calenderDateFormat()}
         placeholder={calenderDateFormat()}
-        // mask="99/99/9999"
+      // mask="99/99/9999"
       />
     )
   }
@@ -3118,7 +3118,7 @@ export const Purchase_ordersList = () => {
               header="Po Number"
               filter
               filterPlaceholder="Search by Code"
-              // className="text-center"
+            // className="text-center"
             />
 
             <Column
@@ -3127,13 +3127,13 @@ export const Purchase_ordersList = () => {
               className="overflow-hidden"
               filter
               filterPlaceholder="Search by Description"
-              // className="text-center"
+            // className="text-center"
             />
 
             <Column
               field="po_type"
               header="Type"
-              // className="text-center"
+            // className="text-center"
             />
             <Column
               field="vendor"
@@ -3141,7 +3141,7 @@ export const Purchase_ordersList = () => {
               className="overflow-hidden"
               filter
               filterPlaceholder="Search by Vendor"
-              // className="text-center"
+            // className="text-center"
             />
 
             <Column
@@ -3152,7 +3152,7 @@ export const Purchase_ordersList = () => {
               body={(rowData) => moment(new Date(rowData.updated_on)).format("DD-MM-YYYY, HH:MM")}
               filter
               filterElement={dateFilterTemplate}
-              // className="text-center"
+            // className="text-center"
             />
 
             <Column
@@ -3165,7 +3165,7 @@ export const Purchase_ordersList = () => {
               }
               filter
               filterElement={dateFilterTemplate}
-              // className="text-center"
+            // className="text-center"
             />
             <Column
               field="from_party"
@@ -3173,7 +3173,7 @@ export const Purchase_ordersList = () => {
               className="overflow-hidden"
               filter
               filterPlaceholder="Search by Party"
-              // className="text-center"
+            // className="text-center"
             />
             <Column
               field="purchase_order_status"
@@ -3182,8 +3182,8 @@ export const Purchase_ordersList = () => {
               body={(rowdata) => rowdata.purchase_order_status?.name}
               filter
               filterPlaceholder="Search by Agreement"
-              // style={{ width: "10px" }}
-              // className="text-center"
+            // style={{ width: "10px" }}
+            // className="text-center"
             />
             <Column
               // field="vendor_gstin"
@@ -3206,7 +3206,7 @@ export const Purchase_ordersList = () => {
                   </div>
                 )
               }}
-              // className="text-center"
+            // className="text-center"
             />
           </DataTable>
         </div>
