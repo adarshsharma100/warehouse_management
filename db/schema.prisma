@@ -272,11 +272,12 @@ model po_terms {
 
 model purchase_orders {
   id                                   Int               @id @default(autoincrement())
-  poNumber                             String            @db.VarChar(45)
+  number                               String            @db.VarChar(45)
   agreement                            String?           @db.VarChar(100)
   description                          String?           @db.VarChar(45)
   expectedDod                          DateTime?         @db.DateTime(0)
   rejectedReason                       String?           @db.VarChar(45)
+  ammendedFrom                         Int?
   expiryDate                           DateTime?
   approvedOn                           DateTime?         @db.DateTime(0)
   createdAT                            DateTime          @db.DateTime(0)

@@ -15,15 +15,15 @@ import { z } from "zod"
 //   credit_period: z.string().optional(),
 //   lead_time: z.string().optional(),
 //   status: z.boolean().optional(),
-// })
+// })  
 const UpdateVendor = z.unknown()
 
 export default resolver.pipe(
   resolver.zod(UpdateVendor),
   resolver.authorize(),
-  async ({ vendor_id, ...data }) => {
+  async ({ id, ...data }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-    const vendor = await db.vendor.update({ where: { vendor_id }, data })
+    const vendor = await db.vendors.update({ where: { id }, data })
 
     return vendor
   }
