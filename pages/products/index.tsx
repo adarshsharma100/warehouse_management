@@ -13,7 +13,7 @@ import { Dialog } from "primereact/dialog"
 import { InputText } from "primereact/inputtext"
 import { InputTextarea } from "primereact/inputtextarea"
 import { FileUpload } from "primereact/fileupload"
-import { Toast } from "primereact/toast" 
+import { Toast } from "primereact/toast"
 
 import createProduct from "app/products/mutations/createProduct"
 import updateProduct from "app/products/mutations/updateProduct"
@@ -51,6 +51,7 @@ export const ProductsList = () => {
   const [{ products }, { isLoading: isProductsLoading, refetch }] = useQuery(getProducts, {
     orderBy: { id: "asc" },
   })
+  console.log('products: ', products);
   const [{ product_categories },] = useQuery(getProduct_categories, {
     orderBy: { id: "asc" },
   })
@@ -567,14 +568,14 @@ export const ProductsList = () => {
           await updateActiveProduct({
             id: activeProductId,
             name: name,
-              description: description,
-              color,
-              height: Number(height),
-              weight: Number(weight),
-              product_tags: { 
-                create: tagsValue.map((e) => ({ tags: e })),
-                // deleteTags:tagsValue.map((e) => ({id}))
-              }
+            description: description,
+            color,
+            height: Number(height),
+            weight: Number(weight),
+            product_tags: {
+              create: tagsValue.map((e) => ({ tags: e })),
+              // deleteTags:tagsValue.map((e) => ({id}))
+            }
           }, {
             onSuccess: () => {
               alert('Update Done')
@@ -605,8 +606,9 @@ export const ProductsList = () => {
               height: Number(height),
               weight: Number(weight),
               hsnCode: hsnCode,
-              product_tags: { create: tagsValue.map((e) => ({ tags: e })) ,
-            }
+              product_tags: {
+                create: tagsValue.map((e) => ({ tags: e })),
+              }
               // imageUrl: imageurl,
               // gstTaxTypeCode: gstcode,
               // taxCalcType: taxCalcuation,
@@ -1310,8 +1312,11 @@ export const ProductsList = () => {
           >
 
             {/* <Column header="Image" body={rowData => <img src={`${rowData.imageUrl}`} alt="imageData" style={{ width: '300px', height: '220px' }} />} /> */}
-            <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} />
-
+            {/* <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} /> */}
+            {/* <Link href="/product/[id]" as={`/product/${product.id}`}>
+            {product.name}
+          </Link> */}
+          <Column header="SKU" body={rowData => <Link href="/products/[id]" as={`/products/${rowData.id}`} >{rowData.sku}</Link>} />
             {columnComponents}
 
             {/* <Column

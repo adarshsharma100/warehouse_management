@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/router"
 import { useQuery, useMutation } from "@blitzjs/rpc"
 import { useParam } from "@blitzjs/next"
-
+import { Inplace, InplaceDisplay, InplaceContent } from "primereact/inplace";
 import Layout from "app/core/layouts/Layout"
 import getProduct from "app/products/queries/getProduct"
 import deleteProduct from "app/products/mutations/deleteProduct"
@@ -13,6 +13,7 @@ import Loading from "components/loading"
 import { Button } from "primereact/button"
 import { useState, useRef } from "react"
 import { Galleria } from "primereact/galleria"
+import { InputText } from "primereact/inputtext"
 
 export const Product = () => {
   const router = useRouter()
@@ -30,7 +31,7 @@ export const Product = () => {
     Width: "80",
     Height: "80",
     Color: "Black",
-    Brand: "",
+    Brand: "name",
     TaxTypeCode: "12365479885",
     GstTaxTypeCode: "8778411445rtcf",
     HSNCode: "84439940",
@@ -41,8 +42,9 @@ export const Product = () => {
     Enabled: "Yes",
     TaxCalculationType: "tax calculation type",
   }
+  // const obj = Object.entries(object)
+  const obj = Object.entries(object).map(([key, value]) => ({ key, value }));
 
-  const obj = Object.entries(object)
   const item = [
     {
       itemImageSrc: "https://m.media-amazon.com/images/I/41pxcui7YpL._SY445_SX342_QL70_FMwebp_.jpg",
@@ -81,13 +83,21 @@ export const Product = () => {
     },
   ]
 
-  const [store, setStore] = useState(obj)
   const [active, setActive] = useState(false)
   const [images, setImages] = useState(item)
 
   const [inputs, setInputs] = useState([{ id: 1, value: "" }])
   const [nextId, setNextId] = useState(2)
-  console.log(inputs, "inputs")
+
+  const [text, setText] = useState("");
+  const [store, setStore] = useState(obj);
+
+  const handleChange = (index, value) => {
+    const updatedStore = [...store];
+    updatedStore[index].value = value;
+    setStore(updatedStore);
+    localStorage.setItem("store", JSON.stringify(updatedStore));
+  };
 
   const handleAddInput = () => {
     const lastInput: any = inputs[inputs.length - 1]
@@ -140,35 +150,37 @@ export const Product = () => {
       <div className="">
         <div className="card flex justify-content-between align-items-center sticky top-0 z-1">
           <h2 className="mb-0">Products Details</h2>
-          {active ? (
-            <Button onClick={() => setActive((s: any) => !s)}>Save</Button>
-          ) : (
-            <Button onClick={() => setActive((s: any) => !s)}>Edit</Button>
-          )}
         </div>
 
-        <div className="grid gap-6 p-8 ">
-          <div className="col card2 text-2xl">
-            {store.map((i) => {
-              return (
-                <div key={i}>
-                  <div className="border-card flex flex-grow-0 gap-4  p-2 ">
-                    <div className=" flex gap-4">
-                      <div className="w-18rem">{i[0]}</div>
+        <div className="grid gap-6 p-8 " >
 
-                      <div className="">: {i[1]}</div>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-            <div className="flex gap-4"></div>
+          <div className="card grid" style={{ width: "65%" }}>
+
+            {store.map(({ key, value }, index) => (
+              <div key={key} className="mt-3 col-4 flex align-items-center">
+                <span className="text-xl font-italic font-bold">{key}:</span>
+                <Inplace closable>
+                  <InplaceDisplay className="text-xl ml-2">{text || value}</InplaceDisplay>
+                  <InplaceContent>
+                    <InputText
+                      value={value}
+                      onChange={(e) => handleChange(index, e.target.value)}
+                      autoFocus
+                    />
+                  </InplaceContent>
+                </Inplace>
+
+
+              </div>
+            ))}
           </div>
 
-          <div className="col card2 ">
+
+
+          <div className="col card2 " style={{ width: '35%' }}>
             <div className="flex gap-2 font-bold  align-items-center">
-              <div className="text-3xl"> {object.Name}</div>-
-              <div className="text-3xl">{object.SKU}</div>
+              <div className="text-2xl"> {object.Name}</div>-
+              <div className="text-2xl">{object.SKU}</div>
             </div>
             <div className="mt-3">
               <Galleria
