@@ -10,9 +10,12 @@ datasource db {
 model grn {
   id              Int             @id @default(autoincrement())
   grnNumber       String          @db.VarChar(45)
-  createdAt       DateTime
   invoiceNo       String          @db.VarChar(45)
   invoiceDate     DateTime        @db.DateTime(0)
+  trackingId      String          @db.VarChar(200)
+  eta             DateTime        @db.DateTime(0)
+  createdAt       DateTime?       @db.DateTime(0)
+  updatedAt       DateTime?       @db.DateTime(0)
   status          Int
   createdBy       Int
   purchaseOrder   Int
@@ -93,7 +96,7 @@ model vendor_products {
 
 model rfq {
   id              Int               @id @default(autoincrement())
-  rfqNumber       String?           @db.VarChar(45)
+  rfqNumber       String            @unique(map: "rfqNumber_UNIQUE") @db.VarChar(45)
   description     String?           @db.VarChar(100)
   status          rfq_status        @default(Created)
   expectedDod     DateTime?
@@ -272,12 +275,11 @@ model po_terms {
 
 model purchase_orders {
   id                                   Int               @id @default(autoincrement())
-  number                               String            @db.VarChar(45)
+  poNumber                             String            @unique(map: "poNumber_UNIQUE") @db.VarChar(45)
   agreement                            String?           @db.VarChar(100)
   description                          String?           @db.VarChar(45)
   expectedDod                          DateTime?         @db.DateTime(0)
   rejectedReason                       String?           @db.VarChar(45)
-  ammendedFrom                         Int?
   expiryDate                           DateTime?
   approvedOn                           DateTime?         @db.DateTime(0)
   createdAT                            DateTime          @db.DateTime(0)
@@ -324,8 +326,8 @@ model vendors {
   leadTime        Int?
   status          vendors_status    @default(Active)
   vendorScore     Int?
-  branch_code     branch_code[]
   purchase_orders purchase_orders[]
+  vendor_branch   vendor_branch[]
   vendor_products vendor_products[]
 }
 
@@ -345,35 +347,24 @@ model product_categories {
 model addresses {
   id                                 Int              @id @default(autoincrement())
   buildingNumber                     String?          @db.VarChar(15)
-  area_street                        String?          @db.VarChar(150)
+  areaStreet                         String?          @db.VarChar(150)
   landmarkName                       String?          @db.VarChar(100)
-  city_countryProvince               String           @db.VarChar(45)
+  cityCountryProvince                String           @db.VarChar(45)
   state                              String?          @db.VarChar(45)
   pincode                            Int?
   country                            Int
   country_addresses_countryTocountry country          @relation("addresses_countryTocountry", fields: [country], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_addresses_country1")
-  branch_code                        branch_code[]
   contact_number                     contact_number[]
   emails_emails_addressesToaddresses emails[]         @relation("emails_addressesToaddresses")
+  vendor_branch                      vendor_branch[]
 
   @@index([country], map: "fk_addresses_country1_idx")
-}
-
-model branch_code {
-  id        Int       @id @default(autoincrement())
-  vendor    Int
-  address   Int
-  addresses addresses @relation(fields: [address], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_branch_code_addresses1")
-  vendors   vendors   @relation(fields: [vendor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_branch_code_vendors1")
-
-  @@index([address], map: "fk_branch_code_addresses1_idx")
-  @@index([vendor], map: "fk_branch_code_vendors1_idx")
 }
 
 model contact_number {
   id        Int                 @id @default(autoincrement())
   type      contact_number_type
-  number    Int                 @unique(map: "number_vendorAddress")
+  number    BigInt
   address   Int
   addresses addresses           @relation(fields: [address], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_contact_Number_addresses1")
 
@@ -405,6 +396,19 @@ model product_tags {
 
   @@unique([tags, product], map: "tags_product")
   @@index([product], map: "fk_product_tags_products1_idx")
+}
+
+model vendor_branch {
+  id          Int       @id @default(autoincrement())
+  branch_code String    @db.VarChar(45)
+  vendor      Int
+  address     Int
+  addresses   addresses @relation(fields: [address], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_branch_addresses1")
+  vendors     vendors   @relation(fields: [vendor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_branch_vendors1")
+
+  @@unique([branch_code, vendor, address], map: "branch_vendoe_address")
+  @@index([address], map: "fk_vendor_branch_addresses1_idx")
+  @@index([vendor], map: "fk_vendor_branch_vendors1_idx")
 }
 
 enum products_status {

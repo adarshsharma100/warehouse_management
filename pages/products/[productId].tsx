@@ -147,7 +147,7 @@ export const Product = () => {
           )}
         </div>
 
-        <div className="grid gap-6 p-8 ">
+        <div className="grid gap-6 p-6 ">
           <div className="col card2 text-2xl">
             {store.map((i) => {
               return (

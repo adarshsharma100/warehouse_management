@@ -13,7 +13,7 @@ import { Dialog } from "primereact/dialog"
 import { InputText } from "primereact/inputtext"
 import { InputTextarea } from "primereact/inputtextarea"
 import { FileUpload } from "primereact/fileupload"
-import { Toast } from "primereact/toast" 
+import { Toast } from "primereact/toast"
 
 import createProduct from "app/products/mutations/createProduct"
 import updateProduct from "app/products/mutations/updateProduct"
@@ -51,6 +51,7 @@ export const ProductsList = () => {
   const [{ products }, { isLoading: isProductsLoading, refetch }] = useQuery(getProducts, {
     orderBy: { id: "asc" },
   })
+  console.log('products: ', products);
   const [{ product_categories },] = useQuery(getProduct_categories, {
     orderBy: { id: "asc" },
   })
@@ -96,9 +97,6 @@ export const ProductsList = () => {
   }
   const dateFormat = (dateObj: Date | string) =>
     moment(new Date(dateObj)).format("DD-MM-YYYY, hh:mm")
-
-
-
 
   const columns = [
     { field: "name", header: "Name" },
@@ -563,18 +561,19 @@ export const ProductsList = () => {
       console.log('activeRowData: ', activeRowData);
       console.log('updatingProduct: ', updatingProduct);
       if (editUpdateProduct) {
+        
         try {
           await updateActiveProduct({
             id: activeProductId,
             name: name,
-              description: description,
-              color,
-              height: Number(height),
-              weight: Number(weight),
-              product_tags: { 
-                create: tagsValue.map((e) => ({ tags: e })),
-                // deleteTags:tagsValue.map((e) => ({id}))
-              }
+            description: description,
+            color,
+            height: Number(height),
+            weight: Number(weight),
+            product_tags: {
+              create: tagsValue.map((e) => ({ tags: e })),
+              // deleteTags:tagsValue.map((e) => ({id}))
+            }
           }, {
             onSuccess: () => {
               alert('Update Done')
@@ -605,8 +604,9 @@ export const ProductsList = () => {
               height: Number(height),
               weight: Number(weight),
               hsnCode: hsnCode,
-              product_tags: { create: tagsValue.map((e) => ({ tags: e })) ,
-            }
+              product_tags: {
+                create: tagsValue.map((e) => ({ tags: e })),
+              }
               // imageUrl: imageurl,
               // gstTaxTypeCode: gstcode,
               // taxCalcType: taxCalcuation,
@@ -961,15 +961,11 @@ export const ProductsList = () => {
           : "hidden scaleout animation-duration-200"
           }`}
       >
+
+
         <div className="card">
           <div className="flex justify-content-between">
-            {/* {activeProduct ? 'Create': productEditState ? 'Update' :'Details'} */}
-
             <h4>{activeProduct ? "Update" : "Create"} Product</h4>
-            <h4>
-              {/* {activeProduct ? 'Details' : productEditState ? 'Update' :'Create'} */}
-            </h4>
-
             <h4>{productEditState ? <Button
               icon="pi pi-pencil"
               className="m-1"
@@ -980,25 +976,9 @@ export const ProductsList = () => {
               onClick={() => setProductEditState(!productEditState)}
             />}</h4>
           </div>
+
           <form
             onSubmit={formik.handleSubmit}
-            // onSubmit={async () => {
-            //   const result = await createProductMutation(productDetails, {
-            //     onSuccess: () => {
-            //       setProductDialog(false)
-            //     },
-            //   })
-
-            //   // try {
-            //   //   const all = await createInventoryProductMutation({
-            //   //     products_product_id: Number(result.product_id),
-            //   //     quantity: 0,
-            //   //   })
-            //   //
-            //   // } catch (error) {
-            //   //
-            //   // }
-            // }}
             className="p-fluid"
           >
             <div className="formgrid grid ">
@@ -1018,11 +998,6 @@ export const ProductsList = () => {
               {
                 [
                   { type: 'text', label: "Name*", field: "name", header: "Name" },
-                  // { type: "text", label: "SKU", field: "sku", header: "SKU" },
-                  // { type: 'text', label: "Type", field: "product_type", header: "Type" },
-                  // { type:'text', label:"Description", field: "description", header: "Description" },
-                  // { type: 'text', label: "Unit", field: "unit", header: "Unit" },
-                  // { type:'text', label:"Category", field: "category", header: "Category" },
                   { type: 'text', label: "Length", field: "length", header: "Length" },
                   { type: 'text', label: "Width", field: "width", header: "Width" },
                   { type: 'text', label: "Height", field: "height", header: "Height" },
@@ -1249,8 +1224,6 @@ export const ProductsList = () => {
                 {getFormErrorMessage("description")}
               </div>
             </div>
-
-
 
             <div className="flex mt-4">
               <Button

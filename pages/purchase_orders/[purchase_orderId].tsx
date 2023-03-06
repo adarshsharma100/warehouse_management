@@ -22,7 +22,19 @@ import Invoice from "components/Invoice"
 import { Button } from "primereact/button"
 import Grn from "components/Grn"
 import createGrn from "app/grns/mutations/createGrn"
+import CreateGrn_status from "app/grn_statuses/mutations/createGrn_status"
 import { InputTextarea } from "primereact/inputtextarea"
+import { useFormik } from "formik"
+import * as Yup from "yup"
+import { InputText } from "primereact/inputtext"
+import classNames from "classnames"
+import { AutoComplete } from "primereact/autocomplete"
+import getGrn_statuses from "app/grn_statuses/queries/getGrn_statuses"
+import get_Grns from 'app/grns/queries/getGrns'
+import { MultiSelect } from "primereact/multiselect"
+import { dateFormat } from "app/constants"
+import updateGrn from "app/grns/mutations/updateGrn"
+
 
 export const Purchase_order = () => {
   const router = useRouter()
@@ -242,7 +254,7 @@ export const Purchase_order = () => {
     },
   ]
 
-  const grns = [
+  const grnss = [
     {
       grn_id: 1,
       grn_batch_code: "GRN#3",
@@ -259,7 +271,7 @@ export const Purchase_order = () => {
       grn_id: 2,
       grn_batch_code: "GRN#4",
       grn_status: "QC-Completed",
-      created_on: "2022-12-14T10:15:52.000Z",
+      created_At: "2022-12-14T10:15:52.000Z",
       grn_desc: "lorem text123",
       grn_status_id: 1,
       grn_status_grnTogrn_status: {
@@ -568,6 +580,7 @@ export const Purchase_order = () => {
       },
     },
   ]
+
   const purchase_order = {
     po_id: 8,
     po_type: "sss",
@@ -790,6 +803,49 @@ export const Purchase_order = () => {
       additionalCost: "0",
     },
   ]
+  const GrnFormDetails = {
+    grnNumber: '',
+    invoiceNo: "",
+    status: "",
+    invoiceDate: '',
+    trackingId: '',
+    eta: '',
+    createdAt: '',
+    updatedAt: '',
+    createdBy: '',
+
+  }
+
+  const dateFormats = (dateObj) => moment(new Date(dateObj)).format("DD-MM-YYYY, HH:MM")
+
+  const columns = [
+    { type: 'text', label: "Grn Number", field: 'grnNumber' },
+    { type: 'text', label: "Invoice No", field: 'invoiceNo' },
+    { type: 'text', label: "Tracking Id", field: 'trackingId' },
+    { type: 'text', label: "Status", field: 'status' },
+    {
+      label: "Created At",
+      body: (rowData) => <div>{dateFormat(rowData.createdAt)}</div>,
+    },
+    {
+      label: "Update At",
+      body: (rowData) => <div>{dateFormat(rowData.updatedAt)}</div>,
+    },
+    {
+      label: "ETA",
+      body: (rowData) => <div>{dateFormat(rowData.eta)}</div>,
+    },
+    {
+      label: "Invoice Date",
+      body: (rowData) => <div>{dateFormat(rowData.invoiceDate)}</div>,
+    },
+    {
+      label: "Created By",
+      body: (rowData) => <div>{dateFormats(rowData.createdBy)}</div>,
+    },
+
+
+  ]
 
   // console.log("purchase_orderId", purchase_orderId)
   // const [deletePurchase_orderMutation] = useMutation(deletePurchase_order)
@@ -801,11 +857,27 @@ export const Purchase_order = () => {
   // })
   // const [{ grns }, { refetch: refetchGrn }] = useQuery(getGrns, {
   //   orderBy: { grn_id: "asc" },
+  //   skip: undefined,
+  //   where: undefined,
+  //   take: undefined
   // })
+  // console.log('grns: ', grns);
+
   // const [{ prefixes }, { error: getPrefixesError }] = useQuery(getPrefixes, {
   //   orderBy: { id: "asc" },
   // })
+
   const [createGrnMutation, { error: grnCreationError }] = useMutation(createGrn)
+  const [updateGrnMutation] = useMutation(updateGrn)
+  const [{ grn_statuses },] = useQuery(getGrn_statuses, {
+    orderBy: { id: "asc" },
+  })
+  const [{ grns },] = useQuery(getGrns, {
+    orderBy: { id: 'asc' },
+  })
+  console.log('grns: ', grns);
+
+
 
   const findVendor = (id) => vendors.find((ele, i) => (ele.vendor_id = id)).vendor
 
@@ -829,7 +901,172 @@ export const Purchase_order = () => {
     purchase_order_products,
   } = purchase_order
 
-  const currentGrn = grns[0]
+  const currentGrn = grnss[0]
+  const [grnDetails, setGrnDetails] = useState(GrnFormDetails)
+  const [active, setActive] = useState(false)
+  const [showData, setShowData] = useState([])
+  const [values, setValues] = useState('');
+  const [status, setStatus] = useState()
+  const [items, setItems] = useState([]);
+  const [selectedColumns, setSelectedColumns] = useState(columns)
+  const [activeRowData, setActiveRowData] = useState({})
+  const [editGrns, setEditGrns] = useState(false)
+  const [edit, setEdit] = useState(false)
+  const [updateGrns, setUpdateGrns] = useState(false)
+
+  const [inputs, setInputs] = useState([{ value: '' }]);
+
+  const handleAddInput = () => {
+    setInputs([...inputs, { value: '' }]);
+  };
+
+  const handleRemoveInput = (index) => {
+    const newInputs = [...inputs];
+    newInputs.splice(index, 1);
+    setInputs(newInputs);
+  };
+
+
+  const handleInputChange = (index, event) => {
+    const newInputs = [...inputs];
+    newInputs[index].value = event.target.value;
+    setInputs(newInputs);
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    console.log(inputs.map(input => input.value));
+
+  };
+
+
+
+
+
+  const onColumnToggle = (event) => {
+    let selectedColumns = event.value
+    let orderedSelectedColumns = columns.filter((col) =>
+      selectedColumns.some((sCol) => sCol.field === col.field)
+    )
+    setSelectedColumns(orderedSelectedColumns)
+  }
+
+  const search = (event) => {
+    let _items = grn_statuses;
+    setItems(grn_statuses.map((i) => i.name));
+  }
+
+  const header = (
+    <div style={{ textAlign: "left" }}>
+      <MultiSelect
+        value={selectedColumns}
+        options={columns}
+        optionLabel="header"
+        onChange={onColumnToggle}
+        style={{ width: "20em" }}
+      />
+    </div>
+  )
+
+  const columnComponents = selectedColumns.map((col) => {
+    return (
+      <Column
+        key={col.field}
+        field={col.field}
+        header={col.label}
+        filter
+        filterPlaceholder="Search...."
+      />
+    )
+  })
+
+
+
+  const formik = useFormik({
+    initialValues: grnDetails,
+    validationSchema: Yup.object().shape({
+      invoiceNo: Yup.string().required("*Required"),
+      grnNumber: Yup.string().required('*Required')
+    }),
+    onSubmit: async (data) => {
+      console.log('data: ', data);
+      console.log("inputValue",inputs);
+
+      setShowData(<pre>{JSON.stringify(data, null, 2)}</pre>)
+
+      const { grnNumber, invoiceNo, invoiceDate, status, createdBy, trackingId, eta }: any = data
+      const activeUpdateId = activeRowData.id
+      if (updateGrns) {
+        try {
+          await updateGrnMutation({
+            id: activeUpdateId,
+            grnNumber,
+            invoiceNo,
+            invoiceDate: new Date(),
+            trackingId,
+            createdBy: 8,
+            eta: new Date(),
+            status: Number(status),
+            purchaseOrder: 2,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }, {
+            onSuccess: (data) => {
+              alert('Updated!')
+              console.log(data)
+            },
+            onError: (error) => {
+              alert("OnError")
+              console.log('error: ', error);
+            }
+          }
+          )
+
+        } catch (error) {
+          console.log('error: ', error);
+        }
+      }
+      else {
+        try {
+          await createGrnMutation({
+            grnNumber,
+            invoiceNo,
+            invoiceDate: new Date(),
+            trackingId,
+            createdBy: 8,
+            eta: new Date(),
+            status: Number(status),
+            purchaseOrder: 2,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }, {
+            onSuccess: (data) => {
+              alert("Created!")
+              console.log('data: ', data);
+            },
+            onError: (error) => {
+              alert("error++")
+              console.log('error: ', error);
+            }
+          }
+          )
+        } catch (error) {
+          alert("Error")
+          console.log('error: ', error);
+
+        }
+      }
+
+    }
+  })
+  const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
+  const getFormErrorMessage = (name) => {
+    return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
+  }
+
+
+
+
 
   return (
     <>
@@ -874,44 +1111,168 @@ export const Purchase_order = () => {
                 // header={renderHeader}
                 stripedRows
                 className="text-s datatable-responsive w-full mt-5"
-                // paginator
-                // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
-                // rows={PAGINATION_VARIABLES.rows}
-                // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
-                // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
+              // paginator
+              // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
+              // rows={PAGINATION_VARIABLES.rows}
+              // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
+              // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
               >
                 <Column
                   field="pop_id"
                   header="ID"
-                  // className="text-center"
+                // className="text-center"
                 />
                 <Column
                   field="vendor_products.products.products_sku"
                   header="Product SKU"
-                  // className="text-center"
+                // className="text-center"
                 />
 
                 <Column
                   field="vendor_products.products.name"
                   header="Name"
-                  // className="text-center"
+                // className="text-center"
                 />
                 <Column
                   field="price_per_unit"
                   header="Price / Unit"
-                  // className="text-center"
+                // className="text-center"
                 />
                 <Column
                   field="quantity"
                   header="Quantity"
-                  // className="text-center"
+                // className="text-center"
                 />
               </DataTable>
             </div>
           </section>
         </div>
 
-        <Accordion className="px-3">
+        <div className="card">
+          {active && <div>
+            <div>
+              {editGrns ?
+                <div className="flex justify-content-between">
+                  <h3 className="mb-0">Update GRN</h3>
+                  <Button icon='pi pi-pencil' onClick={() => {setEdit(!edit); setUpdateGrns(!updateGrns) }} />
+                </div>
+
+                : <h3 className="mb-0">Create GRN</h3>}
+            </div>
+
+            <form className="p-fluid" onSubmit={formik.handleSubmit}>
+              {/* {active && */}
+
+              <div className="">
+                <div className="formgrid grid">
+                  {[
+                    { type: 'text', label: "Grn Number", field: 'grnNumber' },
+                    { type: 'text', label: "Invoice No", field: 'invoiceNo' },
+                    { type: 'text', label: "Invoice Date", field: 'invoiceDate' },
+                    { type: 'text', label: "Tracking Id", field: 'trackingId' },
+                    { type: 'text', label: "ETA", field: 'eta' },
+                    // { type: 'text', label: "Created At", field: 'createdAt' },
+                    // { type: 'text', label: "Updated At", field: 'updatedAt' },
+                    { type: 'text', label: "created By", field: 'createdBy' },
+                  ].map((ele, i) => {
+                    return (
+                      <div key={`create-${ele.field}-${i}`}
+                        className="field mt-4">
+                        <span className="p-float-label mt-4">
+                          <InputText
+                            disabled={edit}
+                            id={ele.field}
+                            name={ele.field}
+                            value={formik.values[ele.field]}
+                            onChange={formik.handleChange}
+                            autoFocus
+                            className={classNames({ "p-invalid ": isFormFieldValid(ele.field) })}
+                          />
+                          <label
+                            htmlFor={ele.field}
+                            className={classNames({ "p-error": isFormFieldValid(ele.field) })}
+                          >
+                            {ele.label}
+                          </label>
+                        </span>
+                        {getFormErrorMessage(ele.field)}
+                      </div>
+                    )
+                  })
+                  }
+
+                </div>
+
+                <div className="flex gap-4 align-items-center flex-wrap">
+                  {inputs.map((input, index) => (
+                    <div key={index} className='flex gap-4'>
+                      {/* <label>Project</label> */}
+                      <InputText
+                        type="text"
+                        disabled={edit}
+                        value={input.value}
+                        onChange={(event) => handleInputChange(index, event)}
+                        placeholder="Project"
+                      />
+                      
+                      {index > 0 && <Button type="button" icon='pi pi-minus' onClick={() => handleRemoveInput(index)} />}
+                    </div>
+                  ))}
+                  <Button disabled={edit} type="button" icon="pi pi-plus" onClick={handleAddInput} />
+
+                </div>
+
+                <AutoComplete disabled={edit} className="mt-4" placeholder="GrnStatus" value={values} suggestions={items} completeMethod={search} onChange={(e) => {
+                  const selectedStatus: any = grn_statuses.find(status => status.name === e.value);
+                  setStatus(selectedStatus.id);
+                  setValues(e.value);
+                }} dropdown />
+
+                <div className="flex justify-content-between gap-5 m-4">
+                  <Button type="submit" label="SUBMIT" className="" />
+                  <Button type="submit" label="CANCLE" onClick={() => { setActive(!active); setEditGrns(false); formik.resetForm() }} className="p-button-secondary flex-grow-0" />
+                </div>
+
+              </div>
+              {/* } */}
+
+
+            </form>
+          </div>}
+        </div>
+
+
+        <div className="flex justify-content-end px-3 mt-4 ">
+          <Button icon='pi pi-plus' onClick={() => {setActive(!active); setEdit(false)}} />
+        </div>
+
+        <div className="col-12">
+          <div className="card">
+            <DataTable
+              value={grns}
+              responsiveLayout="scroll"
+              showGridlines
+              className="text-s datatable-responsive"
+              filterDisplay="menu"
+              emptyMessage="No Results found."
+              onRowClick={async (e) => {
+                console.log('e.data: ', e.data);
+                setActiveRowData({ ...e.data })
+                setEditGrns(true)
+                setActive(true)
+                setEdit(true)
+                await formik.setValues({
+                  ...e.data,
+                })
+              }}
+            >
+              {columnComponents}
+            </DataTable>
+          </div>
+        </div>
+
+        {/* <div>{showData}</div> */}
+        <Accordion className="px-3 mt-3">
           <AccordionTab header="GRN#001">
             <TabView>
               {/* <TabPanel header="Invoice">
@@ -1056,6 +1417,7 @@ export const Purchase_order = () => {
                   </div>
                 </>
               </TabPanel> */}
+
               {/* <TabPanel header="GRN">
                 <>
                   <div className="formgrid grid mt-3 card " style={{ backgroundColor: "#05101e" }}>
@@ -1172,6 +1534,7 @@ export const Purchase_order = () => {
                   </div>
                 </>
               </TabPanel> */}
+
               <TabPanel header="Invoice/GRN">
                 <>
                   <div className="formgrid grid mt-3 card " style={{ backgroundColor: "#05101e" }}>
@@ -1283,49 +1646,45 @@ export const Purchase_order = () => {
                       // header={renderHeader}
                       stripedRows
                       className="text-s datatable-responsive w-full mt-5"
-                      // paginator
-                      // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
-                      // rows={PAGINATION_VARIABLES.rows}
-                      // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
-                      // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
+                    // paginator
+                    // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
+                    // rows={PAGINATION_VARIABLES.rows}
+                    // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
+                    // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
                     >
                       <Column
                         field="itemSku"
                         header="item SKU"
 
-                        // className="text-center"
+                      // className="text-center"
                       />
 
                       <Column
                         field="vendorSku"
                         header="vendor SKU"
-                        // className="text-center"
+                      // className="text-center"
                       />
-                      {/* <Column
-                                                field="batchCode"
-                                                header="Batch Code"
-                                            // className="text-center"
-                                            /> */}
+
                       <Column
                         field="received"
                         header="Received"
-                        // className="text-center"
+
                       />
                       <Column
                         field="rejected"
                         header="Rejected"
-                        // className="text-center"
+                      // className="text-center"
                       />
 
                       <Column
                         field="pendingQuanity"
                         header="Pending Quanity"
-                        // className="text-center"
+                      // className="text-center"
                       />
                       <Column
                         field="priceInfo"
                         header="Price Info "
-                        // className="text-center"
+                      // className="text-center"
                       />
                       {/* <Column
                                                 field="additionalCost"
@@ -1408,7 +1767,7 @@ export const Purchase_order = () => {
           <AccordionTab header="Invoice III">Content III</AccordionTab>
         </Accordion>
 
-        {/* <pre>{JSON.stringify(purchase_order, null, 2)}</pre> */}
+
       </div>
     </>
   )
@@ -1436,3 +1795,7 @@ const ShowPurchase_orderPage = () => {
 // ShowPurchase_orderPage.getLayout = (page) => <Layout>{page}</Layout>
 
 export default ShowPurchase_orderPage
+// function CreateGrn_status(variables: void, ctx?: any): Promise<unknown> {
+//   throw new Error("Function not implemented.")
+// }
+

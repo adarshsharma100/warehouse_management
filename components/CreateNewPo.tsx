@@ -23,7 +23,8 @@ import { AutoComplete } from "primereact/autocomplete"
 import { Button } from "primereact/button"
 import { Calendar } from "primereact/calendar"
 import { Checkbox } from "primereact/checkbox"
-import { Chip } from "primereact/Chip"
+// import { Chips } from "primereact/Chips"
+import { Chips } from "primereact/chips"
 import { Divider } from "primereact/divider"
 import { InputNumber } from "primereact/inputnumber"
 import { InputText } from "primereact/inputtext"
@@ -1017,7 +1018,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               <div className="mb-3">Emails</div>
               <div className="flex align-items-center flex-wrap">
                 {formik?.values?.vendor_Emails?.map((email, i) => (
-                  <Chip
+                  <Chips
                     key={i}
                     label={email}
                     className="mr-2 mb-2"
