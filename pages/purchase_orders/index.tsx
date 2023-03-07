@@ -2030,18 +2030,23 @@ export const Purchase_ordersList = () => {
               console.log("sendmailData: ", activeRow)
               const formatedData = {
                 ...activeRow,
-                // expected_delivery: toDateObj(activeRow?.expected_delivery),
-                // expiry_date: toDateObj(activeRow?.expiry_date),
+                expected_delivery: toDateObj(activeRow?.expected_delivery),
+                expiry_date: toDateObj(activeRow?.expiry_date),
               }
 
-              const requestData = JSON.stringify({
-                data: {
-                  vendor_vendor_id: activeRow?.vendors?.id,
-                  // csrf: antiCSRFToken,
-                },
-                // po: formatedData,
-                po: activeRow,
-              })
+              const bigIntToString = (key, value) => typeof value === 'bigint' ? value.toString() : value;
+
+
+              const requestData = JSON.stringify(
+                {
+                  data: {
+                    vendor_vendor_id: activeRow?.vendors?.id,
+                    // csrf: antiCSRFToken,
+                  },
+                  po: formatedData,
+                  // po: activeRow,
+                }, bigIntToString)
+
               var config = {
                 method: "post",
                 url: "http://localhost:3000/api/po",

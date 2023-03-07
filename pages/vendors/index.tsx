@@ -1129,7 +1129,7 @@ export const VendorsList = () => {
     onSubmit: async (data) => {
       console.log("data++", data)
       const { id: activeVendorId } = activeVendorData
-      const { name, code, vendorScore ,contact, creditPeriod, leadTime, gstin, email } = data
+      const { name, code, vendorScore, contact, creditPeriod, leadTime, gstin, email } = data
       if (activeVendor) {
         try {
           await updateActiveVender({
@@ -1137,7 +1137,7 @@ export const VendorsList = () => {
             name,
             code,
             status: "Active",
-            vendorScore : Number(vendorScore),
+            vendorScore: Number(vendorScore),
             creditPeriod: Number(creditPeriod),
             gstin,
             leadTime: Number(leadTime)
@@ -1164,7 +1164,7 @@ export const VendorsList = () => {
               status: "Active",
               creditPeriod: Number(creditPeriod),
               gstin,
-              vendorScore : Number(vendorScore),
+              vendorScore: Number(vendorScore),
               leadTime: Number(leadTime),
             }, {
             onSuccess: () => {
@@ -1355,7 +1355,13 @@ export const VendorsList = () => {
               icon="pi pi-plus"
               label="Add Vendors"
               className="ml-1"
-              onClick={() => {
+              onClick={async () => {
+
+                const cretae = await createVendorMutation()
+
+                return
+
+
                 setVendorDetails(initialVendorState)
                 setVendorDialog(true)
                 setVendorEditState(true)

@@ -1309,6 +1309,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                     className="mr-2 mb-2"
                     removable={!readOnlyForm}
                     onRemove={async (e) => {
+
                       const updatedChips = formik.values.vendor_Emails
                         .filter(({ email: mail }) => mail !== email)
 

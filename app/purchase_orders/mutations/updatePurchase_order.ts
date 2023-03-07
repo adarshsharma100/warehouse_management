@@ -45,14 +45,12 @@ export default resolver.pipe(
       data,
     })
 
-    const input = { id, ...data }
-
     const {
       po_status: { name },
     } = purchase_order
 
     if (name === "Approved") {
-      await sendPomail(input, purchase_order, null)
+      await sendPomail(purchase_order)
     }
 
     // await sendPomail(input, purchase_order, { class: "-Amended" })
