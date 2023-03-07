@@ -23,13 +23,23 @@ export default resolver.pipe(
           ...paginateArgs,
           where,
           orderBy,
-          // include: {
-          //   vendor_tags: {
-          //     include: {
-          //       tags: true,
-          //     },
-          //   },
-          // },
+          include: {
+            vendor_products: {
+              include: {
+                products: true,
+              },
+            },
+            vendor_branches: {
+              include: {
+                addresses: {
+                  select: {
+                    contact_number: true,
+                    emails_emails_addressesToaddresses: true,
+                  },
+                },
+              },
+            },
+          },
           // select: {
           //   vendor: true,
           //   vendor_city: true,

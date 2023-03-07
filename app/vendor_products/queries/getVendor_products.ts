@@ -23,15 +23,6 @@ export default resolver.pipe(
           ...paginateArgs,
           where,
           orderBy,
-          select: {
-            vp_id: true,
-            unit_price: true,
-            products: true,
-            vendor: true,
-            vendor_vendor_id: true,
-            products_product_id: true,
-            vendor_sku: true,
-          },
         }),
     })
 

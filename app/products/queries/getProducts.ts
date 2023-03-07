@@ -23,9 +23,9 @@ export default resolver.pipe(
           ...paginateArgs,
           where,
           orderBy,
-          // include: {
-          //   vendor_products: true,
-          // },
+          include: {
+            vendor_products: true,
+          },
         }),
     })
 

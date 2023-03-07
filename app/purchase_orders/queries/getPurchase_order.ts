@@ -13,10 +13,11 @@ export default resolver.pipe(
   resolver.authorize(),
   async ({ po_id }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-    const purchase_order = await db.purchase_order.findFirst({
-      where: { po_id },
+    const purchase_order = await db.purchase_orders.findFirst({
+      where: { id },
       include: {
-        purchase_order_products: {
+        vendors: true,
+        po_products: {
           include: {
             vendor_products: {
               include: {

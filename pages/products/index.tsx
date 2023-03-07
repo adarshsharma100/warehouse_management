@@ -13,7 +13,7 @@ import { Dialog } from "primereact/dialog"
 import { InputText } from "primereact/inputtext"
 import { InputTextarea } from "primereact/inputtextarea"
 import { FileUpload } from "primereact/fileupload"
-import { Toast } from "primereact/toast" 
+import { Toast } from "primereact/toast"
 
 import createProduct from "app/products/mutations/createProduct"
 import updateProduct from "app/products/mutations/updateProduct"
@@ -440,7 +440,7 @@ export const ProductsList = () => {
     "Tools/Safety",
     "LEDs",
     "ICs_18",
-    "Cables & Connectors",
+    "Cables & :ors",
     "M5 Stack",
     "Machine Tools",
     "Oscilloscope & Signal Generator",
@@ -567,14 +567,14 @@ export const ProductsList = () => {
           await updateActiveProduct({
             id: activeProductId,
             name: name,
-              description: description,
-              color,
-              height: Number(height),
-              weight: Number(weight),
-              product_tags: { 
-                create: tagsValue.map((e) => ({ tags: e })),
-                // deleteTags:tagsValue.map((e) => ({id}))
-              }
+            description: description,
+            color,
+            height: Number(height),
+            weight: Number(weight),
+            product_tags: {
+              create: tagsValue.map((e) => ({ tags: e })),
+              // deleteTags:tagsValue.map((e) => ({id}))
+            }
           }, {
             onSuccess: () => {
               alert('Update Done')
@@ -605,8 +605,9 @@ export const ProductsList = () => {
               height: Number(height),
               weight: Number(weight),
               hsnCode: hsnCode,
-              product_tags: { create: tagsValue.map((e) => ({ tags: e })) ,
-            }
+              product_tags: {
+                create: tagsValue.map((e) => ({ tags: e })),
+              }
               // imageUrl: imageurl,
               // gstTaxTypeCode: gstcode,
               // taxCalcType: taxCalcuation,
