@@ -13,7 +13,8 @@ const CreateGrn = z.object({
   purchaseOrder:z.unknown(),
   createdAt:z.date(),
   updatedAt:z.date(),
-
+  grn_products:z.unknown()
+  // po_products:z.unknown(),
 })
 
 export default resolver.pipe(resolver.zod(CreateGrn), resolver.authorize(), async (input) => {
