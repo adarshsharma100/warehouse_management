@@ -76,6 +76,7 @@ export const Purchase_ordersList = () => {
   const user = useCurrentUser()
   const { id, role, name, email } = user
 
+
   const page = Number(router.query.page) || 0
   const [{ purchase_orders, hasMore }, { error: getPoError, refetch }] = usePaginatedQuery(
     getPurchase_orders,
@@ -799,7 +800,7 @@ export const Purchase_ordersList = () => {
   })
   console.log('vendors: ', vendors);
 
-  // const vendors = [
+  // const vendorsOld = [
   //   {
   //     vendor_id: 1,
   //     vendor_code: "DA",
@@ -852,7 +853,7 @@ export const Purchase_ordersList = () => {
     }
   )
 
-  // const vendor_products = [
+  // const vendor_productsOld = [
   //   {
   //     vp_id: 1,
   //     unit_price: 424,
@@ -961,7 +962,7 @@ export const Purchase_ordersList = () => {
     take: ITEMS_PER_PAGE,
   });
 
-  // const products = [
+  // const productsOld = [
   //   {
   //     product_id: 1,
   //     name: "Pi",
@@ -1526,6 +1527,7 @@ export const Purchase_ordersList = () => {
   const [poEditState, setPoEditState] = useState(false)
   const scrollToPo = useRef<HTMLHeadingElement>(null)
   const poError = [updatingMutationError, creatingMutationError]
+  const [rfq, setRfq] = useState({ rfqNumber: "", rfqId: "" })
 
   // const [isLoading, setIsLoading] = useState(false)
 
@@ -1550,6 +1552,78 @@ export const Purchase_ordersList = () => {
       setFetchGrn(false)
     }
   }, [fetchGrn])
+
+  useEffect(() => {
+    if (router.query.hasOwnProperty("rfqdata")) {
+      const { rfqdata } = router.query;
+      const parsedRfqdata = JSON.parse(rfqdata)
+
+
+      const { rfq_products, rfqNumber, rfqId } = parsedRfqdata
+
+      setRfq({ rfqNumber, rfqId })
+
+      console.log('rfqdata: ', parsedRfqdata);
+      Po?.current?.setReadOnlyForm(false)
+      Po?.current?.formik.resetForm()
+      const twoFields = arrayFillCopy(2, initialItemState)
+      setPoEditState(false)
+      setPurchaseDialog(true)
+      setPurchaseDetails(initialPurchaseState)
+      Po?.current?.formik.setValues({ itemsLength: true })
+
+      //   [
+      //     {
+      //         "id": 1,
+      //         "quantity": 32,
+      //         "price": 20,
+      //         "rfq": 3,
+      //         "product": 5,
+      //         "products": {
+      //             "id": 5,
+      //             "name": "Controllers.",
+      //             "sku": "TIFCO28",
+      //             "description": "Controllers, update test2",
+      //             "length": null,
+      //             "width": null,
+      //             "height": null,
+      //             "weight": null,
+      //             "color": null,
+      //             "hsnCode": null,
+      //             "imageUrl": "https://loremflickr.com/320/240/device?random=2",
+      //             "createdAT": null,
+      //             "updatedAT": null,
+      //             "customDuty": null,
+      //             "gstTaxTypeCode": null,
+      //             "taxCalcType": null,
+      //             "status": "Active",
+      //             "category": null,
+      //             "brand": null,
+      //             "costPrice": 20
+      //         }
+      //     }
+      // ]
+
+      const poProducts = rfq_products.map((rfqProduct) => {
+        const { quantity, price, products: { sku, name, id }, } = rfqProduct
+        return {
+          product_name: `${sku} - ${name}`,
+          products_product_id: id,
+          price_per_unit: price,
+          quantity
+        }
+      })
+
+      setItemList([...poProducts, ...twoFields])
+
+      router.replace({
+        pathname: '/purchase_orders',
+        query: {},
+      }).catch(console.log("Awesome"))
+    }
+
+  }, [router.query.rfqdata])
+
 
   const triggerRefetch = async (refetchGrn) => {
     return await refetchGrn()
@@ -2124,6 +2198,10 @@ export const Purchase_ordersList = () => {
         setPoEditState={setPoEditState}
         ref={Po}
         setSendPoDialog={setSendPoDialog}
+        rfq={rfq}
+        initialPurchaseState={initialPurchaseState}
+        setPurchaseDetails={setPurchaseDetails}
+
       />
 
       <div className="col-12">

@@ -18,8 +18,9 @@ const CreatePurchase_order = z.object({
   po_products: z.unknown(),
   po_sentto: z.unknown(),
   purchase_orders: z.unknown(),
-
-  amendedFrom: z.number().optional().nullable(),
+  // rfq: z.number().optional().nullable(),
+  rfq_purchase_orders_rfqTorfq: z.unknown(),
+  // amendedFrom: z.number().optional().nullable().nullish(),
 
   // from_party: z.string(),
   // rfq_id: z.number().optional(),

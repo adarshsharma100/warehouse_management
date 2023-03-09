@@ -60,6 +60,9 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     editForm,
     purchase_orders,
     setSendPoDialog,
+    rfq,
+    initialPurchaseState,
+    setPurchaseDetails,
   } = props
 
   // const [{ prefixes }, { error: getPrefixesError }] = useQuery(getPrefixes, {
@@ -385,6 +388,20 @@ const CreateNewPo = React.forwardRef((props, ref) => {
   })
 
   useEffect(() => {
+
+    if (rfq.rfqId) {
+      updateFormValues({ itemsLength: true, }).catch((error) => {
+        console.log("While setting po values from rfq", error)
+      })
+      console.log('rfqset: ', rfq);
+    }
+
+
+
+  }, [rfq])
+
+
+  useEffect(() => {
     if (poEditState) {
       updatePoValues().catch((error) => {
         console.log("While setting po values", error)
@@ -552,10 +569,10 @@ const CreateNewPo = React.forwardRef((props, ref) => {
       const itemsData = itemList.filter((ele, i) => {
         return ele.products_product_id
       }).length
-      if (!itemsData) {
-        formik.setErrors({ itemsLength: "⚠ Please select atleast one product" })
-        return
-      }
+      // if (!itemsData) {
+      //   formik.setErrors({ itemsLength: "⚠ Please select atleast one product" })
+      //   return
+      // }
 
       const productList = itemList.filter((ele, i) => ele.products_product_id)
 
@@ -679,10 +696,14 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               expiryDate: expiry_date,
               piNumber: piNumber || null,
               piDate: piDate || null,
-              // amendedFrom: amendedFrom || null,
+              rfq_purchase_orders_rfqTorfq: {
+                connect: rfq.rfqId && {
+                  id: rfq.rfqId
+                }
+              },
               purchase_orders: {
-                connect: {
-                  id: Number(amendedFrom)
+                connect: amendedFrom && {
+                  id: Number(amendedFrom) || null
                 }
               },
               vendors: {
@@ -692,7 +713,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               },
               po_status: {
                 connect: {
-                  id: purchase_order_status.id ?? 1
+                  id: purchase_order_status?.id ?? 1
                 }
               },
               po_terms: {
@@ -718,15 +739,16 @@ const CreateNewPo = React.forwardRef((props, ref) => {
             {
               onSuccess: async (data) => {
                 toast?.current.show(tsuccess(null, "PO Created Successfully"))
-                await createNotificationsMutations({
-                  user_id: id,
-                  user_name: name,
-                  user_email: email,
-                  mutations: `${data?.po_code} is Created`,
-                  created_at: new Date().toString(),
-                })
+                // await createNotificationsMutations({
+                //   user_id: id,
+                //   user_name: name,
+                //   user_email: email,
+                //   mutations: `${data?.po_code} is Created`,
+                //   created_at: new Date().toString(),
+                // })
                 setPriorList([])
                 setShowPriorList(false)
+
               },
             }
           )
@@ -802,11 +824,11 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     )
 
     // saving previous Vendors
-    const slicedArray = pastVendors.slice(-1)
-    setPastVendors([
-      ...slicedArray,
-      { vendor: formik.values.vendor, vendor_id: formik.values.vendor_vendor_id },
-    ])
+    // const slicedArray = pastVendors.slice(-1)
+    // setPastVendors([
+    //   ...slicedArray,
+    //   { vendor: formik.values.vendor, vendor_id: formik.values.vendor_vendor_id },
+    // ])
 
     const vendorID = formik.values.vendor_vendor_id
     const filterProducts = productOptions.filter((ele) => ele.vendorID.includes(Number(vendorID)))
@@ -840,8 +862,6 @@ const CreateNewPo = React.forwardRef((props, ref) => {
       setItemList([...values, ...emptyFields])
     }
 
-    // if (rfQCode) {
-    // }
   }, [formik?.values.vendor_vendor_id])
 
   useEffect(() => {
@@ -1320,7 +1340,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               </div>
             </div>
 
-            {/* {showPriorList && (
+            {showPriorList && (
               <div className="field col-12 p-error">
                 <h6>Selected Vendor doesnot sell below products</h6>
                 <ul>
@@ -1358,9 +1378,9 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                     setShowPriorList(false)
                   }}
                 />
-                
+
               </div>
-            )} */}
+            )}
             <div className="col-12 mt-3 mb-3 ">
               <h6>Select Products</h6>
               <hr />

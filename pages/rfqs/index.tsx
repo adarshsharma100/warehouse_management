@@ -2,7 +2,7 @@ import { Suspense, useEffect, useRef, useState } from "react"
 import { Routes } from "@blitzjs/next"
 import Head from "next/head"
 import Link from "next/link"
-import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc"
+import { useMutation, usePaginatedQuery, useQuery, invoke } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
 import { InputNumber } from "primereact/inputnumber"
 import { Divider } from "primereact/divider"
@@ -59,6 +59,7 @@ import {
   tsuccess,
   calenderDateFormat,
   tError,
+  tWarn,
 } from "app/constants"
 import getMutation_admin_mail from "app/mutation_admin_mails/queries/getMutation_admin_mail"
 import { Toast } from "primereact/toast"
@@ -80,6 +81,9 @@ import { Chip } from "primereact/Chip"
 import { Image } from "blitz"
 
 import db from "db"
+import getRfq from "app/rfqs/queries/getRfq"
+import getRfqDetails from "pages/api/rfq/getRfqDetails"
+import getPurchase_order from "app/purchase_orders/queries/getPurchase_order"
 
 const ITEMS_PER_PAGE = 100
 
@@ -4083,8 +4087,6 @@ export const RfqsList = () => {
 
   const [selectedRfqs, setSelectedRfqs] = useState(null);
 
-
-
   const { rfq_senttos, prefixes, rfq_products } = data
 
   // const [{ vendors }, { error: getVendorsError }] = usePaginatedQuery(getVendors, {
@@ -4334,6 +4336,9 @@ export const RfqsList = () => {
   //   }
   // )
 
+
+
+
   const [sendDialog, setSendDialog] = useState(false)
   const [createRFQMutation, { isLoading: creatingRfq, error: createRFQMutationError }] =
     useMutation(createRfq)
@@ -4484,13 +4489,13 @@ export const RfqsList = () => {
 
   const searchStatus = createSearchFunction(rfqStatus, setrfqStatusSuggestions)
 
-  const tableRfqProducts = rfq_products?.map((ele) => {
-    return {
-      ...ele,
-      product_name: ele.products.name,
-      product_sku: ele.products.products_sku,
-    }
-  })
+  // const tableRfqProducts = rfq_products?.map((ele) => {
+  //   return {
+  //     ...ele,
+  //     product_name: ele.products.name,
+  //     product_sku: ele.products.products_sku,
+  //   }
+  // })
   const statuses = ["1", "0"]
 
   // const termsOptions = rfqTerms.map((ele) => ele.name)
@@ -4736,7 +4741,7 @@ export const RfqsList = () => {
   //   }
   // })
 
-
+  console.log('activeRow: ', activeRow)
   const optionsForVendorEmails = emails.map(({ id, email }) => {
     return {
       name: email,
@@ -4760,9 +4765,8 @@ export const RfqsList = () => {
   })
 
   const createNewRFQCode = () => {
-    const rfqPrefix = prefixes?.filter((prefix) => prefix.name === "RFQ")[0].name
     const nextRfqId = rfqs.length + 1
-    setNewRFQCode(`${rfqPrefix}#${nextRfqId}`)
+    setNewRFQCode(`RFQ#${nextRfqId}`)
   }
 
   const [vendorOptions, setVendorOptions] = useState(options)
@@ -4932,38 +4936,38 @@ export const RfqsList = () => {
 
   // console.log("tableRfqProducts", tableRfqProducts[0])
 
-  const setRfqItemList = () => {
-    const active = tableRfqProducts
-      .filter(({ rfq_id }) => {
-        return rfq_id === activeRow.id
-      })
-      .map(({ products, quantity, price_per_unit, rfq_products_id }) => {
-        return {
-          products_product_id: products.product_id,
-          quantity: quantity,
-          price_per_unit: price_per_unit,
-          rfq_products_id,
-        }
-      })
-    setItemList(active)
-  }
-  const setPoItems = () => {
-    const active = tableRfqProducts
-      .filter(({ rfq_id }) => {
-        return rfq_id === activeRow.id
-      })
-      .map(({ products, quantity, price_per_unit, rfq_products_id, product_name }) => {
-        return {
-          ...initialPoItemState,
-          products_product_id: products.product_id,
-          quantity,
-          price_per_unit,
-          rfq_products_id,
-          product_name: `${products.products_sku} - ${products.name}`,
-        }
-      })
-    setPoItemList(active)
-  }
+  // const setRfqItemList = () => {
+  //   const active = tableRfqProducts
+  //     .filter(({ rfq_id }) => {
+  //       return rfq_id === activeRow.id
+  //     })
+  //     .map(({ products, quantity, price_per_unit, rfq_products_id }) => {
+  //       return {
+  //         products_product_id: products.product_id,
+  //         quantity: quantity,
+  //         price_per_unit: price_per_unit,
+  //         rfq_products_id,
+  //       }
+  //     })
+  //   setItemList(active)
+  // }
+  // const setPoItems = () => {
+  //   const active = tableRfqProducts
+  //     .filter(({ rfq_id }) => {
+  //       return rfq_id === activeRow.id
+  //     })
+  //     .map(({ products, quantity, price_per_unit, rfq_products_id, product_name }) => {
+  //       return {
+  //         ...initialPoItemState,
+  //         products_product_id: products.product_id,
+  //         quantity,
+  //         price_per_unit,
+  //         rfq_products_id,
+  //         product_name: `${products.products_sku} - ${products.name}`,
+  //       }
+  //     })
+  //   setPoItemList(active)
+  // }
 
   // console.log("formik.errors",)
 
@@ -4991,23 +4995,23 @@ export const RfqsList = () => {
             //   expectedDod: activeRow.expectedDod,
             //   id: activeRow.id,
             // })
-            const active = tableRfqProducts
-              .filter(({ rfq_id }) => {
-                return rfq_id === activeRow.id
-              })
-              .map(({ products, quantity, price_per_unit, rfq_products_id }) => {
-                return {
-                  products_product_id: products.product_id,
-                  quantity: quantity,
-                  price_per_unit: price_per_unit,
-                  rfq_products_id,
-                  product_name: `${products.products_sku} - ${products.name}`,
-                }
-              })
+            // const active = tableRfqProducts
+            //   .filter(({ rfq_id }) => {
+            //     return rfq_id === activeRow.id
+            //   })
+            //   .map(({ products, quantity, price_per_unit, rfq_products_id }) => {
+            //     return {
+            //       products_product_id: products.product_id,
+            //       quantity: quantity,
+            //       price_per_unit: price_per_unit,
+            //       rfq_products_id,
+            //       product_name: `${products.products_sku} - ${products.name}`,
+            //     }
+            //   })
 
-            console.log("tableRfqProducts", tableRfqProducts)
-            console.log("active item list", active)
-            setItemList(active)
+            // console.log("tableRfqProducts", tableRfqProducts)
+            // console.log("active item list", active)
+            // setItemList(active)
             setRfqDialog(true)
             scrollToRfq.current?.scrollIntoView()
           },
@@ -5037,10 +5041,11 @@ export const RfqsList = () => {
           label: "Create PO",
           icon: "pi pi-plus",
           command: () => {
-            setPoItems()
-            setRfqItemList()
-            scrollToRfq?.current?.scrollIntoView()
-            setPurchaseDialog(true)
+            // setPoItems()
+            // setRfqItemList()
+            // scrollToRfq?.current?.scrollIntoView()
+            // setPurchaseDialog(true)
+            ;
           },
         },
         {
@@ -5273,6 +5278,7 @@ export const RfqsList = () => {
                   // })
                   setActiveRow({})
                 )
+                await refetch()
               },
               onError: (data) => {
                 const rfqNumber = data?.rfqNumber
@@ -5318,7 +5324,7 @@ export const RfqsList = () => {
                 onSuccess: async (data) => {
                   const rfqNumber = data?.rfqNumber
                   toast?.current?.show(tsuccess(null, `${rfqNumber} created successfully.`))
-
+                  await refetch()
 
                 },
               }
@@ -5374,6 +5380,7 @@ export const RfqsList = () => {
               onSuccess: async (data) => {
                 const rfqNumber = data?.rfqNumber
                 toast?.current?.show(tsuccess(null, `${rfqNumber} created successfully.`))
+                await refetch()
 
                 // await createNotificationsMutations({
                 //   user_id: id,
@@ -5387,12 +5394,12 @@ export const RfqsList = () => {
           )
           setRfqDialog(false)
           formik.resetForm()
+          await refetch()
         } catch (error) {
           console.log("rfq_CreationError :", error)
         }
       }
-      await refetch()
-      await fetchRfqProducts()
+
     },
   })
   // console.log(formik.values)
@@ -5494,8 +5501,6 @@ export const RfqsList = () => {
   }, [])
 
   // console.log("values", typeof new Date())
-
-  console.log("RFQ: ", rfqs)
 
   return (
     <div ref={scrollToRfq} className="grid w-full mr-0">
@@ -5705,11 +5710,66 @@ export const RfqsList = () => {
                     className="m-1"
                     onClick={async (e) => {
                       e.preventDefault()
-                      setPoItems()
-                      setRfqItemList()
-                      scrollToRfq?.current?.scrollIntoView()
-                      setPurchaseDialog(true)
-                      setRfqDialog(false)
+
+                      try {
+                        const rfqDetails = await invoke(getRfq, {
+                          id: activeRow?.id
+                        })
+                        const rfqProducts = rfqDetails?.rfq_products;
+                        const purchaseOrders = rfqDetails?.purchase_orders_purchase_orders_rfqTorfq
+
+                        const getpoProducts = purchaseOrders?.
+                          flatMap(({ po_products }) => po_products)?.
+                          map(({ vendor_products: { products: { id } } }) => id);
+
+                        const productsToPo = rfqProducts?.
+                          filter(({ product }) => !getpoProducts.includes(product))
+
+                        if (productsToPo.length) {
+                          const { id, rfqNumber } = activeRow
+                          const rfqdata = {
+                            rfqId: id,
+                            rfqNumber,
+                            rfq_products: productsToPo
+                          }
+
+                          await router.push({
+                            pathname: "/purchase_orders",
+                            query: { rfqdata: JSON.stringify(rfqdata) },
+                          });
+
+                        } else {
+                          toast?.current.show(tWarn(null, "All the products of this rfq has PO"))
+
+                          if (activeRow.status === "Created") {
+                            await updateRFQMutation(
+                              {
+                                id: activeRow?.id,
+                                status: "Completed",
+                              },
+                              {
+                                onSuccess: async (data) => {
+                                  const rfqNumber = data?.rfqNumber
+                                  const status = data?.status
+
+                                  toast?.current.show(
+                                    tsuccess("Updated", `${rfqNumber} is now ${status}`))
+                                  await refetch()
+
+                                },
+                              }
+                            )
+                          }
+                        }
+                      } catch (error) {
+                        console.log("Error while creating PO from RFQ", error);
+                      }
+
+
+
+
+
+
                     }}
                     tooltip="Create PO"
                     tooltipOptions={{ position: "top" }}
