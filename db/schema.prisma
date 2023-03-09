@@ -24,6 +24,17 @@ model addresses {
   @@index([country], map: "fk_addresses_country1_idx")
 }
 
+model areas {
+  id                                   Int       @id @default(autoincrement())
+  name                                 String    @db.VarChar(45)
+  description                          String?   @db.VarChar(150)
+  warehouse                            Int
+  warehouse_areas_warehouseTowarehouse warehouse @relation("areas_warehouseTowarehouse", fields: [warehouse], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_areas_warehouse1")
+  shelfs                               shelfs[]
+
+  @@index([warehouse], map: "fk_areas_warehouse1_idx")
+}
+
 model contact_number {
   id        Int                 @id @default(autoincrement())
   type      contact_number_type
@@ -137,10 +148,20 @@ model inventory_products {
   @@index([shelf], map: "fk_inventory_products_shelfs1_idx")
 }
 
+model kit_products {
+  id                                        Int      @id @default(autoincrement())
+  quantity                                  Int?
+  kitId                                     Int
+  productId                                 Int
+  products_kit_products_kitIdToproducts     products @relation("kit_products_kitIdToproducts", fields: [kitId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products1")
+  products_kit_products_productIdToproducts products @relation("kit_products_productIdToproducts", fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products2")
+
+  @@index([kitId], map: "fk_kit_products_products1_idx")
+  @@index([productId], map: "fk_kit_products_products2_idx")
+}
+
 model po_products {
   id              Int             @id @default(autoincrement())
-  quantity        Int?
-  price           Int?
   quantity        Int?
   price           Int?
   vendorProduct   Int
@@ -162,6 +183,13 @@ model po_sentto {
 
   @@index([email], map: "fk_po_sentto_emails1_idx")
   @@index([purchaseOrder], map: "fk_po_sentto_purchase_orders1_idx")
+}
+
+model po_status {
+  id              Int               @id @default(autoincrement())
+  name            String?           @db.VarChar(45)
+  description     String?           @db.VarChar(200)
+  purchase_orders purchase_orders[]
 }
 
 model po_terms {
@@ -192,6 +220,12 @@ model product_tags {
 
   @@unique([tags, product], map: "tags_product")
   @@index([product], map: "fk_product_tags_products1_idx")
+}
+
+model product_types {
+  id       Int        @id @default(autoincrement())
+  type     String     @db.VarChar(45)
+  products products[]
 }
 
 model products {
@@ -262,12 +296,12 @@ model purchase_orders {
   user                         user?             @relation(fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_user1")
   vendors                      vendors           @relation(fields: [vendor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_vendors1")
 
+  @@index([status], map: "fk_purchase_orders_po_status1_idx")
   @@index([amendedFrom], map: "fk_purchase_orders_purchase_orders1_idx")
   @@index([rfq], map: "fk_purchase_orders_rfq1_idx")
   @@index([po_term], map: "fk_purchase_orders_terms1_idx")
   @@index([approvedBy], map: "fk_purchase_orders_user1_idx")
   @@index([vendor], map: "fk_purchase_orders_vendors1_idx")
-  @@index([status], map: "fk_purchase_orders_po_status1_idx")
 }
 
 model quality_ckeck {
@@ -291,8 +325,8 @@ model rfq {
   purchase_orders_purchase_orders_rfqTorfq purchase_orders[] @relation("purchase_orders_rfqTorfq")
   rfq                                      rfq?              @relation("rfqTorfq", fields: [ammendedFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_rfq1")
   other_rfq                                rfq[]             @relation("rfqTorfq")
-  rfq_products                             rfq_products[]    @relation("rfq_products_rfqTorfq")
-  rfq_sentto                               rfq_sentto[]      @relation("rfq_sentto_rfqTorfq")
+  rfq_products_rfq_products_rfqTorfq       rfq_products[]    @relation("rfq_products_rfqTorfq")
+  rfq_sentto_rfq_sentto_rfqTorfq           rfq_sentto[]      @relation("rfq_sentto_rfqTorfq")
 
   @@index([ammendedFrom], map: "fk_rfq_rfq1_idx")
 }
@@ -337,6 +371,31 @@ model session {
   user               user?     @relation(fields: [userId], references: [id], map: "Session_userId_fkey")
 
   @@index([userId], map: "Session_userId_fkey")
+}
+
+model shelf_type {
+  id          Int      @id @default(autoincrement())
+  name        String?  @db.VarChar(45)
+  description String?  @db.VarChar(150)
+  shelfs      shelfs[]
+}
+
+model shelfs {
+  id                 Int                  @id
+  sellable           Boolean
+  number             String               @db.VarChar(45)
+  length             Int?
+  width              Int?
+  loadingStrength    Int?
+  reach              String?              @db.VarChar(45)
+  area               Int
+  shelfType          Int
+  inventory_products inventory_products[]
+  areas              areas                @relation(fields: [area], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_areas1")
+  shelf_type         shelf_type           @relation(fields: [shelfType], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_shelf_type1")
+
+  @@index([area], map: "fk_shelfs_areas1_idx")
+  @@index([shelfType], map: "fk_shelfs_shelf_type1_idx")
 }
 
 model token {
@@ -410,70 +469,10 @@ model vendors {
   vendor_products vendor_products[]
 }
 
-model po_status {
-  id              Int               @id @default(autoincrement())
-  name            String?           @db.VarChar(45)
-  description     String?           @db.VarChar(200)
-  purchase_orders purchase_orders[]
-}
-
-model kit_products {
-  id                                        Int      @id @default(autoincrement())
-  quantity                                  Int?
-  kitId                                     Int
-  productId                                 Int
-  products_kit_products_kitIdToproducts     products @relation("kit_products_kitIdToproducts", fields: [kitId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products1")
-  products_kit_products_productIdToproducts products @relation("kit_products_productIdToproducts", fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products2")
-
-  @@index([kitId], map: "fk_kit_products_products1_idx")
-  @@index([productId], map: "fk_kit_products_products2_idx")
-}
-
-model product_types {
-  id       Int        @id @default(autoincrement())
-  type     String     @db.VarChar(45)
-  products products[]
-}
-
-model areas {
-  id                                   Int       @id @default(autoincrement())
-  name                                 String    @db.VarChar(45)
-  description                          String?   @db.VarChar(45)
-  warehouse                            Int
-  warehouse_areas_warehouseTowarehouse warehouse @relation("areas_warehouseTowarehouse", fields: [warehouse], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_areas_warehouse1")
-  shelfs                               shelfs[]
-
-  @@index([warehouse], map: "fk_areas_warehouse1_idx")
-}
-
-model shelf_type {
-  id          Int      @id @default(autoincrement())
-  name        String?  @db.VarChar(45)
-  description String?  @db.VarChar(45)
-  shelfs      shelfs[]
-}
-
-model shelfs {
-  id                 Int                  @id
-  sellable           Boolean
-  number             String               @db.VarChar(45)
-  length             Int?
-  width              Int?
-  loadingStrength    Int?
-  reach              String?              @db.VarChar(45)
-  area               Int
-  shelfType          Int
-  inventory_products inventory_products[]
-  areas              areas                @relation(fields: [area], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_areas1")
-  shelf_type         shelf_type           @relation(fields: [shelfType], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_shelf_type1")
-
-  @@index([area], map: "fk_shelfs_areas1_idx")
-  @@index([shelfType], map: "fk_shelfs_shelf_type1_idx")
-}
-
 model warehouse {
   id                               Int     @id @default(autoincrement())
   name                             String  @db.VarChar(45)
+  description                      String? @db.VarChar(150)
   areas_areas_warehouseTowarehouse areas[] @relation("areas_warehouseTowarehouse")
 }
 
