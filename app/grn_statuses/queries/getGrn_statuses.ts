@@ -4,7 +4,7 @@ import db, { Prisma } from "db";
 
 interface GetGrn_statusesInput
   extends Pick<
-    Prisma.Grn_statusFindManyArgs,
+    Prisma.grn_statusFindManyArgs,
     "where" | "orderBy" | "skip" | "take"
   > {}
 

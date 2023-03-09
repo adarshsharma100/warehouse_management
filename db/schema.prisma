@@ -141,6 +141,8 @@ model po_products {
   id              Int             @id @default(autoincrement())
   quantity        Int?
   price           Int?
+  quantity        Int?
+  price           Int?
   vendorProduct   Int
   purchaseOrder   Int
   grn_products    grn_products[]

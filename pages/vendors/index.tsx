@@ -1415,6 +1415,7 @@ export const VendorsList = () => {
           }`}
       >
         <div className="card p-4 mb-2 ">
+          
           <form className="p-fluid" onSubmit={formik.handleSubmit}>
             {activeVendor && (
               <span
