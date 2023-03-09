@@ -744,6 +744,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               onSuccess: async (data) => {
                 toast?.current.show(tsuccess(null, "PO Created Successfully"))
                 // toast?.current.show(tsuccess(null, `${priorList.length} needs to pe poED `))
+
                 // logic to submit and generatenewpo 
                 // if (priorList.length) {
                 //   const rfqDetails = await invoke(getRfq, {
@@ -765,15 +766,13 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                 // } else {
                 //   setRfq({})
                 // }
-                setPriorList([])
-                setShowPriorList(false)
-
-
               },
             }
           )
           setPurchaseDialog(false)
           formik.resetForm()
+          setPriorList([])
+          setShowPriorList(false)
         } catch (error) {
           console.log("error: ", error)
         }
@@ -968,7 +967,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                 <Button
                   icon="pi pi-info-circle"
                   className="m-1"
-                  tooltip="Amend PO"
+                  tooltip="More Info"
                   tooltipOptions={{ position: "top" }}
                   onClick={async (e) => {
                     e.preventDefault()
@@ -1372,7 +1371,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                 <Button
                   type="button"
                   icon="pi pi-undo"
-                  label="Revert"
+                  label="Select"
                   className="p-button-warning p-button-sm w-auto p-button-outlined"
                   onClick={async (e) => {
                     await updateFormValues({ vendor: pastVendors[0]?.vendor })
