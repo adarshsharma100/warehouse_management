@@ -1,6 +1,5 @@
 import { Suspense, useState, useRef, useEffect } from "react"
-import { Routes } from "@blitzjs/next"
-import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc"
+import { useMutation, useQuery } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
 import papa from "papaparse"
 
@@ -9,7 +8,6 @@ import { DataTable } from "primereact/datatable"
 import { MultiSelect } from "primereact/multiselect"
 import { Column } from "primereact/column"
 import { Button } from "primereact/button"
-import { Dialog } from "primereact/dialog"
 import { InputText } from "primereact/inputtext"
 import { InputTextarea } from "primereact/inputtextarea"
 import { FileUpload } from "primereact/fileupload"
@@ -18,12 +16,9 @@ import { Toast } from "primereact/toast"
 import createProduct from "app/products/mutations/createProduct"
 import updateProduct from "app/products/mutations/updateProduct"
 import getProducts from "app/products/queries/getProducts"
-import getPrefix from "app/prefixes/queries/getPrefix"
-import createInventory_product from "app/inventory_products/mutations/createInventory_product"
 
 import Loading from "components/loading"
 import { useFormik } from "formik"
-import { InputNumber } from "primereact/inputnumber"
 import * as Yup from "yup"
 import classNames from "classnames"
 import { AutoComplete } from "primereact/autocomplete"
@@ -31,41 +26,51 @@ import { createCSVFormat, createSearchFunction, filterExistingValues, tsuccess }
 import ErrorCard from "components/ErrorCard"
 import LoaderFullScreen from "components/LoaderFullScreen"
 import { FilterMatchMode, FilterOperator } from "primereact/api"
-import Link from "next/link"
-// import Creatable from "react-select/dist/declarations/src/Creatable"
 import Creatable from "react-select/creatable"
 import chroma from "chroma-js"
 import { Dropdown } from "primereact/dropdown"
-import { number } from "zod"
 import getProduct_categories from "app/product_categories/queries/getProduct_categories"
 import moment from "moment"
 import createProduct_tag from "app/product_tags/mutations/createProduct_tag"
 
+const dateFormat = (dateObj: Date | string) =>
+  moment(new Date(dateObj)).format("DD-MM-YYYY, hh:mm")
 
-
-const ITEMS_PER_PAGE = 100
+const columns = [
+  { field: "name", header: "Name" },
+  { field: "description", header: "Description" },
+  { field: "unit", header: "Unit" },
+  { field: "category", header: "Category" },
+  { field: "length", header: "Length" },
+  { field: "width", header: "Width" },
+  { field: "height", header: "Height" },
+  { field: "weight", header: "Weight" },
+  { field: "color", header: "Color" },
+  { field: "brand", header: "Brand" },
+  { field: "taxcode", header: "Tax code" },
+  { field: "gstcode", header: "Gst Code" },
+  { field: "hsnCode", header: "HSN Code" },
+  { field: "costPrice", header: "Cost Price" },
+  { field: "taxCalcuation", header: "Tax Calcuation" },
+  {
+    header: "Created On",
+    body: (rowData) => <div>{dateFormat(rowData.createdAt)}</div>,
+  },
+]
 
 export const ProductsList = () => {
-  const router = useRouter()
-  const page = Number(router.query.page) || 0
-  const [{ products }, { isLoading: isProductsLoading, refetch }] = useQuery(getProducts, {
+  const [{ products }, { refetch }] = useQuery(getProducts, {
     orderBy: { id: "asc" },
   })
   const [{ product_categories },] = useQuery(getProduct_categories, {
     orderBy: { id: "asc" },
   })
-  // const [prefix, { isLoading }] = useQuery(getPrefix, { name: "PRODUCT" })
-  const [createProductMutation, { error: productCreationError, isLoading: creatingProduct }] =
+
+  const [createProductMutation, { isLoading: creatingProduct }] =
     useMutation(createProduct)
 
-  const [updateProductMutation, { error: productUpdationError, isLoading: updatingProduct }] =
+  const [updateProductMutation, { isLoading: updatingProduct }] =
     useMutation(updateProduct)
-
-  const [createProductTags] = useMutation(createProduct_tag)
-
-
-
-
 
   const intialProductDetails = {
     name: "",
@@ -94,40 +99,8 @@ export const ProductsList = () => {
     enabled: "",
     taxCalcuation: "",
   }
-  const dateFormat = (dateObj: Date | string) =>
-    moment(new Date(dateObj)).format("DD-MM-YYYY, hh:mm")
 
-
-
-
-  const columns = [
-    { field: "name", header: "Name" },
-    // { field: "type", header: "Type" },
-    { field: "description", header: "Description" },
-    { field: "unit", header: "Unit" },
-    { field: "category", header: "Category" },
-    { field: "length", header: "Length" },
-    { field: "width", header: "Width" },
-    { field: "height", header: "Height" },
-    { field: "weight", header: "Weight" },
-    { field: "color", header: "Color" },
-    { field: "brand", header: "Brand" },
-    { field: "taxcode", header: "Tax code" },
-    { field: "gstcode", header: "Gst Code" },
-    { field: "hsnCode", header: "HSN Code" },
-    // { field: "tags", header: "Tags" },
-    { field: "costPrice", header: "Cost Price" },
-    // { field: "mrp", header: "MRP" },
-    // { field: "basePrice", header: "Base Price" },
-    // { field: "enabled", header: "Enabled" },
-    { field: "taxCalcuation", header: "Tax Calcuation" },
-    {
-      header: "Created On",
-      body: (rowData) => <div>{dateFormat(rowData.createdAt)}</div>,
-    },
-  ]
-
-
+  //TODO: check this styles4TagsComponent
   const styles4TagsComponent = {
     control: (baseStyles, state) => ({
       ...baseStyles,
@@ -217,13 +190,12 @@ export const ProductsList = () => {
   }))
 
   const [categories_options, setCategoriesOption] = useState(product_categories)
-  console.log('categories_options: ', categories_options);
+
   const [productDetails, setProductDetails] = useState(intialProductDetails)
   const [productDialog, setProductDialog] = useState(false)
   const [productEditState, setProductEditState] = useState(false)
   const [disableField] = useState(true)
-  console.log('productEditState: ', productEditState);
-  const [productForm, setProductForm] = useState(false)
+
   const [activeProduct, setActiveProduct] = useState(true)
   const [activeRowData, setActiveRowData] = useState({})
   const [errorProducts, setErrorProducts] = useState([])
@@ -248,20 +220,6 @@ export const ProductsList = () => {
     avilableProductsID.includes(ele.product_id)
   )
 
-  const searchProducts = (event: { query: string }) => {
-    setTimeout(() => {
-      let _filteredSuggestions
-      if (!event.query.trim().length) {
-        _filteredSuggestions = [...avilableProducts]
-      } else {
-        _filteredSuggestions = avilableProducts.filter((element) => {
-          return element.name.toLowerCase().includes(event.query.toLowerCase())
-        })
-      }
-
-      setFilteredSuggestions(_filteredSuggestions)
-    }, 50)
-  }
 
   const toast = useRef(null)
   const scrolToTop = useRef<HTMLDivElement>(null)
@@ -273,7 +231,6 @@ export const ProductsList = () => {
   const [globalFilterValue, setGlobalFilterValue] = useState("")
 
   const [showData, setShowData] = useState([])
-  const [showProduct, setShowProduct] = useState([])
   // const [selectedColumns, setSelectedColumns] = useState(columns)
   const [selectedColumns, setSelectedColumns] = useState(columns)
 
@@ -286,19 +243,6 @@ export const ProductsList = () => {
     setSelectedColumns(orderedSelectedColumns)
   }
 
-
-  const header = (
-    <div style={{ textAlign: "left" }}>
-      <MultiSelect
-        value={selectedColumns}
-        options={columns}
-        optionLabel="header"
-        onChange={onColumnToggle}
-        style={{ width: "20em" }}
-      />
-    </div>
-  )
-
   const columnComponents = selectedColumns.map((col) => {
     return (
       <Column
@@ -306,7 +250,7 @@ export const ProductsList = () => {
         field={col.field}
         header={col.header}
         filter
-        filterPlaceholder="Search...."
+        filterPlaceholder="Search..."
       />
     )
   })
@@ -321,10 +265,6 @@ export const ProductsList = () => {
         { field: "color", header: "Color" },
         { field: "height", header: "Height" },
         { field: "hsnCode", header: "HSNCode" },
-
-
-
-        // { field: "product_unit", header: "Unit" },
       ],
     }
     onColumnToggle(obj)
@@ -343,7 +283,6 @@ export const ProductsList = () => {
   const initFilters = () => {
     setFilters({
       global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-
       products_sku: {
         operator: FilterOperator.AND,
         constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
@@ -451,9 +390,7 @@ export const ProductsList = () => {
     id: i + 1,
   }))
 
-  console.log('categoryOptions: ', categoryOptions);
 
-  const searchUnits = createSearchFunction(unitOptions, setUnitSuggestions)
 
   const searchCategory = createSearchFunction(categories_options, setCategorySuggestions)
 
@@ -516,7 +453,7 @@ export const ProductsList = () => {
               })
             },
             onError: (error) => {
-              console.log("Product failed: ", data)
+
               setErrorProducts([
                 ...errorProducts,
                 { ...data, message: error.message, rowNum: index },
@@ -532,8 +469,7 @@ export const ProductsList = () => {
   }
 
   const [editUpdateProduct, setEditUpdateProduct] = useState(false)
-  console.log('editUpdateProduct: ', editUpdateProduct);
-  const [createNewProduct] = useMutation(createProduct)
+
   const [updateActiveProduct] = useMutation(updateProduct)
 
 
@@ -541,27 +477,19 @@ export const ProductsList = () => {
     initialValues: productDetails,
     validationSchema: Yup.object().shape({
       name: Yup.string().required("*Required"),
-      // product_category: Yup.mixed().required("*Required"),
-      // product_sku: Yup.string().required("*Required"),
     }),
     onSubmit: async (data) => {
-      console.log("++data", data)
 
-
-
-      // setShowData(<pre>{JSON.stringify(data, null, 2)}</pre>)
-      // setShowProduct(<pre>{JSON.stringify(inputs, null, 2)}</pre>)
       const { name, description, sku, length, width,
-        hsnCode, imageurl, taxCalcuation,
-        height, weight, gstcode, costPrice,
-        category, brand, tags
+        hsnCode,
+        height, weight, costPrice, tags
         , color, } = data
 
       const tagsValue = tags.map(({ value }) => value)
-      console.log('tagsVAlue: ', tagsValue);
+
       const { id: activeProductId } = activeRowData
-      console.log('activeRowData: ', activeRowData);
-      console.log('updatingProduct: ', updatingProduct);
+
+
       if (editUpdateProduct) {
         try {
           await updateActiveProduct({
@@ -573,7 +501,6 @@ export const ProductsList = () => {
             weight: Number(weight),
             product_tags: {
               create: tagsValue.map((e) => ({ tags: e })),
-              // deleteTags:tagsValue.map((e) => ({id}))
             }
           }, {
             onSuccess: () => {
@@ -581,14 +508,14 @@ export const ProductsList = () => {
             },
             onError: (data) => {
               alert(`error ${data}`)
-              console.log('error', data)
+
             }
           })
           await refetch()
 
         } catch (error) {
           alert('Error', error)
-          console.log('Error ', error);
+
         }
       }
       else {
@@ -616,73 +543,26 @@ export const ProductsList = () => {
             },
             {
               onSuccess: async (data) => {
-                console.log('successdata: ', data);
+
               },
               onError: (data) => {
                 // alert(`error ${data}`)
-                console.log('error123', data)
+
               }
             }
           )
           // await refetch()
         } catch (err) {
-          console.log('err: ', err);
+
 
         }
       }
-      await refetch()
-      setProductEditState(false)
-      setProductDialog(false)
-      formik.resetForm()
-
-
-
-      return
-
-      if (!productEditState) {
-        try {
-          const result = await createProductMutation(
-            {
-              ...data,
-            },
-            {
-              onSuccess: () => {
-                toast?.current?.show(
-                  tsuccess("Product Created", `${data.sku} created successfully`)
-                )
-              },
-            }
-          )
-          console.log("result", result)
-        } catch (error) {
-          console.log("Creatiion", error)
-          return
-        }
-      } else {
-        try {
-          await updateProductMutation(
-            { ...data },
-            {
-              onSuccess: (data) => {
-                toast?.current?.show(
-                  tsuccess("Updated", `${data.sku} updated successfully`)
-                )
-              },
-            }
-          )
-        } catch (error) {
-          // console.log("Updation", error)
-          return
-        }
-      }
-
       await refetch()
       setProductEditState(false)
       setProductDialog(false)
       formik.resetForm()
     },
   })
-  // console.log(activeRowData)
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
@@ -720,23 +600,6 @@ export const ProductsList = () => {
     initFilters()
   }, [])
 
-  // useEffect(() => {
-  //   const ErrorArray = [productUpdationError, productCreationError]
-
-  //   const msg = []
-
-  //   for (let err of ErrorArray) {
-  //     if (err) {
-  //       msg.push(err)
-  //     }
-  //   }
-  //   setErrorMsgs(msg)
-  // }, [productCreationError, productUpdationError])
-
-  // if (isLoading || isProductsLoading) {
-  //   return <Loading />
-  // }
-
   const removeErrorBox = (i) => {
     const msgArray = [...ErrorMsgs]
     msgArray.splice(i, 1)
@@ -744,41 +607,13 @@ export const ProductsList = () => {
   }
 
   const [selectedStatus, setSelectedStatus] = useState(null);
-  // console.log('selectedStatus: ', selectedStatus);
   const StatusCheck = [
     { name: 'Simple' },
     { name: 'Bundle' },
   ];
-  // console.log('StatusCheck: ', StatusCheck);
-  const ProductOption = products.map(({ products_sku, name }) => { return { name: `${products_sku} - ${name}` } })
-  // const productOptions = products.map(({ product_id, name, products_sku, description }) => {
-  //   return {
-  //     name: `${products_sku} - ${name}`,
-  //     // product_id,
-  //     // description,
-  //   }
-  // })
-
-
-  // = [
-  //   'Pi', 'ESP', 'Waterproof Ultrasonic Sensor',
-  //   'E18-D80NK Infrared Sensor Module',
-  //   'MQ-135 gas sensor Module',
-  //   'Turbidity Sensor',
-  // ]
 
   const [inputs, setInputs] = useState([{ product: '', quantity: '' }]);
-  console.log('inputs: ', inputs);
 
-  // const [inputs,setInputs] = useState(products)
-  // console.log('inputs: ', inputs.map((i) => i.name));
-
-  // const handleAddInput = () => {
-  //   const lastInput = inputs[inputs.length - 1];
-  //   if (lastInput.product !== '' && lastInput.quantity !== '') {
-  //     setInputs([...inputs, { product: '', quantity: '' }]);
-  //   }
-  // };
 
   const handleAddInput = () => {
     setInputs([...inputs, { product: '', quantity: '' }]);
@@ -808,119 +643,60 @@ export const ProductsList = () => {
 
 
   return (
-    <div className="grid w-full mr-0">
+    <div className="grid w-full">
       <Toast ref={toast} />
       {creatingProduct && <LoaderFullScreen />}
       {updatingProduct && <LoaderFullScreen />}
-      <div ref={scrolToTop} className="col-12 ">
-        <div className="card flex justify-content-between align-items-center">
-          <h2 className="mb-0">Products</h2>
-          <div className="flex">
-            {/* <FileUpload
-              mode="basic"
-              name="products"
-              // url="https://primefaces.org/primereact/showcase/upload.php"
-              accept=".csv"
-              maxFileSize={1000000}
-              customUpload
-              uploadHandler={(e) => {
-                let index = 2
-                setErrorProducts([])
-                papa.parse(e.files[0], {
-                  header: true,
-                  skipEmptyLines: true,
-                  step: async ({ data }, parser) => {
-                    const missingKey = ["NAME", "DESCRIPTION", "SKU", "TYPE"].find(
-                      (key) => !(key in data)
-                    )
-
-                    if (missingKey) {
-                      setErrorProducts([
-                        ...errorProducts,
-                        { message: `Column ${missingKey} missing.` },
-                      ])
-                      parser.abort()
-                    }
-                    // setErrorProducts([
-                    //   ...errorProducts,
-                    //   { ...data, message: error.message, rowNum: index },
-                    // ])
-                    const result = await createProductMutation(
-                      {
-                        name: data?.["NAME"],
-                        description: data?.["DESCRIPTION"],
-                        products_sku: data?.["SKU"],
-                        product_type: data?.["TYPE"],
-                      },
-                      {
-                        onSuccess: () => {
-                          toast?.current?.show({
-                            severity: "success",
-                            summary: "Product Created",
-                            detail: "Product created successfully.",
-                            life: 3000,
-                          })
-                        },
-                        onError: (error) => {
-                          console.log("Product failed: ", data)
-                          setErrorProducts([
-                            ...errorProducts,
-                            { ...data, message: error.message, rowNum: index },
-                          ])
-                        },
-                      }
-                    )
-                    index += 1
-                  },
-                })
-              }}
-              chooseLabel="Upload Products (.csv)"
-            /> */}
-            <Button
-              icon="pi pi-plus"
-              label="Add Products"
-              className="ml-1"
-              onClick={() => {
-                setProductEditState(false)
-                setActiveProduct(false)
-                setProductDetails(intialProductDetails)
-                setProductDialog(!productDialog)
-
-              }}
-            />
-            <span className=" flex justify-content-center align-items-center">
-              <FileUpload
-                className="ml-2 inline-block "
-                mode="basic"
-                accept=".csv"
-                customUpload
-                maxFileSize={1000000}
-                uploadHandler={(e) => onBasicUpload(e)}
-                ref={clearUpload}
-                onSelect={() => setBtnVisibility(true)}
-                onBeforeSelect={() => setBtnVisibility(false)}
-                onClear={() => setBtnVisibility(false)}
-              />
+      <div ref={scrolToTop} className="col-12">
+        <div className="card">
+          <div className="flex flex justify-content-between align-items-center">
+            <h2>Products</h2>
+            <div className="flex">
               <Button
-                visible={btnVisibility}
-                style={{ backgroundColor: "var(--red-400)", border: "var(--red-400)" }}
-                icon="pi pi-file-excel                "
-                className=" ml-2"
+                icon="pi pi-plus"
+                label="Add Products"
+                className="ml-1"
                 onClick={() => {
-                  clearUpload?.current.clear()
-                  setErrorProducts([])
-                  setErrorMsgs([])
+                  setProductEditState(false)
+                  setActiveProduct(false)
+                  setProductDetails(intialProductDetails)
+                  setProductDialog(!productDialog)
                 }}
-                tooltip="Clear the File"
-                tooltipOptions={{ position: "top" }}
               />
-            </span>
-            <Button
-              icon="pi pi-download"
-              className="ml-2"
-              label="CSV format"
-              onClick={() => createCSVFormat(pCsvFormatDetails)}
-            />
+              <span className="flex justify-content-center align-items-center">
+                <FileUpload
+                  className="ml-2 inline-block "
+                  mode="basic"
+                  accept=".csv"
+                  customUpload
+                  maxFileSize={1000000}
+                  uploadHandler={(e) => onBasicUpload(e)}
+                  ref={clearUpload}
+                  onSelect={() => setBtnVisibility(true)}
+                  onBeforeSelect={() => setBtnVisibility(false)}
+                  onClear={() => setBtnVisibility(false)}
+                />
+                <Button
+                  visible={btnVisibility}
+                  style={{ backgroundColor: "var(--red-400)", border: "var(--red-400)" }}
+                  icon="pi pi-file-excel                "
+                  className=" ml-2"
+                  onClick={() => {
+                    clearUpload?.current.clear()
+                    setErrorProducts([])
+                    setErrorMsgs([])
+                  }}
+                  tooltip="Clear the File"
+                  tooltipOptions={{ position: "top" }}
+                />
+              </span>
+              <Button
+                icon="pi pi-download"
+                className="ml-2"
+                label="CSV format"
+                onClick={() => createCSVFormat(pCsvFormatDetails)}
+              />
+            </div>
           </div>
         </div>
         {!errorProducts.length &&
@@ -964,13 +740,7 @@ export const ProductsList = () => {
       >
         <div className="card">
           <div className="flex justify-content-between">
-            {/* {activeProduct ? 'Create': productEditState ? 'Update' :'Details'} */}
-
             <h4>{activeProduct ? "Update" : "Create"} Product</h4>
-            <h4>
-              {/* {activeProduct ? 'Details' : productEditState ? 'Update' :'Create'} */}
-            </h4>
-
             <h4>{productEditState ? <Button
               icon="pi pi-pencil"
               className="m-1"
@@ -983,47 +753,32 @@ export const ProductsList = () => {
           </div>
           <form
             onSubmit={formik.handleSubmit}
-            // onSubmit={async () => {
-            //   const result = await createProductMutation(productDetails, {
-            //     onSuccess: () => {
-            //       setProductDialog(false)
-            //     },
-            //   })
-
-            //   // try {
-            //   //   const all = await createInventoryProductMutation({
-            //   //     products_product_id: Number(result.product_id),
-            //   //     quantity: 0,
-            //   //   })
-            //   //
-            //   // } catch (error) {
-            //   //
-            //   // }
-            // }}
             className="p-fluid"
           >
-            <div className="formgrid grid ">
-              <div className="">
-                <div style={{ fontSize: '12px', marginLeft: '15px' }}>sku</div>
-                <InputText
-                  disabled={disableField}
-                  id={"sku"}
-                  placeholder='SKU'
-                  name={"sku"}
-                  value={formik.values.sku}
-                  autoFocus
-                  style={{ marginTop: '8px', }}
-                  className={classNames({ "p-invalid ": isFormFieldValid("description") })}
-                />
+            <div className="formgrid grid">
+              <div className="field col-12 lg:col-2 md:col-6 mt-4">
+                <span className="p-float-label">
+                  <InputText
+                    disabled={disableField}
+                    id={"sku"}
+                    placeholder='SKU'
+                    name={"sku"}
+                    value={formik.values.sku}
+                    autoFocus
+                    className={classNames({ "p-invalid ": isFormFieldValid("description") })}
+                  />
+                  <label
+                    htmlFor={"sku"}
+                    className={classNames({ "p-error": isFormFieldValid("sku") })}
+                  >
+                    SKU
+                  </label>
+                </span>
+                {getFormErrorMessage("sku")}
               </div>
               {
                 [
                   { type: 'text', label: "Name*", field: "name", header: "Name" },
-                  // { type: "text", label: "SKU", field: "sku", header: "SKU" },
-                  // { type: 'text', label: "Type", field: "product_type", header: "Type" },
-                  // { type:'text', label:"Description", field: "description", header: "Description" },
-                  // { type: 'text', label: "Unit", field: "unit", header: "Unit" },
-                  // { type:'text', label:"Category", field: "category", header: "Category" },
                   { type: 'text', label: "Length", field: "length", header: "Length" },
                   { type: 'text', label: "Width", field: "width", header: "Width" },
                   { type: 'text', label: "Height", field: "height", header: "Height" },
@@ -1033,16 +788,12 @@ export const ProductsList = () => {
                   { type: 'text', label: "Tax type code", field: "taxcode", header: "Tax code" },
                   { type: 'text', label: "Gst Tax type code", field: "gstcode", header: "Gst Code" },
                   { type: 'text', label: "HSN code", field: "hsnCode", header: "HSN Code" },
-                  // { type: 'text', label: "Tags", field: "tags", header: "Tags" },
                   { type: 'text', label: "Cost Price", field: "costPrice", header: "Cost Price" },
-                  // { type: 'text', label: "MRP", field: "mrp", header: "MRP" },
-                  // { type: 'text', label: "Base Price", field: "basePrice", header: "Base Price" },
-                  // { type: 'text', label: "Enabled", field: "enabled", header: "Enabled" },
                   { type: 'text', label: "Tax Calculation Type", field: "taxCalcuation", header: "Tax Calcuation" },
                 ].map((ele, i) => {
                   if (ele.type === "text") {
                     return (
-                      <div key={`${ele.field}${i}`} className="field col-12 lg:col-3 md:col-6 mt-4">
+                      <div key={`${ele.field}${i}`} className="field col-12 lg:col-2 md:col-6 mt-4">
                         <span className="p-float-label">
                           <InputText
                             disabled={productEditState}
@@ -1064,33 +815,11 @@ export const ProductsList = () => {
                       </div>
                     )
                   } else {
-                    // return (
-                    //   <div key={`${ele.field}${i}`} className="field col-12 mt-4">
-                    //     <span className="p-float-label">
-                    //       <InputTextarea
-                    //         id={ele.field}
-                    //         rows={5}
-                    //         name={ele.field}
-                    //         value={formik.values.description}
-                    //         onChange={formik.handleChange}
-                    //         autoFocus
-                    //         className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
-                    //       />
-                    //       <label
-                    //         htmlFor={ele.field}
-                    //         className={classNames({ "p-error": isFormFieldValid(ele.field) })}
-                    //       >
-                    //         {ele.label}
-                    //       </label>
-                    //     </span>
-                    //     {getFormErrorMessage(ele.field)}
-                    //   </div>
-                    // )
                   }
-                })}
-
-              <div className="field col-12 lg:col-3 mt-4">
-                <div className="p-float-label">
+                })
+              }
+              <div key={`category`} className="field col-12 lg:col-5 md:col-6 mt-4">
+                <span className="p-float-label">
                   <AutoComplete
                     id="category"
                     // disabled={editState}
@@ -1102,7 +831,7 @@ export const ProductsList = () => {
                     completeMethod={searchCategory}
                     field="name"
                     onChange={async (e) => {
-                      console.log('valueE ', e.value);
+
 
                       let sku = `TIF${e.value?.code}${products.length + 1}`
                       let category = typeof e.target.value === "string" ? e.value : e.value
@@ -1117,148 +846,42 @@ export const ProductsList = () => {
                     dropdownAriaLabel="Product Categorys"
                     className={classNames({ "p-invalid": isFormFieldValid("category") })}
                   />
-
                   <label
-                    htmlFor="category"
+                    htmlFor={"category"}
                     className={classNames({ "p-error": isFormFieldValid("category") })}
                   >
-                    Category*
-                  </label>
-                </div>
-                {getFormErrorMessage("category")}
-              </div>
-              <div className="mt-4">
-                <Dropdown disabled={productEditState} value={selectedStatus} onChange={(e) => setSelectedStatus(e.value)} options={StatusCheck} optionLabel="name"
-                  placeholder="Type" className="w-full md:w-14rem" />
-              </div>
-              <div className="field col-12  mt-4">
-
-                {selectedStatus?.name === 'Bundle' ?
-                  <div className="flex gap-3 flex-wrap">
-
-                    {inputs.map((input, index) => (
-                      <div key={index} className=''>
-                        <AutoComplete
-                          id="name"
-                          value={input.name}
-                          // value={formik.values.name}
-                          // suggestions={filteredSuggestions}
-                          // completeMethod={searchProducts}
-                          suggestions={categorySuggestions}
-                          completeMethod={searchCategory}
-                          disabled={productEditState}
-                          dropdown
-                          forceSelection
-                          field="name"
-                          onChange={async (e) => {
-                            console.log(e.value, 'event')
-
-                            handleInputChange(e, index)
-                            const test = [...inputs]
-                            test[index] = { ...e.value }
-                            setInputs(test)
-                            // let name = typeof e.value === "string" ? e.value : e.value?.name
-                            // let products_product_id = e.value?.product_id
-                            // let product_description = e.value?.description
-
-                            // await formik.setValues({
-                            //   ...formik.values,
-                            //   name,
-                            //   products_product_id,
-                            //   product_description,
-                            // })
-                            // formik.values = { ...formik.values,}
-                          }}
-
-                          aria-label="products"
-                          dropdownAriaLabel="Select Product"
-                          className={classNames({ "p-invalid": isFormFieldValid("name") })}
-                          style={{ width: '400px' }}
-                        />
-
-                        <InputText
-                          className='mt-3'
-                          type='text'
-                          placeholder='Quantity'
-                          name='quantity'
-                          value={input.quantity}
-                          onChange={(event) => handleInputChange(event, index)}
-                        />
-
-                        <Button
-                          icon="pi pi-minus"
-                          className="p-2 m-1"
-                          onClick={() => handleRemoveInput(index)}
-                        />
-                      </div>
-                    ))}
-
-                    <Button
-                      icon="pi pi-plus"
-                      className="m-1"
-                      onClick={handleAddInput}
-                      style={{ height: '40px' }}
-                    />
-                  </div>
-                  : null}
-              </div>
-
-
-
-              <div className="field col-12  mt-4">
-                <div className="p-float-label">
-                  <Creatable
-                    disabled={productEditState}
-                    classNamePrefix="tags"
-                    styles={styles4TagsComponent}
-                    isMulti
-                    options={existingTags}
-                    onChange={async (value) => {
-                      await formik.setValues({ ...formik.values, tags: value })
-                    }}
-                    value={formik.values.tags}
-                    // placeholder="Tags"
-                    isDisabled={productEditState}
-                  />
-
-                  <label htmlFor="tags" style={{ transform: "translateY(-230%)" }}>
-                    Tags
-                  </label>
-                </div>
-              </div>
-
-
-              <div className="field col-12 mt-4">
-                <span className="p-float-label">
-                  <InputTextarea
-                    disabled={productEditState}
-                    id={"description"}
-                    rows={5}
-                    name={"description"}
-                    value={formik.values.description}
-                    onChange={formik.handleChange}
-                    autoFocus
-                    className={classNames({ "p-invalid": isFormFieldValid("description") })}
-                  />
-                  <label
-                    htmlFor={"description"}
-                    className={classNames({ "p-error": isFormFieldValid("description") })}
-                  >
-                    Description
+                    Category
                   </label>
                 </span>
-                {getFormErrorMessage("description")}
+                {getFormErrorMessage("category")}
+              </div>
+              <div key={`productType`} className="field col-12 lg:col-5 md:col-6 mt-4">
+                <span className="p-float-label">
+                  <Dropdown
+                    disabled={productEditState}
+                    value={selectedStatus}
+                    onChange={(e) => setSelectedStatus(e.value)}
+                    options={StatusCheck}
+                    optionLabel="name"
+                    placeholder="Type"
+                    className="w-full"
+                  />
+                  <label
+                    htmlFor={"type"}
+                    className={classNames({ "p-error": isFormFieldValid("type") })}
+                  >
+                    Product Type
+                  </label>
+                </span>
+                {getFormErrorMessage("category")}
               </div>
             </div>
-
-
 
             <div className="flex mt-4">
               <Button
                 type="submit"
                 className="mr-2 "
-                // label={productEditState ? "UPDATE" : "SUBMIT"}
-                label={editUpdateProduct ? 'update' : 'Submit'}
+                label={editUpdateProduct ? 'UPDATE' : 'SUBMIT'}
               />
               <Button
                 className="p-button-secondary"
@@ -1269,9 +892,6 @@ export const ProductsList = () => {
                   setProductDialog(false)
                   setProductEditState(false)
                   setActiveProduct(false)
-
-                  // setProductForm(false)
-                  // setVendorDetails(initialVendorState)
                 }}
               />
             </div>
@@ -1293,10 +913,7 @@ export const ProductsList = () => {
             className="text-s datatable-responsive"
             filterDisplay="menu"
             emptyMessage="No Results found."
-
             onRowClick={async (e) => {
-              console.log(e.data, 'e.data')
-
               setActiveRowData({ ...e.data })
               setProductEditState(true)
               setActiveProduct(true)
@@ -1304,50 +921,11 @@ export const ProductsList = () => {
               await formik.setValues({
                 ...e.data,
               })
-              console.log('e.data: ', e.data);
               scrolToTop?.current && scrolToTop?.current.scrollIntoView()
             }}
-
           >
-
-            {/* <Column header="Image" body={rowData => <img src={`${rowData.imageUrl}`} alt="imageData" style={{ width: '300px', height: '220px' }} />} /> */}
             <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} />
-
             {columnComponents}
-
-            {/* <Column
-              header="Action"
-              body={(rowData) => {
-                return (
-                  <div>
-                    <Button
-                      icon="pi pi-pencil"
-                      className="m-1"
-                      onClick={async () => {
-                        setActiveRowData(rowData)
-                        setProductEditState(true)
-                        setActiveProduct(true)
-                        setProductDialog(true)
-                        await formik.setValues({
-                          ...rowData,
-                        })
-                        scrolToTop?.current && scrolToTop?.current.scrollIntoView()
-                      }}
-                    />
-                    <Button
-                      disabled={true}
-                      icon="pi pi-trash"
-                      className="m-1"
-                      onClick={async () => {
-                        await deleteVendorMutation({ vendor_id: rowData.vendor_id })
-                        await refetch()
-                      }}
-                    />
-                  </div>
-                )
-              }}
-            /> */}
-
           </DataTable>
         </div>
       </div>
@@ -1364,5 +942,5 @@ const ProductsPage = () => {
     </Suspense>
   )
 }
-ProductsPage.authenticate = false
+ProductsPage.authenticate = true
 export default ProductsPage
