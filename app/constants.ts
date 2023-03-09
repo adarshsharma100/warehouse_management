@@ -1616,23 +1616,39 @@ export const dateFormat = (dateObj) => moment(new Date(dateObj)).format("DD-MM-Y
 export const calenderDateFormat = () => "dd/mm/yy"
 export const toDateObj = (dateObj) => moment(dateObj, "DD-MM-YYYY").toDate()
 
-// export const sendPoEmail = async (data, po) => {
-//   // const vendorDetails = await db.vendor.findUnique({
-//   //   where: { vendor_id: data.vendor_vendor_id },
-//   // })
+export const getRemainingPoProducts = (rfqDetails) => {
+  const rfqProducts = rfqDetails?.rfq_products
+  const purchaseOrders = rfqDetails?.purchase_orders_purchase_orders_rfqTorfq
 
-//   // const pop = await db.purchase_order_products.findMany({
-//   //   where: { purchase_order_po_id: po.po_id },
-//   //   include: {
-//   //     vendor_products: {
-//   //       include: { products: true },
-//   //     },
-//   //   },
-//   // })
-//   // const { address, vendor, vendor_id, vendor_city, vendor_contact, vendor_gstin, vendor_email } =
-//   //   vendorDetails
-//   // const { po_id, po_code, po_description, from_party, expected_delivery, expiry_date, agreement } =
-//   //   po
-//   const email = "varunram.66@gmail.com"
-//   mail("care@robocraze.com", email, `PO #${po_code}`, `test`)
-// }
+  const getpoProducts = purchaseOrders
+    ?.flatMap(({ po_products }) => po_products)
+    ?.map(
+      ({
+        vendor_products: {
+          products: { id },
+        },
+      }) => id
+    )
+
+  const productsToPo = rfqProducts?.filter(({ product }) => !getpoProducts.includes(product))
+
+  return productsToPo
+}
+
+export const iletmListArrayCreation = (rfq_products) => {
+  const poProducts = rfq_products.map((rfqProduct) => {
+    const {
+      quantity,
+      price,
+      products: { sku, name, id },
+    } = rfqProduct
+    return {
+      product_name: `${sku} - ${name}`,
+      products_product_id: id,
+      price_per_unit: price,
+      quantity,
+    }
+  })
+
+  return poProducts
+}

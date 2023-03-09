@@ -57,6 +57,7 @@ import {
   toDateObj,
   tError,
   dateFormat,
+  iletmListArrayCreation,
 } from "app/constants"
 import { Toast } from "primereact/toast"
 import Invoice from "components/Invoice"
@@ -1553,6 +1554,9 @@ export const Purchase_ordersList = () => {
     }
   }, [fetchGrn])
 
+
+
+
   useEffect(() => {
     if (router.query.hasOwnProperty("rfqdata")) {
       const { rfqdata } = router.query;
@@ -1604,22 +1608,26 @@ export const Purchase_ordersList = () => {
       //     }
       // ]
 
-      const poProducts = rfq_products.map((rfqProduct) => {
-        const { quantity, price, products: { sku, name, id }, } = rfqProduct
-        return {
-          product_name: `${sku} - ${name}`,
-          products_product_id: id,
-          price_per_unit: price,
-          quantity
-        }
-      })
+      // const poProducts = rfq_products.map((rfqProduct) => {
+      //   const { quantity, price, products: { sku, name, id }, } = rfqProduct
+      //   return {
+      //     product_name: `${sku} - ${name}`,
+      //     products_product_id: id,
+      //     price_per_unit: price,
+      //     quantity
+      //   }
+      // })
+
+
+      const poProducts = iletmListArrayCreation(rfq_products)
+
 
       setItemList([...poProducts, ...twoFields])
 
       router.replace({
         pathname: '/purchase_orders',
         query: {},
-      }).catch(console.log("Awesome"))
+      }).catch(console.log("While removing Query from URL"))
     }
 
   }, [router.query.rfqdata])
@@ -2199,9 +2207,9 @@ export const Purchase_ordersList = () => {
         ref={Po}
         setSendPoDialog={setSendPoDialog}
         rfq={rfq}
+        setRfq={setRfq}
         initialPurchaseState={initialPurchaseState}
         setPurchaseDetails={setPurchaseDetails}
-
       />
 
       <div className="col-12">

@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@blitzjs/rpc"
+import { invoke, useMutation, useQuery } from "@blitzjs/rpc"
 import getAgreement_terms from "app/agreement_terms/queries/getAgreement_terms"
 import {
   arrayFillCopy,
@@ -8,6 +8,8 @@ import {
   tsuccess,
   tWarn,
   toDateObj,
+  getRemainingPoProducts,
+  iletmListArrayCreation,
 } from "app/constants"
 import { useCurrentUser } from "app/core/hooks/useCurrentUser"
 import createNotifications_sent from "app/notifications_sents/mutations/createNotifications_sent"
@@ -20,6 +22,7 @@ import updatePurchase_order from "app/purchase_orders/mutations/updatePurchase_o
 import getPurchase_orders from "app/purchase_orders/queries/getPurchase_orders"
 import getPurchase_order_products from "app/purchase_order_products/queries/getPurchase_order_products"
 import getPurchase_order_statuses from "app/purchase_order_statuses/queries/getPurchase_order_statuses"
+import getRfq from "app/rfqs/queries/getRfq"
 import { useFormik } from "formik"
 import moment from "moment"
 import { AutoComplete } from "primereact/autocomplete"
@@ -63,6 +66,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     rfq,
     initialPurchaseState,
     setPurchaseDetails,
+    setRfq
   } = props
 
   // const [{ prefixes }, { error: getPrefixesError }] = useQuery(getPrefixes, {
@@ -739,20 +743,35 @@ const CreateNewPo = React.forwardRef((props, ref) => {
             {
               onSuccess: async (data) => {
                 toast?.current.show(tsuccess(null, "PO Created Successfully"))
-                // await createNotificationsMutations({
-                //   user_id: id,
-                //   user_name: name,
-                //   user_email: email,
-                //   mutations: `${data?.po_code} is Created`,
-                //   created_at: new Date().toString(),
-                // })
+                // toast?.current.show(tsuccess(null, `${priorList.length} needs to pe poED `))
+                // logic to submit and generatenewpo 
+                // if (priorList.length) {
+                //   const rfqDetails = await invoke(getRfq, {
+                //     id: activeRow?.id
+                //   })
+                //   const productsToPo = getRemainingPoProducts(rfqDetails)
+
+                //   const _itemList = iletmListArrayCreation(productsToPo)
+
+                //   setReadOnlyForm(false)
+                //   formik.resetForm()
+                //   const twoFields = arrayFillCopy(2, initialItemState)
+                //   setPoEditState(false)
+                //   setPurchaseDialog(true)
+                //   setPurchaseDetails(initialPurchaseState)
+                //   await formik.setValues({ itemsLength: true })
+                //   setItemList([..._itemList, ...twoFields])
+
+                // } else {
+                //   setRfq({})
+                // }
                 setPriorList([])
                 setShowPriorList(false)
+
 
               },
             }
           )
-          console.log("purchaseOrder: ", purchaseOrder)
           setPurchaseDialog(false)
           formik.resetForm()
         } catch (error) {

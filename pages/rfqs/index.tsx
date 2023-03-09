@@ -60,6 +60,7 @@ import {
   calenderDateFormat,
   tError,
   tWarn,
+  getRemainingPoProducts,
 } from "app/constants"
 import getMutation_admin_mail from "app/mutation_admin_mails/queries/getMutation_admin_mail"
 import { Toast } from "primereact/toast"
@@ -5715,15 +5716,17 @@ export const RfqsList = () => {
                         const rfqDetails = await invoke(getRfq, {
                           id: activeRow?.id
                         })
-                        const rfqProducts = rfqDetails?.rfq_products;
-                        const purchaseOrders = rfqDetails?.purchase_orders_purchase_orders_rfqTorfq
+                        // const rfqProducts = rfqDetails?.rfq_products;
+                        // const purchaseOrders = rfqDetails?.purchase_orders_purchase_orders_rfqTorfq
 
-                        const getpoProducts = purchaseOrders?.
-                          flatMap(({ po_products }) => po_products)?.
-                          map(({ vendor_products: { products: { id } } }) => id);
+                        // const getpoProducts = purchaseOrders?.
+                        //   flatMap(({ po_products }) => po_products)?.
+                        //   map(({ vendor_products: { products: { id } } }) => id);
 
-                        const productsToPo = rfqProducts?.
-                          filter(({ product }) => !getpoProducts.includes(product))
+                        // const productsToPo = rfqProducts?.
+                        //   filter(({ product }) => !getpoProducts.includes(product))
+
+                        const productsToPo = getRemainingPoProducts(rfqDetails)
 
                         if (productsToPo.length) {
                           const { id, rfqNumber } = activeRow
@@ -5764,12 +5767,6 @@ export const RfqsList = () => {
                       } catch (error) {
                         console.log("Error while creating PO from RFQ", error);
                       }
-
-
-
-
-
-
                     }}
                     tooltip="Create PO"
                     tooltipOptions={{ position: "top" }}
