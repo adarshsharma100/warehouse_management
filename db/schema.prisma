@@ -77,7 +77,6 @@ model grn_products {
   id                        Int         @id @default(autoincrement())
   receivedQuantity          Int
   rejectedQuantity          Int?
-  price                     Int
   poProduct                 Int
   grn                       Int
   grn_grn_products_grnTogrn grn         @relation("grn_products_grnTogrn", fields: [grn], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_products_grn1")
@@ -126,17 +125,16 @@ model inventory_products {
   id                Int                 @id @default(autoincrement())
   description       String?             @db.VarChar(45)
   quantity          Int?
-  goodStock         Int?
-  badStock          Int?
-  blockedStock      Int?
-  shelf             Int?
   createdAt         DateTime
   updatedAt         DateTime
   product           Int
+  shelf             Int
   inventory_history inventory_history[]
   products          products            @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_products1")
+  shelfs            shelfs              @relation(fields: [shelf], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_shelfs1")
 
   @@index([product], map: "fk_inventory_products_products1_idx")
+  @@index([shelf], map: "fk_inventory_products_shelfs1_idx")
 }
 
 model po_products {
@@ -215,16 +213,21 @@ model products {
   category                                       Int?
   brand                                          Int?
   costPrice                                      Int
+  type                                           Int
   inventory_products                             inventory_products[]
+  kit_products_kit_products_kitIdToproducts      kit_products[]       @relation("kit_products_kitIdToproducts")
+  kit_products_kit_products_productIdToproducts  kit_products[]       @relation("kit_products_productIdToproducts")
   product_tags                                   product_tags[]
   product_brand                                  product_brand?       @relation(fields: [brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_brands2")
   product_categories                             product_categories?  @relation(fields: [category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_category")
+  product_types                                  product_types        @relation(fields: [type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_product_types1")
   quality_ckeck_quality_ckeck_productsToproducts quality_ckeck[]      @relation("quality_ckeck_productsToproducts")
   rfq_products                                   rfq_products[]
   vendor_products                                vendor_products[]
 
   @@index([brand], map: "fk_products_brands2_idx")
   @@index([category], map: "fk_products_category_idx")
+  @@index([type], map: "fk_products_product_types1_idx")
 }
 
 model purchase_orders {
@@ -243,19 +246,21 @@ model purchase_orders {
   status                       Int
   po_term                      Int
   approvedBy                   Int?
-  ammendedFrom                 Int?
+  amendedFrom                  Int?
+  piNumber                     String?           @unique(map: "piNumber_UNIQUE") @db.VarChar(45)
+  piDate                       DateTime?         @db.DateTime(0)
   grn                          grn[]
   po_products                  po_products[]
   po_sentto                    po_sentto[]
   po_status                    po_status         @relation(fields: [status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_po_status1")
-  purchase_orders              purchase_orders?  @relation("purchase_ordersTopurchase_orders", fields: [ammendedFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_purchase_orders1")
+  purchase_orders              purchase_orders?  @relation("purchase_ordersTopurchase_orders", fields: [amendedFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_purchase_orders1")
   other_purchase_orders        purchase_orders[] @relation("purchase_ordersTopurchase_orders")
   rfq_purchase_orders_rfqTorfq rfq?              @relation("purchase_orders_rfqTorfq", fields: [rfq], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_rfq1")
   po_terms                     po_terms          @relation(fields: [po_term], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_terms1")
   user                         user?             @relation(fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_user1")
   vendors                      vendors           @relation(fields: [vendor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_vendors1")
 
-  @@index([ammendedFrom], map: "fk_purchase_orders_purchase_orders1_idx")
+  @@index([amendedFrom], map: "fk_purchase_orders_purchase_orders1_idx")
   @@index([rfq], map: "fk_purchase_orders_rfq1_idx")
   @@index([po_term], map: "fk_purchase_orders_terms1_idx")
   @@index([approvedBy], map: "fk_purchase_orders_user1_idx")
@@ -408,6 +413,66 @@ model po_status {
   name            String?           @db.VarChar(45)
   description     String?           @db.VarChar(200)
   purchase_orders purchase_orders[]
+}
+
+model kit_products {
+  id                                        Int      @id @default(autoincrement())
+  quantity                                  Int?
+  kitId                                     Int
+  productId                                 Int
+  products_kit_products_kitIdToproducts     products @relation("kit_products_kitIdToproducts", fields: [kitId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products1")
+  products_kit_products_productIdToproducts products @relation("kit_products_productIdToproducts", fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products2")
+
+  @@index([kitId], map: "fk_kit_products_products1_idx")
+  @@index([productId], map: "fk_kit_products_products2_idx")
+}
+
+model product_types {
+  id       Int        @id @default(autoincrement())
+  type     String     @db.VarChar(45)
+  products products[]
+}
+
+model areas {
+  id                                   Int       @id @default(autoincrement())
+  name                                 String    @db.VarChar(45)
+  description                          String?   @db.VarChar(45)
+  warehouse                            Int
+  warehouse_areas_warehouseTowarehouse warehouse @relation("areas_warehouseTowarehouse", fields: [warehouse], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_areas_warehouse1")
+  shelfs                               shelfs[]
+
+  @@index([warehouse], map: "fk_areas_warehouse1_idx")
+}
+
+model shelf_type {
+  id          Int      @id @default(autoincrement())
+  name        String?  @db.VarChar(45)
+  description String?  @db.VarChar(45)
+  shelfs      shelfs[]
+}
+
+model shelfs {
+  id                 Int                  @id
+  sellable           Boolean
+  number             String               @db.VarChar(45)
+  length             Int?
+  width              Int?
+  loadingStrength    Int?
+  reach              String?              @db.VarChar(45)
+  area               Int
+  shelfType          Int
+  inventory_products inventory_products[]
+  areas              areas                @relation(fields: [area], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_areas1")
+  shelf_type         shelf_type           @relation(fields: [shelfType], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_shelf_type1")
+
+  @@index([area], map: "fk_shelfs_areas1_idx")
+  @@index([shelfType], map: "fk_shelfs_shelf_type1_idx")
+}
+
+model warehouse {
+  id                               Int     @id @default(autoincrement())
+  name                             String  @db.VarChar(45)
+  areas_areas_warehouseTowarehouse areas[] @relation("areas_warehouseTowarehouse")
 }
 
 enum contact_number_type {
