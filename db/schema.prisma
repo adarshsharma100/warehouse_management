@@ -33,17 +33,16 @@ model inventory_products {
   id                Int                 @id @default(autoincrement())
   description       String?             @db.VarChar(45)
   quantity          Int?
-  goodStock         Int?
-  badStock          Int?
-  blockedStock      Int?
-  shelf             Int?
   createdAt         DateTime
   updatedAt         DateTime
   product           Int
+  shelf             Int
   inventory_history inventory_history[]
   products          products            @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_products1")
+  shelfs            shelfs              @relation(fields: [shelf], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_shelfs1")
 
   @@index([product], map: "fk_inventory_products_products1_idx")
+  @@index([shelf], map: "fk_inventory_products_shelfs1_idx")
 }
 
 model products {
@@ -432,6 +431,49 @@ model vendor_branches {
 
   @@index([address], map: "fk_vendor_branches_addresses1_idx")
   @@index([vendor], map: "fk_vendor_branches_vendors1_idx")
+}
+
+model areas {
+  id                                   Int       @id @default(autoincrement())
+  name                                 String    @db.VarChar(45)
+  description                          String?   @db.VarChar(150)
+  warehouse                            Int
+  warehouse_areas_warehouseTowarehouse warehouse @relation("areas_warehouseTowarehouse", fields: [warehouse], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_areas_warehouse1")
+  shelfs                               shelfs[]
+
+  @@index([warehouse], map: "fk_areas_warehouse1_idx")
+}
+
+model shelf_type {
+  id          Int      @id @default(autoincrement())
+  name        String?  @db.VarChar(45)
+  description String?  @db.VarChar(150)
+  shelfs      shelfs[]
+}
+
+model shelfs {
+  id                 Int                  @id
+  sellable           Boolean
+  number             String               @db.VarChar(45)
+  length             Int?
+  width              Int?
+  loadingStrength    Int?
+  reach              String?              @db.VarChar(45)
+  area               Int
+  shelfType          Int
+  inventory_products inventory_products[]
+  areas              areas                @relation(fields: [area], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_areas1")
+  shelf_type         shelf_type           @relation(fields: [shelfType], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_shelf_type1")
+
+  @@index([area], map: "fk_shelfs_areas1_idx")
+  @@index([shelfType], map: "fk_shelfs_shelf_type1_idx")
+}
+
+model warehouse {
+  id                               Int     @id @default(autoincrement())
+  name                             String  @db.VarChar(45)
+  description                      String? @db.VarChar(150)
+  areas_areas_warehouseTowarehouse areas[] @relation("areas_warehouseTowarehouse")
 }
 
 enum products_status {
