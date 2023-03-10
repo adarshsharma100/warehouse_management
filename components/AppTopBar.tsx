@@ -1,16 +1,10 @@
 import React, { useEffect, useRef, useState } from "react"
-// import { Link } from "react-router-dom"
 import classNames from "classnames"
 import logout from "app/auth/mutations/logout"
-import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc"
+import { useMutation } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
 import { Routes } from "@blitzjs/next"
-// import logo from "../Assets/Images/tif.png"
-// import Image from "next/image"
-import { ConfirmPopup } from "primereact/confirmpopup"
 import { Badge } from "primereact/badge"
-import getNotifications_sent from "app/notifications_sents/queries/getNotifications_sent"
-import getNotifications_sents from "app/notifications_sents/queries/getNotifications_sents"
 import moment from "moment"
 import { Button } from "primereact/button"
 import { DataScroller } from "primereact/datascroller"
@@ -22,10 +16,6 @@ export const AppTopbar = (props) => {
   const [oldAlerts, setOldAlerts] = useState(0)
   const [alertCount, setAlertCount] = useState(0)
   const [visible, setVisible] = useState<boolean>(false)
-  // const [{ notifications_sents: notifications }, { error: getNotificationsError, refetch }] =
-  //   useQuery(getNotifications_sents, {
-  //     orderBy: { id: "desc" },
-  //   })
 
   const notifications = [
     {
@@ -904,8 +894,6 @@ export const AppTopbar = (props) => {
 
   const moreData = useRef(null)
 
-  // console.log("notifications", notifications)
-
   const notificationTemplate = (ele) => {
     return (
       <div className="border-solid border-1 border-round-lg mb-2 p-2">
@@ -936,12 +924,6 @@ export const AppTopbar = (props) => {
       window.removeEventListener("click", hideNotification)
     }
   }, [])
-
-  useEffect(() => {
-    ;(async () => await refetch())().catch((error) =>
-      console.log("fecthNotifications-Error", error)
-    )
-  }, [notifications, visible])
 
   const router = useRouter()
   return (
@@ -1007,9 +989,8 @@ export const AppTopbar = (props) => {
               icon="pi pi-exclamation-triangle"
             /> */}
             <div
-              className={`card lg:w-3 md:w-24rem absolute ${
-                visible ? "visible " : "hidden"
-              } max-h-30rem overflow-scroll	`}
+              className={`card lg:w-3 md:w-24rem absolute ${visible ? "visible " : "hidden"
+                } max-h-30rem overflow-scroll	`}
               style={{
                 transform: "translate(-90%,54%)",
               }}
