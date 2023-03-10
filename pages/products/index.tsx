@@ -67,6 +67,7 @@ export const ProductsList = () => {
   const [{ products }, { refetch }] = useQuery(getProducts, {
     orderBy: { id: "asc" },
   })
+  console.log('products: ', products);
   const [{ product_categories },] = useQuery(getProduct_categories, {
     orderBy: { id: "asc" },
   })
@@ -415,6 +416,7 @@ export const ProductsList = () => {
 
 
       if (editUpdateProduct) {
+
         try {
           await updateActiveProduct({
             id: activeProductId,
@@ -665,6 +667,8 @@ export const ProductsList = () => {
           : "hidden scaleout animation-duration-200"
           }`}
       >
+
+
         <div className="card">
           <div className="flex justify-content-between">
             <h4>{activeProduct ? "Update" : "Create"} Product</h4>
@@ -678,6 +682,7 @@ export const ProductsList = () => {
               onClick={() => setProductEditState(!productEditState)}
             />}</h4>
           </div>
+
           <form
             onSubmit={formik.handleSubmit}
             className="p-fluid"

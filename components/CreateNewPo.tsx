@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@blitzjs/rpc"
+import { invoke, useMutation, useQuery } from "@blitzjs/rpc"
 import getAgreement_terms from "app/agreement_terms/queries/getAgreement_terms"
 import {
   arrayFillCopy,
@@ -8,6 +8,8 @@ import {
   tsuccess,
   tWarn,
   toDateObj,
+  getRemainingPoProducts,
+  iletmListArrayCreation,
 } from "app/constants"
 import { useCurrentUser } from "app/core/hooks/useCurrentUser"
 import createNotifications_sent from "app/notifications_sents/mutations/createNotifications_sent"
@@ -20,13 +22,15 @@ import updatePurchase_order from "app/purchase_orders/mutations/updatePurchase_o
 import getPurchase_orders from "app/purchase_orders/queries/getPurchase_orders"
 import getPurchase_order_products from "app/purchase_order_products/queries/getPurchase_order_products"
 import getPurchase_order_statuses from "app/purchase_order_statuses/queries/getPurchase_order_statuses"
+import getRfq from "app/rfqs/queries/getRfq"
 import { useFormik } from "formik"
 import moment from "moment"
 import { AutoComplete } from "primereact/autocomplete"
 import { Button } from "primereact/button"
 import { Calendar } from "primereact/calendar"
 import { Checkbox } from "primereact/checkbox"
-import { Chip } from "primereact/Chip"
+// import { Chips } from "primereact/Chips"
+import { Chips } from "primereact/chips"
 import { Divider } from "primereact/divider"
 import { InputNumber } from "primereact/inputnumber"
 import { InputText } from "primereact/inputtext"
@@ -63,6 +67,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     rfq,
     initialPurchaseState,
     setPurchaseDetails,
+    setRfq
   } = props
 
   // const [{ prefixes }, { error: getPrefixesError }] = useQuery(getPrefixes, {
@@ -739,22 +744,36 @@ const CreateNewPo = React.forwardRef((props, ref) => {
             {
               onSuccess: async (data) => {
                 toast?.current.show(tsuccess(null, "PO Created Successfully"))
-                // await createNotificationsMutations({
-                //   user_id: id,
-                //   user_name: name,
-                //   user_email: email,
-                //   mutations: `${data?.po_code} is Created`,
-                //   created_at: new Date().toString(),
-                // })
-                setPriorList([])
-                setShowPriorList(false)
+                // toast?.current.show(tsuccess(null, `${priorList.length} needs to pe poED `))
 
+                // logic to submit and generatenewpo 
+                // if (priorList.length) {
+                //   const rfqDetails = await invoke(getRfq, {
+                //     id: activeRow?.id
+                //   })
+                //   const productsToPo = getRemainingPoProducts(rfqDetails)
+
+                //   const _itemList = iletmListArrayCreation(productsToPo)
+
+                //   setReadOnlyForm(false)
+                //   formik.resetForm()
+                //   const twoFields = arrayFillCopy(2, initialItemState)
+                //   setPoEditState(false)
+                //   setPurchaseDialog(true)
+                //   setPurchaseDetails(initialPurchaseState)
+                //   await formik.setValues({ itemsLength: true })
+                //   setItemList([..._itemList, ...twoFields])
+
+                // } else {
+                //   setRfq({})
+                // }
               },
             }
           )
-          console.log("purchaseOrder: ", purchaseOrder)
           setPurchaseDialog(false)
           formik.resetForm()
+          setPriorList([])
+          setShowPriorList(false)
         } catch (error) {
           console.log("error: ", error)
         }
@@ -949,7 +968,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                 <Button
                   icon="pi pi-info-circle"
                   className="m-1"
-                  tooltip="Amend PO"
+                  tooltip="More Info"
                   tooltipOptions={{ position: "top" }}
                   onClick={async (e) => {
                     e.preventDefault()
@@ -1353,7 +1372,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                 <Button
                   type="button"
                   icon="pi pi-undo"
-                  label="Revert"
+                  label="Select"
                   className="p-button-warning p-button-sm w-auto p-button-outlined"
                   onClick={async (e) => {
                     await updateFormValues({ vendor: pastVendors[0]?.vendor })

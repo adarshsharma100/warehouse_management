@@ -7,9 +7,9 @@ const UpdateGrn = z.unknown()
 export default resolver.pipe(
   resolver.zod(UpdateGrn),
   resolver.authorize(),
-  async ({ grn_id, ...data }) => {
+  async ({ id, ...data }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-    const grn = await db.grn.update({ where: { grn_id }, data })
+    const grn = await db.grn.update({ where: { id }, data })
 
     return grn
   }

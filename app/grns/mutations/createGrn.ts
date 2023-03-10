@@ -3,8 +3,18 @@ import db from "db"
 import { z } from "zod"
 
 const CreateGrn = z.object({
-  grn_batch_code: z.string(),
-  purchase_order: z.unknown(),
+  grnNumber : z.string(),
+  invoiceNo:z.string(),
+  invoiceDate:z.date(),
+  trackingId:z.string(),
+  eta:z.date(),
+  createdBy:z.number(),
+  status:z.unknown(),
+  purchaseOrder:z.unknown(),
+  createdAt:z.date(),
+  updatedAt:z.date(),
+  grn_products:z.unknown()
+  // po_products:z.unknown(),
 })
 
 export default resolver.pipe(resolver.zod(CreateGrn), resolver.authorize(), async (input) => {
