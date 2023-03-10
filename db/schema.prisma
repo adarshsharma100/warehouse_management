@@ -64,8 +64,8 @@ model emails {
 
 model grn {
   id              Int             @id @default(autoincrement())
-  grnNumber       String          @db.VarChar(45)
-  invoiceNo       String          @db.VarChar(45)
+  grnNumber       String          @unique(map: "grnNumber_UNIQUE") @db.VarChar(45)
+  invoiceNo       String          @unique(map: "invoiceNo_UNIQUE") @db.VarChar(45)
   invoiceDate     DateTime        @db.DateTime(0)
   trackingId      String?         @db.VarChar(200)
   eta             DateTime?       @db.DateTime(0)
@@ -438,6 +438,49 @@ model vendor_branches {
 
   @@index([address], map: "fk_vendor_branches_addresses1_idx")
   @@index([vendor], map: "fk_vendor_branches_vendors1_idx")
+}
+
+model areas {
+  id                                   Int       @id @default(autoincrement())
+  name                                 String    @db.VarChar(45)
+  description                          String?   @db.VarChar(150)
+  warehouse                            Int
+  warehouse_areas_warehouseTowarehouse warehouse @relation("areas_warehouseTowarehouse", fields: [warehouse], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_areas_warehouse1")
+  shelfs                               shelfs[]
+
+  @@index([warehouse], map: "fk_areas_warehouse1_idx")
+}
+
+model shelf_type {
+  id          Int      @id @default(autoincrement())
+  name        String?  @db.VarChar(45)
+  description String?  @db.VarChar(150)
+  shelfs      shelfs[]
+}
+
+model shelfs {
+  id                 Int                  @id @default(autoincrement())
+  sellable           Boolean
+  number             String               @db.VarChar(45)
+  length             Int?
+  width              Int?
+  loadingStrength    Int?
+  reach              String?              @db.VarChar(45)
+  area               Int
+  shelfType          Int
+  inventory_products inventory_products[]
+  areas              areas                @relation(fields: [area], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_areas1")
+  shelf_type         shelf_type           @relation(fields: [shelfType], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_shelf_type1")
+
+  @@index([area], map: "fk_shelfs_areas1_idx")
+  @@index([shelfType], map: "fk_shelfs_shelf_type1_idx")
+}
+
+model warehouse {
+  id                               Int     @id @default(autoincrement())
+  name                             String  @db.VarChar(45)
+  description                      String? @db.VarChar(150)
+  areas_areas_warehouseTowarehouse areas[] @relation("areas_warehouseTowarehouse")
 }
 
 model vendor_products {
