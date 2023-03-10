@@ -32,6 +32,8 @@ export default resolver.pipe(
                 },
               },
             },
+            user: true,
+            grn_status: true,
           },
         },
         po_products: {
@@ -43,6 +45,9 @@ export default resolver.pipe(
             },
           },
         },
+        po_status: true,
+        po_terms: true,
+        user: true,
       },
     })
     console.log("purchase_order:12 ", purchase_order)

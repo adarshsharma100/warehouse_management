@@ -29,6 +29,7 @@ import { AutoComplete } from "primereact/autocomplete"
 import { Button } from "primereact/button"
 import { Calendar } from "primereact/calendar"
 import { Checkbox } from "primereact/checkbox"
+import { Chip } from "primereact/Chip"
 // import { Chips } from "primereact/Chips"
 import { Chips } from "primereact/chips"
 import { Divider } from "primereact/divider"
@@ -67,7 +68,8 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     rfq,
     initialPurchaseState,
     setPurchaseDetails,
-    setRfq
+    setRfq,
+    userId
   } = props
 
   // const [{ prefixes }, { error: getPrefixesError }] = useQuery(getPrefixes, {
@@ -673,13 +675,19 @@ const CreateNewPo = React.forwardRef((props, ref) => {
             {
               onSuccess: async (data) => {
                 toast?.current.show(tsuccess("Updated", `${po_code} is updated successfully`))
-                await createNotificationsMutations({
-                  user_id: id,
-                  user_name: name,
-                  user_email: email,
-                  mutations: `${data?.po_code} is Updated`,
-                  created_at: new Date().toString(),
-                })
+                alert(data)
+
+                if (data.status === 3) {
+                  await updatePurchaseOrderMutation({
+                    id: activeRow?.id,
+                    approvedBy: userId
+                  }, {
+                    onSuccess: () => {
+                      setPurchaseDialog(false)
+                      formik.resetForm()
+                    }
+                  })
+                }
               },
             }
           )
@@ -913,7 +921,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
             <h5>{`${readOnlyForm ? "PO-Details" : poEditState ? "UPDATE-PO" : "CREATE-PO"}`}</h5>
             {poEditState && (
               <div>
-                <Button
+                {activeRow?.po_status?.name !== 'Approved' && <Button
                   disabled={false}
                   icon="pi pi-pencil"
                   className="m-1"
@@ -931,8 +939,9 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                       setReadOnlyForm(!readOnlyForm)
                     }
                   }}
-                />
-                <Button
+                />}
+
+                {["Approved", "Amended"].includes(activeRow?.po_status?.name) && <Button
                   disabled={false}
                   icon="pi pi-send"
                   className="m-1"
@@ -951,7 +960,8 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                       setSendPoDialog(true)
                     }
                   }}
-                />
+                />}
+
                 <Button
                   icon="bi bi-file-text"
                   className="m-1"
@@ -965,7 +975,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                     await updateFormValues({ po_code: newPOCode, amendedFrom: activeRow.id })
                   }}
                 />
-                <Button
+                {/* <Button
                   icon="pi pi-info-circle"
                   className="m-1"
                   tooltip="More Info"
@@ -974,7 +984,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                     e.preventDefault()
                     window.location.href = `/purchase_orders/${activeRow.po_id}`
                   }}
-                />
+                /> */}
               </div>
             )}
           </div>
@@ -1028,6 +1038,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                     let vendor_vendor_id =
                       typeof e.value === "string" ? e.value : e.value?.vendor_id
                     let vendor = typeof e.value === "string" ? e.value : e.value?.name
+
 
                     await formik.setValues({
                       ...formik.values,

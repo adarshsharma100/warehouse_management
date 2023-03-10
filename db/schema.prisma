@@ -63,21 +63,21 @@ model emails {
 }
 
 model grn {
-  id                                 Int             @id @default(autoincrement())
-  grnNumber                          String          @db.VarChar(45)
-  invoiceNo                          String          @db.VarChar(45)
-  invoiceDate                        DateTime        @db.DateTime(0)
-  trackingId                         String?         @db.VarChar(200)
-  eta                                DateTime?       @db.DateTime(0)
-  createdAt                          DateTime        @db.DateTime(0)
-  updatedAt                          DateTime        @db.DateTime(0)
-  status                             Int
-  createdBy                          Int
-  purchaseOrder                      Int
-  grn_status                         grn_status      @relation(fields: [status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_grn_status1")
-  purchase_orders                    purchase_orders @relation(fields: [purchaseOrder], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_purchase_orders1")
-  user                               user            @relation(fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_user1")
-  grn_products_grn_products_grnTogrn grn_products[]  @relation("grn_products_grnTogrn")
+  id              Int             @id @default(autoincrement())
+  grnNumber       String          @db.VarChar(45)
+  invoiceNo       String          @db.VarChar(45)
+  invoiceDate     DateTime        @db.DateTime(0)
+  trackingId      String?         @db.VarChar(200)
+  eta             DateTime?       @db.DateTime(0)
+  createdAt       DateTime        @default(now()) @db.DateTime(0)
+  updatedAt       DateTime        @default(now()) @db.DateTime(0)
+  status          Int
+  createdBy       Int
+  purchaseOrder   Int
+  grn_status      grn_status      @relation(fields: [status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_grn_status1")
+  purchase_orders purchase_orders @relation(fields: [purchaseOrder], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_purchase_orders1")
+  user            user            @relation(fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_user1")
+  grn_products    grn_products[]  @relation("grn_products_grnTogrn")
 
   @@index([status], map: "fk_grn_grn_status1_idx")
   @@index([purchaseOrder], map: "fk_grn_purchase_orders1_idx")
@@ -381,7 +381,7 @@ model shelf_type {
 }
 
 model shelfs {
-  id                 Int                  @id
+  id                 Int                  @id @default(autoincrement())
   sellable           Boolean
   number             String               @db.VarChar(45)
   length             Int?

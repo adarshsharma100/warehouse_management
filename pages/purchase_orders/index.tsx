@@ -75,7 +75,7 @@ export const Purchase_ordersList = () => {
   const router = useRouter()
   const antiCSRFToken = getAntiCSRFToken()
   const user = useCurrentUser()
-  const { id, role, name, email } = user
+  const { id: userId, role, name, email } = user
 
 
   const page = Number(router.query.page) || 0
@@ -1767,7 +1767,8 @@ export const Purchase_ordersList = () => {
         {
           label: "More info",
           icon: "pi pi-info-circle",
-          command: () => (window.location.href = `/purchase_orders/${activeRow.po_id}`),
+          // command: () => (window.location.href = `/purchase_orders/${12}`),
+          // command: async () => await router.push(Routes.ShowPurchase_orderPage({ purchase_orderId: 12 })),
         },
         // {
         //   label: "View Products",
@@ -2210,6 +2211,7 @@ export const Purchase_ordersList = () => {
         setRfq={setRfq}
         initialPurchaseState={initialPurchaseState}
         setPurchaseDetails={setPurchaseDetails}
+        userId={userId}
       />
 
       <div className="col-12">
@@ -2255,6 +2257,8 @@ export const Purchase_ordersList = () => {
               header="Po Number"
               filter
               filterPlaceholder="Search by Code"
+              body={(rowData) => <Link href={Routes.ShowPurchase_orderPage({ purchase_orderId: `${rowData.id}` })} >{rowData.poNumber}</Link>}
+
             // className="text-center"
             />
 
@@ -2319,7 +2323,7 @@ export const Purchase_ordersList = () => {
             // style={{ width: "10px" }}
             // className="text-center"
             />
-            <Column
+            {/* <Column
               // field="vendor_gstin"
               header="Action"
               body={(rowData) => {
@@ -2341,7 +2345,7 @@ export const Purchase_ordersList = () => {
                 )
               }}
             // className="text-center"
-            />
+            /> */}
           </DataTable>
         </div>
       </div>
