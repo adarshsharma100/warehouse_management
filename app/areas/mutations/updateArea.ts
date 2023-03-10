@@ -2,19 +2,19 @@ import { resolver } from "@blitzjs/rpc";
 import db from "db";
 import { z } from "zod";
 
-const UpdateWarehouse = z.object({
+const UpdateArea = z.object({
   id: z.number(),
   name: z.string().optional(),
-  description:z.string().optional(),
+  description: z.string().optional(),
 });
 
 export default resolver.pipe(
-  resolver.zod(UpdateWarehouse),
+  resolver.zod(UpdateArea),
   resolver.authorize(),
   async ({ id, ...data }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-    const warehouse = await db.warehouse.update({ where: { id }, data });
+    const area = await db.areas.update({ where: { id }, data });
 
-    return warehouse;
+    return area;
   }
 );

@@ -3,25 +3,25 @@ import { resolver } from "@blitzjs/rpc";
 import db from "db";
 import { z } from "zod";
 
-const GetWarehouse = z.object({
+const GetArea = z.object({
   // This accepts type of undefined, but is required at runtime
   id: z.number().optional().refine(Boolean, "Required"),
 });
 
 export default resolver.pipe(
-  resolver.zod(GetWarehouse),
+  resolver.zod(GetArea),
   resolver.authorize(),
   async ({ id }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-    const warehouse = await db.warehouse.findFirst({ 
-      where: { id } ,
-      include: {
-        areas_areas_warehouseTowarehouse:true
+    const area = await db.areas.findFirst({ 
+      where: { id },
+      include:{
+        shelfs:true,
       }
-    });
+     });
 
-    if (!warehouse) throw new NotFoundError();
+    if (!area) throw new NotFoundError();
 
-    return warehouse;
+    return area;
   }
 );

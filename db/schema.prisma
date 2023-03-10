@@ -9,13 +9,13 @@ datasource db {
 
 model grn {
   id              Int             @id @default(autoincrement())
-  grnNumber       String          @db.VarChar(45)
-  invoiceNo       String          @db.VarChar(45)
+  grnNumber       String          @unique(map: "grnNumber_UNIQUE") @db.VarChar(45)
+  invoiceNo       String          @unique(map: "invoiceNo_UNIQUE") @db.VarChar(45)
   invoiceDate     DateTime        @db.DateTime(0)
   trackingId      String?         @db.VarChar(200)
   eta             DateTime?       @db.DateTime(0)
-  createdAt       DateTime        @db.DateTime(0)
-  updatedAt       DateTime        @db.DateTime(0)
+  createdAt       DateTime        @default(now()) @db.DateTime(0)
+  updatedAt       DateTime        @default(now()) @db.DateTime(0)
   status          Int
   createdBy       Int
   purchaseOrder   Int
@@ -452,7 +452,7 @@ model shelf_type {
 }
 
 model shelfs {
-  id                 Int                  @id
+  id                 Int                  @id @default(autoincrement())
   sellable           Boolean
   number             String               @db.VarChar(45)
   length             Int?

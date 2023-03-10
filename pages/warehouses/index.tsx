@@ -23,8 +23,7 @@ const initialWarehouse = {
   description: ''
 }
 const columns = [
-  { field: "id", header: "ID" },
-  { field: "name", header: "Areas" },
+  { field: "name", header: "Name" },
   { field: "description", header: "Description" },
 ]
 
@@ -52,8 +51,10 @@ export const WarehousesList = () => {
   const [warehouse, setWareHouse] = useState(initialWarehouse)
   const [selectedColumns, setSelectedColumns] = useState(columns)
   const [activeWarehouse, setActiveWarehouse] = useState({})
+  console.log('activeWarehouse: ', activeWarehouse);
   const [updateWareHouse, setUpdateWareHouse] = useState(false)
   const [editWarehouse, setEditWarehouse] = useState(false)
+
   const formik = useFormik({
     initialValues: warehouse,
     validationSchema: Yup.object().shape({
@@ -63,6 +64,7 @@ export const WarehousesList = () => {
       console.log('data: ', data);
       const { name, description } = data
       const { id: activeWarehouseID } = activeWarehouse
+      console.log(activeWarehouseID,'activeWarehouseID')
       if (updateWareHouse) {
         try {
           await updateWarehouse({
@@ -112,6 +114,8 @@ export const WarehousesList = () => {
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
+  console.log("formik.values",formik.values)
+  console.log("formik.errors",formik.errors)
 
 
 
@@ -126,7 +130,10 @@ export const WarehousesList = () => {
       />
     )
   })
-
+  const handleRowClick = (e) => {
+    const warehouseId = e.data.id;
+    router.push(`/warehouses/${warehouseId}`);
+  };
 
   return (
     <div>
@@ -142,11 +149,11 @@ export const WarehousesList = () => {
       <form className="p-fluid" onSubmit={formik.handleSubmit}>
         {active &&
           <div className="card">
-            {editWarehouse ? <h2>Update Warehouse</h2>: <h2>Create Warehouse</h2>}
+            {editWarehouse ? <h2>Update Warehouse</h2> : <h2>Create Warehouse</h2>}
 
             <div className="formgrid grid">
               {[
-                { type: 'text', label: 'Areas', field: 'name' },
+                { type: 'text', label: 'Name', field: 'name' },
                 { type: 'text', label: 'Description', field: 'description' },
               ].map((ele, i) => {
                 return (
@@ -180,7 +187,7 @@ export const WarehousesList = () => {
               <Button
                 type="submit"
                 className="mr-2"
-                label= {editWarehouse ? "UPDATE": "SUBMIT"}
+                label={editWarehouse ? "UPDATE" : "SUBMIT"}
               />
               <Button
                 className="p-button-secondary flex-grow-0"
@@ -191,6 +198,7 @@ export const WarehousesList = () => {
                   formik.resetForm()
                   setActive(!active)
                   setEditWarehouse(false)
+                  setUpdateWareHouse(false)
                 }}
               />
 
@@ -199,7 +207,18 @@ export const WarehousesList = () => {
       </form>
 
       <div className="flex justify-content-end">
-        <Button onClick={() =>{formik.resetForm(); setActive(!active);  setEditWarehouse(false)}} icon='pi pi-plus'></Button>
+        <Button 
+        
+        onClick={() => { 
+          formik.resetForm(); 
+          setActive(!active);  
+          setUpdateWareHouse(false); 
+          setEditWarehouse(false) }} 
+          icon='pi pi-plus'
+          label="Add Warehouse"
+          >
+
+          </Button>
       </div>
       <div className="col-12 card">
         <DataTable
@@ -209,18 +228,31 @@ export const WarehousesList = () => {
           className="text-s datatable-responsive"
           responsiveLayout="scroll"
           filterDisplay="menu"
-          onRowClick={async (e) => {
-            setActiveWarehouse({ ...e.data })
-            setActive(true)
-            setEditWarehouse(true)
-            setUpdateWareHouse(true)
-            await formik.setValues({
-              ...e.data,
-            })
-          }}
+          onRowClick={handleRowClick}
         >
 
           {columnComponents}
+          <Column
+              header="Action"
+              body={(rowData) => {
+                return (
+                  <div>
+                    <Button
+                      icon="pi pi-pencil"
+                      onClick={async () => {
+                        setActiveWarehouse({ ...rowData })
+                        setActive(true)
+                        setEditWarehouse(true)
+                        setUpdateWareHouse(true)
+                        await formik.setValues({
+                         ...rowData
+                        })
+                      }}
+                    />
+                  </div>
+                )
+              }}
+            />
         </DataTable>
       </div>
 
@@ -243,3 +275,10 @@ const Warehouses = () => {
 }
 
 export default Warehouses
+
+
+
+ 
+
+
+
