@@ -125,8 +125,8 @@ model inventory_products {
   id                Int                 @id @default(autoincrement())
   description       String?             @db.VarChar(45)
   quantity          Int?
-  createdAt         DateTime
-  updatedAt         DateTime
+  createdAt         DateTime            @default(now()) @db.DateTime(0)
+  updatedAt         DateTime            @default(now()) @db.DateTime(0)
   product           Int
   shelf             Int
   inventory_history inventory_history[]
@@ -425,7 +425,7 @@ model shelf_type {
 model shelfs {
   id                 Int                  @id @default(autoincrement())
   sellable           Boolean
-  number             String               @db.VarChar(45)
+  number             String               @unique(map: "number_UNIQUE") @db.VarChar(45)
   length             Int?
   width              Int?
   loadingStrength    Int?

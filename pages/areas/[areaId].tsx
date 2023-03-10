@@ -46,9 +46,9 @@ const columns = [
 export const Area = () => {
   const [{ shelf_types }] = useQuery(getShelf_types, {
     orderBy: { id: "asc" },
-    skip: undefined,
-    where: undefined,
-    take: undefined
+    // skip: undefined,
+    // where: undefined,
+    // take: undefined
   })
   const [{ shelves }] = useQuery(getShelves, {
     orderBy: { id: "asc" },
@@ -186,11 +186,11 @@ export const Area = () => {
   return (
     <>
       <Head>
-        <title>Area {area.id}</title>
+        <title>{area?.name}-Area</title>
       </Head>
 
       <div className='card '>
-        <h2 className='mb-0'>Shelf</h2>
+        <h2 className='mb-0'>{area?.name}-Area</h2>
       </div>
 
       <form className="p-fluid" onSubmit={formik.handleSubmit}>
@@ -231,10 +231,10 @@ export const Area = () => {
               }
 
 
-              
+
             </div>
             <div className="flex">
-            <AutoComplete
+              <AutoComplete
                 className="field col-12 md:col-3 lg:col-3"
                 value={formik.values?.shelfType}
                 // completeMethod={search}
@@ -259,8 +259,8 @@ export const Area = () => {
                 }}
                 dropdown />
 
-             
-            <AutoComplete
+
+              <AutoComplete
                 className="field col-12 md:col-3 lg:col-3 mt-4'"
                 value={formik.values?.sellable}
                 suggestions={sellableSuggestions}
@@ -278,7 +278,7 @@ export const Area = () => {
                 placeholder="Sellable"
                 dropdown
               />
-              </div>
+            </div>
             <div className="flex justify-content-end">
 
               <Button
@@ -310,10 +310,10 @@ export const Area = () => {
 
       <div className="flex justify-content-end">
         <Button onClick={() => {
-           setUpdateShelfs(false)
-           setActive(!active)
-           setEditAreas(false)
-          }} 
+          setUpdateShelfs(false)
+          setActive(!active)
+          setEditAreas(false)
+        }}
           icon='pi pi-plus' label="Add Shelf"></Button>
       </div>
 

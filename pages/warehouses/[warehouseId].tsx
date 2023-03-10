@@ -126,10 +126,10 @@ export const Warehouse = () => {
   return (
     <div>
       <Head>
-        <title>Warehouse {warehouse.id}</title>
+        <title>{warehouse.name}</title>
       </Head>
       <div className='card '>
-        <h2 className='mb-0'>Areas</h2>
+        <h2 className='mb-0'>{warehouse?.name}</h2>
       </div>
 
       <form className="p-fluid" onSubmit={formik.handleSubmit}>
@@ -196,19 +196,21 @@ export const Warehouse = () => {
       </form>
 
       <div className="flex justify-content-end">
-        <Button 
-        onClick={() => { 
-          formik.resetForm(); 
-          setEditAreas(false); 
-          setUpdateAreas(false);
-          setActive(!active) }} 
-          icon='pi pi-plus' 
+        <Button
+          onClick={() => {
+            formik.resetForm();
+            setEditAreas(false);
+            setUpdateAreas(false);
+            setActive(!active)
+          }}
+          icon='pi pi-plus'
           label="Add Areas">
 
-          </Button>
+        </Button>
       </div>
 
-      <div className="col-12 card">
+      <div className="col-12 card mt-5">
+        <h3>Areas</h3>
         <DataTable
           value={areas}
           showGridlines
@@ -216,7 +218,7 @@ export const Warehouse = () => {
           className="text-s datatable-responsive"
           responsiveLayout="scroll"
           filterDisplay="menu"
-        onRowClick={handleRowClick}
+          onRowClick={handleRowClick}
         >
 
           {columnComponents}

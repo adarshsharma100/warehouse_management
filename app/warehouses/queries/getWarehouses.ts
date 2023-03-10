@@ -1,12 +1,9 @@
-import { paginate } from "blitz";
-import { resolver } from "@blitzjs/rpc";
-import db, { Prisma } from "db";
+import { paginate } from "blitz"
+import { resolver } from "@blitzjs/rpc"
+import db, { Prisma } from "db"
 
 interface GetWarehousesInput
-  extends Pick<
-    Prisma.WarehouseFindManyArgs,
-    "where" | "orderBy" | "skip" | "take"
-  > {}
+  extends Pick<Prisma.WarehouseFindManyArgs, "where" | "orderBy" | "skip" | "take"> {}
 
 export default resolver.pipe(
   resolver.authorize(),
@@ -22,14 +19,21 @@ export default resolver.pipe(
       take,
       count: () => db.warehouse.count({ where }),
       query: (paginateArgs) =>
-        db.warehouse.findMany({ ...paginateArgs, where, orderBy }),
-    });
+        db.warehouse.findMany({
+          ...paginateArgs,
+          where,
+          orderBy,
+          include: {
+            areas_areas_warehouseTowarehouse: true,
+          },
+        }),
+    })
 
     return {
       warehouses,
       nextPage,
       hasMore,
       count,
-    };
+    }
   }
-);
+)

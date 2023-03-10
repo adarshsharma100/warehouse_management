@@ -5,18 +5,19 @@ import { z } from "zod"
 
 const GetInventory_product = z.object({
   // This accepts type of undefined, but is required at runtime
-  inventory_product_id: z.number().optional().refine(Boolean, "Required"),
+  id: z.number().optional().refine(Boolean, "Required"),
 })
 
 export default resolver.pipe(
   resolver.zod(GetInventory_product),
   resolver.authorize(),
-  async ({ inventory_product_id }) => {
+  async ({ id }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const inventory_product = await db.inventory_products.findFirst({
-      where: { inventory_product_id },
+      where: { id },
       include: {
         products: true,
+        shel,
       },
     })
 
