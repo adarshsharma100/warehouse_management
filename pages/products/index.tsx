@@ -1,5 +1,5 @@
 import { Suspense, useState, useRef, useEffect } from "react"
-import { useMutation, useQuery } from "@blitzjs/rpc"
+import { invoke, useMutation, useQuery } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
 import papa from "papaparse"
 
@@ -15,6 +15,7 @@ import { Toast } from "primereact/toast"
 
 import createProduct from "app/products/mutations/createProduct"
 import updateProduct from "app/products/mutations/updateProduct"
+
 import getProducts from "app/products/queries/getProducts"
 
 import Loading from "components/loading"
@@ -32,6 +33,9 @@ import { Dropdown } from "primereact/dropdown"
 import getProduct_categories from "app/product_categories/queries/getProduct_categories"
 import moment from "moment"
 import createProduct_tag from "app/product_tags/mutations/createProduct_tag"
+import { getAntiCSRFToken } from "@blitzjs/auth"
+
+
 
 const dateFormat = (dateObj: Date | string) =>
   moment(new Date(dateObj)).format("DD-MM-YYYY, hh:mm")
@@ -59,6 +63,7 @@ const columns = [
 ]
 
 export const ProductsList = () => {
+  const antiCSRFToken = getAntiCSRFToken()
   const [{ products }, { refetch }] = useQuery(getProducts, {
     orderBy: { id: "asc" },
   })
@@ -90,7 +95,6 @@ export const ProductsList = () => {
     taxcode: "",
     gstcode: "",
     hsnCode: "",
-    // tags: "",
     tags: [],
     imageurl: "",
     costPrice: "",
@@ -99,95 +103,6 @@ export const ProductsList = () => {
     enabled: "",
     taxCalcuation: "",
   }
-
-  //TODO: check this styles4TagsComponent
-  const styles4TagsComponent = {
-    control: (baseStyles, state) => ({
-      ...baseStyles,
-      borderColor: state.isFocused ? "#A5B4FC" : "#040d19",
-      backgroundColor: "#040d19",
-      color: "white",
-      opacity: state.isDisabled ? 0.4 : 1,
-    }),
-    menu: (baseStyles, state) => ({
-      ...baseStyles,
-      // borderColor: "red",
-      backgroundColor: "#040d19",
-    }),
-    input: (baseStyles, state) => ({
-      ...baseStyles,
-      // borderColor: "red",
-      backgroundColor: "#040d19",
-      color: "white",
-    }),
-    // option: (baseStyles, state) => ({
-    //   ...baseStyles,
-    //   backgroundColor: state.isFocused ? "grey" : "#040d19",
-    // }),
-    placeholder: (baseStyles, state) => ({
-      ...baseStyles,
-      color: "rgba(255, 255, 255, 0.6)",
-      zIndex: "1",
-    }),
-    option: (styles, { data, isDisabled, isFocused, isSelected }) => {
-      const color = chroma(data.color ?? "blue")
-
-      return {
-        ...styles,
-        backgroundColor: isDisabled
-          ? undefined
-          : isSelected
-            ? data.color
-            : isFocused
-              ? color.alpha(0.1).css()
-              : undefined,
-        color: isDisabled
-          ? "#ccc"
-          : isSelected
-            ? chroma.contrast(color, "white") > 2
-              ? "white"
-              : "black"
-            : data.color,
-        cursor: isDisabled ? "not-allowed" : "default",
-
-        ":active": {
-          ...styles[":active"],
-          backgroundColor: !isDisabled
-            ? isSelected
-              ? data.color
-              : color.alpha(0.3).css()
-            : undefined,
-        },
-      }
-    },
-    multiValue: (styles, { data }) => {
-      const color = chroma(data.color ?? "black")
-      return {
-        ...styles,
-        backgroundColor: color.alpha(0.1).css(),
-      }
-    },
-    multiValueLabel: (styles, { data }) => ({
-      ...styles,
-      color: data.color,
-    }),
-    multiValueRemove: (styles, { data }) => ({
-      ...styles,
-      color: data.color,
-      ":hover": {
-        backgroundColor: data.color,
-        color: "white",
-      },
-    }),
-  }
-
-  let tags
-  const existingTags = tags?.map((ele) => ({
-    value: ele.id,
-    label: ele.name,
-    color: ele.color,
-    // color: getRandomColor(),
-  }))
 
   const [categories_options, setCategoriesOption] = useState(product_categories)
 
@@ -453,7 +368,7 @@ export const ProductsList = () => {
               })
             },
             onError: (error) => {
-
+              console.log('createProductMutation error: ', error);
               setErrorProducts([
                 ...errorProducts,
                 { ...data, message: error.message, rowNum: index },
@@ -476,18 +391,27 @@ export const ProductsList = () => {
   const formik = useFormik({
     initialValues: productDetails,
     validationSchema: Yup.object().shape({
-      name: Yup.string().required("*Required"),
+      name: Yup.string().required("*Required")
     }),
     onSubmit: async (data) => {
+      console.log('data: ', data);
 
       const { name, description, sku, length, width,
         hsnCode,
         height, weight, costPrice, tags
-        , color, } = data
+        , color } = data
 
       const tagsValue = tags.map(({ value }) => value)
 
       const { id: activeProductId } = activeRowData
+
+
+      // const formData = new FormData();
+      // if (imageUploadObject) {
+      //   console.log('---imageUploadObject: ', imageUploadObject);
+      //   formData.append("file", imageUploadObject);
+      // }
+      // console.log('formData: ', formData.get("file"));
 
 
       if (editUpdateProduct) {
@@ -508,7 +432,6 @@ export const ProductsList = () => {
             },
             onError: (data) => {
               alert(`error ${data}`)
-
             }
           })
           await refetch()
@@ -535,19 +458,15 @@ export const ProductsList = () => {
               product_tags: {
                 create: tagsValue.map((e) => ({ tags: e })),
               }
-              // imageUrl: imageurl,
-              // gstTaxTypeCode: gstcode,
-              // taxCalcType: taxCalcuation,
-              // category: category,
-              // brand: brand
             },
             {
               onSuccess: async (data) => {
+                console.log('data: ', data);
 
               },
-              onError: (data) => {
+              onError: (error) => {
                 // alert(`error ${data}`)
-
+                console.log('createProductMutation error: ', error);
               }
             }
           )
@@ -558,9 +477,11 @@ export const ProductsList = () => {
         }
       }
       await refetch()
-      setProductEditState(false)
-      setProductDialog(false)
-      formik.resetForm()
+
+      //TODO: @Varun dialog should close using onSucess not via formik submission
+      // setProductEditState(false)
+      // setProductDialog(false)
+      // formik.resetForm()
     },
   })
 
@@ -568,6 +489,12 @@ export const ProductsList = () => {
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
+
+  const [imageUploadObject, setImageUpload] = useState(null)
+  useEffect(() => {
+    console.log('imageUploadObject: ', imageUploadObject);
+  }, [imageUploadObject])
+
 
   const pCsvFormatDetails = {
     headers: [
@@ -756,6 +683,23 @@ export const ProductsList = () => {
             className="p-fluid"
           >
             <div className="formgrid grid">
+              <div className="field col-12">
+                {/* //TODO: @Varun: the below code will have to be adjusted for file upload */}
+                {/* <FileUpload
+                  cancelOptions={true}
+                  name="product_image"
+                  url="/api/upload"
+                  accept="image/*"
+                  maxFileSize={1000000}
+                  onBeforeSend={(event) => {
+                    event.xhr.setRequestHeader("anti-csrf", antiCSRFToken)
+                  }}
+                  auto={true}
+                  onSelect={async (e) => {
+                    setImageUpload(e.files[0])
+                  }}
+                /> */}
+              </div>
               <div className="field col-12 lg:col-2 md:col-6 mt-4">
                 <span className="p-float-label">
                   <InputText
@@ -913,6 +857,7 @@ export const ProductsList = () => {
             className="text-s datatable-responsive"
             filterDisplay="menu"
             emptyMessage="No Results found."
+            rowHover={true}
             onRowClick={async (e) => {
               setActiveRowData({ ...e.data })
               setProductEditState(true)
