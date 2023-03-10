@@ -24,17 +24,6 @@ model addresses {
   @@index([country], map: "fk_addresses_country1_idx")
 }
 
-model areas {
-  id                                   Int       @id @default(autoincrement())
-  name                                 String    @db.VarChar(45)
-  description                          String?   @db.VarChar(150)
-  warehouse                            Int
-  warehouse_areas_warehouseTowarehouse warehouse @relation("areas_warehouseTowarehouse", fields: [warehouse], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_areas_warehouse1")
-  shelfs                               shelfs[]
-
-  @@index([warehouse], map: "fk_areas_warehouse1_idx")
-}
-
 model contact_number {
   id        Int                 @id @default(autoincrement())
   type      contact_number_type
@@ -373,31 +362,6 @@ model session {
   @@index([userId], map: "Session_userId_fkey")
 }
 
-model shelf_type {
-  id          Int      @id @default(autoincrement())
-  name        String?  @db.VarChar(45)
-  description String?  @db.VarChar(150)
-  shelfs      shelfs[]
-}
-
-model shelfs {
-  id                 Int                  @id @default(autoincrement())
-  sellable           Boolean
-  number             String               @db.VarChar(45)
-  length             Int?
-  width              Int?
-  loadingStrength    Int?
-  reach              String?              @db.VarChar(45)
-  area               Int
-  shelfType          Int
-  inventory_products inventory_products[]
-  areas              areas                @relation(fields: [area], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_areas1")
-  shelf_type         shelf_type           @relation(fields: [shelfType], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_shelf_type1")
-
-  @@index([area], map: "fk_shelfs_areas1_idx")
-  @@index([shelfType], map: "fk_shelfs_shelf_type1_idx")
-}
-
 model token {
   id          Int       @id @default(autoincrement())
   createdAt   DateTime  @default(now()) @db.DateTime(0)
@@ -510,13 +474,6 @@ model vendors {
   purchase_orders purchase_orders[]
   vendor_branches vendor_branches[]
   vendor_products vendor_products[]
-}
-
-model warehouse {
-  id                               Int     @id @default(autoincrement())
-  name                             String  @db.VarChar(45)
-  description                      String? @db.VarChar(150)
-  areas_areas_warehouseTowarehouse areas[] @relation("areas_warehouseTowarehouse")
 }
 
 enum contact_number_type {
