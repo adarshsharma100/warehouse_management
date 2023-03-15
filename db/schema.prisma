@@ -131,8 +131,9 @@ model inventory_products {
   shelf             Int
   inventory_history inventory_history[]
   products          products            @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_products1")
-  shelfs            shelfs              @relation(fields: [shelf], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_shelfs1")
+  shelfs            shelves             @relation(fields: [shelf], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_shelfs1")
 
+  @@unique([product, shelf], map: "product_shelf")
   @@index([product], map: "fk_inventory_products_products1_idx")
   @@index([shelf], map: "fk_inventory_products_shelfs1_idx")
 }
@@ -314,8 +315,8 @@ model rfq {
   purchase_orders_purchase_orders_rfqTorfq purchase_orders[] @relation("purchase_orders_rfqTorfq")
   rfq                                      rfq?              @relation("rfqTorfq", fields: [ammendedFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_rfq1")
   other_rfq                                rfq[]             @relation("rfqTorfq")
-  rfq_products_rfq_products_rfqTorfq       rfq_products[]    @relation("rfq_products_rfqTorfq")
-  rfq_sentto_rfq_sentto_rfqTorfq           rfq_sentto[]      @relation("rfq_sentto_rfqTorfq")
+  rfq_products                             rfq_products[]    @relation("rfq_products_rfqTorfq")
+  rfq_sentto                               rfq_sentto[]      @relation("rfq_sentto_rfqTorfq")
 
   @@index([ammendedFrom], map: "fk_rfq_rfq1_idx")
 }
@@ -410,34 +411,14 @@ model areas {
   description                          String?   @db.VarChar(150)
   warehouse                            Int
   warehouse_areas_warehouseTowarehouse warehouse @relation("areas_warehouseTowarehouse", fields: [warehouse], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_areas_warehouse1")
-  shelfs                               shelfs[]
 
   @@index([warehouse], map: "fk_areas_warehouse1_idx")
 }
 
 model shelf_type {
-  id          Int      @id @default(autoincrement())
-  name        String?  @db.VarChar(45)
-  description String?  @db.VarChar(150)
-  shelfs      shelfs[]
-}
-
-model shelfs {
-  id                 Int                  @id @default(autoincrement())
-  sellable           Boolean
-  number             String               @unique(map: "number_UNIQUE") @db.VarChar(45)
-  length             Int?
-  width              Int?
-  loadingStrength    Int?
-  reach              String?              @db.VarChar(45)
-  area               Int
-  shelfType          Int
-  inventory_products inventory_products[]
-  areas              areas                @relation(fields: [area], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_areas1")
-  shelf_type         shelf_type           @relation(fields: [shelfType], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_shelf_type1")
-
-  @@index([area], map: "fk_shelfs_areas1_idx")
-  @@index([shelfType], map: "fk_shelfs_shelf_type1_idx")
+  id          Int     @id @default(autoincrement())
+  name        String? @db.VarChar(45)
+  description String? @db.VarChar(150)
 }
 
 model warehouse {
@@ -474,6 +455,22 @@ model vendors {
   purchase_orders purchase_orders[]
   vendor_branches vendor_branches[]
   vendor_products vendor_products[]
+}
+
+model shelves {
+  id                 Int                  @id @default(autoincrement())
+  sellable           Boolean
+  number             String               @unique(map: "number_UNIQUE") @db.VarChar(45)
+  length             Int?
+  width              Int?
+  loadingStrength    Int?
+  reach              String?              @db.VarChar(45)
+  area               Int
+  shelfType          Int
+  inventory_products inventory_products[]
+
+  @@index([area], map: "fk_shelfs_areas1_idx")
+  @@index([shelfType], map: "fk_shelfs_shelf_type1_idx")
 }
 
 enum contact_number_type {
