@@ -2,7 +2,7 @@ import db from "db"
 import { e_mail } from "./e_mail"
 // import { mail } from "./mail"
 
-const sendEmail = async (data, rfq, info) => {
+const sendEmail = async (data, rfq, info, emailGroup) => {
   console.log("rfq_data: ", {
     rfq,
     info,
@@ -59,7 +59,7 @@ const sendEmail = async (data, rfq, info) => {
 
   const html = `<section>
   <div>
-  
+
       <h2>RFQ Details:</h2>
       <p><strong>Doc No.:</strong>${rfqNumber}</p>
       <p><strong>Description:</strong> ${description}</p>
@@ -128,15 +128,18 @@ const sendEmail = async (data, rfq, info) => {
     ammendedFromRfq
   });
 
-
-
-  await Promise.all(
-    emailLists.map((email) => {
-      e_mail(email, subject, html, attachment).catch(
-        (error) => console.log(error)
-      )
-    })
-  )
+  if (emailGroup)
+    e_mail(emailGroup, subject, html, attachment).catch(
+      (error) => console.log(error)
+    )
+  else
+    await Promise.all(
+      emailLists.map((email) => {
+        e_mail(email, subject, html, attachment).catch(
+          (error) => console.log(error)
+        )
+      })
+    )
 }
 
 export default sendEmail

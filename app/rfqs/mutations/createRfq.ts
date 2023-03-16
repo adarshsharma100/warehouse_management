@@ -1,9 +1,7 @@
 import { resolver } from "@blitzjs/rpc"
 import db from "db"
 import { z } from "zod"
-import { mail } from "helperFunctions/mail"
 import sendEmail from "helperFunctions/rfqMail"
-import { e_mail } from "helperFunctions/e_mail"
 
 const CreateRfq = z.object({
   rfqNumber: z.string(),
@@ -19,10 +17,31 @@ const CreateRfq = z.object({
 export default resolver.pipe(resolver.zod(CreateRfq), resolver.authorize(), async (input) => {
   // TODO: in multi-tenant app, you must add validation to ensure correct tenant
 
-  const rfq = await db.rfq.create({ data: input })
-  console.log("rfq: ", rfq)
-  if (input?.rfq_sentto?.create?.length) {
-    await sendEmail(null, rfq, { id: rfq?.id, creation: true })
+  const rfq = await db.rfq.create({
+    data: input,
+    include: {
+      rfq_products: true,
+      rfq_sentto: {
+        select: {
+          emails: true,
+        },
+      },
+    },
+  })
+
+  if (rfq?.rfq_sentto?.length) {
+    const groupedEmails = Object.values(
+      rfq.rfq_sentto.reduce((acc, cur) => {
+        const address = cur.emails.addresses
+        if (!acc[address]) {
+          acc[address] = []
+        }
+        acc[address].push(cur.emails.email)
+        return acc
+      }, {})
+    )
+    for (let i = 0; i < groupedEmails.length; i++)
+      await sendEmail(null, rfq, { id: rfq.id, creation: true }, groupedEmails[i])
   }
   return rfq
 })

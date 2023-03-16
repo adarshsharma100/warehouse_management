@@ -106,7 +106,7 @@ export const RfqsList = () => {
   const [{ emails },] = useQuery(getEmails, {
     orderBy: { id: "asc" },
   })
-  console.log('emails: ', emails);
+
   // const [{ purchase_orders }, { error: getPoError }] = useQuery(getPurchase_orders, {
   //   orderBy: { po_id: "desc" }, // Do not change the order this will affect on LatestPO function
   //   skip: ITEMS_PER_PAGE * page,
@@ -120,7 +120,7 @@ export const RfqsList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
-  console.log('products: ', products);
+
 
 
   // const [{ rfq_products }, { refetch: fetchRfqProducts }] = usePaginatedQuery(getRfq_products, {
@@ -4512,7 +4512,7 @@ export const RfqsList = () => {
     )
   }
   // const statusFilterTemplate = (options) => {
-  //   console.log("options", options)
+  //
   //   return (
   //     <Dropdown
   //       value={options.value}
@@ -4534,7 +4534,7 @@ export const RfqsList = () => {
   }
 
   // const termsFilterTemplate = (options) => {
-  //   console.log("rfqTerms", rfqTerms)
+  //
   //   return (
   //     <Dropdown
   //       value={options.value}
@@ -4600,11 +4600,11 @@ export const RfqsList = () => {
     //   header: "Vendors",
     //   // filter: true,
     //   body: (rowData) => {
-    //     console.log("rowData", rowData)
+    //
 
     //     const sentMails = rowData.rfq_sentto?.map((ele) => ele.email)
     //     const uniqueMails = [...new Set(sentMails)]
-    //     console.log("uniqueMails: ", uniqueMails)
+    //
 
     //     const sentVendors = vendors
     //       .filter((ele, i) => uniqueMails.includes(ele.vendor_email))
@@ -4621,7 +4621,7 @@ export const RfqsList = () => {
     //   header: "Terms",
     //   filter: true,
     //   body: (rowData) => {
-    //     console.log("rowDataterms: ", rowData)
+    //
 
     //     return <span>{rowData.agreement_terms.name}</span>
     //   },
@@ -4631,7 +4631,7 @@ export const RfqsList = () => {
   ]
   const [selectedColumns, setSelectedColumns] = useState(columns)
 
-  // console.log("Formik_values",formik.values)
+  //
 
   const LatestPO = (poList, num) => {
     // get all the po
@@ -4658,7 +4658,7 @@ export const RfqsList = () => {
       vendor: vendor || "NA",
       prod_price,
     }
-    console.log("data: ", data)
+    console.log
 
     return data
   }
@@ -4678,7 +4678,7 @@ export const RfqsList = () => {
 
     const avgPrice = totalPrice / productPos.length
 
-    // console.log("avgPrice: ", avgPrice)
+    //
 
     return avgPrice
   }
@@ -4720,7 +4720,7 @@ export const RfqsList = () => {
   // }, [vendorChangeState])
 
   const tableRFQ = rfqs.map((ele) => {
-    // console.log(ele.created_at)
+    //
     return {
       ...ele,
       // created_at: moment(ele.createdAt).format("DD-MM-YYYY, HH:MM"),
@@ -4742,7 +4742,7 @@ export const RfqsList = () => {
   //   }
   // })
 
-  console.log('activeRow: ', activeRow)
+
   const optionsForVendorEmails = emails.map(({ id, email }) => {
     return {
       name: email,
@@ -4755,7 +4755,7 @@ export const RfqsList = () => {
     return ID
   }
 
-  console.log('findEmailId: ', findEmailId("vj@gmail.com"));
+
 
 
   const rfqOptions = rfqs.map(({ rfqNumber, rfq_description, id }) => {
@@ -4827,14 +4827,14 @@ export const RfqsList = () => {
   // col Toggle
 
   const onColumnToggle = (event) => {
-    console.log("orderedSelectedColumns", columns)
+
     let selectedColumns = event.value
-    console.log("orderedSelectedColumnsevent.value: ", event.value)
+
     let orderedSelectedColumns = columns.filter((col) =>
       selectedColumns.some((sCol) => sCol.header === col.header)
     )
     setSelectedColumns(orderedSelectedColumns)
-    console.log("orderedSelectedColumns: ", orderedSelectedColumns)
+
   }
   const columnComponents = selectedColumns.map((col) => {
     const { field, filterField, dataType, body, header, filter, filterPlaceholder, filterElement } =
@@ -4935,7 +4935,7 @@ export const RfqsList = () => {
     setItemList(data)
   }
 
-  // console.log("tableRfqProducts", tableRfqProducts[0])
+  //
 
   // const setRfqItemList = () => {
   //   const active = tableRfqProducts
@@ -4970,7 +4970,7 @@ export const RfqsList = () => {
   //   setPoItemList(active)
   // }
 
-  // console.log("formik.errors",)
+  //
 
   const items = [
     {
@@ -5010,8 +5010,8 @@ export const RfqsList = () => {
             //     }
             //   })
 
-            // console.log("tableRfqProducts", tableRfqProducts)
-            // console.log("active item list", active)
+            //
+            //
             // setItemList(active)
             setRfqDialog(true)
             scrollToRfq.current?.scrollIntoView()
@@ -5092,10 +5092,10 @@ export const RfqsList = () => {
           label: "download csv",
           icon: "pi pi-send",
           command: () => {
-            console.log("ActiveRow", activeRow)
+
 
             const rfq_prods = activeRow?.rfq_products
-            console.log("rfq_prods: ", rfq_prods)
+
             // return
 
             const csvHeader = "Sl No,SKU,Item,Image,Qty,Cost Price,Target Price\n"
@@ -5113,7 +5113,7 @@ export const RfqsList = () => {
             })
             const csvData = csvHeader + csvBody.join("")
             const name = activeRow?.rfqNumber
-            console.log("csvData: ", csvData)
+
 
             createCSV(csvData, name)
           },
@@ -5121,7 +5121,7 @@ export const RfqsList = () => {
       ],
     },
   ]
-  // console.log("poItemList", poItemList)
+  //
   const rowExpansionTemplate = (data) => {
     return (
       <div className="w-full expandTable">
@@ -5188,8 +5188,8 @@ export const RfqsList = () => {
 
     }),
     onSubmit: async (data) => {
-      console.log("onSubmit", data)
-      console.log("itemList", itemList)
+
+
       const selectedProducts = itemList.filter((prod) => prod?.product_id)
 
       if (selectedProducts.length === 0) {
@@ -5200,7 +5200,6 @@ export const RfqsList = () => {
         return
       }
       const { rfqNumber, rfq_description, rfq_email, expectedDod, agreement, status } = data
-      console.log('rfq_email: ', rfq_email);
       const rfqToMails = rfq_email?.length
         ? rfq_email?.map(({ name }, i) => name) : null
 
@@ -5215,17 +5214,15 @@ export const RfqsList = () => {
         }))
         : undefined
 
-      console.log('sentoEmails: ', sentoEmails);
-
 
 
       if (rfqEditState) {
-        console.log('activeRow: ', activeRow);
+
 
 
         if (activeRow?.rfq_sentto?.length === 0) {
 
-          console.log('Ran updation ');
+
           const newProductList = itemList.filter((item) => !item.rfq_products_id)
           const removemail = { ...rfqDetails }
           const delProductList = currentRfqitemsID.filter(
@@ -5280,6 +5277,8 @@ export const RfqsList = () => {
                   setActiveRow({})
                 )
                 await refetch()
+                setRfqDialog(false)
+                formik.resetForm()
               },
               onError: (data) => {
                 const rfqNumber = data?.rfqNumber
@@ -5289,10 +5288,10 @@ export const RfqsList = () => {
               },
             })
           } catch (error) {
-            console.log('While Updating RFQ:', error);
+
           }
         } else {
-          console.log('Ran updation from Amendblcok block  ');
+
           try {
             const newRfqData = await createRFQMutation(
               {
@@ -5326,18 +5325,19 @@ export const RfqsList = () => {
                   const rfqNumber = data?.rfqNumber
                   toast?.current?.show(tsuccess(null, `${rfqNumber} created successfully.`))
                   await refetch()
+                  setRfqDialog(false)
+                  formik.resetForm()
 
                 },
               }
             )
-            setRfqDialog(false)
-            formik.resetForm()
           } catch (error) {
-            console.log("rfq_AmmendingError :", error)
+            console.log('rfq Amending error: ', error);
+
           }
         }
-        setRfqDialog(false)
-        formik.resetForm()
+
+
       } else {
         // removing emptyFields
         try {
@@ -5382,6 +5382,8 @@ export const RfqsList = () => {
                 const rfqNumber = data?.rfqNumber
                 toast?.current?.show(tsuccess(null, `${rfqNumber} created successfully.`))
                 await refetch()
+                setRfqDialog(false)
+                formik.resetForm()
 
                 // await createNotificationsMutations({
                 //   user_id: id,
@@ -5393,9 +5395,6 @@ export const RfqsList = () => {
               },
             }
           )
-          setRfqDialog(false)
-          formik.resetForm()
-          await refetch()
         } catch (error) {
           console.log("rfq_CreationError :", error)
         }
@@ -5403,8 +5402,6 @@ export const RfqsList = () => {
 
     },
   })
-  // console.log(formik.values)
-  console.log("Formik", formik.errors)
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
@@ -5423,7 +5420,6 @@ export const RfqsList = () => {
     ; (async () => {
       await formik.setValues({ ...formik.values })
     })()
-      // .then((res) => console.log(res))
       .catch((error) => console.log(error))
   }, [itemList, rfqDialog])
 
@@ -5473,7 +5469,6 @@ export const RfqsList = () => {
   useEffect(() => {
     if (RFQCodechecked && rfqDialog) {
       updateFormValues()
-        // .then((res) => console.log("newCode", res))
         .catch((error) => {
           console.log("From updateFormValues", error)
         })
@@ -5500,8 +5495,6 @@ export const RfqsList = () => {
   useEffect(() => {
     initFilters()
   }, [])
-
-  // console.log("values", typeof new Date())
 
   return (
     <div ref={scrollToRfq} className="grid w-full mr-0">
@@ -5574,16 +5567,11 @@ export const RfqsList = () => {
 
 
 
-              console.log('existingEmails: ', { existingEmails, activeRow });
-
-
 
 
               const selectedEmails = rfqDetails?.rfq_email.map((email) => email.name)
-              // console.log('newEmails: ', newEmails);
 
               const newMails = filterExistingValues(selectedEmails, existingEmails)
-              // console.log('mails: ', mails);
 
               const sentoEmails = newMails?.length
                 ? newMails?.map((mail, i) => ({
@@ -5823,7 +5811,6 @@ export const RfqsList = () => {
                     onClick={async (e) => {
                       e.preventDefault()
                       const rfq_prods = activeRow?.rfq_products
-                      console.log("rfq_prods: ", rfq_prods)
                       // return
 
                       const csvHeader = "Sl No,SKU,Item,Image,Qty,CostPrice,Target Price\n"
@@ -5845,7 +5832,6 @@ export const RfqsList = () => {
                       })
                       const csvData = csvHeader + csvBody.join("")
                       const name = activeRow?.rfqNumber
-                      console.log("csvData: ", csvData)
 
                       createCSV(csvData, name)
                     }}
@@ -5859,172 +5845,183 @@ export const RfqsList = () => {
               <div className="col-12">
                 {/* <h6>RFQ Details:</h6> */}
               </div>
-              <div className="field col-12 lg:col-4 mt-2 ">
-                <span className="p-float-label ">
-                  <InputText
-                    id="rfqNumber"
-                    name="rfqNumber"
-                    value={formik.values.rfqNumber}
-                    onChange={formik.handleChange}
-                    disabled={RFQCodechecked}
-                    autoFocus
-                    className={classNames({ "p-invalid": isFormFieldValid("rfqNumber") })}
-                  />
-                  <label
-                    htmlFor="rfqNumber"
-                    className={classNames({ "p-error": isFormFieldValid("rfqNumber") })}
-                  >
-                    RFQ Code
-                  </label>
-                </span>
-                {getFormErrorMessage("rfqNumber")}
+              <div className="col-12 lg:col-4 ">
+                <div className="field">
+                  <span className="p-float-label ">
+                    <InputText
+                      id="rfqNumber"
+                      name="rfqNumber"
+                      value={formik.values.rfqNumber}
+                      onChange={formik.handleChange}
+                      disabled={RFQCodechecked}
+                      autoFocus
+                      className={classNames({ "p-invalid": isFormFieldValid("rfqNumber") })}
+                    />
+                    <label
+                      htmlFor="rfqNumber"
+                      className={classNames({ "p-error": isFormFieldValid("rfqNumber") })}
+                    >
+                      RFQ Code
+                    </label>
+                  </span>
+                  {getFormErrorMessage("rfqNumber")}
+                  <div className="field-checkbox mb-5 mt-2">
+                    <Checkbox
+                      // style={{ width: "0.1rem", height: "0rem" }}
+                      onChange={(e) => setRFQCodeChecked(e.checked)}
+                      checked={RFQCodechecked}
+                      disabled={rfqEditState}
+                    />
+                    <label
+                      // htmlFor="binary"
+                      className="text-sm	"
+                    >
+                      Un-check to add custom code.
+                    </label>
+                  </div>
+                </div>
 
-                <div className="field-checkbox my-2">
-                  <Checkbox
-                    // style={{ width: "0.1rem", height: "0rem" }}
-                    onChange={(e) => setRFQCodeChecked(e.checked)}
-                    checked={RFQCodechecked}
-                    disabled={rfqEditState}
-                  />
-                  <label
-                    // htmlFor="binary"
-                    className="text-sm	"
-                  >
-                    Un-check to add custom code.
-                  </label>
+
+              </div>
+              <div className="col-12 lg:col-4">
+                <div className="field">
+                  <span className="p-float-label">
+                    <InputText
+                      id="rfq_description"
+                      name="rfq_description"
+                      value={formik.values.rfq_description}
+                      disabled={readOnlyForm}
+                      onChange={formik.handleChange}
+                      className={classNames({ "p-invalid": isFormFieldValid("rfq_description") })}
+                      autoFocus
+                    />
+                    <label
+                      htmlFor="rfq_description"
+                      className={classNames({ "p-error": isFormFieldValid("rfq_description") })}
+                    >
+                      RFQ Description
+                    </label>
+                  </span>
+                  {getFormErrorMessage("rfq_description")}
                 </div>
               </div>
-              <div className="field col-12 lg:col-4 my-2">
-                <span className="p-float-label">
-                  <InputText
-                    id="rfq_description"
-                    name="rfq_description"
-                    value={formik.values.rfq_description}
-                    disabled={readOnlyForm}
-                    onChange={formik.handleChange}
-                    className={classNames({ "p-invalid": isFormFieldValid("rfq_description") })}
-                    autoFocus
-                  />
-                  <label
-                    htmlFor="rfq_description"
-                    className={classNames({ "p-error": isFormFieldValid("rfq_description") })}
-                  >
-                    RFQ Description
-                  </label>
-                </span>
-                {getFormErrorMessage("rfq_description")}
-              </div>
-              <div className="field col-12 lg:col-4 mt-2 ">
-                <span className="p-float-label">
-                  <Calendar
-                    id="expectedDod"
-                    minDate={new Date()}
-                    // // value={(rfqDetails.expectedDod)}
-                    // onChange={(e) =>
-                    //   setRfqDetails({ ...rfqDetails, expectedDod: e.target.value?.toString() })
-                    value={formik.values.expectedDod}
-                    dateFormat={calenderDateFormat()}
-                    disabled={readOnlyForm}
-                    onChange={async (e) => {
-                      await formik.setValues({
-                        ...formik.values,
-                        expectedDod: e.value,
-                      })
-                    }}
-                    className={classNames({ "p-invalid": isFormFieldValid("expectedDod") })}
-                  />
-                  <label
-                    style={{ zIndex: 10 }}
-                    htmlFor="expectedDod"
-                    className={classNames({ "p-error": isFormFieldValid("expectedDod") })}
-                  >
-                    Expected Delivery
-                  </label>
-                </span>
-                {getFormErrorMessage("expectedDod")}
+              <div className="col-12 lg:col-4">
+                <div className="field">
+                  <span className="p-float-label">
+                    <Calendar
+                      id="expectedDod"
+                      minDate={new Date()}
+                      // // value={(rfqDetails.expectedDod)}
+                      // onChange={(e) =>
+                      //   setRfqDetails({ ...rfqDetails, expectedDod: e.target.value?.toString() })
+                      value={formik.values.expectedDod}
+                      dateFormat={calenderDateFormat()}
+                      disabled={readOnlyForm}
+                      onChange={async (e) => {
+                        await formik.setValues({
+                          ...formik.values,
+                          expectedDod: e.value,
+                        })
+                      }}
+                      className={classNames({ "p-invalid": isFormFieldValid("expectedDod") })}
+                    />
+                    <label
+                      style={{ zIndex: 10 }}
+                      htmlFor="expectedDod"
+                      className={classNames({ "p-error": isFormFieldValid("expectedDod") })}
+                    >
+                      Expected Delivery
+                    </label>
+                  </span>
+                  {getFormErrorMessage("expectedDod")}
+                </div>
               </div>
 
-              <div className="field col-12 lg:col-4 mt-2">
-                <div className="p-float-label">
-                  <AutoComplete
-                    id="status"
-                    // disabled={fieldDisable}
-                    value={formik.values?.status}
-                    suggestions={rfqStatusSuggestions}
-                    completeMethod={searchStatus}
-                    disabled={readOnlyForm}
-                    dropdown
-                    field="name"
-                    onChange={async (e) => {
-                      let status = typeof e.value === "string" ? e.value : e.value.name
+              <div className="col-12 lg:col-4">
+                <div className="field">
+                  <div className="p-float-label">
+                    <AutoComplete
+                      id="status"
+                      // disabled={fieldDisable}
+                      value={formik.values?.status}
+                      suggestions={rfqStatusSuggestions}
+                      completeMethod={searchStatus}
+                      disabled={readOnlyForm}
+                      dropdown
+                      field="name"
+                      onChange={async (e) => {
+                        let status = typeof e.value === "string" ? e.value : e.value.name
 
-                      await formik.setValues({
-                        ...formik.values,
-                        status
-                      })
+                        await formik.setValues({
+                          ...formik.values,
+                          status
+                        })
 
-                      if (rfqEditState) {
-                        try {
-                          const updatRfqStatus = updateRFQMutation({
-                            id: activeRow.id,
-                            status,
+                        if (rfqEditState) {
+                          try {
+                            const updatRfqStatus = updateRFQMutation({
+                              id: activeRow.id,
+                              status,
 
-                          }, {
-                            onSuccess: async (data) => {
-                              const rfqNumber = data?.rfqNumber
-                              toast?.current.show(
-                                tsuccess(`Status Updated to ${status}`, `${rfqNumber} is now updated sucessfully`),
+                            }, {
+                              onSuccess: async (data) => {
+                                const rfqNumber = data?.rfqNumber
+                                toast?.current.show(
+                                  tsuccess(`Status Updated to ${status}`, `${rfqNumber} is now updated sucessfully`),
 
-                              )
-                            },
-                            onError: (data) => {
-                              const rfqNumber = data?.rfqNumber
-                              toast?.current.show(
-                                tError("Updated", `${rfqNumber} Could not Update`),
-                              )
-                            },
-                          })
-                        } catch (error) {
-                          console.log('While Updating RFQ:', error);
+                                )
+                              },
+                              onError: (data) => {
+                                const rfqNumber = data?.rfqNumber
+                                toast?.current.show(
+                                  tError("Updated", `${rfqNumber} Could not Update`),
+                                )
+                              },
+                            })
+                          } catch (error) {
+                            console.log('While Updating RFQ:', error);
+                          }
                         }
-                      }
 
 
-                    }}
-                    aria-label="Agreement Terms"
-                    dropdownAriaLabel="Agreement Terms"
-                    className={classNames({ "p-invalid": isFormFieldValid("status") })}
-                  />
+                      }}
+                      aria-label="Agreement Terms"
+                      dropdownAriaLabel="Agreement Terms"
+                      className={classNames({ "p-invalid": isFormFieldValid("status") })}
+                    />
 
-                  <label
-                    htmlFor="status"
-                    className={classNames({ "p-error": isFormFieldValid("status") })}
-                  >
-                    Status
-                  </label>
+                    <label
+                      htmlFor="status"
+                      className={classNames({ "p-error": isFormFieldValid("status") })}
+                    >
+                      Status
+                    </label>
+                  </div>
+                  {getFormErrorMessage("status")}
                 </div>
-                {getFormErrorMessage("status")}
               </div>
 
-              <div className="field col-12 lg:col-4 my-2">
-                <span className="p-float-label">
-                  <InputText
-                    id="agreement"
-                    name="agreement"
-                    value={formik.values.agreement}
-                    disabled={readOnlyForm}
-                    onChange={formik.handleChange}
-                    className={classNames({ "p-invalid": isFormFieldValid("agreement") })}
-                    autoFocus
-                  />
-                  <label
-                    htmlFor="agreement"
-                    className={classNames({ "p-error": isFormFieldValid("agreement") })}
-                  >
-                    Agreement
-                  </label>
-                </span>
-                {getFormErrorMessage("agreement")}
+              <div className="col-12 lg:col-4">
+                <div className="field">
+                  <span className="p-float-label">
+                    <InputText
+                      id="agreement"
+                      name="agreement"
+                      value={formik.values.agreement}
+                      disabled={readOnlyForm}
+                      onChange={formik.handleChange}
+                      className={classNames({ "p-invalid": isFormFieldValid("agreement") })}
+                      autoFocus
+                    />
+                    <label
+                      htmlFor="agreement"
+                      className={classNames({ "p-error": isFormFieldValid("agreement") })}
+                    >
+                      Agreement
+                    </label>
+                  </span>
+                  {getFormErrorMessage("agreement")}
+                </div>
               </div>
 
               <div className="col-12">
@@ -6056,147 +6053,153 @@ export const RfqsList = () => {
               {itemList.map((ele, i) => (
                 <>
                   <div className="col-12 grid mt-1" key={`RFQ-product-${i}`}>
-                    <div className="field col-12 lg:col-6 mt-2">
-                      <div className="p-float-label">
-                        <AutoComplete
-                          id="name"
-                          name="name"
-                          value={ele.product_name}
-                          suggestions={productsSuggestions}
-                          completeMethod={searchProducts}
-                          disabled={readOnlyForm}
-                          //   forceSelection //
-                          dropdown
-                          field="name"
-                          onChange={async (e) => {
-                            console.log("select product", e.value)
-                            let product_id = typeof e.value === "string" ? "" : e.value?.id
-                            let name = typeof e.value === "string" ? e.value : e.value?.name
-                            let costPrice = typeof e.value === "string" ? 0 : e.value?.costPrice
-                            let data = [...itemList]
+                    <div className="col-12 lg:col-6">
+                      <div className="field">
+                        <div className="p-float-label">
+                          <AutoComplete
+                            id="name"
+                            name="name"
+                            value={ele.product_name}
+                            suggestions={productsSuggestions}
+                            completeMethod={searchProducts}
+                            disabled={readOnlyForm}
+                            //   forceSelection //
+                            dropdown
+                            field="name"
+                            onChange={async (e) => {
+                              let product_id = typeof e.value === "string" ? "" : e.value?.id
+                              let name = typeof e.value === "string" ? e.value : e.value?.name
+                              let costPrice = typeof e.value === "string" ? 0 : e.value?.costPrice
+                              let data = [...itemList]
 
 
-                            // const lastPo = LatestPO(purchase_orders, product_id)
-                            // const avg_price = AverageCostPrice(purchase_orders, product_id)
+                              // const lastPo = LatestPO(purchase_orders, product_id)
+                              // const avg_price = AverageCostPrice(purchase_orders, product_id)
 
-                            data[i].product_name = name
-                            data[i].product_id = product_id
-                            data[i].costPrice = costPrice
-                            // data[i].last_po_price = lastPo?.prod_price || ""
-                            // data[i].last_vendor = lastPo?.vendor || ""
-                            // data[i].avg_price = avg_price || ""
+                              data[i].product_name = name
+                              data[i].product_id = product_id
+                              data[i].costPrice = costPrice
 
-                            console.log('data123: ', data);
+                              let itemsLength = !e.value?.name ? false : true
+                              await formik.setValues({ ...formik.values, itemsLength })
 
-                            let itemsLength = !e.value?.name ? false : true
-                            await formik.setValues({ ...formik.values, itemsLength })
+                              setItemList(data)
+                            }}
+                            aria-label="products"
+                            dropdownAriaLabel="Select Product"
+                          //   className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                          />
 
-                            setItemList(data)
-                          }}
-                          aria-label="products"
-                          dropdownAriaLabel="Select Product"
-                        //   className={classNames({ "p-invalid": isFormFieldValid("name") })}
-                        />
-
-                        <label
-                          htmlFor="name"
-                        //   className={classNames({ "p-error": isFormFieldValid("name") })}
-                        >
-                          Select Product
-                        </label>
+                          <label
+                            htmlFor="name"
+                          //   className={classNames({ "p-error": isFormFieldValid("name") })}
+                          >
+                            Select Product
+                          </label>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="field col-12 lg:col-1 mt-2">
-                      <span className="p-float-label ">
-                        <InputNumber
-                          id={`product-prixe-${i}`}
-                          name="costPrice"
-                          value={Number(ele.costPrice)}
-                          disabled={readOnlyForm}
-                          onChange={(e) => handleFormChange(e, i)}
-                        // className={classNames({ "p-invalid": isFormFieldValid("name") })}
-                        />
-                        <label
-                        // className="labelpos_1"
-                        >
-                          Target price
-                        </label>
-                      </span>
+                    <div className="col-12 lg:col-1">
+                      <div className="field">
+                        <span className="p-float-label ">
+                          <InputNumber
+                            id={`product-prixe-${i}`}
+                            name="costPrice"
+                            value={Number(ele.costPrice)}
+                            disabled={readOnlyForm}
+                            onChange={(e) => handleFormChange(e, i)}
+                          // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                          />
+                          <label
+                          // className="labelpos_1"
+                          >
+                            Target price
+                          </label>
+                        </span>
+                      </div>
                       {/* {getFormErrorMessage("name")} */}
                     </div>
-                    <div className="field col-12 lg:col-1 mt-2">
-                      <span className="p-float-label">
-                        <InputNumber
-                          id={`product-qty-${i}`}
-                          name="quantity"
-                          disabled={readOnlyForm}
-                          value={Number(ele.quantity)}
-                          onChange={(e) => handleFormChange(e, i)}
-                        // className={classNames({ "p-invalid": isFormFieldValid("name") })}
-                        />
-                        <label
-                        // className={classNames({ "p-error": isFormFieldValid("name") })}
-                        >
-                          Quantity
-                        </label>
-                      </span>
+                    <div className="col-12 lg:col-1">
+                      <div className="field">
+                        <span className="p-float-label">
+                          <InputNumber
+                            id={`product-qty-${i}`}
+                            name="quantity"
+                            disabled={readOnlyForm}
+                            value={Number(ele.quantity)}
+                            onChange={(e) => handleFormChange(e, i)}
+                          // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                          />
+                          <label
+                          // className={classNames({ "p-error": isFormFieldValid("name") })}
+                          >
+                            Quantity
+                          </label>
+                        </span>
+                      </div>
                       {/* {getFormErrorMessage("name")} */}
                     </div>
-                    <div className="field col-12 lg:col-1 mt-2">
-                      <span className="p-float-label">
-                        <InputText
-                          id="last_po_price"
-                          name="last_po_price"
-                          disabled
-                          value={ele.last_po_price}
-                          onChange={(e) => handleFormChange(e, i)}
-                        // className={classNames({ "p-invalid": isFormFieldValid("name") })}
-                        />
-                        <label
-                        // className="labelpos_1"
-                        // className={classNames({ "p-error": isFormFieldValid("name") })}
-                        >
-                          Last PO Price
-                        </label>
-                      </span>
+                    <div className="col-12 lg:col-1">
+                      <div className="field">
+                        <span className="p-float-label">
+                          <InputText
+                            id="last_po_price"
+                            name="last_po_price"
+                            disabled
+                            value={ele.last_po_price}
+                            onChange={(e) => handleFormChange(e, i)}
+                          // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                          />
+                          <label
+                          // className="labelpos_1"
+                          // className={classNames({ "p-error": isFormFieldValid("name") })}
+                          >
+                            Last PO Price
+                          </label>
+                        </span>
+                      </div>
                       {/* {getFormErrorMessage("name")} */}
                     </div>
 
-                    <div className="field col-12 lg:col-2 mt-2">
-                      <span className="p-float-label">
-                        <InputText
-                          id="last_vendor"
-                          name="last_vendor"
-                          value={ele.last_vendor}
-                          disabled
-                          onChange={(e) => handleFormChange(e, i)}
-                        // className={classNames({ "p-invalid": isFormFieldValid("name") })}
-                        />
-                        <label
-                        // className={classNames({ "p-error": isFormFieldValid("name") })}
-                        >
-                          Last Vendor
-                        </label>
-                      </span>
+                    <div className="col-12 lg:col-2">
+                      <div className="field">
+                        <span className="p-float-label">
+                          <InputText
+                            id="last_vendor"
+                            name="last_vendor"
+                            value={ele.last_vendor}
+                            disabled
+                            onChange={(e) => handleFormChange(e, i)}
+                          // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                          />
+                          <label
+                          // className={classNames({ "p-error": isFormFieldValid("name") })}
+                          >
+                            Last Vendor
+                          </label>
+                        </span>
+                      </div>
                       {/* {getFormErrorMessage("name")} */}
                     </div>
-                    <div className="field col-6 lg:col-1 mt-2">
-                      {!readOnlyForm && <span className="p-buttonset ">
-                        {i === itemList.length - 1 && (
-                          <Button type="button" label="+" onClick={addFields} />
-                        )}
-                        {itemList.length > 1 && (
-                          <Button
-                            type="button"
-                            label="x"
-                            className="p-button-secondary"
-                            onClick={(e) => {
-                              removeFields(i)
-                            }}
-                          />
-                        )}
-                      </span>}
+                    <div className="field col-6 lg:col-1">
+                      <div className="field">
+                        {!readOnlyForm && <span className="p-buttonset ">
+                          {i === itemList.length - 1 && (
+                            <Button type="button" label="+" onClick={addFields} />
+                          )}
+                          {itemList.length > 1 && (
+                            <Button
+                              type="button"
+                              label="x"
+                              className="p-button-secondary"
+                              onClick={(e) => {
+                                removeFields(i)
+                              }}
+                            />
+                          )}
+                        </span>}
+                      </div>
                     </div>
                   </div>
                 </>
@@ -6312,7 +6315,6 @@ export const RfqsList = () => {
               scrollToRfq?.current?.scrollIntoView()
               window.scroll(100, 100)
               setActiveRow(e.data)
-              console.log("rowdata", e.data)
               let obj = {
                 "id": 26,
                 "rfqNumber": "RFQ#25",
@@ -6473,11 +6475,8 @@ export const RfqsList = () => {
               field="rfq_sentto"
               header="Vendors"
               body={(rowData) => {
-                console.log("rowData", rowData)
-
                 const sentMails = rowData.rfq_sentto?.map((ele) => ele.email)
                 const uniqueMails = [...new Set(sentMails)]
-                console.log("uniqueMails: ", uniqueMails)
 
                 const sentVendors = vendors
                   .filter((ele, i) => uniqueMails.includes(ele.vendor_email))
