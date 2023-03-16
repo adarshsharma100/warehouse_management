@@ -59,6 +59,7 @@ export const Area = () => {
   console.log('shelves: ', shelves);
   const [createShelfMutation,] = useMutation(createShelf)
   const [updateShelfsMutation] = useMutation(updateShelf)
+
   console.log('shelf_types: ', shelf_types);
   const router = useRouter();
   const areaId = useParam("areaId", "number");
@@ -67,9 +68,10 @@ export const Area = () => {
   const [selectedColumns, setSelectedColumns] = useState(columns)
   const [rowDataStore, setRowDataStore] = useState({})
 
-  const [area] = useQuery(getArea, { id: areaId });
+  const [checkUpdate,setCheckUpdate] = useState(false)
+
+  const [area, { refetch }] = useQuery(getArea, { id: areaId });
   console.log('area: ', area);
-  const [slelf, setShelf] = useState(area?.shelves)
 
   const [active, setActive] = useState(false)
   const [shelfData, setShelfData] = useState(initialShelf)
@@ -105,36 +107,82 @@ export const Area = () => {
     validationSchema: Yup.object().shape({
       number: Yup.string().required("*Required")
     }),
+    // onSubmit: async (data) => {
+    //   console.log('data: ', data);
+    //   const { number, length, width, loadingStrength, reach, area, shelfType, sellable } = data
+    //   const { id: areaRowId } = rowDataStore
+    //   if (updateShelfs) {
+    //     try{
+    //       await updateShelfsMutation({
+    //         id :areaRowId,
+    //         number,
+    //         area:areaId,
+    //       },{
+    //         onSuccess: () =>{
+    //           alert('Update')
+    //         },
+    //         onError: (data) =>{
+    //           console.log('data: ', data);
+    //           alert('update Error')
+    //         }
+    //       }
+    //       )
+    //     }catch (error) {
+    //       console.log('error: update', error);
+    //     }
+    //   } else {
+    //     try {
+    //       await createShelfMutation({
+    //         sellable: sellable?.value,
+    //         number,
+    //         length: Number(length),
+    //         width: Number(width),
+    //         loadingStrength: Number(loadingStrength),
+    //         reach,
+    //         area: areaId,
+    //         shelfType: shelfType?.id
+
+    //       }, {
+    //         onSuccess: (data) => {
+    //           alert("Created!")
+    //           refetch()
+    //           console.log('data: ', data);
+    //         },
+    //         onError: (error) => {
+    //           alert("not created !")
+    //           console.log('error: ', error);
+    //         }
+    //       }
+    //       )
+    //     } catch (error) {
+    //       console.log('error: ', error);
+
+    //     }
+    //   }
+    // }
     onSubmit: async (data) => {
-      console.log('data: ', data);
       const { number, length, width, loadingStrength, reach, area, shelfType, sellable } = data
       const { id: areaRowId } = rowDataStore
-      if (updateShelfs) {
+      if (checkUpdate) {
         try {
           await updateShelfsMutation({
             id: areaRowId,
-            sellable,
             number,
-            length: Number(length),
-            width: Number(width),
-            loadingStrength: Number(loadingStrength),
-            reach,
-            area: areaId,
-            shelfType,
           }, {
-            onSuccess: () => {
-              alert('Update!')
+            onSuccess: (data) => {
+              console.log('data: ', data);
+              alert('Updated!')
             },
             onError: (error) => {
               console.log('error: ', error);
-              alert("OnError")
+              alert('update Error', error)
             }
-          }
-          )
+          })
 
         } catch (error) {
-          console.log('error: ', error);
+          console.log('error:++ ', error);
         }
+
       } else {
         try {
           await createShelfMutation({
@@ -145,23 +193,25 @@ export const Area = () => {
             loadingStrength: Number(loadingStrength),
             reach,
             area: areaId,
-            shelfType: shelfType.id
+            shelfType: shelfType?.id
           }, {
             onSuccess: (data) => {
-              alert("Created!")
               console.log('data: ', data);
+              alert('Created!')
             },
             onError: (error) => {
-              alert("not created !")
               console.log('error: ', error);
+              alert('Create error')
             }
-          }
-          )
+          })
+
         } catch (error) {
           console.log('error: ', error);
-
         }
       }
+      refetch()
+      setActive(false)
+
     }
   })
 
@@ -196,7 +246,7 @@ export const Area = () => {
       <form className="p-fluid" onSubmit={formik.handleSubmit}>
         {active &&
           <div className="card">
-            {editAreas ? <h2>Update Shelf</h2> : <h2>Create Shelf</h2>}
+            {checkUpdate ? <h2>Update Shelf</h2> : <h2>Create Shelf</h2>}
             <div className="formgrid grid">
               {[
                 // { type: 'text', label: 'Sellable', field: 'sellable' },
@@ -243,22 +293,14 @@ export const Area = () => {
                 field='name'
                 suggestions={shelfTypeSuggestions}
                 placeholder="Shelf Type"
-                // onChange={async (e) => {
-                //     const selectedStatus: any = shelf_types.find(status => status.name === e.value);
-                //     setStatus(selectedStatus.id);
-                //     // await formik.setValues({
-                //     //   ...e.value
-                //     // })
-                //     setValues(e.value)}}
                 onChange={async (e) => {
                   await formik.setValues({
                     ...formik.values,
                     shelfType: e.value
-
                   })
                 }}
-                dropdown />
-
+                dropdown
+              />
 
               <AutoComplete
                 className="field col-12 md:col-3 lg:col-3 mt-4'"
@@ -266,10 +308,10 @@ export const Area = () => {
                 suggestions={sellableSuggestions}
                 completeMethod={searchSellable}
                 field="label"
-                // onChange={handleValueChange}
+
                 onChange={async (e) => {
                   console.log('e: ', e);
-                  // let sellable = typeof e.vlue ==='boolean' ? e.value : e.value.value
+
                   await formik.setValues({
                     ...formik.values,
                     sellable: e.value
@@ -278,6 +320,7 @@ export const Area = () => {
                 placeholder="Sellable"
                 dropdown
               />
+
             </div>
             <div className="flex justify-content-end">
 
@@ -285,7 +328,7 @@ export const Area = () => {
                 type="submit"
                 className="mr-2"
                 label="SUBMIT"
-              // label={editAreas ? "UPDATE" : "SUBMIT"}
+
               />
               <Button
                 className="p-button-secondary flex-grow-0"
@@ -297,6 +340,7 @@ export const Area = () => {
                   setUpdateShelfs(false)
                   setActive(!active)
                   setEditAreas(false)
+                  setCheckUpdate(false)
                 }}
               />
 
@@ -310,28 +354,32 @@ export const Area = () => {
 
       <div className="flex justify-content-end">
         <Button onClick={() => {
+          formik.resetForm()
           setUpdateShelfs(false)
           setActive(!active)
           setEditAreas(false)
+          setCheckUpdate(false)
         }}
           icon='pi pi-plus' label="Add Shelf"></Button>
       </div>
 
       <div className="card col-12">
         <DataTable
-          value={slelf}
+          value={area?.shelves}
           showGridlines
           stripedRows
           className="text-s datatable-responsive"
           responsiveLayout="scroll"
           filterDisplay="menu"
-        // onRowClick={handleRowClick}
+
         >
           {columnComponents}
           <Column
             header="Action"
             body={(rowData) => {
               console.log('rowData: ', rowData);
+              const _shelfType = shelfTypeSuggestions?.find(shelfType => shelfType.id === rowData.shelfType);
+              console.log('_shelfType: ', _shelfType);
 
               return (
                 <div>
@@ -339,16 +387,15 @@ export const Area = () => {
                     icon="pi pi-pencil"
                     onClick={async () => {
                       setRowDataStore({ ...rowData })
+                      setCheckUpdate(true)
                       setActive(true);
                       setEditAreas(true);
                       setUpdateShelfs(true);
                       const _sellable = rowData.sellable ? { label: 'True', value: true } : { label: 'False', value: false }
-                      // const _shelfType = rowData.shelfType ? SS :null
                       await formik.setValues({
                         ...rowData,
                         sellable: _sellable,
-
-                        // shelfType:_shelfType
+                        shelfType: rowData.shelf_type
                       })
                     }}
                   />
