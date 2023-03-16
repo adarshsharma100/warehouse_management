@@ -23,15 +23,19 @@ export default resolver.pipe(
           ...paginateArgs,
           where,
           orderBy,
-          // include: {
-          //   rfq_products: {
-          //     include: {
-          //       products: true,
-          //     },
-          //   },
-          //   rfq_sentto: true,
-          //   agreement_terms: true,
-          // },
+          include: {
+            rfq_products: {
+              include: {
+                products: true,
+              },
+            },
+            rfq_sentto: {
+              include: {
+                emails: true,
+              },
+            },
+            //   agreement_terms: true,
+          },
         }),
     })
 

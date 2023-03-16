@@ -9,12 +9,12 @@ const UpdatePurchase_order = z.unknown()
 export default resolver.pipe(
   resolver.zod(UpdatePurchase_order),
   resolver.authorize(),
-  async ({ po_id, ...data }) => {
+  async ({ id, ...data }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-    const purchase_order = await db.purchase_order.update({
-      where: { po_id },
+    const purchase_order = await db.purchase_orders.update({
+      where: { id },
       include: {
-        purchase_order_products: {
+        po_products: {
           include: {
             vendor_products: {
               include: {
@@ -23,22 +23,34 @@ export default resolver.pipe(
             },
           },
         },
+        po_status: true,
+        po_terms: true,
+        vendors: {
+          include: {
+            vendor_branches: {
+              include: {
+                addresses: {
+                  include: {
+                    country_addresses_countryTocountry: true,
+                    emails_emails_addressesToaddresses: true,
+                    contact_number: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        purchase_orders: true,
       },
       data,
     })
 
-    // console.log("testdata", data)
-    // console.log("purchase_order", purchase_order)
-    const input = { po_id, ...data }
-
-    console.log("updatePO", purchase_order)
-
     const {
-      purchase_order_status: { name },
+      po_status: { name },
     } = purchase_order
 
     if (name === "Approved") {
-      await sendPomail(input, purchase_order, null)
+      await sendPomail(purchase_order)
     }
 
     // await sendPomail(input, purchase_order, { class: "-Amended" })

@@ -227,18 +227,36 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
   },
 })
-
 const MyDocument = ({ data }) => {
   const {
-    po_code,
-    po_description,
+    poNumber,
+    description,
     from_party,
-    expiry_date,
-    expected_delivery,
-    purchase_order_products: POP,
-    vendorDetails: { vendor, vendor_state, vendor_city, vendor_contact, vendor_gstin },
-    purchase_order_terms,
+    expectedDod,
+    expiryDate,
+    po_products: POP,
+    vendors: { name: vendorName, gstin, vendor_branches }
   } = data
+
+  const {
+    buildingNumber,
+    areaStreet,
+    landmarkName,
+    cityCountryProvince,
+    state,
+    pincode,
+    country_addresses_countryTocountry: { name: country },
+    contact_number
+  } = vendor_branches[0].addresses
+
+  const vendor_contact = contact_number.map(({ number }) => number).join(", ")
+
+  const addressParts = [`${buildingNumber || ''}`, `${areaStreet || ''}`, `${landmarkName || ''}`, `${cityCountryProvince || ''}`, `${state || ''}`, `${pincode || ''}`, `${country || ''}`];
+
+  const address = addressParts.filter(part => part !== '').join(', ');
+
+  const poValue = products => products.reduce((acc, { price, quantity }) => acc += (price * quantity), 0)
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -264,12 +282,12 @@ const MyDocument = ({ data }) => {
             <Text>PO Details:-</Text>
             <View style={styles.poDetailsTable}>
               <View style={styles.poDTflexBox}>
-                <Text style={{ width: "85px", fontWeight: 900 }}>Code</Text>
-                <Text>: {po_code}</Text>
+                <Text style={{ width: "85px", fontWeight: 900 }}>Number</Text>
+                <Text>: {poNumber}</Text>
               </View>
               <View style={styles.poDTflexBox}>
                 <Text style={{ width: "85px" }}>Description</Text>
-                <Text>: {po_description}</Text>
+                <Text>: {description}</Text>
               </View>
               <View style={styles.poDTflexBox}>
                 <Text style={{ width: "85px" }}>From party</Text>
@@ -277,15 +295,15 @@ const MyDocument = ({ data }) => {
               </View>
               <View style={styles.poDTflexBox}>
                 <Text style={{ width: "85px" }}>Expected Delivery </Text>
-                <Text>: {`${new Date(expected_delivery).toLocaleDateString()}`}</Text>
+                <Text>: {`${new Date(expiryDate).toLocaleDateString()}`}</Text>
               </View>
               <View style={styles.poDTflexBox}>
                 <Text style={{ width: "85px" }}>Expiry Date </Text>
-                <Text>: {`${new Date(expiry_date).toLocaleDateString()}`}</Text>
+                <Text>: {`${new Date(expectedDod).toLocaleDateString()}`}</Text>
               </View>
               <View style={styles.poDTflexBox}>
-                <Text style={{ width: "85px" }}>Terms</Text>
-                <Text>: {purchase_order_terms}</Text>
+                <Text style={{ width: "85px" }}>PO Value </Text>
+                <Text>: {poValue(POP)}</Text>
               </View>
             </View>
           </View>
@@ -293,15 +311,15 @@ const MyDocument = ({ data }) => {
         <Text style={{ borderBottom: "1px" }}></Text>
         <Text style={{ marginTop: "10px", marginBottom: "5px" }}>To:-</Text>
         <View style={styles.dispatch}>
-          <Text style={styles.mb4}>{vendor}</Text>
-          <Text style={styles.mb4}>{`${vendor_city} ${vendor_state}`}</Text>
+          <Text style={styles.mb4}>{vendorName}</Text>
+          <Text style={styles.mb4}>{`#${address}`}</Text>
           <View style={[styles.toflexBox, styles.mb4]}>
             <Text style={{ width: "45px" }}>Phone</Text>
             <Text>{`: ${vendor_contact}`}</Text>
           </View>
           <View style={[styles.toflexBox, styles.mb4]}>
             <Text style={{ width: "45px" }}>GSTIN</Text>
-            <Text>{`: ${vendor_gstin}`}</Text>
+            <Text>{`: ${gstin}`}</Text>
           </View>
         </View>
         <Text style={{ borderBottom: "1px" }}></Text>
@@ -310,37 +328,34 @@ const MyDocument = ({ data }) => {
           <View style={styles.tableContainer}>
             <Text style={[styles.tcellHeader, { width: "25px" }]}>No.</Text>
             <Text style={[styles.tcellHeader, { width: "200px" }]}>Name</Text>
+            <Text style={[styles.tcellHeader, { width: "100px" }]}>Vendor-SKU</Text>
             <Text style={[styles.tcellHeader, { width: "100px" }]}>Product-SKU</Text>
             {/* <Text style={[styles.tcellHeader, { width: "100px" }]}>Description</Text> */}
             <Text style={[styles.tcellHeader, { width: "60px" }]}>Quantity</Text>
             <Text style={[styles.tcellHeader, { width: "75px" }]}>Unit Price</Text>
             <Text style={[styles.tcellHeader, { width: "50px", borderRight: "black" }]}>Total</Text>
           </View>
-          {POP.map((ele, i) => {
-            const {
-              vendor_products: {
-                products: { name, description },
-                vendor_sku,
-              },
-              quantity,
-              price_per_unit,
-            } = ele
+          {POP.map((
+            { price, quantity, vendor_products: { products: { name, sku: product_sku }, sku: vendor_sku } }, i) => {
+
             return (
               <View style={styles.tableContainer} key={i}>
                 <Text style={[styles.tcellrow, { width: "25px" }]}>{i + 1}</Text>
                 <Text style={[styles.tcellrow, { width: "200px" }]}>{name}</Text>
                 <Text style={[styles.tcellrow, { width: "100px" }]}>{vendor_sku}</Text>
+                <Text style={[styles.tcellrow, { width: "100px" }]}>{product_sku}</Text>
                 {/* <Text style={[styles.tcellrow, { width: "100px" }]}>
-                    {description ? description : "-"}
-                  </Text> */}
+                  {description ? description : "-"}
+                </Text> */}
                 <Text style={[styles.tcellrow, { width: "60px" }]}>{quantity}</Text>
-                <Text style={[styles.tcellrow, { width: "75px" }]}>{price_per_unit}</Text>
+                <Text style={[styles.tcellrow, { width: "75px" }]}>{price}</Text>
                 <Text style={[styles.tcellrow, { width: "50px" }]}>
-                  {quantity * price_per_unit}
+                  {quantity * price}
                 </Text>
               </View>
             )
           })}
+
         </View>
       </Page>
     </Document>
@@ -348,3 +363,122 @@ const MyDocument = ({ data }) => {
 }
 
 export default MyDocument
+// const MyDocument = ({ data }) => {
+//   const {
+//     po_code,
+//     po_description,
+//     from_party,
+//     expiry_date,
+//     expected_delivery,
+//     purchase_order_products: POP,
+//     vendorDetails: { vendor, vendor_state, vendor_city, vendor_contact, vendor_gstin },
+//     purchase_order_terms,
+//   } = data
+//   return (
+//     <Document>
+//       <Page size="A4" style={styles.page}>
+//         <View style={styles.section}>
+//           <Text style={styles.heading1}>Purchase Order</Text>
+//           <Text style={(styles.normaBold, styles.font10)}>
+//             <Text style={(styles.bold, styles.font10)}>Date:</Text>
+//             {new Date().toLocaleDateString()}
+//           </Text>
+//         </View>
+//         <View style={styles.infoContainer}>
+//           <View style={styles.poFrom}>
+//             <Text>From:-</Text>
+//             <Text>TIFS LABS</Text>
+//             <Text>
+//               TIF labs, First Floor, 912/10 Survey no. 104 4th G street, Chelekare, Kalyan Nagar,
+//               Bengaluru, Karnataka, India 560043
+//             </Text>
+//             <Text>Phone: 1234567890</Text>
+//             <Text>TIFLabs.in</Text>
+//           </View>
+//           <View style={styles.poDetails}>
+//             <Text>PO Details:-</Text>
+//             <View style={styles.poDetailsTable}>
+//               <View style={styles.poDTflexBox}>
+//                 <Text style={{ width: "85px", fontWeight: 900 }}>Code</Text>
+//                 <Text>: {po_code}</Text>
+//               </View>
+//               <View style={styles.poDTflexBox}>
+//                 <Text style={{ width: "85px" }}>Description</Text>
+//                 <Text>: {po_description}</Text>
+//               </View>
+//               <View style={styles.poDTflexBox}>
+//                 <Text style={{ width: "85px" }}>From party</Text>
+//                 <Text>: {from_party}</Text>
+//               </View>
+//               <View style={styles.poDTflexBox}>
+//                 <Text style={{ width: "85px" }}>Expected Delivery </Text>
+//                 <Text>: {`${new Date(expected_delivery).toLocaleDateString()}`}</Text>
+//               </View>
+//               <View style={styles.poDTflexBox}>
+//                 <Text style={{ width: "85px" }}>Expiry Date </Text>
+//                 <Text>: {`${new Date(expiry_date).toLocaleDateString()}`}</Text>
+//               </View>
+//               <View style={styles.poDTflexBox}>
+//                 <Text style={{ width: "85px" }}>Terms</Text>
+//                 <Text>: {purchase_order_terms}</Text>
+//               </View>
+//             </View>
+//           </View>
+//         </View>
+//         <Text style={{ borderBottom: "1px" }}></Text>
+//         <Text style={{ marginTop: "10px", marginBottom: "5px" }}>To:-</Text>
+//         <View style={styles.dispatch}>
+//           <Text style={styles.mb4}>{vendor}</Text>
+//           <Text style={styles.mb4}>{`${vendor_city} ${vendor_state}`}</Text>
+//           <View style={[styles.toflexBox, styles.mb4]}>
+//             <Text style={{ width: "45px" }}>Phone</Text>
+//             <Text>{`: ${vendor_contact}`}</Text>
+//           </View>
+//           <View style={[styles.toflexBox, styles.mb4]}>
+//             <Text style={{ width: "45px" }}>GSTIN</Text>
+//             <Text>{`: ${vendor_gstin}`}</Text>
+//           </View>
+//         </View>
+//         <Text style={{ borderBottom: "1px" }}></Text>
+//         <View>
+//           <Text style={styles.heading2}>Products List:</Text>
+//           <View style={styles.tableContainer}>
+//             <Text style={[styles.tcellHeader, { width: "25px" }]}>No.</Text>
+//             <Text style={[styles.tcellHeader, { width: "200px" }]}>Name</Text>
+//             <Text style={[styles.tcellHeader, { width: "100px" }]}>Product-SKU</Text>
+//             {/* <Text style={[styles.tcellHeader, { width: "100px" }]}>Description</Text> */}
+//             <Text style={[styles.tcellHeader, { width: "60px" }]}>Quantity</Text>
+//             <Text style={[styles.tcellHeader, { width: "75px" }]}>Unit Price</Text>
+//             <Text style={[styles.tcellHeader, { width: "50px", borderRight: "black" }]}>Total</Text>
+//           </View>
+//           {POP.map((ele, i) => {
+//             const {
+//               vendor_products: {
+//                 products: { name, description },
+//                 vendor_sku,
+//               },
+//               quantity,
+//               price_per_unit,
+//             } = ele
+//             return (
+//               <View style={styles.tableContainer} key={i}>
+//                 <Text style={[styles.tcellrow, { width: "25px" }]}>{i + 1}</Text>
+//                 <Text style={[styles.tcellrow, { width: "200px" }]}>{name}</Text>
+//                 <Text style={[styles.tcellrow, { width: "100px" }]}>{vendor_sku}</Text>
+//                 {/* <Text style={[styles.tcellrow, { width: "100px" }]}>
+//                     {description ? description : "-"}
+//                   </Text> */}
+//                 <Text style={[styles.tcellrow, { width: "60px" }]}>{quantity}</Text>
+//                 <Text style={[styles.tcellrow, { width: "75px" }]}>{price_per_unit}</Text>
+//                 <Text style={[styles.tcellrow, { width: "50px" }]}>
+//                   {quantity * price_per_unit}
+//                 </Text>
+//               </View>
+//             )
+//           })}
+//         </View>
+//       </Page>
+//     </Document>
+//   )
+// }
+

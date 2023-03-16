@@ -10,7 +10,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "prepare": "husky install",
-    "getprisma": "prisma db pull && blitz prisma generate && blitz dev"
+    "getprisma": "prisma db pull && prisma generate && blitz dev"
   },
   "prisma": {
     "schema": "db/schema.prisma"

@@ -4,28 +4,56 @@ import { e_mail } from "./e_mail"
 
 const sendEmail = async (data, rfq, info) => {
   console.log("rfq_data: ", {
-    data,
     rfq,
     info,
   })
 
+  const {
+    id,
+    rfqNumber,
+    description,
+    status,
+    expectedDod,
+    agreement,
+    createdAt,
+    updatedAt,
+    ammendedFrom
+  } = rfq
+
+  let ammendedRfq = {}
+
+  if (ammendedFrom) {
+    const FindammendedRfq = await db.rfq.findUnique({
+      where: { id: ammendedFrom },
+    })
+
+    ammendedRfq = FindammendedRfq
+
+  }
+
+  const { rfqNumber: ammendedFromRfq } = ammendedRfq
+
+  console.log('ammendedRfq: ', ammendedRfq);
+
   const products = await db.rfq_products.findMany({
-    where: { rfq_id: rfq?.id },
+    where: { rfq: rfq?.id },
     include: { products: true },
   })
-  const sentmails = await db.rfq_sentto.findMany({
-    where: { rfq_id: info.id },
+
+  console.log('products: ', products);
+  const rfqSentto = await db.rfq_sentto.findMany({
+    where: { rfq: info.id },
+    include: {
+      emails: true
+    }
   })
+  const sentmails = rfqSentto.map(({ emails: { email } }) => email)
+  console.log('sentmails: ', sentmails);
 
   const emailLists = data?.rfq_sentto?.create?.length
     ? data?.rfq_sentto?.create.map(({ email }) => email)
-    : sentmails?.map(({ email }) => email)
+    : sentmails
 
-  // console.log("products4Rfq", products)s
-
-  // const emailLists = additionalInfo.creation
-  //   ? data?.rfq_sentto?.create.map(({ email }) => email)
-  //   : sentmails?.map(({ email }) => email)
 
   const headersArray = ["Sl No.", "Item", "Image", "Qty", "Target Price"]
 
@@ -33,11 +61,11 @@ const sendEmail = async (data, rfq, info) => {
   <div>
   
       <h2>RFQ Details:</h2>
-      <p><strong>Doc No.:</strong>${rfq.rfq_code}</p>
-      <p><strong>Description:</strong> ${rfq.rfq_description}</p>
-      <p><strong>Created on:</strong> ${new Date(rfq.createdAt).toLocaleDateString()}</p>
-      <p><strong>Expected Delivery:</strong> ${new Date(rfq.expected_dod).toLocaleDateString()}</p>
-      <p><strong>Terms:</strong> ${rfq.agreement_terms.name}</p>
+      <p><strong>Doc No.:</strong>${rfqNumber}</p>
+      <p><strong>Description:</strong> ${description}</p>
+      <p><strong>Created on:</strong> ${new Date(createdAt).toLocaleDateString()}</p>
+      <p><strong>Expected Delivery:</strong> ${new Date(rfq.expectedDod).toLocaleDateString()}</p>
+      <p><strong>Agreement:</strong> ${agreement}</p>
       <hr />
   </div>
   <div>
@@ -46,27 +74,27 @@ const sendEmail = async (data, rfq, info) => {
           <thead style="background-color:black ;color:white">
               <tr style="border: 1px solid">
                   ${headersArray
-                    .map((ele) => `<td style="border: 1px solid; padding:10px">${ele}</td>`)
-                    .join("")}
+      .map((ele) => `<td style="border: 1px solid; padding:10px">${ele}</td>`)
+      .join("")}
               </tr>
           </thead>
           <tbody>
               ${products
-                .map(
-                  ({ quantity, price_per_unit, products: { name, description } }, i) =>
-                    `<tr style="border: 1px solid">
+      .map(
+        ({ quantity, price, products: { name, description, imageUrl } }, i) =>
+          `<tr style="border: 1px solid">
                   <td style="border: 1px solid;text-align: center; padding:10px">${i + 1}</td>
                   <td style="border: 1px solid;text-align: center; padding:10px">${name}</td>
-                  <td style="border: 1px solid;text-align: center; padding:10px">Image</td>
-                  <td style="border: 1px solid;text-align: center; padding:10px">${
-                    quantity ? quantity : "-"
-                  }</td>
-                  <td style="border: 1px solid;text-align: center; padding:10px">${
-                    price_per_unit ? price_per_unit : "-"
-                  }</td>
+                  <td style="border: 1px solid;text-align: center; padding:10px">
+                  <img src=${imageUrl} height=100 width=100>
+                  </td>
+                  <td style="border: 1px solid;text-align: center; padding:10px">${quantity ? quantity : "-"
+          }</td>
+                  <td style="border: 1px solid;text-align: center; padding:10px">${price ? price : "-"
+          }</td>
               </tr>`
-                )
-                .join("")}
+      )
+      .join("")}
           </tbody>
       </table>
   </div>
@@ -77,12 +105,11 @@ const sendEmail = async (data, rfq, info) => {
   const csvBody = products.map((ele, i) => {
     const {
       quantity,
-      price_per_unit,
-      products_product_id: productId,
-      products: { name: item, description, products_sku: sku },
+      price,
+      products: { name: item, description, imageUrl },
     } = ele
 
-    return [i + 1, item, "IMAGE", quantity, price_per_unit].toString() + "\n"
+    return [i + 1, item, imageUrl, quantity, price].toString() + "\n"
   })
   const csvData = csvHeader + csvBody.join("")
 
@@ -95,9 +122,17 @@ const sendEmail = async (data, rfq, info) => {
     },
   ]
 
+  const subject = ammendedRfq?.rfqNumber ? `${rfqNumber}- Ammended From ${ammendedFromRfq}` : `${rfqNumber}`
+  console.log('subject: ', {
+    subject,
+    ammendedFromRfq
+  });
+
+
+
   await Promise.all(
     emailLists.map((email) => {
-      e_mail(email, `${rfq.rfq_code}${info?.class ? info.class : ""}`, html, attachment).catch(
+      e_mail(email, subject, html, attachment).catch(
         (error) => console.log(error)
       )
     })

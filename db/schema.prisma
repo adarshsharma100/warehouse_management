@@ -7,115 +7,346 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model addresses {
+  id                                 Int               @id @default(autoincrement())
+  buildingNumber                     String?           @db.VarChar(15)
+  areaStreet                         String?           @db.VarChar(150)
+  landmarkName                       String?           @db.VarChar(100)
+  cityCountryProvince                String            @db.VarChar(45)
+  state                              String?           @db.VarChar(45)
+  pincode                            Int?
+  country                            Int
+  country_addresses_countryTocountry country           @relation("addresses_countryTocountry", fields: [country], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_addresses_country1")
+  contact_number                     contact_number[]
+  customer                           customer[]
+  emails_emails_addressesToaddresses emails[]          @relation("emails_addressesToaddresses")
+  vendor_branches                    vendor_branches[]
+
+  @@index([country], map: "fk_addresses_country1_idx")
+}
+
+model contact_number {
+  id        Int                 @id @default(autoincrement())
+  type      contact_number_type
+  number    BigInt
+  address   Int
+  addresses addresses           @relation(fields: [address], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_contact_Number_addresses1")
+
+  @@index([address], map: "fk_contact_Number_addresses1_idx")
+}
+
+model country {
+  id                                   Int         @id @default(autoincrement())
+  name                                 String?     @db.VarChar(45)
+  addresses_addresses_countryTocountry addresses[] @relation("addresses_countryTocountry")
+}
+
+model emails {
+  id                                    Int          @id @default(autoincrement())
+  email                                 String       @db.VarChar(45)
+  addresses                             Int
+  addresses_emails_addressesToaddresses addresses    @relation("emails_addressesToaddresses", fields: [addresses], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_emails_addresses1")
+  po_sentto                             po_sentto[]
+  rfq_sentto                            rfq_sentto[]
+
+  @@index([addresses], map: "fk_emails_addresses1_idx")
+}
+
 model grn {
   id              Int             @id @default(autoincrement())
-  number          String          @db.VarChar(45)
-  createdAt       DateTime
-  invoiceNo       String          @db.VarChar(45)
+  grnNumber       String          @unique(map: "grnNumber_UNIQUE") @db.VarChar(45)
+  invoiceNo       String          @unique(map: "invoiceNo_UNIQUE") @db.VarChar(45)
   invoiceDate     DateTime        @db.DateTime(0)
+  trackingId      String?         @db.VarChar(200)
+  eta             DateTime?       @db.DateTime(0)
+  createdAt       DateTime        @default(now()) @db.DateTime(0)
+  updatedAt       DateTime        @default(now()) @db.DateTime(0)
   status          Int
   createdBy       Int
   purchaseOrder   Int
   grn_status      grn_status      @relation(fields: [status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_grn_status1")
   purchase_orders purchase_orders @relation(fields: [purchaseOrder], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_purchase_orders1")
   user            user            @relation(fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_user1")
-  grn_products    grn_products[]
+  grn_products    grn_products[]  @relation("grn_products_grnTogrn")
 
   @@index([status], map: "fk_grn_grn_status1_idx")
   @@index([purchaseOrder], map: "fk_grn_purchase_orders1_idx")
   @@index([createdBy], map: "fk_grn_user1_idx")
 }
 
+model grn_products {
+  id                        Int         @id @default(autoincrement())
+  receivedQuantity          Int
+  rejectedQuantity          Int?
+  poProduct                 Int
+  grn                       Int
+  grn_grn_products_grnTogrn grn         @relation("grn_products_grnTogrn", fields: [grn], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_products_grn1")
+  po_products               po_products @relation(fields: [poProduct], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_products_po_products1")
+
+  @@index([grn], map: "fk_grn_products_grn1_idx")
+  @@index([poProduct], map: "fk_grn_products_po_products1_idx")
+}
+
+model grn_status {
+  id          Int     @id @default(autoincrement())
+  name        String  @db.VarChar(45)
+  description String? @db.VarChar(45)
+  grn         grn[]
+}
+
+model inventory_history {
+  id                            Int                           @id @default(autoincrement())
+  quantity                      Int
+  oldQuantity                   Int
+  fromShelf                     String                        @db.VarChar(10)
+  toShelf                       String?                       @db.VarChar(10)
+  remarks                       String                        @db.VarChar(100)
+  updatedAt                     DateTime                      @db.DateTime(0)
+  inventoryType                 String                        @db.VarChar(45)
+  adjustedBy                    Int
+  inventoryProduct              Int
+  adjustmentType                Int
+  inventory_history_adjustments inventory_history_adjustments @relation(fields: [adjustmentType], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_history_inventory_history_adjustments1")
+  inventory_products            inventory_products            @relation(fields: [inventoryProduct], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_history_inventory_products1")
+  user                          user                          @relation(fields: [adjustedBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_history_user1")
+
+  @@index([adjustmentType], map: "fk_inventory_history_inventory_history_adjustments1_idx")
+  @@index([inventoryProduct], map: "fk_inventory_history_inventory_products1_idx")
+  @@index([adjustedBy], map: "fk_inventory_history_user1_idx")
+}
+
+model inventory_history_adjustments {
+  id                Int                 @id
+  type              String?             @db.VarChar(45)
+  description       String?             @db.VarChar(100)
+  inventory_history inventory_history[]
+}
+
 model inventory_products {
   id                Int                 @id @default(autoincrement())
   description       String?             @db.VarChar(45)
   quantity          Int?
-  goodStock         Int?
-  badStock          Int?
-  blockedStock      Int?
-  shelf             Int?
-  createdAt         DateTime
-  updatedAt         DateTime
+  createdAt         DateTime            @default(now()) @db.DateTime(0)
+  updatedAt         DateTime            @default(now()) @db.DateTime(0)
   product           Int
+  shelf             Int
   inventory_history inventory_history[]
   products          products            @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_products1")
+  shelfs            shelves             @relation(fields: [shelf], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_shelfs1")
 
+  @@unique([product, shelf], map: "product_shelf")
   @@index([product], map: "fk_inventory_products_products1_idx")
+  @@index([shelf], map: "fk_inventory_products_shelfs1_idx")
+}
+
+model kit_products {
+  id                                        Int      @id @default(autoincrement())
+  quantity                                  Int?
+  kitId                                     Int
+  productId                                 Int
+  products_kit_products_kitIdToproducts     products @relation("kit_products_kitIdToproducts", fields: [kitId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products1")
+  products_kit_products_productIdToproducts products @relation("kit_products_productIdToproducts", fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products2")
+
+  @@index([kitId], map: "fk_kit_products_products1_idx")
+  @@index([productId], map: "fk_kit_products_products2_idx")
+}
+
+model po_products {
+  id              Int             @id @default(autoincrement())
+  quantity        Int?
+  price           Int?
+  vendorProduct   Int
+  purchaseOrder   Int
+  grn_products    grn_products[]
+  purchase_orders purchase_orders @relation(fields: [purchaseOrder], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_po_products_purchase_orders1")
+  vendor_products vendor_products @relation(fields: [vendorProduct], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_po_products_vendor_products1")
+
+  @@index([purchaseOrder], map: "fk_po_products_purchase_orders1_idx")
+  @@index([vendorProduct], map: "fk_po_products_vendor_products1_idx")
+}
+
+model po_sentto {
+  id              Int             @id @default(autoincrement())
+  purchaseOrder   Int
+  email           Int
+  emails          emails          @relation(fields: [email], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_po_sentto_emails1")
+  purchase_orders purchase_orders @relation(fields: [purchaseOrder], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_po_sentto_purchase_orders1")
+
+  @@index([email], map: "fk_po_sentto_emails1_idx")
+  @@index([purchaseOrder], map: "fk_po_sentto_purchase_orders1_idx")
+}
+
+model po_status {
+  id              Int               @id @default(autoincrement())
+  name            String?           @db.VarChar(45)
+  description     String?           @db.VarChar(200)
+  purchase_orders purchase_orders[]
+}
+
+model po_terms {
+  id              Int               @id @default(autoincrement())
+  name            String?           @db.VarChar(45)
+  description     String?           @db.LongText
+  purchase_orders purchase_orders[]
+}
+
+model product_brand {
+  id       Int        @id @default(autoincrement())
+  name     String     @db.VarChar(45)
+  products products[]
+}
+
+model product_categories {
+  id       Int        @id @default(autoincrement())
+  name     String     @db.VarChar(45)
+  code     String     @unique(map: "code_UNIQUE") @db.VarChar(10)
+  products products[]
+}
+
+model product_tags {
+  id       Int      @id @default(autoincrement())
+  tags     String?  @db.VarChar(45)
+  product  Int
+  products products @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_tags_products1")
+
+  @@unique([tags, product], map: "tags_product")
+  @@index([product], map: "fk_product_tags_products1_idx")
+}
+
+model product_types {
+  id       Int        @id @default(autoincrement())
+  type     String     @db.VarChar(45)
+  products products[]
 }
 
 model products {
-  id                    Int                  @id @default(autoincrement())
-  name                  String               @db.VarChar(45)
-  sku                   String               @unique(map: "sku_UNIQUE") @db.VarChar(15)
-  description           String?              @db.LongText
-  length                Int?
-  width                 Int?
-  height                Int?
-  weight                Int?
-  color                 String?              @db.VarChar(7)
-  hsnCode               String?              @db.VarChar(15)
-  imageUrl              String?              @db.VarChar(300)
-  createdAT             DateTime?
-  updatedAT             DateTime?
-  customDuty            String?              @db.VarChar(45)
-  gstTaxTypeCode        String?              @db.VarChar(45)
-  taxCalcType           String?              @db.VarChar(45)
-  status                products_status      @default(Active)
-  category              Int?
-  brand                 Int?
-  inventory_products    inventory_products[]
-  brand_brandToproducts product_brand?       @relation(fields: [brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_brands2")
-  categories            product_categories?  @relation(fields: [category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_category")
-  quality_ckeck         quality_ckeck[]
-  rfq_products          rfq_products[]
-  vendor_products       vendor_products[]
+  id                                             Int                  @id @default(autoincrement())
+  name                                           String               @db.VarChar(45)
+  sku                                            String               @unique(map: "sku_UNIQUE") @db.VarChar(15)
+  description                                    String?              @db.LongText
+  length                                         Int?
+  width                                          Int?
+  height                                         Int?
+  weight                                         Int?
+  color                                          String?              @db.VarChar(7)
+  hsnCode                                        String?              @db.VarChar(15)
+  imageUrl                                       String?              @db.VarChar(300)
+  createdAT                                      DateTime?            @default(now()) @db.DateTime(0)
+  updatedAT                                      DateTime?            @default(now()) @db.DateTime(0)
+  customDuty                                     String?              @db.VarChar(45)
+  gstTaxTypeCode                                 String?              @db.VarChar(45)
+  taxCalcType                                    String?              @db.VarChar(45)
+  status                                         products_status      @default(Active)
+  category                                       Int?
+  brand                                          Int?
+  costPrice                                      Int
+  type                                           Int
+  inventory_products                             inventory_products[]
+  kit_products_kit_products_kitIdToproducts      kit_products[]       @relation("kit_products_kitIdToproducts")
+  kit_products_kit_products_productIdToproducts  kit_products[]       @relation("kit_products_productIdToproducts")
+  order_items                                    order_items[]
+  product_tags                                   product_tags[]
+  product_brand                                  product_brand?       @relation(fields: [brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_brands2")
+  product_categories                             product_categories?  @relation(fields: [category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_category")
+  product_types                                  product_types        @relation(fields: [type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_product_types1")
+  quality_ckeck_quality_ckeck_productsToproducts quality_ckeck[]      @relation("quality_ckeck_productsToproducts")
+  rfq_products                                   rfq_products[]
+  vendor_products                                vendor_products[]
 
   @@index([brand], map: "fk_products_brands2_idx")
   @@index([category], map: "fk_products_category_idx")
+  @@index([type], map: "fk_products_product_types1_idx")
 }
 
-model vendor_products {
-  id          Int                    @id @default(autoincrement())
-  sku         String?                @db.VarChar(45)
-  priority    Int?
-  status      vendor_products_status @default(Active)
-  product     Int
-  vendor      Int
-  po_products po_products[]
-  products    products               @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_products_products1")
-  vendors     vendors                @relation(fields: [vendor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_products_vendors1")
+model purchase_orders {
+  id                           Int               @id @default(autoincrement())
+  poNumber                     String            @unique(map: "poNumber_UNIQUE") @db.VarChar(45)
+  agreement                    String?           @db.VarChar(100)
+  description                  String?           @db.VarChar(45)
+  expectedDod                  DateTime?         @db.DateTime(0)
+  rejectedReason               String?           @db.VarChar(45)
+  expiryDate                   DateTime?
+  approvedOn                   DateTime?         @db.DateTime(0)
+  createdAT                    DateTime          @default(now()) @db.DateTime(0)
+  updatedAT                    DateTime          @default(now()) @db.DateTime(0)
+  rfq                          Int?
+  vendor                       Int
+  status                       Int
+  po_term                      Int
+  approvedBy                   Int?
+  amendedFrom                  Int?
+  piNumber                     String?           @unique(map: "piNumber_UNIQUE") @db.VarChar(45)
+  piDate                       DateTime?         @db.DateTime(0)
+  grn                          grn[]
+  po_products                  po_products[]
+  po_sentto                    po_sentto[]
+  po_status                    po_status         @relation(fields: [status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_po_status1")
+  purchase_orders              purchase_orders?  @relation("purchase_ordersTopurchase_orders", fields: [amendedFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_purchase_orders1")
+  other_purchase_orders        purchase_orders[] @relation("purchase_ordersTopurchase_orders")
+  rfq_purchase_orders_rfqTorfq rfq?              @relation("purchase_orders_rfqTorfq", fields: [rfq], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_rfq1")
+  po_terms                     po_terms          @relation(fields: [po_term], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_terms1")
+  user                         user?             @relation(fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_user1")
+  vendors                      vendors           @relation(fields: [vendor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_vendors1")
 
-  @@index([product], map: "fk_vendor_products_products1_idx")
-  @@index([vendor], map: "fk_vendor_products_vendors1_idx")
+  @@index([status], map: "fk_purchase_orders_po_status1_idx")
+  @@index([amendedFrom], map: "fk_purchase_orders_purchase_orders1_idx")
+  @@index([rfq], map: "fk_purchase_orders_rfq1_idx")
+  @@index([po_term], map: "fk_purchase_orders_terms1_idx")
+  @@index([approvedBy], map: "fk_purchase_orders_user1_idx")
+  @@index([vendor], map: "fk_purchase_orders_vendors1_idx")
+}
+
+model quality_ckeck {
+  id                                        Int      @id @default(autoincrement())
+  products                                  Int
+  products_quality_ckeck_productsToproducts products @relation("quality_ckeck_productsToproducts", fields: [products], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_quality_ckeck_products1")
+
+  @@index([products], map: "fk_quality_ckeck_products1_idx")
 }
 
 model rfq {
-  id              Int               @id
-  number          String            @db.VarChar(45)
-  description     String?           @db.LongText
-  status          rfq_status        @default(Created)
-  expectedDod     DateTime?
-  agreement       String?           @db.VarChar(200)
-  createdAT       DateTime
-  updatedAT       DateTime
-  purchase_orders purchase_orders[]
-  rfq_products    rfq_products[]
-  rfq_sentto      rfq_sentto[]
+  id                                       Int               @id @default(autoincrement())
+  rfqNumber                                String            @unique(map: "rfqNumber_UNIQUE") @db.VarChar(45)
+  description                              String?           @db.VarChar(100)
+  status                                   rfq_status        @default(Created)
+  expectedDod                              DateTime?
+  agreement                                String?           @db.VarChar(45)
+  createdAt                                DateTime          @default(now()) @db.DateTime(0)
+  updatedAt                                DateTime          @default(now()) @db.DateTime(0)
+  ammendedFrom                             Int?
+  purchase_orders_purchase_orders_rfqTorfq purchase_orders[] @relation("purchase_orders_rfqTorfq")
+  rfq                                      rfq?              @relation("rfqTorfq", fields: [ammendedFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_rfq1")
+  other_rfq                                rfq[]             @relation("rfqTorfq")
+  rfq_products                             rfq_products[]    @relation("rfq_products_rfqTorfq")
+  rfq_sentto                               rfq_sentto[]      @relation("rfq_sentto_rfqTorfq")
+
+  @@index([ammendedFrom], map: "fk_rfq_rfq1_idx")
 }
 
-model user {
-  id                Int                 @id @default(autoincrement())
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @default(now())
-  name              String?
-  email             String              @unique(map: "User_email_key")
-  hashedPassword    String
-  role              String              @default("USER")
-  grn               grn[]
-  inventory_history inventory_history[]
-  purchase_orders   purchase_orders[]
-  session           session[]
-  token             token[]
+model rfq_products {
+  id                        Int      @id @default(autoincrement())
+  quantity                  Int
+  price                     Int?
+  rfq                       Int
+  product                   Int
+  products                  products @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_products_products1")
+  rfq_rfq_products_rfqTorfq rfq      @relation("rfq_products_rfqTorfq", fields: [rfq], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_products_rfq1")
+
+  @@index([product], map: "fk_rfq_products_products1_idx")
+  @@index([rfq], map: "fk_rfq_products_rfq1_idx")
+}
+
+model rfq_sentto {
+  id                      Int      @id @default(autoincrement())
+  email                   Int
+  rfq                     Int
+  sentOn                  DateTime @default(now()) @db.DateTime(0)
+  emails                  emails   @relation(fields: [email], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_sentto_emails1")
+  rfq_rfq_sentto_rfqTorfq rfq      @relation("rfq_sentto_rfqTorfq", fields: [rfq], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_sentto_rfq1")
+
+  @@unique([email, rfq], map: "email_rfq")
+  @@index([email], map: "fk_rfq_sentto_emails1_idx")
+  @@index([rfq], map: "fk_rfq_sentto_rfq1_idx")
 }
 
 model session {
@@ -149,246 +380,158 @@ model token {
   @@index([userId], map: "Token_userId_fkey")
 }
 
-model rfq_products {
-  id                    Int      @id @default(autoincrement())
-  qty                   Int
-  price                 Int?
-  rfq                   Int
-  product               Int
-  products              products @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_products_products1")
-  rfq_rfqTorfq_products rfq      @relation(fields: [rfq], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_products_rfq1")
-
-  @@index([product], map: "fk_rfq_products_products1_idx")
-  @@index([rfq], map: "fk_rfq_products_rfq1_idx")
-}
-
-model rfq_sentto {
-  id                    Int                   @id @default(autoincrement())
-  rfq                   Int
-  vendorEmail           Int
-  rfq_rfqTorfq_sentto   rfq                   @relation(fields: [rfq], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_sentto_rfq")
-  vendor_address_emails vendor_address_emails @relation(fields: [vendorEmail], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_sentto_vendor_address_emails1")
-
-  @@unique([rfq, vendorEmail], map: "email_rfq")
-  @@index([rfq], map: "fk_rfq_sentto_rfq_idx")
-  @@index([vendorEmail], map: "fk_rfq_sentto_vendor_address_emails_idx")
-}
-
-model grn_status {
-  id          Int     @id @default(autoincrement())
-  name        String  @db.VarChar(45)
-  description String? @db.VarChar(45)
-  grn         grn[]
-}
-
-model grn_products {
-  id                    Int         @id @default(autoincrement())
-  receivedQuantity      Int
-  rejectedQuantity      Int?
-  price                 Int
-  poProduct             Int
-  grn                   Int
-  grn_grnTogrn_products grn         @relation(fields: [grn], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_products_grn1")
-  po_products           po_products @relation(fields: [poProduct], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_products_po_products1")
-
-  @@index([grn], map: "fk_grn_products_grn1_idx")
-  @@index([poProduct], map: "fk_grn_products_po_products1_idx")
-}
-
-model inventory_history {
-  id                            Int                           @id @default(autoincrement())
-  quantity                      Int
-  oldQuantity                   Int
-  fromShelf                     String                        @db.VarChar(10)
-  toShelf                       String?                       @db.VarChar(10)
-  remarks                       String                        @db.VarChar(100)
-  updatedAt                     DateTime                      @db.DateTime(0)
-  inventoryType                 String                        @db.VarChar(45)
-  adjustedBy                    Int
-  inventoryProduct              Int
-  adjustmentType                Int
-  inventory_history_adjustments inventory_history_adjustments @relation(fields: [adjustmentType], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_history_inventory_history_adjustments1")
-  inventory_products            inventory_products            @relation(fields: [inventoryProduct], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_history_inventory_products1")
-  user                          user                          @relation(fields: [adjustedBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_history_user1")
-
-  @@index([adjustmentType], map: "fk_inventory_history_inventory_history_adjustments1_idx")
-  @@index([inventoryProduct], map: "fk_inventory_history_inventory_products1_idx")
-  @@index([adjustedBy], map: "fk_inventory_history_user1_idx")
-}
-
-model inventory_history_adjustments {
-  id                Int                 @id
-  type              String?             @db.VarChar(45)
-  description       String?             @db.VarChar(100)
+model user {
+  id                Int                 @id @default(autoincrement())
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @default(now())
+  name              String?
+  email             String              @unique(map: "User_email_key")
+  hashedPassword    String
+  role              String              @default("USER")
+  grn               grn[]
   inventory_history inventory_history[]
+  purchase_orders   purchase_orders[]
+  session           session[]
+  token             token[]
 }
 
-model po_products {
-  id              Int             @id @default(autoincrement())
-  qty             String?         @db.VarChar(45)
-  price           String?         @db.VarChar(45)
-  vendorProduct   Int
-  purchaseOrder   Int
-  grn_products    grn_products[]
-  purchase_orders purchase_orders @relation(fields: [purchaseOrder], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_po_products_purchase_orders1")
-  vendor_products vendor_products @relation(fields: [vendorProduct], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_po_products_vendor_products1")
+model vendor_branches {
+  id         Int       @id @default(autoincrement())
+  branchCode String?   @unique(map: "branch_code_UNIQUE") @db.VarChar(45)
+  address    Int
+  vendor     Int
+  addresses  addresses @relation(fields: [address], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_branches_addresses1")
+  vendors    vendors   @relation(fields: [vendor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_branches_vendors1")
 
-  @@index([purchaseOrder], map: "fk_po_products_purchase_orders1_idx")
-  @@index([vendorProduct], map: "fk_po_products_vendor_products1_idx")
+  @@index([address], map: "fk_vendor_branches_addresses1_idx")
+  @@index([vendor], map: "fk_vendor_branches_vendors1_idx")
 }
 
-model po_sentto {
-  id                    Int                   @id @default(autoincrement())
-  purchaseOrder         Int
-  vendoeEmail           Int
-  purchase_orders       purchase_orders       @relation(fields: [purchaseOrder], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_po_sentto_purchase_orders1")
-  vendor_address_emails vendor_address_emails @relation(fields: [vendoeEmail], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_po_sentto_vendor_address_emails1")
+model areas {
+  id                                   Int       @id @default(autoincrement())
+  name                                 String    @db.VarChar(45)
+  description                          String?   @db.VarChar(150)
+  warehouse                            Int
+  warehouse_areas_warehouseTowarehouse warehouse @relation("areas_warehouseTowarehouse", fields: [warehouse], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_areas_warehouse1")
+  shelves                              shelves[]
 
-  @@index([purchaseOrder], map: "fk_po_sentto_purchase_orders1_idx")
-  @@index([vendoeEmail], map: "fk_po_sentto_vendor_address_emails1_idx")
+  @@index([warehouse], map: "fk_areas_warehouse1_idx")
 }
 
-model po_status {
-  id              Int               @id @default(autoincrement())
-  name            String?           @db.VarChar(45)
-  description     String?           @db.LongText
-  purchase_orders purchase_orders[]
+model shelf_type {
+  id          Int       @id @default(autoincrement())
+  name        String?   @db.VarChar(45)
+  description String?   @db.VarChar(150)
+  shelves     shelves[]
 }
 
-model po_terms {
-  id              Int               @id @default(autoincrement())
-  name            String?           @db.VarChar(45)
-  description     String?           @db.LongText
-  purchase_orders purchase_orders[]
+model warehouse {
+  id                               Int     @id @default(autoincrement())
+  name                             String  @db.VarChar(45)
+  description                      String? @db.VarChar(150)
+  areas_areas_warehouseTowarehouse areas[] @relation("areas_warehouseTowarehouse")
 }
 
-model purchase_orders {
-  id                                   Int           @id @default(autoincrement())
-  number                               String        @db.VarChar(45)
-  agreement                            String?       @db.VarChar(100)
-  description                          String?       @db.VarChar(45)
-  expectedDod                          DateTime?     @db.DateTime(0)
-  rejectedReason                       String?       @db.VarChar(45)
-  ammendedFrom                         Int?
-  expiryDate                           DateTime?
-  approvedOn                           DateTime?     @db.DateTime(0)
-  createdAT                            DateTime      @db.DateTime(0)
-  updatedAT                            DateTime      @db.DateTime(0)
-  rfq                                  Int?
-  vendor                               Int
-  po_status                            Int
-  po_term                              Int
-  approvedBy                           Int?
-  grn                                  grn[]
-  po_products                          po_products[]
-  po_sentto                            po_sentto[]
-  po_status_po_statusTopurchase_orders po_status     @relation(fields: [po_status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_po_status1")
-  rfq_purchase_ordersTorfq             rfq?          @relation(fields: [rfq], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_rfq1")
-  po_terms                             po_terms      @relation(fields: [po_term], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_terms1")
-  user                                 user?         @relation(fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_user1")
-  vendors                              vendors       @relation(fields: [vendor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_vendors1")
+model vendor_products {
+  id          Int                    @id @default(autoincrement())
+  sku         String?                @db.VarChar(45)
+  priority    Int?
+  status      vendor_products_status @default(Active)
+  product     Int
+  vendor      Int
+  po_products po_products[]
+  products    products               @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_products_products1")
+  vendors     vendors                @relation(fields: [vendor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_products_vendors1")
 
-  @@index([po_status], map: "fk_purchase_orders_po_status1_idx")
-  @@index([rfq], map: "fk_purchase_orders_rfq1_idx")
-  @@index([po_term], map: "fk_purchase_orders_terms1_idx")
-  @@index([approvedBy], map: "fk_purchase_orders_user1_idx")
-  @@index([vendor], map: "fk_purchase_orders_vendors1_idx")
-}
-
-model quality_ckeck {
-  id                               Int      @id @default(autoincrement())
-  products                         Int
-  products_productsToquality_ckeck products @relation(fields: [products], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_quality_ckeck_products1")
-
-  @@index([products], map: "fk_quality_ckeck_products1_idx")
-}
-
-model vendor_address_emails {
-  id               Int              @id @default(autoincrement())
-  email            Int              @unique(map: "number_vendorAddress")
-  vendorAddress    Int
-  po_sentto        po_sentto[]
-  rfq_sentto       rfq_sentto[]
-  vendor_addresses vendor_addresses @relation(fields: [vendorAddress], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_address_emails_vendor_addresses1")
-
-  @@index([vendorAddress], map: "fk_vendor_address_emails_vendor_addresses1_idx")
-}
-
-model vendor_address_phones {
-  id               Int                        @id @default(autoincrement())
-  type             vendor_address_phones_type
-  number           Int                        @unique(map: "number_vendorAddress")
-  vendorAddress    Int
-  vendor_addresses vendor_addresses           @relation(fields: [vendorAddress], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_address_phones_vendor_addresses1")
-
-  @@index([vendorAddress], map: "fk_vendor_address_phones_vendor_addresses1_idx")
-}
-
-model vendor_addresses {
-  id                    Int                     @id @default(autoincrement())
-  buildingNumber        String?                 @db.VarChar(15)
-  streetName            String?                 @db.VarChar(100)
-  landmarkName          String?                 @db.VarChar(100)
-  city_countryProvince  String                  @db.VarChar(45)
-  state                 String?                 @db.VarChar(45)
-  pincode               Int?
-  vendor                Int
-  country               Int
-  vendor_address_emails vendor_address_emails[]
-  vendor_address_phones vendor_address_phones[]
-  vendor_country        vendor_country          @relation(fields: [country], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_addresses_country1")
-  vendors               vendors                 @relation(fields: [vendor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_addresses_vendors1")
-
-  @@index([country], map: "fk_vendor_addresses_country1_idx")
-  @@index([vendor], map: "fk_vendor_addresses_vendors1_idx")
-}
-
-model vendor_country {
-  id               Int                @id @default(autoincrement())
-  name             String?            @db.VarChar(45)
-  vendor_addresses vendor_addresses[]
+  @@index([product], map: "fk_vendor_products_products1_idx")
+  @@index([vendor], map: "fk_vendor_products_vendors1_idx")
 }
 
 model vendors {
-  id               Int                @id @default(autoincrement())
-  name             String             @db.VarChar(45)
-  code             String             @unique(map: "code_UNIQUE") @db.VarChar(45)
-  gstin            String?            @db.VarChar(45)
-  creditPeriod     Int?
-  leadTime         Int?
-  status           vendors_status     @default(Active)
-  purchase_orders  purchase_orders[]
-  vendor_addresses vendor_addresses[]
-  vendor_products  vendor_products[]
+  id              Int               @id @default(autoincrement())
+  name            String            @db.VarChar(45)
+  code            String            @unique(map: "code_UNIQUE") @db.VarChar(45)
+  gstin           String?           @db.VarChar(45)
+  creditPeriod    Int
+  leadTime        Int?
+  status          vendors_status    @default(Active)
+  vendorScore     Int?
+  purchase_orders purchase_orders[]
+  vendor_branches vendor_branches[]
+  vendor_products vendor_products[]
 }
 
-model product_brand {
-  id       Int        @id @default(autoincrement())
-  name     String     @db.VarChar(45)
-  products products[]
+model shelves {
+  id                 Int                  @id @default(autoincrement())
+  sellable           Boolean
+  number             String               @unique(map: "number_UNIQUE") @db.VarChar(45)
+  length             Int?
+  width              Int?
+  loadingStrength    Int?
+  reach              String?              @db.VarChar(45)
+  area               Int
+  shelfType          Int
+  inventory_products inventory_products[]
+  areas              areas                @relation(fields: [area], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_areas1")
+  shelf_type         shelf_type           @relation(fields: [shelfType], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_shelf_type1")
+
+  @@index([area], map: "fk_shelfs_areas1_idx")
+  @@index([shelfType], map: "fk_shelfs_shelf_type1_idx")
 }
 
-model product_categories {
-  id       Int        @id @default(autoincrement())
-  name     String     @db.VarChar(45)
-  code     String     @unique(map: "code_UNIQUE") @db.VarChar(10)
-  products products[]
+model customer {
+  id                               Int       @id @default(autoincrement())
+  firstName                        String?   @db.VarChar(45)
+  lastName                         String?   @db.VarChar(45)
+  address                          Int
+  addresses                        addresses @relation(fields: [address], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_customer_addresses1")
+  orders_orders_customerTocustomer orders[]  @relation("orders_customerTocustomer")
+
+  @@index([address], map: "fk_customer_addresses1_idx")
 }
 
-enum products_status {
-  Active
-  Inactive
+model order_items {
+  id       Int      @id @default(autoincrement())
+  order    Int
+  product  Int
+  quantity Int
+  orders   orders   @relation(fields: [order], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_items_orders1")
+  products products @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_items_products1")
+
+  @@index([order], map: "fk_order_items_orders1_idx")
+  @@index([product], map: "fk_order_items_products1_idx")
+}
+
+model order_status {
+  id          Int      @id
+  name        String   @db.VarChar(45)
+  description String?  @db.VarChar(45)
+  orders      orders[]
+}
+
+model orders {
+  id                                 Int           @id @default(autoincrement())
+  orderNumber                        String?       @db.VarChar(45)
+  customer                           Int
+  orderStatus                        Int
+  order_items                        order_items[]
+  customer_orders_customerTocustomer customer      @relation("orders_customerTocustomer", fields: [customer], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_customer1")
+  order_status                       order_status  @relation(fields: [orderStatus], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_order_status1")
+
+  @@index([customer], map: "fk_orders_customer1_idx")
+  @@index([orderStatus], map: "fk_orders_order_status1_idx")
+}
+
+enum contact_number_type {
+  mobile
+  landline
+  other
 }
 
 enum rfq_status {
   Completed
   Created
-}
-
-enum vendor_address_phones_type {
-  mobile
-  landline
-  other
+  Processing
 }
 
 enum vendor_products_status {
@@ -397,6 +540,11 @@ enum vendor_products_status {
 }
 
 enum vendors_status {
+  Active
+  Inactive
+}
+
+enum products_status {
   Active
   Inactive
 }

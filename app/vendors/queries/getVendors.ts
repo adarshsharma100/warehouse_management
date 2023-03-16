@@ -17,16 +17,26 @@ export default resolver.pipe(
     } = await paginate({
       skip,
       take,
-      count: () => db.vendor.count({ where }),
+      count: () => db.vendors.count({ where }),
       query: (paginateArgs) =>
-        db.vendor.findMany({
+        db.vendors.findMany({
           ...paginateArgs,
           where,
           orderBy,
           include: {
-            vendor_tags: {
+            vendor_products: {
               include: {
-                tags: true,
+                products: true,
+              },
+            },
+            vendor_branches: {
+              include: {
+                addresses: {
+                  select: {
+                    contact_number: true,
+                    emails_emails_addressesToaddresses: true,
+                  },
+                },
               },
             },
           },

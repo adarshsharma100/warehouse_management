@@ -48,12 +48,12 @@ const SideBarMenu = () => {
       ],
     },
     {
-      label: "Stock",
+      label: "Depository",
       items: [
         {
-          label: "Inventory",
-          icon: "pi pi-fw pi-cog",
-          command: () => (window.location.href = "/inventory_products"),
+          label: "Warehouse",
+          icon: "pi pi-fw bi-houses",
+          command: () => (window.location.href = "/warehouses"),
         },
         {
           label: "Products",
@@ -61,11 +61,18 @@ const SideBarMenu = () => {
           command: () => (window.location.href = "/products"),
           dataPrTooltip: "test",
         },
+        {
+          label: "Inventory",
+          icon: "pi pi-fw pi-cog",
+          command: () => (window.location.href = "/inventory_products"),
+        },
+
       ],
     },
+
   ]
 
-  return <PanelMenu model={items} style={{ width: "7rem" }} className="mt-4" />
+  return <PanelMenu model={items} style={{ width: "8rem" }} className="mt-4" />
 }
 
 export default SideBarMenu

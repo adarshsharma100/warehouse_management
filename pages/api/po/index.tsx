@@ -13,10 +13,10 @@ const poMailHandler = async (req, res) => {
       // console.log("User ID:", session.userId)
       // console.log("User isAuthorized:", session.$isAuthorized())
 
-      await sendPoEmail(record.data, record.po)
+      await sendPoEmail(record.po)
       res.statusCode = 200
       res.setHeader("Content-Type", "application/json")
-      res.end(JSON.stringify({ name: "Sucess" }))
+      res.end(JSON.stringify({ name: "Success" }))
     } else {
       // User is not authenticated
       // Return an error or redirect to login page

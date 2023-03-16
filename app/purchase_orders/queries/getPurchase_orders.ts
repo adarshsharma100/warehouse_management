@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc"
 import db, { Prisma } from "db"
 
 interface GetPurchase_ordersInput
-  extends Pick<Prisma.purchase_orderFindManyArgs, "where" | "orderBy" | "skip" | "take"> {}
+  extends Pick<Prisma.purchase_ordersFindManyArgs, "where" | "orderBy" | "skip" | "take"> {}
 
 export default resolver.pipe(
   resolver.authorize(),
@@ -17,15 +17,31 @@ export default resolver.pipe(
     } = await paginate({
       skip,
       take,
-      count: () => db.purchase_order.count({ where }),
+      count: () => db.purchase_orders.count({ where }),
       query: (paginateArgs) =>
-        db.purchase_order.findMany({
+        db.purchase_orders.findMany({
           ...paginateArgs,
           where,
           orderBy,
           include: {
-            vendor: true,
-            purchase_order_products: {
+            po_status: true,
+            vendors: {
+              include: {
+                vendor_branches: {
+                  select: {
+                    addresses: {
+                      include: {
+                        emails_emails_addressesToaddresses: true,
+                        country_addresses_countryTocountry: true,
+                        contact_number: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            po_terms: true,
+            po_products: {
               include: {
                 vendor_products: {
                   include: {
