@@ -89,6 +89,7 @@ export const Product_categoriesList = () => {
           
         }
       }
+      setProductCategoriesDiolog(false)
     }
   })
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
