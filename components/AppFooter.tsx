@@ -18,7 +18,7 @@ export const AppFooter = (props) => {
       {/* By */}
       <span className="font-small m-2"> © {moment().format("Y")}</span>
       <span className="font-small m-2 text-gray-500">
-        Made with <img style={{ width: "0.8rem" }} src="/heart.svg" /> by TIF Labs Pvt Ltd
+        Made with <img className="heart" src="/heart.svg" /> by TIF Labs Pvt Ltd
       </span>
     </div>
   )

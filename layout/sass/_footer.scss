@@ -9,4 +9,20 @@
   padding: 0.5rem !important;
   margin-bottom: 0rem !important;
   bottom: 25px;
+
+  .heart {
+    // font-1zsize: 0.75rem;
+    height: 0.75rem;
+    color: #e00;
+    animation: beat 1s infinite alternate;
+    transform-origin: center;
+    padding: 0 0.1rem;
+  }
+
+  /* Heart beat animation */
+  @keyframes beat {
+    to {
+      transform: scale(1.2);
+    }
+  }
 }
