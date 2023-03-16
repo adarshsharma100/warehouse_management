@@ -69,7 +69,7 @@ export const Area = () => {
 
   const [area] = useQuery(getArea, { id: areaId });
   console.log('area: ', area);
-  const [slelf, setShelf] = useState(area?.shelfs)
+  const [slelf, setShelf] = useState(area?.shelves)
 
   const [active, setActive] = useState(false)
   const [shelfData, setShelfData] = useState(initialShelf)
@@ -138,14 +138,14 @@ export const Area = () => {
       } else {
         try {
           await createShelfMutation({
-            sellable,
+            sellable: sellable?.value,
             number,
             length: Number(length),
             width: Number(width),
             loadingStrength: Number(loadingStrength),
             reach,
             area: areaId,
-            shelfType,
+            shelfType: shelfType.id
           }, {
             onSuccess: (data) => {
               alert("Created!")
@@ -347,6 +347,7 @@ export const Area = () => {
                       await formik.setValues({
                         ...rowData,
                         sellable: _sellable,
+
                         // shelfType:_shelfType
                       })
                     }}

@@ -18,6 +18,7 @@ model addresses {
   country                            Int
   country_addresses_countryTocountry country           @relation("addresses_countryTocountry", fields: [country], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_addresses_country1")
   contact_number                     contact_number[]
+  customer                           customer[]
   emails_emails_addressesToaddresses emails[]          @relation("emails_addressesToaddresses")
   vendor_branches                    vendor_branches[]
 
@@ -243,6 +244,7 @@ model products {
   inventory_products                             inventory_products[]
   kit_products_kit_products_kitIdToproducts      kit_products[]       @relation("kit_products_kitIdToproducts")
   kit_products_kit_products_productIdToproducts  kit_products[]       @relation("kit_products_productIdToproducts")
+  order_items                                    order_items[]
   product_tags                                   product_tags[]
   product_brand                                  product_brand?       @relation(fields: [brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_brands2")
   product_categories                             product_categories?  @relation(fields: [category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_category")
@@ -411,14 +413,16 @@ model areas {
   description                          String?   @db.VarChar(150)
   warehouse                            Int
   warehouse_areas_warehouseTowarehouse warehouse @relation("areas_warehouseTowarehouse", fields: [warehouse], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_areas_warehouse1")
+  shelves                              shelves[]
 
   @@index([warehouse], map: "fk_areas_warehouse1_idx")
 }
 
 model shelf_type {
-  id          Int     @id @default(autoincrement())
-  name        String? @db.VarChar(45)
-  description String? @db.VarChar(150)
+  id          Int       @id @default(autoincrement())
+  name        String?   @db.VarChar(45)
+  description String?   @db.VarChar(150)
+  shelves     shelves[]
 }
 
 model warehouse {
@@ -468,9 +472,54 @@ model shelves {
   area               Int
   shelfType          Int
   inventory_products inventory_products[]
+  areas              areas                @relation(fields: [area], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_areas1")
+  shelf_type         shelf_type           @relation(fields: [shelfType], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_shelf_type1")
 
   @@index([area], map: "fk_shelfs_areas1_idx")
   @@index([shelfType], map: "fk_shelfs_shelf_type1_idx")
+}
+
+model customer {
+  id                               Int       @id @default(autoincrement())
+  firstName                        String?   @db.VarChar(45)
+  lastName                         String?   @db.VarChar(45)
+  address                          Int
+  addresses                        addresses @relation(fields: [address], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_customer_addresses1")
+  orders_orders_customerTocustomer orders[]  @relation("orders_customerTocustomer")
+
+  @@index([address], map: "fk_customer_addresses1_idx")
+}
+
+model order_items {
+  id       Int      @id @default(autoincrement())
+  order    Int
+  product  Int
+  quantity Int
+  orders   orders   @relation(fields: [order], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_items_orders1")
+  products products @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_items_products1")
+
+  @@index([order], map: "fk_order_items_orders1_idx")
+  @@index([product], map: "fk_order_items_products1_idx")
+}
+
+model order_status {
+  id          Int      @id
+  name        String   @db.VarChar(45)
+  description String?  @db.VarChar(45)
+  orders      orders[]
+}
+
+model orders {
+  id                                 Int           @id @default(autoincrement())
+  orderNumber                        String?       @db.VarChar(45)
+  customer                           Int
+  orderStatus                        Int
+  order_items                        order_items[]
+  customer_orders_customerTocustomer customer      @relation("orders_customerTocustomer", fields: [customer], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_customer1")
+  order_status                       order_status  @relation(fields: [orderStatus], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_order_status1")
+
+  @@index([customer], map: "fk_orders_customer1_idx")
+  @@index([orderStatus], map: "fk_orders_order_status1_idx")
 }
 
 enum contact_number_type {

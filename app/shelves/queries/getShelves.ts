@@ -1,12 +1,9 @@
-import { paginate } from "blitz";
-import { resolver } from "@blitzjs/rpc";
-import db, { Prisma } from "db";
+import { paginate } from "blitz"
+import { resolver } from "@blitzjs/rpc"
+import db, { Prisma } from "db"
 
 interface GetShelvesInput
-  extends Pick<
-    Prisma.ShelfFindManyArgs,
-    "where" | "orderBy" | "skip" | "take"
-  > {}
+  extends Pick<Prisma.shelfsFindManyArgs, "where" | "orderBy" | "skip" | "take"> {}
 
 export default resolver.pipe(
   resolver.authorize(),
@@ -20,16 +17,15 @@ export default resolver.pipe(
     } = await paginate({
       skip,
       take,
-      count: () => db.shelfs.count({ where }),
-      query: (paginateArgs) =>
-        db.shelfs.findMany({ ...paginateArgs, where, orderBy }),
-    });
+      count: () => db.shelves.count({ where }),
+      query: (paginateArgs) => db.shelves.findMany({ ...paginateArgs, where, orderBy }),
+    })
 
     return {
       shelves,
       nextPage,
       hasMore,
       count,
-    };
+    }
   }
-);
+)
