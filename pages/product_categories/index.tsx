@@ -31,6 +31,7 @@ export const Product_categoriesList = () => {
     take: undefined
   })
   const [productCategories] = useState(initialproductCategories)
+  console.log('productCategories: ', productCategories);
   const [createMutations] = useMutation(CreateProduct_category);
   const [updateMutations] = useMutation(UpdateProduct_category)
   const [selectedColumns] = useState(columns);
@@ -61,7 +62,6 @@ export const Product_categoriesList = () => {
             },
             onError: (error) => {
               alert('Updated Error')
-              
             }
           }
           )
