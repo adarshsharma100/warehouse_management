@@ -64,7 +64,7 @@ export const WarehousesList = () => {
       console.log('data: ', data);
       const { name, description } = data
       const { id: activeWarehouseID } = activeWarehouse
-      console.log(activeWarehouseID,'activeWarehouseID')
+      console.log(activeWarehouseID, 'activeWarehouseID')
       if (updateWareHouse) {
         try {
           await updateWarehouse({
@@ -114,8 +114,8 @@ export const WarehousesList = () => {
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
-  console.log("formik.values",formik.values)
-  console.log("formik.errors",formik.errors)
+  console.log("formik.values", formik.values)
+  console.log("formik.errors", formik.errors)
 
 
 
@@ -207,18 +207,19 @@ export const WarehousesList = () => {
       </form>
 
       <div className="flex justify-content-end">
-        <Button 
-        
-        onClick={() => { 
-          formik.resetForm(); 
-          setActive(!active);  
-          setUpdateWareHouse(false); 
-          setEditWarehouse(false) }} 
+        <Button
+
+          onClick={() => {
+            formik.resetForm();
+            setActive(!active);
+            setUpdateWareHouse(false);
+            setEditWarehouse(false)
+          }}
           icon='pi pi-plus'
           label="Add Warehouse"
-          >
+        >
 
-          </Button>
+        </Button>
       </div>
       <div className="col-12 card">
         <DataTable
@@ -233,26 +234,26 @@ export const WarehousesList = () => {
 
           {columnComponents}
           <Column
-              header="Action"
-              body={(rowData) => {
-                return (
-                  <div>
-                    <Button
-                      icon="pi pi-pencil"
-                      onClick={async () => {
-                        setActiveWarehouse({ ...rowData })
-                        setActive(true)
-                        setEditWarehouse(true)
-                        setUpdateWareHouse(true)
-                        await formik.setValues({
-                         ...rowData
-                        })
-                      }}
-                    />
-                  </div>
-                )
-              }}
-            />
+            header="Action"
+            body={(rowData) => {
+              return (
+                <div>
+                  <Button
+                    icon="pi pi-pencil"
+                    onClick={async () => {
+                      setActiveWarehouse({ ...rowData })
+                      setActive(true)
+                      setEditWarehouse(true)
+                      setUpdateWareHouse(true)
+                      await formik.setValues({
+                        ...rowData
+                      })
+                    }}
+                  />
+                </div>
+              )
+            }}
+          />
         </DataTable>
       </div>
 
@@ -278,7 +279,7 @@ export default Warehouses
 
 
 
- 
+
 
 
 
