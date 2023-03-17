@@ -132,7 +132,7 @@ model inventory_products {
   shelf             Int
   inventory_history inventory_history[]
   products          products            @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_products1")
-  shelfs            shelves             @relation(fields: [shelf], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_shelfs1")
+  shelves           shelves             @relation(fields: [shelf], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_shelfs1")
 
   @@unique([product, shelf], map: "product_shelf")
   @@index([product], map: "fk_inventory_products_products1_idx")
