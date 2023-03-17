@@ -13,7 +13,13 @@ export default resolver.pipe(resolver.zod(GetArea), resolver.authorize(), async 
   const area = await db.areas.findFirst({
     where: { id },
     include: {
-      shelves: true,
+      shelves: {
+        include:{
+          shelf_type:true,
+          // shelfType:true,
+          areas:true
+        }
+      },
     },
   })
 
