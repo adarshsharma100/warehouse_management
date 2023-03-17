@@ -1,5 +1,8 @@
 import React, { useRef } from "react"
 import { PanelMenu } from "primereact/panelmenu"
+
+import { SlideMenu } from 'primereact/slidemenu';
+
 // import Link from "next/link"
 // import { Ripple } from "primereact/ripple"
 // import "./RippleDemo.css"
@@ -72,6 +75,7 @@ const SideBarMenu = () => {
 
   ]
 
+  // return <SlideMenu model={items} style={{ width: "8rem", background: "transparent", border: "none" }} className="mt-4" />
   return <PanelMenu model={items} style={{ width: "8rem" }} className="mt-4" />
 }
 
