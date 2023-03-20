@@ -34,7 +34,7 @@ import getProduct_categories from "app/product_categories/queries/getProduct_cat
 import moment from "moment"
 import createProduct_tag from "app/product_tags/mutations/createProduct_tag"
 import { getAntiCSRFToken } from "@blitzjs/auth"
-
+import CreateKit_product from 'app/kit_products/mutations/createKit_product'
 
 
 const dateFormat = (dateObj: Date | string) =>
@@ -67,18 +67,23 @@ export const ProductsList = () => {
   const [{ products }, { refetch }] = useQuery(getProducts, {
     orderBy: { id: "asc" },
   })
+
   console.log('products: ', products);
   const [{ product_categories },] = useQuery(getProduct_categories, {
     orderBy: { id: "asc" },
   })
 
-  const [createProductMutation, { isLoading: creatingProduct }] =
-    useMutation(createProduct)
 
-  const [updateProductMutation, { isLoading: updatingProduct }] =
-    useMutation(updateProduct)
+  const [createProductMutation, { isLoading: creatingProduct }] = useMutation(createProduct)
+  const [updateProductMutation, { isLoading: updatingProduct }] = useMutation(updateProduct)
+  const [updateActiveProduct] = useMutation(updateProduct)
+  const [kitCreateMutaton] = useMutation(CreateKit_product)
 
   const intialProductDetails = {
+    quantity: '',
+    kitProductID: '',
+
+
     name: "",
     productName: '',
     description: "",
@@ -105,7 +110,18 @@ export const ProductsList = () => {
     taxCalcuation: "",
   }
 
+
+  const productOptions = products.map(({ id, name, sku, description }) => {
+    return {
+      name: `${sku} - ${name}`,
+      id,
+      description,
+    }
+  })
+
   const [categories_options, setCategoriesOption] = useState(product_categories)
+  const [kitCategories_options, setKitCategoriesOption] = useState(productOptions)
+
 
   const [productDetails, setProductDetails] = useState(intialProductDetails)
   const [productDialog, setProductDialog] = useState(false)
@@ -114,20 +130,26 @@ export const ProductsList = () => {
 
   const [activeProduct, setActiveProduct] = useState(true)
   const [activeRowData, setActiveRowData] = useState({})
+  console.log('activeRowData: ', activeRowData);
   const [errorProducts, setErrorProducts] = useState([])
   const [btnVisibility, setBtnVisibility] = useState(false)
   const [filteredSuggestions, setFilteredSuggestions] = useState<any>(null)
 
-  const productOptions = products.map(({ product_id, name, products_sku, description }) => {
-    return {
-      name: `${products_sku} - ${name}`,
-      product_id,
-      description,
-    }
-  })
+
+  // const productOptions = products.map(
+  //   ({ id, name, sku, vendor_products, costPrice }) => {
+  //     return {
+  //       name: `${sku} - ${name}`,
+  //       id,
+  //       // vendorID: vendor_products?.map((ele) => ele.vendor_vendor_id),
+  //       costPrice
+  //     }
+  //   }
+  // )
 
 
-  const productsId = products.map((ele, i) => ele.product_id)
+  const productsId = products.map((ele, i) => ele.id)
+  console.log('productsId: ', productsId);
   const inventoryProductsId = products.map((ele, i) => ele.products_product_id)
 
   const avilableProductsID = filterExistingValues(productsId, inventoryProductsId)
@@ -143,6 +165,7 @@ export const ProductsList = () => {
   const [ErrorMsgs, setErrorMsgs] = useState([])
   const [unitSuggestions, setUnitSuggestions] = useState<any>(null)
   const [categorySuggestions, setCategorySuggestions] = useState<any>(null)
+  const [kitSuggestions, setKitSuggestions] = useState<any>(null)
   const [filters, setFilters] = useState(null)
   const [globalFilterValue, setGlobalFilterValue] = useState("")
 
@@ -309,6 +332,8 @@ export const ProductsList = () => {
 
 
   const searchCategory = createSearchFunction(categories_options, setCategorySuggestions)
+  const kitSearchCategory = createSearchFunction(kitCategories_options, setKitSuggestions)
+
 
   const onBasicUpload = async (e) => {
     let index = 2
@@ -386,7 +411,6 @@ export const ProductsList = () => {
 
   const [editUpdateProduct, setEditUpdateProduct] = useState(false)
 
-  const [updateActiveProduct] = useMutation(updateProduct)
 
 
   const formik = useFormik({
@@ -397,24 +421,15 @@ export const ProductsList = () => {
     onSubmit: async (data) => {
       console.log('data: ', data);
 
-      const { name, description, sku, length, width,
-        hsnCode,
-        height, weight, costPrice, tags
-        , color } = data
+      const { name, description, category, sku, length, width, hsnCode, height, weight, costPrice, tags, color } = data
 
       const tagsValue = tags.map(({ value }) => value)
 
+      const productTypeValue = inputs?.map((i) => ({
+        id: i?.id,
+        quantity: i?.quantity
+      }))
       const { id: activeProductId } = activeRowData
-
-
-      // const formData = new FormData();
-      // if (imageUploadObject) {
-      //   console.log('---imageUploadObject: ', imageUploadObject);
-      //   formData.append("file", imageUploadObject);
-      // }
-      // console.log('formData: ', formData.get("file"));
-
-
       if (editUpdateProduct) {
 
         try {
@@ -427,7 +442,14 @@ export const ProductsList = () => {
             weight: Number(weight),
             product_tags: {
               create: tagsValue.map((e) => ({ tags: e })),
+            },
+            kit_products: {
+              create: productTypeValue.map((e) => ({
+                kitProductID: e.id,
+                quantity: Number(e.quantity)
+              }))
             }
+
           }, {
             onSuccess: () => {
               alert('Update Done')
@@ -450,6 +472,7 @@ export const ProductsList = () => {
               name: name,
               description: description,
               sku,
+              category: Number(formik?.values?.category?.id),
               costPrice: Number(costPrice),
               color,
               length: Number(length),
@@ -457,22 +480,30 @@ export const ProductsList = () => {
               height: Number(height),
               weight: Number(weight),
               hsnCode: hsnCode,
+              type: Number(formik?.values?.type?.id),
               product_tags: {
                 create: tagsValue.map((e) => ({ tags: e })),
+              },
+
+              kit_products: {
+                create: productTypeValue?.map((e) => ({
+                  kitProductID: formik.values.kitProductID.id,
+                  quantity: Number(formik?.values?.quantity),
+                }))
               }
             },
             {
               onSuccess: async (data) => {
-                console.log('data: ', data);
 
+                alert('Created')
               },
               onError: (error) => {
-                // alert(`error ${data}`)
+                alert('not created!')
                 console.log('createProductMutation error: ', error);
               }
             }
           )
-          // await refetch()
+          await refetch()
         } catch (err) {
 
 
@@ -486,6 +517,10 @@ export const ProductsList = () => {
       // formik.resetForm()
     },
   })
+
+
+
+  console.log(formik.values, 'formik')
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
@@ -535,13 +570,27 @@ export const ProductsList = () => {
     setErrorMsgs(msgArray)
   }
 
+
   const [selectedStatus, setSelectedStatus] = useState(null);
+  const [checkBundle, setCheckBundle] = useState(false)
+
+  console.log('selectedStatus: ', selectedStatus);
   const StatusCheck = [
-    { name: 'Simple' },
-    { name: 'Bundle' },
+    { id: 1, type: 'SIMPLE' },
+    { id: 2, type: 'BUNDLE' },
   ];
+  useEffect(() => {
+    if (selectedStatus?.name === 'Bundle') {
+      setCheckBundle(true);
+    } else {
+      setCheckBundle(false);
+    }
+  }, [selectedStatus]);
 
   const [inputs, setInputs] = useState([{ product: '', quantity: '' }]);
+
+  console.log('inputs: ',);
+  // 
 
 
   const handleAddInput = () => {
@@ -550,6 +599,9 @@ export const ProductsList = () => {
 
 
   const handleRemoveInput = (index) => {
+    if (inputs.length === 1) {
+      return; // don't remove the only input
+    }
     const newInputs = [...inputs];
     newInputs.splice(index, 1);
     setInputs(newInputs);
@@ -562,13 +614,9 @@ export const ProductsList = () => {
     newInputs[index][name] = value;
     setInputs(newInputs);
   };
-  // let category = typeof e.target.value === "string" ? e.value : e.value
 
-  // await formik.setValues({
-  //   ...formik.values,
-  //   category,
-  // })
 
+  console.log('xx: ', inputs);
 
 
   return (
@@ -728,6 +776,7 @@ export const ProductsList = () => {
               {
                 [
                   { type: 'text', label: "Name*", field: "name", header: "Name" },
+                  // { type: 'text', label: "sku*", field: "sku", header: "SKU" },
                   { type: 'text', label: "Length", field: "length", header: "Length" },
                   { type: 'text', label: "Width", field: "width", header: "Width" },
                   { type: 'text', label: "Height", field: "height", header: "Height" },
@@ -788,7 +837,7 @@ export const ProductsList = () => {
                       await formik.setValues({
                         ...formik.values,
                         sku,
-                        category,
+                        category
                       })
                     }}
                     aria-label="Product Category"
@@ -804,14 +853,18 @@ export const ProductsList = () => {
                 </span>
                 {getFormErrorMessage("category")}
               </div>
+
               <div key={`productType`} className="field col-12 lg:col-5 md:col-6 mt-4">
                 <span className="p-float-label">
                   <Dropdown
                     disabled={productEditState}
                     value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.value)}
+                    onChange={async (e) => {
+                      setSelectedStatus(e.value)
+                      formik.setFieldValue("type", e.value);
+                    }}
                     options={StatusCheck}
-                    optionLabel="name"
+                    optionLabel="type"
                     placeholder="Type"
                     className="w-full"
                   />
@@ -824,6 +877,90 @@ export const ProductsList = () => {
                 </span>
                 {getFormErrorMessage("category")}
               </div>
+            </div>
+
+
+            <div className="">
+
+              {selectedStatus?.type === 'BUNDLE' ?
+                <div>
+                  <div className="">
+                    {inputs.map((input, index) => (
+                      <div key={index} className='flex gap-4 align-items-center mt-3'>
+                        <span className="p-float-label">
+                          <AutoComplete
+                            id="name"
+                            value={input?.product}
+                            suggestions={kitSuggestions}
+                            completeMethod={kitSearchCategory}
+                            disabled={productEditState}
+                            dropdown
+                            forceSelection
+                            field="name"
+                            onChange={async (e) => {
+                              console.log(e.value, 'event')
+                              handleInputChange(e, index)
+                              const test = [...inputs]
+                              test[index] = { ...e.value }
+                              setInputs(test)
+                              
+
+                            }}
+                            aria-label="products"
+                            dropdownAriaLabel="Select Product"
+                            className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                            style={{ width: '400px' }}
+                          />
+                          <label
+                            htmlFor={"type"}
+                            className={classNames({ "p-error": isFormFieldValid("type") })}
+                          >
+                            Kit Product
+                          </label>
+                        </span>
+
+                        <span className="p-float-label">
+                          <InputText
+                            className=''
+                            disabled={productEditState}
+                            type='text'
+                            name='quantity'
+                            value={input.quantity}
+                            onChange={async (e) => {
+                              handleInputChange(e, index)
+                             
+                            }}
+                            style={{ width: '400px' }}
+                          />
+                          <label
+                            htmlFor={"type"}
+                            className={classNames({ "p-error": isFormFieldValid("type") })}
+                          >
+                            Quantity
+                          </label>
+                        </span>
+
+                        <Button
+                          icon="pi pi-minus"
+                          className="p-2 m-1"
+                          onClick={() => handleRemoveInput(index)}
+                          style={{ height: '40px' }}
+                        />
+
+                        <Button
+                          icon="pi pi-plus"
+                          className="m-1"
+                          onClick={handleAddInput}
+                          style={{ height: '40px' }}
+                        />
+                      </div>
+                    ))
+                    }
+                  </div>
+
+                </div>
+
+                : null}
             </div>
 
             <div className="flex mt-4">
@@ -846,12 +983,9 @@ export const ProductsList = () => {
             </div>
           </form>
         </div>
-      </div>
+      </div >
 
-      <div>{showData}</div>
-      {/* <div><pre>{JSON.stringify(inputs,null,2)}</pre></div> */}
-
-      <div className="col-12">
+      <div className="col-12" >
         <div className="card">
           <DataTable
             value={products}
@@ -864,12 +998,33 @@ export const ProductsList = () => {
             emptyMessage="No Results found."
             rowHover={true}
             onRowClick={async (e) => {
+              console.log('e.data: ', e.data);
               setActiveRowData({ ...e.data })
               setProductEditState(true)
               setActiveProduct(true)
               setProductDialog(true)
+              setCheckBundle(true)
+              setSelectedStatus(e.data.product_types)
+
+              const _kitData = e.data.kit_products.map((prod) => {
+                const { products_kit_products_kitProductIDToproducts: product, quantity } = prod
+                return ({
+                  product: { ...product, name: `${product.sku}-${product.name}` },
+                  quantity,
+                })
+              });
+              setInputs(_kitData)
+
+
+
+
+
               await formik.setValues({
                 ...e.data,
+                type: e.data.product_types.type,
+                category: e.data.product_categories,
+
+
               })
               scrolToTop?.current && scrolToTop?.current.scrollIntoView()
             }}
@@ -878,8 +1033,8 @@ export const ProductsList = () => {
             {columnComponents}
           </DataTable>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   )
 }
 

@@ -140,15 +140,15 @@ model inventory_products {
 }
 
 model kit_products {
-  id                                        Int      @id @default(autoincrement())
-  quantity                                  Int?
-  kitId                                     Int
-  productId                                 Int
-  products_kit_products_kitIdToproducts     products @relation("kit_products_kitIdToproducts", fields: [kitId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products1")
-  products_kit_products_productIdToproducts products @relation("kit_products_productIdToproducts", fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products2")
+  id                                           Int      @id @default(autoincrement())
+  productsId                                   Int
+  quantity                                     Int
+  kitProductID                                 Int
+  products                                     products @relation(fields: [productsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products1")
+  products_kit_products_kitProductIDToproducts products @relation("kit_products_kitProductIDToproducts", fields: [kitProductID], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products2")
 
-  @@index([kitId], map: "fk_kit_products_products1_idx")
-  @@index([productId], map: "fk_kit_products_products2_idx")
+  @@index([productsId], map: "fk_kit_products_products1_idx")
+  @@index([kitProductID], map: "fk_kit_products_products2_idx")
 }
 
 model po_products {
@@ -220,38 +220,38 @@ model product_types {
 }
 
 model products {
-  id                                             Int                  @id @default(autoincrement())
-  name                                           String               @db.VarChar(45)
-  sku                                            String               @unique(map: "sku_UNIQUE") @db.VarChar(15)
-  description                                    String?              @db.LongText
-  length                                         Int?
-  width                                          Int?
-  height                                         Int?
-  weight                                         Int?
-  color                                          String?              @db.VarChar(7)
-  hsnCode                                        String?              @db.VarChar(15)
-  imageUrl                                       String?              @db.VarChar(300)
-  createdAT                                      DateTime?            @default(now()) @db.DateTime(0)
-  updatedAT                                      DateTime?            @default(now()) @db.DateTime(0)
-  customDuty                                     String?              @db.VarChar(45)
-  gstTaxTypeCode                                 String?              @db.VarChar(45)
-  taxCalcType                                    String?              @db.VarChar(45)
-  status                                         products_status      @default(Active)
-  category                                       Int?
-  brand                                          Int?
-  costPrice                                      Int
-  type                                           Int
-  inventory_products                             inventory_products[]
-  kit_products_kit_products_kitIdToproducts      kit_products[]       @relation("kit_products_kitIdToproducts")
-  kit_products_kit_products_productIdToproducts  kit_products[]       @relation("kit_products_productIdToproducts")
-  order_items                                    order_items[]
-  product_tags                                   product_tags[]
-  product_brand                                  product_brand?       @relation(fields: [brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_brands2")
-  product_categories                             product_categories?  @relation(fields: [category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_category")
-  product_types                                  product_types        @relation(fields: [type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_product_types1")
-  quality_ckeck_quality_ckeck_productsToproducts quality_ckeck[]      @relation("quality_ckeck_productsToproducts")
-  rfq_products                                   rfq_products[]
-  vendor_products                                vendor_products[]
+  id                                               Int                  @id @default(autoincrement())
+  name                                             String               @db.VarChar(45)
+  sku                                              String               @unique(map: "sku_UNIQUE") @db.VarChar(15)
+  description                                      String?              @db.LongText
+  length                                           Int?
+  width                                            Int?
+  height                                           Int?
+  weight                                           Int?
+  color                                            String?              @db.VarChar(7)
+  hsnCode                                          String?              @db.VarChar(15)
+  imageUrl                                         String?              @db.VarChar(300)
+  createdAT                                        DateTime?            @default(now()) @db.DateTime(0)
+  updatedAT                                        DateTime?            @default(now()) @db.DateTime(0)
+  customDuty                                       String?              @db.VarChar(45)
+  gstTaxTypeCode                                   String?              @db.VarChar(45)
+  taxCalcType                                      String?              @db.VarChar(45)
+  status                                           products_status      @default(Active)
+  category                                         Int?
+  brand                                            Int?
+  costPrice                                        Int
+  type                                             Int
+  inventory_products                               inventory_products[]
+  kit_products                                     kit_products[]
+  kit_products_kit_products_kitProductIDToproducts kit_products[]       @relation("kit_products_kitProductIDToproducts")
+  order_items                                      order_items[]
+  product_tags                                     product_tags[]
+  product_brand                                    product_brand?       @relation(fields: [brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_brands2")
+  product_categories                               product_categories?  @relation(fields: [category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_category")
+  product_types                                    product_types        @relation(fields: [type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_product_types1")
+  quality_ckeck_quality_ckeck_productsToproducts   quality_ckeck[]      @relation("quality_ckeck_productsToproducts")
+  rfq_products                                     rfq_products[]
+  vendor_products                                  vendor_products[]
 
   @@index([brand], map: "fk_products_brands2_idx")
   @@index([category], map: "fk_products_category_idx")

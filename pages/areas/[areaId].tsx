@@ -107,59 +107,7 @@ export const Area = () => {
     validationSchema: Yup.object().shape({
       number: Yup.string().required("*Required")
     }),
-    // onSubmit: async (data) => {
-    //   console.log('data: ', data);
-    //   const { number, length, width, loadingStrength, reach, area, shelfType, sellable } = data
-    //   const { id: areaRowId } = rowDataStore
-    //   if (updateShelfs) {
-    //     try{
-    //       await updateShelfsMutation({
-    //         id :areaRowId,
-    //         number,
-    //         area:areaId,
-    //       },{
-    //         onSuccess: () =>{
-    //           alert('Update')
-    //         },
-    //         onError: (data) =>{
-    //           console.log('data: ', data);
-    //           alert('update Error')
-    //         }
-    //       }
-    //       )
-    //     }catch (error) {
-    //       console.log('error: update', error);
-    //     }
-    //   } else {
-    //     try {
-    //       await createShelfMutation({
-    //         sellable: sellable?.value,
-    //         number,
-    //         length: Number(length),
-    //         width: Number(width),
-    //         loadingStrength: Number(loadingStrength),
-    //         reach,
-    //         area: areaId,
-    //         shelfType: shelfType?.id
-
-    //       }, {
-    //         onSuccess: (data) => {
-    //           alert("Created!")
-    //           refetch()
-    //           console.log('data: ', data);
-    //         },
-    //         onError: (error) => {
-    //           alert("not created !")
-    //           console.log('error: ', error);
-    //         }
-    //       }
-    //       )
-    //     } catch (error) {
-    //       console.log('error: ', error);
-
-    //     }
-    //   }
-    // }
+ 
     onSubmit: async (data) => {
       const { number, length, width, loadingStrength, reach, area, shelfType, sellable } = data
       const { id: areaRowId } = rowDataStore
@@ -377,9 +325,7 @@ export const Area = () => {
           <Column
             header="Action"
             body={(rowData) => {
-              console.log('rowData: ', rowData);
-              const _shelfType = shelfTypeSuggestions?.find(shelfType => shelfType.id === rowData.shelfType);
-              console.log('_shelfType: ', _shelfType);
+              console.log('rowData: ', rowData)
 
               return (
                 <div>
@@ -392,6 +338,7 @@ export const Area = () => {
                       setEditAreas(true);
                       setUpdateShelfs(true);
                       const _sellable = rowData.sellable ? { label: 'True', value: true } : { label: 'False', value: false }
+                      console.log('_sellable: ', _sellable);
                       await formik.setValues({
                         ...rowData,
                         sellable: _sellable,

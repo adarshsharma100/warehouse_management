@@ -6,8 +6,9 @@ const CreateProduct = z.object({
   name: z.string(),
   description: z.string(),
   sku: z.string(),
-  product_tags: z.unknown(),
   costPrice: z.number(),
+  product_tags: z.unknown(),
+  kit_products: z.unknown(),
   length: z.unknown().optional(),
   width: z.unknown().optional(),
   height: z.unknown().optional(),
@@ -19,8 +20,9 @@ const CreateProduct = z.object({
   taxCalcType: z.unknown().optional(),
   category: z.unknown().optional(),
   brand: z.unknown().optional(),
+  type: z.number(),
 })
- 
+
 export default resolver.pipe(
   resolver.zod(CreateProduct),
   // resolver.authorize(),
