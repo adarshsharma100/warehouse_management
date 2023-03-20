@@ -8,19 +8,21 @@ datasource db {
 }
 
 model addresses {
-  id                                 Int               @id @default(autoincrement())
-  buildingNumber                     String?           @db.VarChar(15)
-  areaStreet                         String?           @db.VarChar(150)
-  landmarkName                       String?           @db.VarChar(100)
-  cityCountryProvince                String            @db.VarChar(45)
-  state                              String?           @db.VarChar(45)
-  pincode                            Int?
-  country                            Int
-  country_addresses_countryTocountry country           @relation("addresses_countryTocountry", fields: [country], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_addresses_country1")
-  contact_number                     contact_number[]
-  customer                           customer[]
-  emails_emails_addressesToaddresses emails[]          @relation("emails_addressesToaddresses")
-  vendor_branches                    vendor_branches[]
+  id                                         Int               @id @default(autoincrement())
+  buildingNumber                             String?           @db.VarChar(15)
+  areaStreet                                 String?           @db.VarChar(150)
+  landmarkName                               String?           @db.VarChar(100)
+  cityCountryProvince                        String            @db.VarChar(45)
+  state                                      String?           @db.VarChar(45)
+  pincode                                    Int?
+  country                                    Int
+  country_addresses_countryTocountry         country           @relation("addresses_countryTocountry", fields: [country], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_addresses_country1")
+  contact_number                             contact_number[]
+  customer                                   customer[]
+  emails_emails_addressesToaddresses         emails[]          @relation("emails_addressesToaddresses")
+  orders_orders_shippingAddressIdToaddresses orders[]          @relation("orders_shippingAddressIdToaddresses")
+  orders_orders_billingAddressIdToaddresses  orders[]          @relation("orders_billingAddressIdToaddresses")
+  vendor_branches                            vendor_branches[]
 
   @@index([country], map: "fk_addresses_country1_idx")
 }
@@ -483,11 +485,12 @@ model customer {
   id                               Int       @id @default(autoincrement())
   firstName                        String?   @db.VarChar(45)
   lastName                         String?   @db.VarChar(45)
-  address                          Int
-  addresses                        addresses @relation(fields: [address], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_customer_addresses1")
+  addressId                        Int
+  shopifyId                        String?   @db.VarChar(45)
+  addresses                        addresses @relation(fields: [addressId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_customer_addresses1")
   orders_orders_customerTocustomer orders[]  @relation("orders_customerTocustomer")
 
-  @@index([address], map: "fk_customer_addresses1_idx")
+  @@index([addressId], map: "fk_customer_addresses1_idx")
 }
 
 model order_items {
@@ -510,16 +513,34 @@ model order_status {
 }
 
 model orders {
-  id                                 Int           @id @default(autoincrement())
-  orderNumber                        String?       @db.VarChar(45)
-  customer                           Int
-  orderStatus                        Int
-  order_items                        order_items[]
-  customer_orders_customerTocustomer customer      @relation("orders_customerTocustomer", fields: [customer], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_customer1")
-  order_status                       order_status  @relation(fields: [orderStatus], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_order_status1")
+  id                                            Int           @id @default(autoincrement())
+  orderNumber                                   String?       @db.VarChar(45)
+  customer                                      Int
+  orderStatus                                   Int
+  shippingAddressId                             Int
+  billingAddressId                              Int
+  ShopifyId                                     Int?
+  createdAt                                     DateTime?     @db.DateTime(0)
+  order_items                                   order_items[]
+  shopify                                       shopify?      @relation(fields: [ShopifyId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_Shopify1")
+  addresses_orders_shippingAddressIdToaddresses addresses     @relation("orders_shippingAddressIdToaddresses", fields: [shippingAddressId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_addresses1")
+  addresses_orders_billingAddressIdToaddresses  addresses     @relation("orders_billingAddressIdToaddresses", fields: [billingAddressId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_addresses2")
+  customer_orders_customerTocustomer            customer      @relation("orders_customerTocustomer", fields: [customer], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_customer1")
+  order_status                                  order_status  @relation(fields: [orderStatus], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_order_status1")
 
   @@index([customer], map: "fk_orders_customer1_idx")
   @@index([orderStatus], map: "fk_orders_order_status1_idx")
+  @@index([ShopifyId], map: "fk_orders_Shopify1_idx")
+  @@index([shippingAddressId], map: "fk_orders_addresses1_idx")
+  @@index([billingAddressId], map: "fk_orders_addresses2_idx")
+}
+
+model shopify {
+  id             Int      @id @default(autoincrement())
+  orderId        String?  @db.VarChar(45)
+  orderNumber    String?  @db.VarChar(45)
+  orderStatusUrl String?  @db.VarChar(200)
+  orders         orders[]
 }
 
 enum contact_number_type {
