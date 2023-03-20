@@ -1,11 +1,17 @@
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { Routes } from "@blitzjs/next";
 import Head from "next/head";
 import Link from "next/link";
 import { usePaginatedQuery } from "@blitzjs/rpc";
 import { useRouter } from "next/router";
-import Layout from "src/core/layouts/Layout";
-import getOrders from "src/orders/queries/getOrders";
+import Layout from "layouts/Layout"
+import getOrders from "app/orders/queries/getOrders";
+import Loading from "components/loading";
+import { Button } from "primereact/button";
+import axios from "axios";
+import { DataTable } from "primereact/datatable";
+import { Column } from "primereact/column";
+import { dateFormat } from "app/constants";
 
 const ITEMS_PER_PAGE = 100;
 
@@ -17,13 +23,49 @@ export const OrdersList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   });
+  // Todo : UsePaginatedQueries  
 
-  const goToPreviousPage = () => router.push({ query: { page: page - 1 } });
-  const goToNextPage = () => router.push({ query: { page: page + 1 } });
+  console.log('orders: ', orders);
+  // const goToPreviousPage = () => router.push({ query: { page: page - 1 } });
+  // const goToNextPage = () => router.push({ query: { page: page + 1 } });
+
+
+
+  useEffect(() => {
+    // let config = {
+    //   headers: {
+    //     'X-Shopify-Access-Token': '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',
+    //     'Content-Type': 'application/json'
+    //   },
+    // };
+
+    // axios.get("https://robocraze-com.myshopify.com/admin/api/2023-01/orders.json", config)
+    //   .then((response) => {
+    //     console.log(response.data);
+    //   })
+    //   .catch((error) => {
+    //     console.log(error);
+    //   });
+
+    // axios.get(""{
+    //   headers: {
+    //     "X-Shopify-Access-Token": "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",
+    //   },
+    // })
+    //   .then((response) => console.log("responseobj", response.data))
+    //   .catch((error) => console.log("error123", error));
+
+
+
+
+  }, [])
+
+
+
 
   return (
     <div>
-      <ul>
+      {/* <ul>
         {orders.map((order) => (
           <li key={order.id}>
             <Link href={Routes.ShowOrderPage({ orderId: order.id })}>
@@ -31,38 +73,118 @@ export const OrdersList = () => {
             </Link>
           </li>
         ))}
-      </ul>
+      </ul> */}
 
-      <button disabled={page === 0} onClick={goToPreviousPage}>
-        Previous
-      </button>
-      <button disabled={!hasMore} onClick={goToNextPage}>
-        Next
-      </button>
-    </div>
+      <div>
+        <div className="card flex justify-content-between align-items-center mb-2">
+          <h4 className="mb-0">Orders</h4>
+          <div className="flex justify-content-end align-items-center">
+            <Button
+              icon="pi pi-plus"
+              label="Create Order"
+              onClick={() => {
+
+              }}
+            ></Button>
+
+          </div>
+        </div>
+
+      </div>
+      <DataTable
+        value={orders}
+        responsiveLayout="scroll"
+        showGridlines
+        // header={renderHeader}
+        stripedRows
+        className="text-s datatable-responsive"
+
+      // paginator
+      // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
+      // rows={PAGINATION_VARIABLES.rows}
+      // rowsPerPageOptions={PAGINATION_VARIABLES.rowsPerPageOptions}
+      // paginatorTemplate={PAGINATION_VARIABLES.paginatorTemplate}
+      >
+        <Column
+          // field={}
+          header="Order Number"
+          body={(rowData) => rowData.shopifyId ? rowData.shopify.orderNumber : rowData.id}
+        // className="text-center"
+        />
+        <Column
+          field=""
+          header="Products"
+          body={(rowData) => {
+            return <ol>{rowData.order_items.map((product, i) => {
+              const { quantity, products: { name, sku } } = product
+              return (
+                <li key={`i${product}`}>
+                  <p>Name:{name}</p>
+                  <p>SKU:{sku}</p>
+                  <p>Quantity:{quantity}</p>
+                </li>
+              )
+            }
+            )}</ol>
+
+          }}
+
+        // className="text-center"
+        />
+
+        <Column
+          field="products.name"
+          header="Channel"
+          // className="text-center"
+          body={(rowdata) => rowdata.shopifyId ? "SH" : "IH"}
+
+        />
+        <Column
+          // todo add customer details
+          field="customers.firstName"
+          header="Customer Details"
+        // className="text-center"
+        />
+        <Column
+          field="quantity"
+          header="Status"
+        // className="text-center"
+        />
+        <Column
+          field="gateway"
+          header="Payment Gateway"
+        // className="text-center"
+
+        />
+        <Column
+          field="totalPrice"
+          header="Amount"
+        // className="text-center"
+        />
+        <Column
+          field="createdAt"
+          header="Created At"
+          // className="text-center"
+          body={(rowData) => dateFormat(rowData.createdAt)}
+        />
+        <Column
+          field="channelCreatedAt"
+          header="Channel Created At"
+          body={(rowData) => dateFormat(rowData.channelCreatedAt)}
+        />
+      </DataTable>
+    </div >
   );
 };
 
 const OrdersPage = () => {
   return (
-    <Layout>
-      <Head>
-        <title>Orders</title>
-      </Head>
-
-      <div>
-        <p>
-          <Link href={Routes.NewOrderPage()}>
-            <a>Create Order</a>
-          </Link>
-        </p>
-
-        <Suspense fallback={<div>Loading...</div>}>
-          <OrdersList />
-        </Suspense>
-      </div>
-    </Layout>
-  );
+    <Suspense fallback={<Loading />}>
+      <Layout>
+        <OrdersList />
+      </Layout>
+    </Suspense>
+  )
 };
 
 export default OrdersPage;
