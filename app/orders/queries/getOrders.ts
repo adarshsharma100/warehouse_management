@@ -29,7 +29,16 @@ export default resolver.pipe(
             },
             order_status: true,
             shopify: true,
-            customers: true,
+            customers: {
+              include: {
+                addresses: {
+                  select: {
+                    contact_number: true,
+                    emails_emails_addressesToaddresses: true,
+                  },
+                },
+              },
+            },
           },
         }),
     })
