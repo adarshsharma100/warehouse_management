@@ -512,6 +512,7 @@ model orders {
   totalPrice                                    Int
   gateway                                       String        @db.VarChar(45)
   channelCreatedAt                              DateTime      @default(now()) @db.DateTime(0)
+  cursor                                        String?       @db.VarChar(100)
   order_items                                   order_items[]
   addresses_orders_shippingAddressIdToaddresses addresses     @relation("orders_shippingAddressIdToaddresses", fields: [shippingAddressId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_addresses1")
   addresses_orders_billingAddressIdToaddresses  addresses     @relation("orders_billingAddressIdToaddresses", fields: [billingAddressId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_addresses2")
@@ -526,14 +527,6 @@ model orders {
   @@index([shopifyId], map: "fk_orders_shopify1_idx")
 }
 
-model shopify {
-  id             Int      @id @default(autoincrement())
-  orderId        String?  @db.VarChar(45)
-  orderNumber    String?  @db.VarChar(45)
-  orderStatusUrl String?  @db.VarChar(200)
-  orders         orders[]
-}
-
 model customers {
   id          Int       @id @default(autoincrement())
   firstName   String?   @db.VarChar(45)
@@ -544,6 +537,14 @@ model customers {
   orders      orders[]
 
   @@index([addressesId], map: "fk_customers_addresses1_idx")
+}
+
+model shopify {
+  id             Int      @id @default(autoincrement())
+  orderId        String?  @db.VarChar(45)
+  orderNumber    String?  @db.VarChar(45)
+  orderStatusUrl String?  @db.VarChar(200)
+  orders         orders[]
 }
 
 enum contact_number_type {
