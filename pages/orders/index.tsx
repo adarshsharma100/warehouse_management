@@ -8,7 +8,7 @@ import { Button } from "primereact/button";
 import * as Yup from "yup"
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
-import { dateFormat } from "app/constants";
+import { cities, dateFormat } from "app/constants";
 import { OverlayPanel } from 'primereact/overlaypanel';
 import { InputText } from "primereact/inputtext";
 import { Dropdown } from "primereact/dropdown";
@@ -22,7 +22,9 @@ import getProducts from "app/products/queries/getProducts"
 import { useFormik } from "formik";
 import CreateOrder from 'app/orders/mutations/createOrder'
 import getCustomers from "app/customers/queries/getCustomers";
+import { TriStateCheckbox } from 'primereact/tristatecheckbox';
 import { ToggleButton } from 'primereact/togglebutton';
+import { Checkbox } from "primereact/checkbox";
 
 
 const initialOrderDetails = {
@@ -31,6 +33,7 @@ const initialOrderDetails = {
   emailID: '',
   customer: '',
   contactNumber: '',
+  checkedAddress: '',
   orderStatus: '',
   // shippingAddressId: "",
   // billingAddressId: "",
@@ -40,6 +43,15 @@ const initialOrderDetails = {
   totalPrice: "",
   gateway: "",
   orderItems: '',
+  address: '',
+  city: '',
+  state: '',
+  country:'',
+  areaStreet:'',
+  landmarkName:'',
+  pincode:'',
+  bulidingNumber:'',
+
 }
 
 const customers_ = [{ id: 1, name: 'customers1' },
@@ -47,7 +59,10 @@ const customers_ = [{ id: 1, name: 'customers1' },
 { id: 4, name: 'customers4' }, { id: 5, name: 'customers5' }
 ]
 const gateway_ = [{ id: 1, name: 'Paypal' },
-{ id: 2, name: 'Paytm' }, { id: 3, name: '' },
+{ id: 2, name: 'Paytm' },
+]
+const paymentStatus_ = [{ id: 1, name: 'Unpaid' },
+{ id: 2, name: 'Paid' },
 ]
 
 const ITEMS_PER_PAGE = 100;
@@ -76,6 +91,7 @@ export const OrdersList = () => {
     take: ITEMS_PER_PAGE,
     where: undefined
   })
+
   // const [{ customers }] = useQuery(getCustomers, {
   //   skip: undefined,
   //   where: undefined,
@@ -87,6 +103,7 @@ export const OrdersList = () => {
   const [{ products }, { refetch }] = useQuery(getProducts, {
     orderBy: { id: "asc" },
   })
+  console.log('products: ', products);
 
 
   const [createMutationOrder] = useMutation(CreateOrder)
@@ -97,27 +114,60 @@ export const OrdersList = () => {
   // const goToPreviousPage = () => router.push({ query: { page: page - 1 } });
   // const goToNextPage = () => router.push({ query: { page: page + 1 } });
 
+
+
+  const [checked, setChecked] = useState(false);
+  console.log('checked: ', checked);
+
   const [orderItemsDetails, setOrderItemsDetails] = useState(initialOrderDetails)
-  const [orderDialog, setOrderDialog] = useState(false)
+  const [orderDialog, setOrderDialog] = useState(true)
   const [orderStatusOption, setOrderStatusOption] = useState(order_statuses)
   const [orderStatusSuggestions, setOderStatusSuggestions] = useState<any>(null)
-  const [orderItemsOptions] = useState(products)
+
+  const orderItemsOptions = products.map(({ id, name, sku, description }) => {
+    return {
+      name: `${sku} - ${name}`,
+      id,
+      description,
+    }
+  })
 
   const [orderItemsSuggestions, setOderItemsSuggestions] = useState<any>(null)
+
   const [customerOptions] = useState(customers_)
   const [customerOptionsSuggestions, setCustomerOptionsSuggestions] = useState<any>(null)
 
   const [gatewayOptions] = useState(gateway_)
   const [gatewayOptionsSuggestions, setGatewayOptionsSuggestions] = useState<any>(null)
 
+  const [paymentOptions] = useState(paymentStatus_)
+  const [paymentOptionsSuggestions, setPaymentOptionsSuggestions] = useState<any>(null)
+
+
+  const [addressSuggestion, setAddressSuggestion] = useState<any>(null)
+
 
   const searchOrderStatus = createSearchFunction(orderStatusOption, setOderStatusSuggestions)
   const searchOrderItems = createSearchFunction(orderItemsOptions, setOderItemsSuggestions)
   const searchCustomers = createSearchFunction(customerOptions, setCustomerOptionsSuggestions)
   const searchGateway = createSearchFunction(gatewayOptions, setGatewayOptionsSuggestions)
-  // const selectedOption = orderStatusOption.find( (option) => option.name)
-  // console.log('selectedOption: ', selectedOption);
+  const searchPayment = createSearchFunction(paymentOptions, setPaymentOptionsSuggestions)
 
+
+  const searchCities = (event: { query: string }) => {
+    setTimeout(() => {
+      let _filteredSuggestions
+      if (!event.query.trim().length) {
+        _filteredSuggestions = [...cities]
+      } else {
+        _filteredSuggestions = cities.filter((element) => {
+          return element.city.toLowerCase().startsWith(event.query.toLowerCase())
+        })
+      }
+
+      setAddressSuggestion(_filteredSuggestions)
+    }, 50)
+  }
 
 
 
@@ -193,11 +243,48 @@ export const OrdersList = () => {
       // }
     }
   })
-
+  console.log('000', formik.values)
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
+
+
+
+
+  const [orderItemInput, setOrderItemInput] = useState([{ id: '', name: '', quantity: '', price: '' }]);
+
+  const handleAddInput = () => {
+    setOrderItemInput([...orderItemInput, { id: '', name: '', quantity: '', price: '' }]);
+  };
+
+  const handleRemoveInput = (index) => {
+    if (orderItemInput.length === 1) {
+      return;
+    }
+    const newInputsItems = [...orderItemInput];
+    newInputsItems.splice(index, 1);
+    setOrderItemInput(newInputsItems);
+  };
+
+
+  const handleInputChange = (event, index) => {
+    const { name, value } = event.target;
+    setOrderItemInput(prevState => {
+      const newInputsItems = [...prevState];
+      newInputsItems[index][name] = value;
+
+      const newOrderItems = newInputsItems.map(({ id, name, quantity, price }) => ({ id, name, quantity, price, }));
+      const totalPrice = newOrderItems.reduce((acc, curr) => {
+        return acc + curr.price * curr.quantity;
+      }, 0)
+
+      // update the state with the new order items
+      formik.setValues({ ...formik.values, orderItems: newOrderItems, totalPrice: totalPrice });
+      return newInputsItems;
+    });
+  };
+
 
   return (
     <div className="grid w-full">
@@ -292,9 +379,15 @@ export const OrdersList = () => {
                 { field: "lastName", label: "Last Name" },
                 { field: "emailID", label: "Email ID" },
                 { field: "contactNumber", label: "Contact Number" },
-                { field: "totalPrice", label: "Total Price" },
-                { field: "quantity", label: "Quantity" },
-                { field: "paymentStatus", label: "Payment Status" },
+                { label: "Address", field: "address" },
+                
+                { label: "Area Street", field: "areaStreet" },
+                { label: "LandMark", field: "landmark Name" },
+                { label: "Building Number", field: "buildingNumber" },
+                { label: "Pincode", field: "pincode" },
+                // { field: "totalPrice", label: "Total Price" },
+                // { field: "quantity", label: "Quantity" },
+                // { field: "paymentStatus", label: "Payment Status" },
                 // { field: "gateway", label: "Gateway " },
                 // { field:"", label: 'Customer Id' },
               ].map((ele, i) => {
@@ -323,6 +416,100 @@ export const OrdersList = () => {
 
               })
               }
+
+              <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                <div className="p-float-label">
+                  <AutoComplete
+                    id="city"
+                    value={formik.values.city}
+                    suggestions={addressSuggestion}
+                    completeMethod={searchCities}
+                    field="city"
+                    onChange={async (e) => {
+                      let city = typeof e.value === "string" ? e.value : e.value.city
+                      let state = typeof e.value === "string" ? " " : e.value.state
+                      let country = typeof e.value === "string" ? "" : "India"
+
+                      await formik.setValues({ ...formik.values, city, state ,country})
+                    }}
+                    aria-label="cities"
+                    dropdownAriaLabel="Select City"
+                    className={classNames({ "p-invalid": isFormFieldValid("city") })}
+                  // disabled={!vendorEditState}
+                  />
+
+                  <label
+                    htmlFor="vendor_city"
+                    className={classNames({ "p-error": isFormFieldValid("city") })}
+                  >
+                    City
+                  </label>
+                </div>
+                {getFormErrorMessage("city")}
+              </div>
+
+
+              <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                <span className="p-float-label">
+                  <InputText
+                    id="state"
+                    value={formik.values.state}
+                    className={classNames({ "p-invalid": isFormFieldValid("state") })}
+                    // disabled={!vendorEditState}
+                    onChange={formik.handleChange}
+                  />
+                  <label
+                    htmlFor="state"
+                    className={classNames({ "p-error": isFormFieldValid("state") })}
+                  >
+                    State
+                  </label>
+                </span>
+                {getFormErrorMessage("state")}
+              </div>
+
+              <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                <span className="p-float-label">
+                  <InputText
+                    id="country"
+                    value={formik.values.country}
+                    className={classNames({ "p-invalid": isFormFieldValid("country") })}
+                    // disabled={!vendorEditState}
+                    onChange={formik.handleChange}
+                  />
+                  <label
+                    htmlFor="country"
+                    className={classNames({ "p-error": isFormFieldValid("country") })}
+                  >
+                   Country
+                  </label>
+                </span>
+                {getFormErrorMessage("country")}
+              </div>
+
+
+
+              <div className="field col-12 lg:col-2 md:col-6 mt-4">
+                <span className="p-float-label">
+                  <InputText
+                    disabled={true}
+                    id={"totalPrice"}
+                    // placeholder='SKU'
+                    name={"totalPrice"}
+                    value={formik.values.totalPrice}
+                    autoFocus
+                    className={classNames({ "p-invalid ": isFormFieldValid("description") })}
+                  />
+                  <label
+                    htmlFor={"totalPrice"}
+                    className={classNames({ "p-error": isFormFieldValid("sku") })}
+                  >
+                    TotalPrice
+                  </label>
+                </span>
+                {getFormErrorMessage("totalPrice")}
+              </div>
+
               <div key={`Order Status`} className="field col-12 lg:col-5 md:col-6 mt-4">
                 <span className="p-float-label">
                   <AutoComplete
@@ -351,35 +538,6 @@ export const OrdersList = () => {
                 {/* {getFormErrorMessage("category")} */}
               </div>
 
-              <div key={`Order Items`} className="field col-12 lg:col-5 md:col-6 mt-4">
-                <span className="p-float-label">
-                  <AutoComplete
-                    id="orderItems"
-                    value={formik.values.orderItems}
-                    dropdown
-                    forceSelection
-                    suggestions={orderItemsSuggestions}
-                    completeMethod={searchOrderItems}
-                    field="name"
-                    // aria-label="Order Items"
-                    // dropdownAriaLabel="Order Items"
-                    onChange={(e) => {
-
-                      const selectedOrderItem = orderItemsOptions.find(option_ => option_.name === e.value.name);
-                      const selectedItemsOptionName = selectedOrderItem ? selectedOrderItem.name : null;
-                      formik.setFieldValue('orderItems', selectedItemsOptionName);
-                    }}
-                    className={classNames({ "p-invalid": isFormFieldValid("category") })}
-                  />
-                  <label
-                    className={classNames({ "p-error": isFormFieldValid("category") })}
-                  >
-                    Order Items
-                  </label>
-                </span>
-                {/* {getFormErrorMessage("category")} */}
-              </div>
-
               <div key={`Customer`} className="field col-12 lg:col-5 md:col-6 mt-4">
                 <span className="p-float-label">
                   <AutoComplete
@@ -392,8 +550,8 @@ export const OrdersList = () => {
                     field="name"
                     onChange={(e) => {
                       const selectedOrderItem = customerOptions.find(option_ => option_.name === e.value.name);
-                      const selectedItemsOptionName = selectedOrderItem ? selectedOrderItem.name : null;
-                      formik.setFieldValue('customer', selectedItemsOptionName);
+                      // const selectedItemsOptionName = selectedOrderItem ? selectedOrderItem.name : null;
+                      formik.setFieldValue('customer', selectedOrderItem);
                     }}
                     aria-label="Customer"
                     dropdownAriaLabel="Customer"
@@ -438,13 +596,139 @@ export const OrdersList = () => {
                 {/* {getFormErrorMessage("category")} */}
               </div>
 
+              <div key={`paymentStatus`} className="field col-12 lg:col-5 md:col-6 mt-4">
+                <span className="p-float-label">
+                  <AutoComplete
+                    id="paymentStatus"
+                    value={formik.values.paymentStatus}
+                    dropdown
+                    forceSelection
+                    suggestions={paymentOptionsSuggestions}
+                    completeMethod={searchPayment}
+                    field="name"
+                    onChange={(e) => {
+
+                      const selectedOrderItem = paymentOptions.find(option_ => option_.name === e.value.name);
+                      const selectedItemsOptionName = selectedOrderItem ? selectedOrderItem.name : null;
+                      formik.setFieldValue('paymentStatus', selectedItemsOptionName);
+                    }}
+                    aria-label="paymentStatus"
+                    dropdownAriaLabel="paymentStatus"
+                    className={classNames({ "p-invalid": isFormFieldValid("paymentStatus") })}
+                  />
+                  <label
+
+                    className={classNames({ "p-error": isFormFieldValid("paymentStatus") })}
+                  >
+                    Payment Status
+                  </label>
+                </span>
+                {/* {getFormErrorMessage("category")} */}
+              </div>
+
               <div>
-                {/* <ToggleButton checked={checked} onChange={(e) => setChecked(e.value)} className="w-8rem" /> */}
+                <div className="">
+                  {orderItemInput.map((ele, index) => (
+                    <div key={index} className='flex gap-4 align-items-center mt-3'>
+                      <span className="p-float-label">
+                        <AutoComplete
+                          id="name"
+                          value={ele?.name}
+                          dropdown
+                          forceSelection
+                          suggestions={orderItemsSuggestions}
+                          completeMethod={searchOrderItems}
+                          field="name"
+                          onChange={async (e) => {
+                            console.log(e.value, 'event')
+                            handleInputChange(e, index)
+                            const test = [...orderItemInput]
+                            test[index] = { ...e.value }
+                            setOrderItemInput(test)
+                          }}
+                          aria-label="products"
+                          dropdownAriaLabel="Select Product"
+                          className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                          style={{ width: '400px' }}
+                        />
+                        <label
+                          htmlFor={"type"}
+                          className={classNames({ "p-error": isFormFieldValid("type") })}
+                        >
+                          Order Items
+                        </label>
+                      </span>
+
+                      <span className="p-float-label">
+                        <InputText
+                          className=''
+                          type='text'
+                          name='quantity'
+                          value={ele?.quantity}
+                          onChange={async (e) => {
+                            handleInputChange(e, index)
+
+                          }}
+                          style={{ width: '400px' }}
+                        />
+                        <label
+                          htmlFor={"type"}
+                          className={classNames({ "p-error": isFormFieldValid("type") })}
+                        >
+                          Quantity
+                        </label>
+                      </span>
+
+                      <span className="p-float-label">
+                        <InputText
+                          className=''
+                          type='text'
+                          name='price'
+                          value={ele?.price}
+                          onChange={async (e) => {
+                            handleInputChange(e, index)
+
+                          }}
+                          style={{ width: '400px' }}
+                        />
+                        <label
+                          htmlFor={"type"}
+                          className={classNames({ "p-error": isFormFieldValid("type") })}
+                        >
+                          Price
+                        </label>
+                      </span>
+
+                      <Button
+                        icon="pi pi-minus"
+                        className="p-2 m-1"
+                        onClick={() => handleRemoveInput(index)}
+                        style={{ height: '40px' }}
+                      />
+
+                      <Button
+                        icon="pi pi-plus"
+                        className="m-1"
+                        onClick={handleAddInput}
+                        style={{ height: '40px' }}
+                      />
+                    </div>
+                  ))
+                  }
+                </div>
               </div>
 
 
-
-
+              <div className="col-12">
+                <Checkbox
+                  value={formik.values.checkedAddress}
+                  checked={formik.values.checkedAddress === true}
+                  onChange={(e) => {
+                    formik.setFieldValue("checkedAddress", e.checked ? true : false);
+                  }}
+                  className="mt-2"
+                />
+              </div>
             </div>
 
             <div className="flex mt-4">
