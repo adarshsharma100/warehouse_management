@@ -2,7 +2,7 @@ import { Suspense, useEffect } from "react";
 import { Routes } from "@blitzjs/next";
 import Head from "next/head";
 import Link from "next/link";
-import { usePaginatedQuery } from "@blitzjs/rpc";
+import { useMutation, usePaginatedQuery } from "@blitzjs/rpc";
 import { useRouter } from "next/router";
 import Layout from "layouts/Layout"
 import getOrders from "app/orders/queries/getOrders";
@@ -12,13 +12,14 @@ import axios from "axios";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { dateFormat } from "app/constants";
+import createOrder from "app/orders/mutations/createOrder";
 
 const ITEMS_PER_PAGE = 100;
 
 export const OrdersList = () => {
   const router = useRouter();
   const page = Number(router.query.page) || 0;
-  const [{ orders, hasMore }] = usePaginatedQuery(getOrders, {
+  const [{ orders }, { refetch }] = usePaginatedQuery(getOrders, {
     orderBy: { id: "asc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
@@ -28,6 +29,8 @@ export const OrdersList = () => {
   console.log('orders: ', orders);
   // const goToPreviousPage = () => router.push({ query: { page: page - 1 } });
   // const goToNextPage = () => router.push({ query: { page: page + 1 } });
+
+  const [createNewOrder] = useMutation(createOrder)
 
 
 
@@ -84,13 +87,109 @@ export const OrdersList = () => {
               label="Create Order"
               onClick={() => {
 
+
               }}
             ></Button>
 
           </div>
         </div>
 
+
       </div>
+      <Button
+        icon="pi pi-plus"
+        label="Test Order"
+        className="block ml-auto"
+        onClick={async () => {
+          //working code for connecting alredy existing dat
+          // try {
+          //   const order = createNewOrder({
+          //     orderStatus: 4,
+          //     shippingAddressId: 210,
+          //     billingAddressId: 210,
+          //     createdAt: new Date(),
+          //     shopifyId: 1,
+          //     customerId: 1,
+          //     paymentStatus: "unpaid",
+          //     totalPrice: 200,
+          //     gateway: "paytm",
+          //     channelCreatedAt: new Date(),
+          //     order_items: {
+          //       create: [{
+          //         product: 6,
+          //         quantity: 10
+          //       }]
+          //     },
+          //     // customer_orders_customerTocustomer: {
+          //     //   create: {
+          //     //     firstName: "Varun",
+          //     //     lastName: "J",
+          //     //     addressesId: 212,
+          //     //     shopifyId: "1425869368574"
+          //     //   }
+          //     // }
+
+          //   },
+          //     {
+          //       onSuccess: async () => {
+          //         await refetch()
+          //         alert("created")
+          //       }
+          //     })
+          // } catch (error) {
+          //   console.log('error123: ', error);
+          // }
+
+          try {
+            const order = createNewOrder({
+              orderStatus: 4,
+              shippingAddressId: 210,
+              billingAddressId: 210,
+              createdAt: new Date(),
+              shopifyId: 1,
+              customerId: 1,
+              paymentStatus: "unpaid",
+              totalPrice: 200,
+              gateway: "paytm",
+              channelCreatedAt: new Date(),
+              order_items: {
+                create: [{
+                  product: 6,
+                  quantity: 10
+                }]
+              },
+              // customer_orders_customerTocustomer: {
+              //   create: {
+              //     firstName: "Varun",
+              //     lastName: "J",
+              //     addressesId: 212,
+              //     shopifyId: "1425869368574"
+              //   }
+              // }
+              shopify: {
+                create: {
+                  orderId: "14269358745",
+                  orderNumber: 63594,
+                  orderStatusUrl: "some url"
+                }
+              },
+
+            },
+              {
+                onSuccess: async () => {
+                  await refetch()
+                  alert("created")
+                }, onError: (error) => {
+                  alert(error)
+                },
+              })
+          } catch (error) {
+            console.log('error123: ', error);
+
+          }
+
+        }}
+      ></Button>
       <DataTable
         value={orders}
         responsiveLayout="scroll"
@@ -118,7 +217,7 @@ export const OrdersList = () => {
             return <ol>{rowData.order_items.map((product, i) => {
               const { quantity, products: { name, sku } } = product
               return (
-                <li key={`i${product}`}>
+                <li key={i}>
                   <p>Name:{name}</p>
                   <p>SKU:{sku}</p>
                   <p>Quantity:{quantity}</p>
