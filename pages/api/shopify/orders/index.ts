@@ -1,6 +1,7 @@
 import { getSession } from "@blitzjs/auth"
 import { NextApiRequest, NextApiResponse } from "next"
 import { GraphQLClient, gql } from "graphql-request"
+import db from "db"
 
 const store = "robocraze-com"
 const hostName = store + ".myshopify.com"
@@ -87,7 +88,6 @@ const getAllOrders = async (orders = [], after = null, timeout = 100) => {
   try {
     await sleep(timeout)
     const data = await graphQLClient.request(ordersQuery, after ? { after } : {})
-    console.log("data: ", data.orders.nodes[0])
     const { customer, shippingAddress, billingAddress, lineItems } = data.orders.nodes[0]
     const newOrderObject = {
       customer: {
@@ -114,6 +114,7 @@ const getAllOrders = async (orders = [], after = null, timeout = 100) => {
         },
       },
       order: {
+        shopifyId: data.orders.nodes[0].id,
         orderStatus: 4,
         isShippingIsBilling: false,
         shippingAddress: {
@@ -148,9 +149,9 @@ const getAllOrders = async (orders = [], after = null, timeout = 100) => {
             ],
           },
         },
-        paymentStatus: data.displayFinancialStatus,
-        totalPrice: parseFloat(data.totalPrice),
-        gateway: data.paymentGatewayNames?.join(","),
+        paymentStatus: data.orders.nodes[0].displayFinancialStatus,
+        totalPrice: parseFloat(data.orders.nodes[0].totalPrice),
+        gateway: data.orders.nodes[0].paymentGatewayNames?.join(","),
         order_items: {
           create: lineItems.nodes.map((lineItem) => ({
             product: 11,
@@ -160,6 +161,34 @@ const getAllOrders = async (orders = [], after = null, timeout = 100) => {
         },
       },
     }
+
+    const Customer = await db.customers.create({
+      data: newOrderObject.customer,
+    })
+
+    const ShippingAddress = await db.addresses.create({
+      data: newOrderObject.order.shippingAddress,
+    })
+
+    const BillingAddress = await db.addresses.create({
+      data: newOrderObject.order.billingAddress,
+    })
+
+    const order = await db.orders.create({
+      data: {
+        shopifyId: data.orders.nodes[0].id,
+        orderStatus: newOrderObject.order.orderStatus,
+        paymentStatus: newOrderObject.order.paymentStatus,
+        totalPrice: newOrderObject.order.totalPrice,
+        gateway: newOrderObject.order.gateway,
+        customerId: Customer.id,
+        shippingAddressId: ShippingAddress.id,
+        billingAddressId: BillingAddress.id,
+        order_items: newOrderObject.order.order_items,
+      },
+    })
+    console.log("order: ", order)
+
     return
     const foundIndex = data.orders.nodes.findIndex((data) => data.id === latestOrder.id)
     if (!data?.orders?.nodes?.length) {
@@ -177,9 +206,9 @@ const getAllOrders = async (orders = [], after = null, timeout = 100) => {
         timeout
       )
   } catch (error) {
-    // console.log("error! ", error)
+    console.log("error! ", error)
     console.log("timeout: ", timeout)
-    return getAllOrders(orders, after, timeout + 100)
+    // return getAllOrders(orders, after, timeout + 100)
   }
 }
 
