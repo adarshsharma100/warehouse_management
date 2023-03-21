@@ -486,6 +486,7 @@ model order_items {
   order    Int
   product  Int
   quantity Int
+  price    Int
   orders   orders   @relation(fields: [order], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_items_orders1")
   products products @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_items_products1")
 
@@ -512,6 +513,7 @@ model orders {
   totalPrice                                    Int
   gateway                                       String        @db.VarChar(45)
   channelCreatedAt                              DateTime      @default(now()) @db.DateTime(0)
+  cursor                                        String?       @db.VarChar(100)
   order_items                                   order_items[]
   addresses_orders_shippingAddressIdToaddresses addresses     @relation("orders_shippingAddressIdToaddresses", fields: [shippingAddressId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_addresses1")
   addresses_orders_billingAddressIdToaddresses  addresses     @relation("orders_billingAddressIdToaddresses", fields: [billingAddressId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_addresses2")

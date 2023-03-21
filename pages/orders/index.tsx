@@ -132,78 +132,105 @@ export const OrdersList = () => {
         label="Test Order"
         className="block ml-auto"
         onClick={async () => {
-          //working code for connecting alredy existing dat
-          // try {
-          //   const order = createNewOrder({
-          //     orderStatus: 4,
-          //     shippingAddressId: 210,
-          //     billingAddressId: 210,
-          //     createdAt: new Date(),
-          //     shopifyId: 1,
-          //     customerId: 1,
-          //     paymentStatus: "unpaid",
-          //     totalPrice: 200,
-          //     gateway: "paytm",
-          //     channelCreatedAt: new Date(),
-          //     order_items: {
-          //       create: [{
-          //         product: 6,
-          //         quantity: 10
-          //       }]
-          //     },
-          //     // customer_orders_customerTocustomer: {
-          //     //   create: {
-          //     //     firstName: "Varun",
-          //     //     lastName: "J",
-          //     //     addressesId: 212,
-          //     //     shopifyId: "1425869368574"
-          //     //   }
-          //     // }
-
-          //   },
-          //     {
-          //       onSuccess: async () => {
-          //         await refetch()
-          //         alert("created")
-          //       }
-          //     })
-          // } catch (error) {
-          //   console.log('error123: ', error);
-          // }
 
           try {
             const order = createNewOrder({
-              orderStatus: 4,
-              shippingAddressId: 210,
-              billingAddressId: 210,
-              createdAt: new Date(),
-              shopifyId: 1,
-              customerId: 1,
-              paymentStatus: "unpaid",
-              totalPrice: 200,
-              gateway: "paytm",
-              channelCreatedAt: new Date(),
-              order_items: {
-                create: [{
-                  product: 6,
-                  quantity: 10
-                }]
-              },
-              // customer_orders_customerTocustomer: {
-              //   create: {
-              //     firstName: "Varun",
-              //     lastName: "J",
-              //     addressesId: 212,
-              //     shopifyId: "1425869368574"
-              //   }
-              // }
-              shopify: {
-                create: {
-                  orderId: "14269358745",
-                  orderNumber: 63594,
-                  orderStatusUrl: "some url"
+              customer: {
+                firstName: "Varun",
+                lastName: "J",
+                shopifyId: "1425636985",
+                addresses: {
+                  create: {
+                    buildingNumber: "56",
+                    areaStreet: "street",
+                    landmarkName: "mark",
+                    cityCountryProvince: "Mysore",
+                    state: "Karnataka",
+                    pincode: 560079,
+                    country: 1,
+                    emails_emails_addressesToaddresses: {
+                      create: [
+                        {
+                          email: "test2@gmail.com",
+                        },
+                      ],
+                    },
+                    contact_number: {
+                      create: [
+                        {
+                          type: "landline",
+                          number: 1,
+                        },
+                      ],
+                    }
+
+                  }
                 }
               },
+              order: {
+                orderStatus: 4,
+                isShippingIsBilling: true,
+                shippingAddress: {
+                  buildingNumber: "123",
+                  areaStreet: "Main St.",
+                  landmarkName: "Central Park",
+                  cityCountryProvince: "New York",
+                  state: "NY",
+                  pincode: 10001,
+                  country: 1,
+                  emails_emails_addressesToaddresses: {
+                    create: [
+                      {
+                        email: "shiptest2@gmail.com",
+                      },
+                    ],
+                  },
+                  contact_number: {
+                    create: [
+                      {
+                        type: "landline",
+                        number: 1425,
+                      },
+                    ],
+                  }
+                },
+                billingAddress: {
+                  buildingNumber: "456",
+                  areaStreet: "Broadway",
+                  landmarkName: "Times Square",
+                  cityCountryProvince: "New York",
+                  state: "NY",
+                  pincode: 10001,
+                  country: 1,
+                  emails_emails_addressesToaddresses: {
+                    create: [
+                      {
+                        email: "Billtest2@gmail.com",
+                      },
+                    ],
+                  },
+                  contact_number: {
+                    create: [
+                      {
+                        type: "landline",
+                        number: 1,
+                      },
+                    ],
+                  }
+                },
+                paymentStatus: "unpaid",
+                totalPrice: 200,
+                gateway: "paytm",
+                channelCreatedAt: new Date(),
+                order_items: {
+                  create: [{
+                    product: 6,
+                    quantity: 10,
+                    price: 123,
+                  }]
+                },
+
+              }
 
             },
               {
