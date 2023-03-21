@@ -2,18 +2,17 @@ import { resolver } from "@blitzjs/rpc";
 import db from "db";
 import { z } from "zod";
 
-const UpdateOrder = z.object({
+const DeleteCustomer = z.object({
   id: z.number(),
-  name: z.string(),
 });
 
 export default resolver.pipe(
-  resolver.zod(UpdateOrder),
+  resolver.zod(DeleteCustomer),
   resolver.authorize(),
-  async ({ id, ...data }) => {
+  async ({ id }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-    const order = await db.orders.update({ where: { id }, data });
+    const customer = await db.customer.deleteMany({ where: { id } });
 
-    return order;
+    return customer;
   }
 );

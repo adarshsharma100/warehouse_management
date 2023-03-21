@@ -23,12 +23,34 @@ export default resolver.pipe(
           ...paginateArgs,
           where,
           orderBy,
+          
+          // include:{
+          //   order_status:true,
+          //   order_items:{
+          //     include: {
+          //       products:true
+          //     }
+          //   },
+          //   shopify:true,
+          //   customer:{
+          //     include:{
+          //       addresses:{
+          //         select:{
+          //           contact_number:true,
+          //           emails_emails_addressesToaddresses:true
+          //         }
+          //       }
+          //     }
+          //   }
+          // },
+
           include: {
             order_items: {
-              include: { products: true },
+              include: { products: true},
             },
             order_status: true,
-            shopify: true,
+            // shopify: true,
+            
             customers: {
               include: {
                 addresses: {
@@ -40,6 +62,8 @@ export default resolver.pipe(
               },
             },
           },
+
+
         }),
     })
 

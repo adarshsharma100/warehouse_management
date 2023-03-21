@@ -11,7 +11,7 @@ export default resolver.pipe(
   resolver.authorize(),
   async ({ id }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-    const order = await db.order.deleteMany({ where: { id } });
+    const order = await db.orders.deleteMany({ where: { id } });
 
     return order;
   }

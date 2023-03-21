@@ -3,20 +3,20 @@ import { resolver } from "@blitzjs/rpc";
 import db from "db";
 import { z } from "zod";
 
-const GetOrder = z.object({
+const GetOrder_item = z.object({
   // This accepts type of undefined, but is required at runtime
   id: z.number().optional().refine(Boolean, "Required"),
 });
 
 export default resolver.pipe(
-  resolver.zod(GetOrder),
+  resolver.zod(GetOrder_item),
   resolver.authorize(),
   async ({ id }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-    const order = await db.orders.findFirst({ where: { id } });
+    const order_item = await db.order_items.findFirst({ where: { id } });
 
-    if (!order) throw new NotFoundError();
+    if (!order_item) throw new NotFoundError();
 
-    return order;
+    return order_item;
   }
 );
