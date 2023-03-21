@@ -151,15 +151,16 @@ export const createOrderFunction = async (input) => {
       gateway,
       isShippingIsBilling,
       order_items,
+      shopifyId,
     },
   } = input
 
   try {
     const createShopify = await db.shopify.create({
       data: {
-        orderId: newOrderObject.shopifyId,
-        orderNumber: newOrderObject.shopifyId,
-        orderStatusUrl: newOrderObject.shopifyId,
+        orderId: shopifyId,
+        orderNumber: shopifyId,
+        orderStatusUrl: shopifyId,
       },
     })
     const customer = await db.customers.create({
