@@ -2,6 +2,7 @@ import { getSession } from "@blitzjs/auth"
 import { NextApiRequest, NextApiResponse } from "next"
 import { GraphQLClient, gql } from "graphql-request"
 import db from "db"
+import { createOrderFunction } from "app/orders/mutations/createOrder"
 
 const store = "robocraze-com"
 const hostName = store + ".myshopify.com"
@@ -89,6 +90,9 @@ const getAllOrders = async (orders = [], after = null, timeout = 100) => {
     await sleep(timeout)
     const data = await graphQLClient.request(ordersQuery, after ? { after } : {})
     const { customer, shippingAddress, billingAddress, lineItems } = data.orders.nodes[0]
+
+    // console.log("data456: ", JSON.stringify(data,null,2) )
+    // return
     const newOrderObject = {
       customer: {
         firstName: customer.firstName,
@@ -156,14 +160,47 @@ const getAllOrders = async (orders = [], after = null, timeout = 100) => {
           create: lineItems.nodes.map((lineItem) => ({
             product: 11,
             quantity: lineItem.quantity,
-            price: lineItem.discountedTotalSet.shopMoney.amount,
+            price: parseFloat(lineItem.discountedTotalSet.shopMoney.amount),
           })),
         },
       },
     }
 
+    await createOrderFunction({
+      ...newOrderObject,
+      order: {
+        ...newOrderObject.order,
+        order_items: {
+          create: lineItems.nodes.map((lineItem, index) => ({
+            product: 11 + index,
+            quantity: lineItem.quantity,
+            price: 123,
+          })),
+        },
+      },
+    })
+
+    return
+
+    const createShopify = await db.shopify.create({
+      data: {
+        orderId: newOrderObject.shopifyId,
+        orderNumber: newOrderObject.shopifyId,
+        orderStatusUrl: newOrderObject.shopifyId,
+      },
+    })
+
+    const createAddress = await db.addresses.create({
+      data: newOrderObject.customer.addresses,
+    })
+
     const Customer = await db.customers.create({
-      data: newOrderObject.customer,
+      data: {
+        firstName: newOrderObject.customer.firstName,
+        lastName: newOrderObject.customer.lastName,
+        shopifyId: newOrderObject.customer.id,
+        addressesId: createAddress.id,
+      },
     })
 
     const ShippingAddress = await db.addresses.create({
@@ -176,7 +213,7 @@ const getAllOrders = async (orders = [], after = null, timeout = 100) => {
 
     const order = await db.orders.create({
       data: {
-        shopifyId: data.orders.nodes[0].id,
+        shopifyId: createShopify.id,
         orderStatus: newOrderObject.order.orderStatus,
         paymentStatus: newOrderObject.order.paymentStatus,
         totalPrice: newOrderObject.order.totalPrice,

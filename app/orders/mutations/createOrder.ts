@@ -126,6 +126,7 @@ export default resolver.pipe(
             order_items,
           },
         })
+        console.log("order123: ", order)
       } catch (error) {
         console.log("error12: ", error)
       }
@@ -138,3 +139,54 @@ export default resolver.pipe(
     return order
   }
 )
+
+export const createOrderFunction = async (input) => {
+  const {
+    order: {
+      billingAddress,
+      shippingAddress,
+      orderStatus,
+      paymentStatus,
+      totalPrice,
+      gateway,
+      isShippingIsBilling,
+      order_items,
+    },
+  } = input
+
+  try {
+    const createShopify = await db.shopify.create({
+      data: {
+        orderId: newOrderObject.shopifyId,
+        orderNumber: newOrderObject.shopifyId,
+        orderStatusUrl: newOrderObject.shopifyId,
+      },
+    })
+    const customer = await db.customers.create({
+      data: input.customer,
+    })
+    const ShippingAddress = await db.addresses.create({
+      data: shippingAddress,
+    })
+    //run only when isShippingIsBilling = true
+    const BillingAddress =
+      !isShippingIsBilling && (await db.addresses.create({ data: billingAddress }))
+
+    const order = await db.orders.create({
+      data: {
+        shopifyId: createShopify.id,
+        orderStatus,
+        paymentStatus,
+        totalPrice,
+        gateway,
+        customerId: customer.id,
+        shippingAddressId: ShippingAddress.id,
+        billingAddressId: isShippingIsBilling ? ShippingAddress.id : BillingAddress.id,
+        order_items,
+      },
+    })
+    console.log("order123: ", order)
+  } catch (error) {
+    console.log("error20: ", error)
+  }
+}

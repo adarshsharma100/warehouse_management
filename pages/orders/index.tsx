@@ -134,6 +134,7 @@ export const OrdersList = () => {
         onClick={async () => {
 
           try {
+
             const order = createNewOrder({
               customer: {
                 firstName: "Varun",
@@ -146,7 +147,7 @@ export const OrdersList = () => {
                     landmarkName: "mark",
                     cityCountryProvince: "Mysore",
                     state: "Karnataka",
-                    pincode: 560079,
+                    pincode: "560079",
                     country: 1,
                     emails_emails_addressesToaddresses: {
                       create: [
@@ -159,7 +160,7 @@ export const OrdersList = () => {
                       create: [
                         {
                           type: "landline",
-                          number: 1,
+                          number: "1",
                         },
                       ],
                     }
@@ -176,7 +177,7 @@ export const OrdersList = () => {
                   landmarkName: "Central Park",
                   cityCountryProvince: "New York",
                   state: "NY",
-                  pincode: 10001,
+                  pincode: "10001",
                   country: 1,
                   emails_emails_addressesToaddresses: {
                     create: [
@@ -189,7 +190,7 @@ export const OrdersList = () => {
                     create: [
                       {
                         type: "landline",
-                        number: 1425,
+                        number: "1425",
                       },
                     ],
                   }
@@ -200,7 +201,7 @@ export const OrdersList = () => {
                   landmarkName: "Times Square",
                   cityCountryProvince: "New York",
                   state: "NY",
-                  pincode: 10001,
+                  pincode: "10001",
                   country: 1,
                   emails_emails_addressesToaddresses: {
                     create: [
@@ -213,7 +214,7 @@ export const OrdersList = () => {
                     create: [
                       {
                         type: "landline",
-                        number: 1,
+                        number: "1",
                       },
                     ],
                   }
@@ -224,7 +225,11 @@ export const OrdersList = () => {
                 channelCreatedAt: new Date(),
                 order_items: {
                   create: [{
-                    product: 6,
+                    product: 11,
+                    quantity: 10,
+                    price: 123,
+                  }, {
+                    product: 12,
                     quantity: 10,
                     price: 123,
                   }]

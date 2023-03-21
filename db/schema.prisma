@@ -14,7 +14,7 @@ model addresses {
   landmarkName                               String?           @db.VarChar(100)
   cityCountryProvince                        String            @db.VarChar(45)
   state                                      String?           @db.VarChar(45)
-  pincode                                    Int?
+  pincode                                    String?           @db.VarChar(45)
   country                                    Int
   country_addresses_countryTocountry         country           @relation("addresses_countryTocountry", fields: [country], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_addresses_country1")
   contact_number                             contact_number[]
@@ -30,7 +30,7 @@ model addresses {
 model contact_number {
   id        Int                 @id @default(autoincrement())
   type      contact_number_type
-  number    BigInt
+  number    String              @db.VarChar(45)
   address   Int
   addresses addresses           @relation(fields: [address], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_contact_Number_addresses1")
 
@@ -542,8 +542,8 @@ model customers {
 
 model shopify {
   id             Int      @id @default(autoincrement())
-  orderId        String?  @db.VarChar(45)
-  orderNumber    String?  @db.VarChar(45)
+  orderId        String?  @db.VarChar(150)
+  orderNumber    String?  @db.VarChar(150)
   orderStatusUrl String?  @db.VarChar(200)
   orders         orders[]
 }
