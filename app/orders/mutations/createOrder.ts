@@ -126,7 +126,8 @@ export default resolver.pipe(
             order_items,
           },
         })
-        console.log("order123: ", order)
+        return order
+        // console.log("order123: ", order)
       } catch (error) {
         console.log("error12: ", error)
       }
@@ -135,8 +136,6 @@ export default resolver.pipe(
     return
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const order = await db.orders.create({ data: input })
-
-    return order
   }
 )
 
@@ -186,7 +185,7 @@ export const createOrderFunction = async (input) => {
         order_items,
       },
     })
-    console.log("order123: ", order)
+    // console.log("order123: ", order)
   } catch (error) {
     console.log("error20: ", error)
   }

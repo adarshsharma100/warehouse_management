@@ -1,8 +1,6 @@
-import { getSession } from "@blitzjs/auth"
-import { NextApiRequest, NextApiResponse } from "next"
-import { GraphQLClient, gql } from "graphql-request"
 import db from "db"
-import { createOrderFunction } from "app/orders/mutations/createOrder"
+import { GraphQLClient, gql } from "graphql-request"
+import { createOrderFunction } from "../mutations/createOrder"
 
 const store = "robocraze-com"
 const hostName = store + ".myshopify.com"
@@ -21,11 +19,11 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const ordersQuery = gql`
   query orders($after: String) {
-    orders(first: 5, after: $after) {
+    orders(first: 3, after: $after) {
       nodes {
         id
         displayFinancialStatus
-        lineItems(first: 50) {
+        lineItems(first: 40) {
           nodes {
             sku
             quantity
@@ -94,21 +92,27 @@ const ordersQuery = gql`
     }
   }
 `
-const latestOrder = { id: null }
 
 const getAllOrders = async (orders = [], after = null, timeout = 100) => {
   console.log(`Completed: ${orders.length}`)
+  //TODO: remove return
+  if (orders.length > 0) return orders
   try {
     await sleep(timeout)
+    const latestOrder = await db.shopify.findMany({
+      orderBy: { id: "desc" },
+      take: 1,
+    })
+    // console.log("latestOrder: ", latestOrder)
+
     const data = await graphQLClient.request(ordersQuery, after ? { after } : {})
-    const foundIndex = data.orders.nodes.findIndex((data) => data.id === latestOrder.id)
+    const foundIndex = data.orders.nodes.findIndex((data) => data.id === latestOrder[0]?.orderId)
     if (!data?.orders?.nodes?.length) {
       console.log("No more from shopify")
       return orders
     }
     if (foundIndex >= 0) {
       console.log("foundIndex: ", foundIndex)
-      console.log("Found", data.orders.nodes[foundIndex])
       return [...orders, ...data.orders.nodes.slice(0, foundIndex)]
     } else
       return await getAllOrders(
@@ -119,18 +123,23 @@ const getAllOrders = async (orders = [], after = null, timeout = 100) => {
   } catch (error) {
     console.log("error! ", error)
     console.log("timeout: ", timeout)
-    // return getAllOrders(orders, after, timeout + 100)
+    return getAllOrders(orders, after, timeout + 100)
   }
 }
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-  console.log("here")
-  console.time()
-
+export const handler = async () => {
   const orders = await getAllOrders()
   await Promise.all(
     orders.map(async (order) => {
       const { customer, shippingAddress, billingAddress, lineItems } = order
+
+      const latestOrder = await db.shopify.findFirst({
+        where: {
+          orderId: order.id,
+        },
+      })
+      console.log("latestOrder: ", latestOrder)
+      if (latestOrder) return
 
       let productList = []
       //Create products if do not exist
@@ -142,13 +151,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           },
         })
 
+        if (!product && !currentProduct.product) continue
+
         if (product) productList = [...productList, { ...currentProduct, productId: product.id }]
         else {
+          console.log("currentProduct: ", currentProduct)
           const newProduct = await db.products.create({
             data: {
               sku: currentProduct.sku,
-              description: currentProduct.product?.description,
               name: currentProduct.product?.title,
+              description: currentProduct.product?.description,
               type: 1,
               costPrice: currentProduct.product?.priceRange?.maxVariantPrice?.amount,
               imageUrl: currentProduct.product?.featuredImage?.url,
@@ -220,13 +232,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             },
           },
           paymentStatus: order.displayFinancialStatus,
-          totalPrice: parseFloat(order.totalPrice),
+          totalPrice: parseInt(order.totalPrice),
           gateway: order.paymentGatewayNames?.join(","),
           order_items: {
             create: productList.map((lineItem) => ({
               product: lineItem.productId,
               quantity: lineItem.quantity,
-              price: parseFloat(lineItem.discountedTotalSet.shopMoney.amount),
+              price: parseInt(lineItem.discountedTotalSet.shopMoney.amount),
             })),
           },
         },
@@ -238,6 +250,5 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   console.timeEnd()
 
-  console.log("orders: ", orders)
+  // console.log("orders: ", orders)
 }
-export default handler

@@ -2,10 +2,11 @@ import { Suspense, useEffect, useRef } from "react";
 import { Routes } from "@blitzjs/next";
 import Head from "next/head";
 import Link from "next/link";
-import { useMutation, usePaginatedQuery } from "@blitzjs/rpc";
+import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
 import { useRouter } from "next/router";
 import Layout from "layouts/Layout"
 import getOrders from "app/orders/queries/getOrders";
+import getOrderStatuses from "app/order_statuses/queries/getOrder_statuses"
 import Loading from "components/loading";
 import { Button } from "primereact/button";
 import axios from "axios";
@@ -13,8 +14,11 @@ import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { dateFormat } from "app/constants";
 import createOrder from "app/orders/mutations/createOrder";
+import updateOrder from "app/orders/mutations/updateOrder";
+
 import { OverlayPanel } from 'primereact/overlaypanel';
 import { InputText } from "primereact/inputtext";
+import { Dropdown } from "primereact/dropdown";
 
 const ITEMS_PER_PAGE = 100;
 
@@ -26,13 +30,19 @@ export const OrdersList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   });
+  const [{ order_statuses }] = usePaginatedQuery(getOrderStatuses, {
+    orderBy: { id: "asc" },
+    skip: ITEMS_PER_PAGE * page,
+    take: ITEMS_PER_PAGE,
+  });
   // Todo : UsePaginatedQueries
 
-  console.log('orders: ', orders);
   // const goToPreviousPage = () => router.push({ query: { page: page - 1 } });
   // const goToNextPage = () => router.push({ query: { page: page + 1 } });
 
   const [createNewOrder] = useMutation(createOrder)
+  const [updateNewOrder, { isLoading }] = useMutation(updateOrder)
+
 
 
 
@@ -413,6 +423,37 @@ export const OrdersList = () => {
               field="channelCreatedAt"
               header="Channel Created At"
               body={(rowData) => dateFormat(rowData.channelCreatedAt)}
+            />
+            <Column
+              // field="channelCreatedAt"
+              header="Order Status"
+              body={(rowData) => {
+                if (isLoading)
+                  return <span>loading..</span>
+                else
+                  return (
+                    <pre>
+                      <Dropdown
+                        value={rowData.orderStatus}
+                        options={order_statuses}
+                        optionLabel="name"
+                        optionValue="id"
+                        onChange={async (e) => {
+                          console.log('e: ', e.target.value);
+                          await updateNewOrder({
+                            id: rowData.id,
+                            orderStatus: e.target.value
+                          }, {
+                            onSuccess: async () => {
+                              await refetch()
+                            }
+                          })
+                        }}
+                      />
+                      {/* {JSON.stringify(rowData, null, 2)} */}
+                    </pre>
+                  )
+              }}
             />
           </DataTable>
         </div>

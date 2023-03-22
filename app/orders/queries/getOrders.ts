@@ -1,6 +1,7 @@
 import { paginate } from "blitz"
 import { resolver } from "@blitzjs/rpc"
 import db, { Prisma } from "db"
+import { handler } from "../functions/fetchAllOrders"
 
 interface GetOrdersInput
   extends Pick<Prisma.ordersFindManyArgs, "where" | "orderBy" | "skip" | "take"> {}
@@ -8,6 +9,8 @@ interface GetOrdersInput
 export default resolver.pipe(
   resolver.authorize(),
   async ({ where, orderBy, skip = 0, take = 100 }: GetOrdersInput) => {
+    await handler()
+
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const {
       items: orders,
