@@ -3,10 +3,11 @@ import db from "db"
 import { z } from "zod"
 
 const CreateVendor_product = z.object({
-  unit_price: z.number(),
-  vendor_vendor_id: z.number(),
-  products_product_id: z.number(),
-  vendor_sku: z.string(),
+  sku: z.string(),
+  priority: z.number(),
+  status: z.enum(["Active", "Inactive"]),
+  product: z.number(),
+  vendor: z.number(),
 })
 
 export default resolver.pipe(
