@@ -1624,13 +1624,13 @@ export const Purchase_ordersList = () => {
 
       setItemList([...poProducts, ...twoFields])
 
-      router.replace({
-        pathname: '/purchase_orders',
-        query: {},
-      }).catch(console.log("While removing Query from URL"))
+      // router.replace({
+      //   pathname: '/purchase_orders',
+      //   query: {},
+      // }).catch(console.log("While removing Query from URL"))
     }
 
-  }, [router.query.rfqdata])
+  }, [router.query])
 
 
   const triggerRefetch = async (refetchGrn) => {

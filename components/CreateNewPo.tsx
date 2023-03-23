@@ -25,6 +25,7 @@ import getPurchase_order_statuses from "app/purchase_order_statuses/queries/getP
 import getRfq from "app/rfqs/queries/getRfq"
 import { useFormik } from "formik"
 import moment from "moment"
+import { useRouter } from "next/router"
 import { AutoComplete } from "primereact/autocomplete"
 import { Button } from "primereact/button"
 import { Calendar } from "primereact/calendar"
@@ -310,7 +311,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     setNewPOCode(`PO#${nextPoId}`)
   }
   const productOptions = products.map(({ id, name, vendor_products, costPrice, sku }) => {
-    //sample 
+    //sample
     //   {
     //     "id": 3,
     //     "name": "Machine Tools",
@@ -537,7 +538,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
   const searchPoStatuses = createSearchFunction(po_statuses, setPoStatuses)
   const searchFromParty = createSearchFunction(fromParty, setFromPartySuggetions)
   const searchTerms = createSearchFunction(poTerms, setTermsSuggetions)
-
+  const router = useRouter()
   const findProductVpID = (i, list) => {
     const currentVendor = Number(formik.values.vendor_vendor_id)
     const vendorProducts = vendor_products.filter((prod) => prod.vendor
@@ -709,11 +710,11 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               expiryDate: expiry_date,
               piNumber: piNumber || null,
               piDate: piDate || null,
-              rfq_purchase_orders_rfqTorfq: {
+              rfq_purchase_orders_rfqTorfq: rfq.rfqId ? {
                 connect: rfq.rfqId && {
                   id: rfq.rfqId
                 }
-              },
+              } : undefined,
               purchase_orders: {
                 connect: amendedFrom && {
                   id: Number(amendedFrom) || null
@@ -750,11 +751,28 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               }
             },
             {
-              onSuccess: async (data) => {
+              onSuccess: async ({ po_products }) => {
+                const productIds = itemList.map(data => data.products_product_id).filter(data => data)
+                console.log('productIds: ', productIds);
                 toast?.current.show(tsuccess(null, "PO Created Successfully"))
+                if (router.query.hasOwnProperty("rfqdata")) {
+                  const { rfqdata } = router.query;
+                  const parsedRfqdata = JSON.parse(rfqdata)
+                  const newProducts = parsedRfqdata.rfq_products.filter(data => !productIds.includes(data.product))
+                  console.log('parsedRfqdata.rfq_products: ', parsedRfqdata.rfq_products);
+                  router.replace({
+                    pathname: '/purchase_orders',
+                    query: newProducts.length ? {
+                      rfqdata: JSON.stringify({
+                        ...parsedRfqdata,
+                        rfq_products: newProducts
+                      })
+                    } : {},
+                  }).catch(console.log("While removing Query from URL"))
+                }
                 // toast?.current.show(tsuccess(null, `${priorList.length} needs to pe poED `))
 
-                // logic to submit and generatenewpo 
+                // logic to submit and generatenewpo
                 // if (priorList.length) {
                 //   const rfqDetails = await invoke(getRfq, {
                 //     id: activeRow?.id

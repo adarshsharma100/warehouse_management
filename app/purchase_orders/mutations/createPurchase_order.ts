@@ -34,7 +34,12 @@ export default resolver.pipe(
   async (input) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     console.log(input)
-    const purchase_order = await db.purchase_orders.create({ data: input })
+    const purchase_order = await db.purchase_orders.create({
+      data: input,
+      include: {
+        po_products: true,
+      },
+    })
 
     // await sendPoEmail(input, purchase_order)
 

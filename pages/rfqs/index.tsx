@@ -4399,7 +4399,7 @@ export const RfqsList = () => {
   // const [vendorChangeState, setVendorChangeState] = useState(false)
   const [newRFQCode, setNewRFQCode] = useState("")
   const initialRfqState = {
-    rfqNumber: newRFQCode,
+    rfqNumber: "",
     rfq_description: "",
     expectedDod: {},
     rfq_email: null,
@@ -5180,7 +5180,7 @@ export const RfqsList = () => {
   const formik = useFormik({
     initialValues: rfqDetails,
     validationSchema: Yup.object().shape({
-      rfqNumber: Yup.string().required("*Required"),
+      // rfqNumber: Yup.string().required("*Required"),
       // rfq_description: Yup.string().required("*Required"),
       // expectedDod: Yup.mixed().required("*Required"),
       // terms: Yup.mixed().required("*Required"),
@@ -5466,14 +5466,14 @@ export const RfqsList = () => {
     msgArray.splice(i, 1)
     setRfqErrorMsgs(msgArray)
   }
-  useEffect(() => {
-    if (RFQCodechecked && rfqDialog) {
-      updateFormValues()
-        .catch((error) => {
-          console.log("From updateFormValues", error)
-        })
-    }
-  }, [RFQCodechecked, scanner])
+  // useEffect(() => {
+  //   if (RFQCodechecked && rfqDialog) {
+  //     updateFormValues()
+  //       .catch((error) => {
+  //         console.log("From updateFormValues", error)
+  //       })
+  //   }
+  // }, [RFQCodechecked, scanner])
 
   const updateFormValues = async () => {
     await formik.setValues({ ...formik.values, rfqNumber: newRFQCode })
@@ -5851,7 +5851,7 @@ export const RfqsList = () => {
                     <InputText
                       id="rfqNumber"
                       name="rfqNumber"
-                      value={formik.values.rfqNumber}
+                      value={RFQCodechecked ? "Auto Generated" : formik.values.rfqNumber}
                       onChange={formik.handleChange}
                       disabled={RFQCodechecked}
                       autoFocus
