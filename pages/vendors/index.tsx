@@ -617,21 +617,21 @@ export const VendorsList = () => {
               },
               data: {
                 branchCode: branch_code,
-                addresses: {
-                  update: {
-                    where: {
-                      id: addressId
-                    },
-                    data: {
-                      areaStreet: address,
-                      landmarkName,
-                      cityCountryProvince: vendor_city,
-                      state: vendor_state,
-                      pincode,
-                      country: 1,
-                    }
-                  },
-                }
+                // addresses: {
+                //   update: {
+                //     where: {
+                //       id: addressId
+                //     },
+                //     data: {
+                //       areaStreet: address,
+                //       landmarkName,
+                //       cityCountryProvince: vendor_city,
+                //       state: vendor_state,
+                //       pincode,
+                //       country: 1,
+                //     }
+                //   },
+                // }
 
               }
             }
