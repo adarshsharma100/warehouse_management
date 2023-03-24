@@ -32,8 +32,12 @@ export default resolver.pipe(
                 },
               },
             },
+
             user: true,
             grn_status: true,
+          },
+          orderBy: {
+            id: "desc",
           },
         },
         po_products: {

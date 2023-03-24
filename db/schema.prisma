@@ -134,7 +134,7 @@ model inventory_products {
   shelf             Int
   inventory_history inventory_history[]
   products          products            @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_products1")
-  shelfs            shelves             @relation(fields: [shelf], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_shelfs1")
+  shelves           shelves             @relation(fields: [shelf], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_shelfs1")
 
   @@unique([product, shelf], map: "product_shelf")
   @@index([product], map: "fk_inventory_products_products1_idx")
@@ -146,7 +146,7 @@ model kit_products {
   productsId                                   Int
   quantity                                     Int
   kitProductID                                 Int
-  products                                     products @relation(fields: [productsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products1")
+  products_kit_products_productsIdToproducts   products @relation("kit_products_productsIdToproducts", fields: [productsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products1")
   products_kit_products_kitProductIDToproducts products @relation("kit_products_kitProductIDToproducts", fields: [kitProductID], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products2")
 
   @@index([productsId], map: "fk_kit_products_products1_idx")
@@ -244,7 +244,7 @@ model products {
   costPrice                                        Int
   type                                             Int
   inventory_products                               inventory_products[]
-  kit_products                                     kit_products[]
+  kit_products_kit_products_productsIdToproducts   kit_products[]       @relation("kit_products_productsIdToproducts")
   kit_products_kit_products_kitProductIDToproducts kit_products[]       @relation("kit_products_kitProductIDToproducts")
   order_items                                      order_items[]
   product_tags                                     product_tags[]
@@ -525,6 +525,47 @@ model orders {
   shopify                                       shopify?      @relation(fields: [shopifyId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_shopify1")
 
   @@index([orderStatus], map: "fk_orders_order_status1_idx")
+  @@index([shippingAddressId], map: "fk_orders_addresses1_idx")
+  @@index([billingAddressId], map: "fk_orders_addresses2_idx")
+  @@index([customerId], map: "fk_orders_customers1_idx")
+  @@index([shopifyId], map: "fk_orders_shopify1_idx")
+}
+
+model customers {
+  id          Int       @id @default(autoincrement())
+  firstName   String?   @db.VarChar(45)
+  lastName    String?   @db.VarChar(45)
+  addressesId Int
+  shopifyId   String?   @db.VarChar(45)
+  addresses   addresses @relation(fields: [addressesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_customers_addresses1")
+  orders      orders[]
+
+  @@index([addressesId], map: "fk_customers_addresses1_idx")
+}
+
+model job_types {
+  id   Int     @id @default(autoincrement())
+  name String? @db.VarChar(45)
+  jobs jobs[]
+}
+
+model jobs {
+  id          Int       @id @default(autoincrement())
+  data        Bytes     @db.MediumBlob
+  isCompleted Boolean?  @default(false)
+  isRunning   Boolean?  @default(false)
+  jobTypesId  Int
+  job_types   job_types @relation(fields: [jobTypesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_jobs_job_types1")
+
+  @@index([jobTypesId], map: "fk_jobs_job_types1_idx")
+}
+
+model shopify {
+  id             Int      @id @default(autoincrement())
+  orderId        String?  @db.VarChar(150)
+  orderNumber    String?  @db.VarChar(150)
+  orderStatusUrl String?  @db.VarChar(200)
+  orders         orders[]
   @@index([shippingAddressId], map: "fk_orders_addresses1_idx")
   @@index([billingAddressId], map: "fk_orders_addresses2_idx")
   @@index([customerId], map: "fk_orders_customers1_idx")

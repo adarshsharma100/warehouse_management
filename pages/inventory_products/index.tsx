@@ -229,7 +229,7 @@ export const Inventory_productsList = () => {
           <Column
             field=""
             header="Shelf"
-            body={() => <a href='/purchase_orders/id'>PO Num </a>}
+            body={() => <a href='/purchase_orders/id'>PO Num</a>}
           // className="text-center"
           />
 
@@ -266,19 +266,31 @@ export const Inventory_productsList = () => {
 
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
   const goToNextPage = () => router.push({ query: { page: page + 1 } })
-  // const inventoryTableData = inventory_products.reduce((acc, curr) => {
-  //   const { products } = curr
+  console.log('inventory_products: ', inventory_products);
+  const inventoryTableData = Object.values(
+    inventory_products.reduce((acc, curr) => {
+      const { id, quantity, products, shelves } = curr
 
-  //   if (products.id in acc) {
+      if (acc[products.sku]) {
+        acc[products.sku].shelves.push({ ...shelves, quantity })
 
-  //   } else {
-  //     acc[products.id] = {
-  //       id: products.id
+      } else {
+        acc[products.sku] = {
+          inventoryProductId: id,
+          product: products,
+          shelves: [{ ...shelves, quantity }],
+        }
+      }
+      return acc;
 
-  //     }
-  //   }
+    }, {})
+  )
 
-  // }, {})
+  const findQuantityByShelfType = (shelfType, shelves) => {
+    const qty = shelves.reduce((acc, { shelf_type: { name }, quantity }) => name === shelfType ? acc + quantity : acc, 0)
+    return qty
+  }
+  console.log('inventoryTableData: ', inventoryTableData);
 
   const onBasicUpload = async (e) => {
     const csv = [] // this will contain all the data of imported csv file
@@ -646,7 +658,7 @@ export const Inventory_productsList = () => {
                         id: e.value?.id
                       })
                       console.log('area: ', area);
-                      const _format = area?.shelfs.map(ele => ({ ...ele, name: ele.number }))
+                      const _format = area?.shelves.map(ele => ({ ...ele, name: ele.number }))
                       setShelfOptions(_format)
 
                     }}
@@ -748,7 +760,7 @@ export const Inventory_productsList = () => {
       <div className="col-12">
         <div className="card">
           <DataTable
-            value={inventory_products}
+            value={inventoryTableData}
             showGridlines
             // header={renderHeader}
             // scrollable
@@ -766,14 +778,14 @@ export const Inventory_productsList = () => {
           >
             <Column expander={true} style={{ width: "3em" }} />
             <Column
-              field="products.sku"
+              field="product.sku"
               header="SKU"
               filter
               filterPlaceholder="Search by SKU"
             // className="text-center"
             />
             <Column
-              field="products.name"
+              field="product.name"
               header="Name"
               filter
               filterPlaceholder="Search by Products"
@@ -787,7 +799,7 @@ export const Inventory_productsList = () => {
             // className="text-center"
             /> */}
             <Column
-              field="product.type"
+              field="product.product_types.type"
               header="Type"
               filter
               filterPlaceholder="Search by Type"
@@ -801,12 +813,13 @@ export const Inventory_productsList = () => {
             <Column
               field="good_stock"
               header="Good-Stock"
-            // className="text-center"
+              // className="text-center"
+              body={(rowdata) => findQuantityByShelfType("Good", rowdata.shelves)}
             />
             <Column
               field="bad_stock"
               header="Bad-Stock"
-            // body={(rowdata) => rowdata.quantity - rowdata.good_stock}
+              body={(rowdata) => findQuantityByShelfType("Bad", rowdata.shelves)}
             // className="text-center"
             />
             {/* <Column

@@ -82,7 +82,7 @@ export const Purchase_ordersList = () => {
   const [{ purchase_orders, hasMore }, { error: getPoError, refetch }] = usePaginatedQuery(
     getPurchase_orders,
     {
-      orderBy: { id: "asc" },
+      orderBy: { id: "desc" },
       skip: ITEMS_PER_PAGE * page,
       take: ITEMS_PER_PAGE,
     }
@@ -1624,13 +1624,13 @@ export const Purchase_ordersList = () => {
 
       setItemList([...poProducts, ...twoFields])
 
-      router.replace({
-        pathname: '/purchase_orders',
-        query: {},
-      }).catch(console.log("While removing Query from URL"))
+      // router.replace({
+      //   pathname: '/purchase_orders',
+      //   query: {},
+      // }).catch(console.log("While removing Query from URL"))
     }
 
-  }, [router.query.rfqdata])
+  }, [router.query])
 
 
   const triggerRefetch = async (refetchGrn) => {

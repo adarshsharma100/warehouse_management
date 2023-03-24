@@ -23,6 +23,10 @@ export default resolver.pipe(
           ...paginateArgs,
           where,
           orderBy,
+          include: {
+            products: true,
+            vendors: true,
+          },
         }),
     })
 
