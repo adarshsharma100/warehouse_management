@@ -187,16 +187,6 @@ export const ProductsList = () => {
       ],
     }
     onColumnToggle(obj)
-
-    uploadCsvMutation(`eruid,description
-batman,uses technology
-superman,flies through the air
-spiderman,uses a web
-ghostrider, rides a motorcycle
-#GROUP_OBJECT_PROFILE#accessgroupGroupProfile
-cn,description
-daredevil,this group represents daredevils
-superhero,this group represents superheroes`)
   }, [])
   const clearFilter = () => {
     initFilters()
@@ -857,7 +847,7 @@ superhero,this group represents superheroes`)
                 }}
               />
             </div>
-            
+
           </form>
         </div>
       </div>

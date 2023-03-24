@@ -2,14 +2,16 @@ import { paginate } from "blitz"
 import { resolver } from "@blitzjs/rpc"
 import db, { Prisma } from "db"
 import { handler } from "../functions/fetchAllOrders"
+import fetchOrdersJob from "../functions/fetchOrdersJobCreation"
+import { Ctx } from "@blitzjs/next"
 
 interface GetOrdersInput
   extends Pick<Prisma.ordersFindManyArgs, "where" | "orderBy" | "skip" | "take"> {}
 
 export default resolver.pipe(
   resolver.authorize(),
-  async ({ where, orderBy, skip = 0, take = 100 }: GetOrdersInput) => {
-    await handler()
+  async ({ where, orderBy, skip = 0, take = 100 }: GetOrdersInput, ctx: Ctx) => {
+    const jobId = await fetchOrdersJob(ctx.session.userId)
 
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const {
@@ -26,34 +28,11 @@ export default resolver.pipe(
           ...paginateArgs,
           where,
           orderBy,
-          
-          // include:{
-          //   order_status:true,
-          //   order_items:{
-          //     include: {
-          //       products:true
-          //     }
-          //   },
-          //   shopify:true,
-          //   customer:{
-          //     include:{
-          //       addresses:{
-          //         select:{
-          //           contact_number:true,
-          //           emails_emails_addressesToaddresses:true
-          //         }
-          //       }
-          //     }
-          //   }
-          // },
-
           include: {
             order_items: {
-              include: { products: true},
+              include: { products: true },
             },
             order_status: true,
-            // shopify: true,
-            
             customers: {
               include: {
                 addresses: {
@@ -65,8 +44,6 @@ export default resolver.pipe(
               },
             },
           },
-
-
         }),
     })
 
@@ -75,6 +52,7 @@ export default resolver.pipe(
       nextPage,
       hasMore,
       count,
+      jobId,
     }
   }
 )

@@ -392,6 +392,7 @@ model user {
   role              String              @default("USER")
   grn               grn[]
   inventory_history inventory_history[]
+  jobs              jobs[]
   purchase_orders   purchase_orders[]
   session           session[]
   token             token[]
@@ -548,6 +549,27 @@ model shopify {
   orderNumber    String?  @db.VarChar(150)
   orderStatusUrl String?  @db.VarChar(200)
   orders         orders[]
+}
+
+model job_types {
+  id   Int     @id @default(autoincrement())
+  name String? @db.VarChar(45)
+  jobs jobs[]
+}
+
+model jobs {
+  id          Int       @id @default(autoincrement())
+  data        Bytes?    @db.MediumBlob
+  isCompleted Boolean?  @default(false)
+  isRunning   Boolean?  @default(false)
+  createdAt   DateTime? @default(now()) @db.DateTime(0)
+  jobTypesId  Int
+  userId      Int
+  job_types   job_types @relation(fields: [jobTypesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_jobs_job_types1")
+  user        user      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_jobs_user1")
+
+  @@index([jobTypesId], map: "fk_jobs_job_types1_idx")
+  @@index([userId], map: "fk_jobs_user1_idx")
 }
 
 enum contact_number_type {

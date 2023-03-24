@@ -16,12 +16,10 @@ import updateOrder from "app/orders/mutations/updateOrder";
 import { OverlayPanel } from 'primereact/overlaypanel';
 import { InputText } from "primereact/inputtext";
 import { Dropdown } from "primereact/dropdown";
-import { Dropdown } from "primereact/dropdown";
 import classNames from "classnames";
 import { createCSVFormat, createSearchFunction, filterExistingValues, } from "app/constants"
 import { AutoComplete } from "primereact/autocomplete";
 import getOrder_statuses from "app/order_statuses/queries/getOrder_statuses";
-import { invoke, useMutation, useQuery } from "@blitzjs/rpc"
 import getOrder_items from "app/order_items/queries/getOrder_items";
 import getProducts from "app/products/queries/getProducts"
 import { useFormik } from "formik";
@@ -30,6 +28,7 @@ import getCustomers from "app/customers/queries/getCustomers";
 import { TriStateCheckbox } from 'primereact/tristatecheckbox';
 import { ToggleButton } from 'primereact/togglebutton';
 import { Checkbox } from "primereact/checkbox";
+import { JobStatus } from "components/JobStatus";
 
 
 const initialOrderDetails = {
@@ -51,11 +50,11 @@ const initialOrderDetails = {
   address: '',
   city: '',
   state: '',
-  country:'',
-  areaStreet:'',
-  landmarkName:'',
-  pincode:'',
-  bulidingNumber:'',
+  country: '',
+  areaStreet: '',
+  landmarkName: '',
+  pincode: '',
+  bulidingNumber: '',
 
 }
 
@@ -76,7 +75,7 @@ export const OrdersList = () => {
 
   const router = useRouter();
   const page = Number(router.query.page) || 0;
-  const [{ orders }, { refetch }] = usePaginatedQuery(getOrders, {
+  const [{ orders, jobId }, { refetch: refetchOrders }] = usePaginatedQuery(getOrders, {
     orderBy: { id: "asc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
@@ -86,21 +85,7 @@ export const OrdersList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   });
-  const [{ order_statuses, }] = useQuery(getOrder_statuses, {
-    orderBy: { id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-    where: undefined
-  })
   console.log('order_statuses: ', order_statuses);
-
-
-  const [{ order_items }] = useQuery(getOrder_items, {
-    orderBy: { id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-    where: undefined
-  })
 
   // const [{ customers }] = useQuery(getCustomers, {
   //   skip: undefined,
@@ -520,7 +505,7 @@ export const OrdersList = () => {
                 { field: "emailID", label: "Email ID" },
                 { field: "contactNumber", label: "Contact Number" },
                 { label: "Address", field: "address" },
-                
+
                 { label: "Area Street", field: "areaStreet" },
                 { label: "LandMark", field: "landmark Name" },
                 { label: "Building Number", field: "buildingNumber" },
@@ -570,7 +555,7 @@ export const OrdersList = () => {
                       let state = typeof e.value === "string" ? " " : e.value.state
                       let country = typeof e.value === "string" ? "" : "India"
 
-                      await formik.setValues({ ...formik.values, city, state ,country})
+                      await formik.setValues({ ...formik.values, city, state, country })
                     }}
                     aria-label="cities"
                     dropdownAriaLabel="Select City"
@@ -621,7 +606,7 @@ export const OrdersList = () => {
                     htmlFor="country"
                     className={classNames({ "p-error": isFormFieldValid("country") })}
                   >
-                   Country
+                    Country
                   </label>
                 </span>
                 {getFormErrorMessage("country")}
@@ -892,9 +877,9 @@ export const OrdersList = () => {
         </div>
 
       }
-      <pre>{JSON.stringify(formik.values, null, 2)}</pre>
-
-
+      {/* <div className="col-12">
+        <JobStatus id={jobId} title={"Order Fetching Job"} />
+      </div> */}
 
       <div className="col-12">
         <div className="card">
@@ -909,7 +894,7 @@ export const OrdersList = () => {
             <Column
               // field={}
               header="Order Number"
-              body={(rowData) => rowData.shopifyId ? rowData.shopify.orderNumber : rowData.id}
+              body={(rowData) => rowData.shopifyId ? rowData.shopify?.orderNumber : rowData.id}
             // className="text-center"
             />
             <Column
@@ -1067,7 +1052,7 @@ export const OrdersList = () => {
                             orderStatus: e.target.value
                           }, {
                             onSuccess: async () => {
-                              await refetch()
+                              await refetchOrders()
                             }
                           })
                         }}
