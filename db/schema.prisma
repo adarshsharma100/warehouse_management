@@ -445,6 +445,8 @@ model vendor_products {
   products    products               @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_products_products1")
   vendors     vendors                @relation(fields: [vendor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_products_vendors1")
 
+  @@unique([product, priority], map: "product_priority")
+  @@unique([product, vendor], map: "product_vendor")
   @@index([product], map: "fk_vendor_products_products1_idx")
   @@index([vendor], map: "fk_vendor_products_vendors1_idx")
 }
@@ -538,6 +540,23 @@ model customers {
   orders      orders[]
 
   @@index([addressesId], map: "fk_customers_addresses1_idx")
+}
+
+model job_types {
+  id   Int     @id @default(autoincrement())
+  name String? @db.VarChar(45)
+  jobs jobs[]
+}
+
+model jobs {
+  id          Int       @id @default(autoincrement())
+  data        Bytes     @db.MediumBlob
+  isCompleted Boolean?  @default(false)
+  isRunning   Boolean?  @default(false)
+  jobTypesId  Int
+  job_types   job_types @relation(fields: [jobTypesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_jobs_job_types1")
+
+  @@index([jobTypesId], map: "fk_jobs_job_types1_idx")
 }
 
 model shopify {
