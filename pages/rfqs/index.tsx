@@ -4401,7 +4401,7 @@ export const RfqsList = () => {
   const initialRfqState = {
     rfqNumber: "",
     rfq_description: "",
-    expectedDod: {},
+    expectedDod: "",
     rfq_email: null,
     itemsLength: false,
     agreement: "",
@@ -5188,6 +5188,7 @@ export const RfqsList = () => {
 
     }),
     onSubmit: async (data) => {
+      console.log('formdata: ', data);
 
 
       const selectedProducts = itemList.filter((prod) => prod?.product_id)
@@ -6395,7 +6396,7 @@ export const RfqsList = () => {
 
               const { rfqNumber, description: rfq_description, expectedDod, id, agreement, status } = e.data
 
-              const _expectedDod = moment(expectedDod).toDate()
+              // const _expectedDod = moment(expectedDod).toDate()
               const sentToEmails = e.data.rfq_sentto.map(({ emails: { email } }) => email)
 
               await formik.setValues({
@@ -6405,7 +6406,7 @@ export const RfqsList = () => {
                 itemsLength: true,
                 agreement,
                 rfq_email: sentToEmails,
-                expectedDod: _expectedDod,
+                expectedDod,
                 status,
               })
 
@@ -6417,7 +6418,7 @@ export const RfqsList = () => {
             onSelectionChange={(e) => setSelectedRfqs(e.value)}
           // tableStyle={{ minWidth: '50rem' }}
           >
-            <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
+            {/* <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} /> */}
             <Column expander={allowExpansion} style={{ width: "3em" }} />
 
             {/* <Column

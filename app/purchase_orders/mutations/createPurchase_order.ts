@@ -5,7 +5,7 @@ import moment from "moment"
 import sendPoEmail from "helperFunctions/poMail"
 
 const CreatePurchase_order = z.object({
-  poNumber: z.string(),
+  poNumber: z.unknown(),
   piNumber: z.string().optional().nullable(),
   description: z.string().optional(),
   agreement: z.string().optional(),
@@ -33,10 +33,11 @@ export default resolver.pipe(
   resolver.authorize(),
   async ({ poNumber, ...input }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-
+    const test = poNumber?.trim()?.length > 0 ? poNumber : moment().format("x")
+    console.log("test: ", test)
     const purchase_order = await db.purchase_orders.create({
       data: {
-        poNumber: poNumber?.trim() ?? moment().format("x"),
+        poNumber: poNumber?.trim()?.length > 0 ? poNumber : moment().format("x"),
         ...input,
       },
       include: {

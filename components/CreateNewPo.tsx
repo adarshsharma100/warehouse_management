@@ -672,7 +672,6 @@ const CreateNewPo = React.forwardRef((props, ref) => {
             {
               onSuccess: async (data) => {
                 toast?.current.show(tsuccess("Updated", `${po_code} is updated successfully`))
-                alert(data)
 
                 if (data.status === 3) {
                   await updatePurchaseOrderMutation({

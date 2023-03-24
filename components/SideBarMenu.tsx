@@ -37,17 +37,7 @@ const SideBarMenu = () => {
           label: "PO",
           icon: "pi pi-fw pi-truck",
           command: () => (window.location.href = "/purchase_orders"),
-        },
-        {
-          label: "Invoice",
-          icon: "pi pi-fw  bi-journal-text",
-          command: () => (window.location.href = "/#"),
-        },
-        {
-          label: "GRN",
-          icon: "pi pi-fw bi-receipt-cutoff",
-          command: () => (window.location.href = "/grns"),
-        },
+        }, ,
       ],
     },
     {
@@ -69,6 +59,16 @@ const SideBarMenu = () => {
           icon: "pi pi-fw pi-cog",
           command: () => (window.location.href = "/inventory_products"),
         },
+        {
+          label: "Categories",
+          icon: "pi bi-diagram-3",
+          command: () => (window.location.href = "/product_categories"),
+        },
+        {
+          label: "Brands",
+          icon: "pi bi-palette2",
+          command: () => (window.location.href = "/product_brands"),
+        }
 
       ],
     },

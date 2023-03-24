@@ -23,7 +23,7 @@ export default resolver.pipe(
 
     const rfq = await db.rfq.create({
       data: {
-        rfqNumber: rfqNumber?.trim() ?? moment().format("x"),
+        rfqNumber: rfqNumber?.trim()?.length > 0 ? rfqNumber.trim() : moment().format("x"),
         ...input,
       },
       include: {
