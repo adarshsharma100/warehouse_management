@@ -36,9 +36,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           res.status(500).end("Server Error")
           return
         }
-
         console.log("files: ", files)
         const savedFile = await saveFile(files.product_image)
+        console.log('savedFile: ', savedFile);
         res.status(200).json({ filename: savedFile })
       })
     } else {
@@ -49,4 +49,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     res.status(404)
   }
 }
+
 export default handler
+
+

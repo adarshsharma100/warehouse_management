@@ -435,6 +435,18 @@ export const ProductsList = () => {
   
   // }
 
+
+  const [filename, setFilename] = useState('');
+
+  const uploadImage = async (e) =>{
+    const file = e.files[0]
+    const response = await fetch("/api/upload", {
+      method: "POST",
+      body: file,
+    })
+    const { filename } = await response.json()
+    setFilename(filename);
+  }
  
   const formik = useFormik({
     initialValues: productDetails,
@@ -515,7 +527,7 @@ export const ProductsList = () => {
               height: Number(height),
               weight: Number(weight),
               hsnCode: hsnCode,
-              imageUrl:filename,
+              imageUrl: filename,
               type: Number(formik?.values?.type?.id),
               product_tags: {
                 create: tagsValue.map((e) => ({ tags: e })),
@@ -526,14 +538,8 @@ export const ProductsList = () => {
             {
               onSuccess: async (data) => {
                 alert('Created')
-                const uploadImage = async (e) =>{
-                  const file = e.files[0]
-                  const response = await fetch("/api/upload", {
-                    method: "POST",
-                    body: file,
-                  })
-                  const { filename } = await response.json()
-                }
+                
+              
               },
               onError: (error) => {
                 alert('not created!')
@@ -558,6 +564,7 @@ export const ProductsList = () => {
 
 
   console.log(formik.values, 'formik')
+  console.log('formik.error',formik.errors )
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
@@ -675,6 +682,7 @@ export const ProductsList = () => {
 
 
   const onTemplateUpload = (e) => {
+    console.log('e dataPPP: ', e);
     let _totalSize = 0;
 
     e.files.forEach((file) => {
@@ -1111,7 +1119,7 @@ export const ProductsList = () => {
                   ref={fileUploadRef}
                   name="product_image"
                   url="/api/upload"
-                  multiple
+                  // multiple
                   accept="image/*"
                   maxFileSize={1000000}
                   onBeforeSend={(event) => {
@@ -1123,7 +1131,9 @@ export const ProductsList = () => {
                     setImageUploadObject(file)
                     formik.setValues({ ...formik, 'imageUrl': file.objectURL });
                   }}
-                  onUpload={onTemplateUpload} onError={onTemplateClear} onClear={onTemplateClear}
+                 
+                  onUpload={onTemplateUpload}
+                   onError={onTemplateClear} onClear={onTemplateClear}
                   headerTemplate={headerTemplate} itemTemplate={itemTemplate} emptyTemplate={emptyTemplate}
                   chooseOptions={chooseOptions} uploadOptions={uploadOptions} cancelOptions={cancelOptions} />
               </div>
