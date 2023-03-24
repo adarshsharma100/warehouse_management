@@ -9,7 +9,7 @@ interface GetOrdersInput
 export default resolver.pipe(
   resolver.authorize(),
   async ({ where, orderBy, skip = 0, take = 100 }: GetOrdersInput) => {
-    await handler()
+    // await handler()
 
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const {
@@ -49,17 +49,22 @@ export default resolver.pipe(
 
           include: {
             order_items: {
-              include: { products: true},
+              include: {
+                 products: true,
+              },
+
             },
             order_status: true,
             // shopify: true,
-            
+            addresses_orders_billingAddressIdToaddresses:true,
+            addresses_orders_shippingAddressIdToaddresses:true,
             customers: {
               include: {
                 addresses: {
                   select: {
                     contact_number: true,
                     emails_emails_addressesToaddresses: true,
+
                   },
                 },
               },

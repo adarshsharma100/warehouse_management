@@ -16,12 +16,11 @@ import updateOrder from "app/orders/mutations/updateOrder";
 import { OverlayPanel } from 'primereact/overlaypanel';
 import { InputText } from "primereact/inputtext";
 import { Dropdown } from "primereact/dropdown";
-import { Dropdown } from "primereact/dropdown";
+
 import classNames from "classnames";
 import { createCSVFormat, createSearchFunction, filterExistingValues, } from "app/constants"
 import { AutoComplete } from "primereact/autocomplete";
 import getOrder_statuses from "app/order_statuses/queries/getOrder_statuses";
-import { invoke, useMutation, useQuery } from "@blitzjs/rpc"
 import getOrder_items from "app/order_items/queries/getOrder_items";
 import getProducts from "app/products/queries/getProducts"
 import { useFormik } from "formik";
@@ -30,20 +29,22 @@ import getCustomers from "app/customers/queries/getCustomers";
 import { TriStateCheckbox } from 'primereact/tristatecheckbox';
 import { ToggleButton } from 'primereact/togglebutton';
 import { Checkbox } from "primereact/checkbox";
+import AddressComponent from "../../components/AddressComponent";
 
 
 const initialOrderDetails = {
   firstName: '',
   lastName: '',
-  emailID: '',
+  email: '',
   customer: '',
   contactNumber: '',
   checkedAddress: '',
   orderStatus: '',
-  // shippingAddressId: "",
-  // billingAddressId: "",
-  // shopifyId: "",
-  // customerId: "",
+  landmarkName: "",
+  shippingAddressId: "",
+  billingAddressId: "",
+  shopifyId: "",
+  customerId: "",
   paymentStatus: "",
   totalPrice: "",
   gateway: "",
@@ -51,11 +52,32 @@ const initialOrderDetails = {
   address: '',
   city: '',
   state: '',
-  country:'',
-  areaStreet:'',
-  landmarkName:'',
-  pincode:'',
-  bulidingNumber:'',
+  country: '',
+  pincode: '',
+  shippingAddress: {
+    address: '',
+    pincode: '',
+    city: '',
+    state: '',
+    country: '',
+    landmarkName: '',
+    email: '',
+    contactNumber: '',
+
+  },
+  billingAddress: {
+    address: '',
+    pincode: '',
+    city: '',
+    state: '',
+    country: '',
+    landmarkName: '',
+    email: '',
+    contactNumber: '',
+  },
+
+
+
 
 }
 
@@ -81,11 +103,8 @@ export const OrdersList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   });
-  const [{ order_statuses }] = usePaginatedQuery(getOrderStatuses, {
-    orderBy: { id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-  });
+  console.log('orders: ', orders);
+
   const [{ order_statuses, }] = useQuery(getOrder_statuses, {
     orderBy: { id: "asc" },
     skip: ITEMS_PER_PAGE * page,
@@ -110,13 +129,13 @@ export const OrdersList = () => {
   // })
   // console.log('customers: ', customers);
 
-  const [{ products }, { refetch }] = useQuery(getProducts, {
+  const [{ products }] = useQuery(getProducts, {
     orderBy: { id: "asc" },
   })
   console.log('products: ', products);
 
 
-  const [createMutationOrder] = useMutation(CreateOrder)
+  // const [createMutationOrder] = useMutation(CreateOrder)
   const [show, setShow] = useState('')
   console.log('show: ', show);
 
@@ -159,6 +178,8 @@ export const OrdersList = () => {
 
 
   const [addressSuggestion, setAddressSuggestion] = useState<any>(null)
+  const [activeRowData, setActiveRowData] = useState({})
+  const [newOrderUpdate, setNewOrderUpdate] = useState(false)
 
 
   const searchOrderStatus = createSearchFunction(orderStatusOption, setOderStatusSuggestions)
@@ -166,6 +187,7 @@ export const OrdersList = () => {
   const searchCustomers = createSearchFunction(customerOptions, setCustomerOptionsSuggestions)
   const searchGateway = createSearchFunction(gatewayOptions, setGatewayOptionsSuggestions)
   const searchPayment = createSearchFunction(paymentOptions, setPaymentOptionsSuggestions)
+  const scrolToTop = useRef<HTMLDivElement>(null)
 
 
   const searchCities = (event: { query: string }) => {
@@ -173,8 +195,10 @@ export const OrdersList = () => {
       let _filteredSuggestions
       if (!event.query.trim().length) {
         _filteredSuggestions = [...cities]
+        console.log("searchCity -", _filteredSuggestions)
       } else {
         _filteredSuggestions = cities.filter((element) => {
+          console.log("searchCity +", _filteredSuggestions)
           return element.city.toLowerCase().startsWith(event.query.toLowerCase())
         })
       }
@@ -217,53 +241,170 @@ export const OrdersList = () => {
   const formik = useFormik({
     initialValues: orderItemsDetails,
     validationSchema: Yup.object().shape({
-      name: Yup.string().required("*Required")
+      // firstName: Yup.string().required("*Required"),
+      // emailID: Yup.string().required("*Required"),
+      // address: Yup.string().required("*Required"),
+      // contactNumber: Yup.string().required("*Required"),
+      // billingAddress: Yup.object().shape({
+      //   address: Yup.string().required("*Required"),
+      // })
+      // billingAddress: Yup.object().shape({
+      //   address: Yup.string().required("*Required"),
+      // )}
     }),
     onSubmit: async (data) => {
-      // const { orderStatus, shippingAddressId, billingAddressId, shopifyId, customerId, paymentStatus, totalPrice, gateway } = data
-      // if (false) {
-      //   try {
-      //   } catch (err) {
-      //   }
-      // } else {
-      //   alert('hii')
-      //   console.log('hello___hii')
-      //   try {
-      //     await createMutationOrder({
-      //       shippingAddressId: Number(shippingAddressId),
-      //       billingAddressId: Number(billingAddressId),
-      //       shopifyId: Number(shopifyId),
-      //       customerId: Number(customerId),
-      //       paymentStatus,
-      //       totalPrice:Number(totalPrice),
-      //       gateway,
-      //       orderStatus: Number(orderStatus),
+      console.log('data: ', data);
+      console.log('Hello ')
 
-      //     }),{
-      //       onSuccess: (data) => {
-      //         console.log('data: ', data);
-      //         alert('Created')
-      //       },
-      //       onError: (error) =>{
-      //         console.log('error: ', error);
-      //         alert('Created Error')
-      //       }
-      //     }
-      //   } catch (error) {
-      //     alert('out error')
-      //     console.log('error: ', error);
-      //   }
+      const { firstName, lastName, email, contactNumber, checkedAddress,
+        orderStatus, landmarkName, pincode,
+        paymentStatus, totalPrice, gateway, orderItems, address, state, country, city } = data
+      const orderItemValue = orderItems.map((ele) => ele)
+      const { id: activeID } = activeRowData
 
-      // }
+      if (newOrderUpdate) {
+       try {
+        await updateNewOrder({
+          id:activeID,
+          customer: {
+            firstName,
+            lastName
+          }
+        },{
+          onSuccess: () =>{
+            alert('Update Order!')
+          },
+          onError: () =>{
+            alert('update error!!!!!')
+          }
+        })
+
+       }catch(error) {
+        console.log('error: ', error);
+       }
+      } else {
+        try {
+          await createNewOrder({
+            customer: {
+              firstName,
+              lastName,
+              // shopifyId: "1425636985",
+              addresses: {
+                create: {
+                  // buildingNumber: "56",
+                  areaStreet: address,
+                  landmarkName,
+                  cityCountryProvince: city,
+                  state,
+                  pincode,
+                  country: 1,
+                  emails_emails_addressesToaddresses: {
+                    create: [
+                      {
+                        email,
+                      },
+                    ],
+                  },
+                  contact_number: {
+                    create: [
+                      {
+                        type: "mobile",
+                        number: contactNumber,
+                      },
+                    ],
+                  }
+
+                }
+              }
+            },
+            order: {
+              orderStatus:Number(orderStatus?.id),
+              isShippingIsBilling: true,
+              shippingAddress: {
+                // buildingNumber: "123",
+                areaStreet: address,
+                landmarkName,
+                cityCountryProvince: city,
+                state,
+                pincode,
+                country: 1,
+                emails_emails_addressesToaddresses: {
+                  create: [
+                    {
+                      email,
+                    },
+                  ],
+                },
+                contact_number: {
+                  create: [
+                    {
+                      type: "mobile",
+                      number: contactNumber,
+                    },
+                  ],
+                }
+              },
+              billingAddress: {
+                // buildingNumber: "456",
+                areaStreet: address,
+                landmarkName,
+                cityCountryProvince: city,
+                state,
+                pincode,
+                country: 1,
+                emails_emails_addressesToaddresses: {
+                  create: [
+                    {
+                      email,
+                    },
+                  ],
+                },
+                contact_number: {
+                  create: [
+                    {
+                      type: "mobile",
+                      number: contactNumber,
+                    },
+                  ],
+                }
+              },
+              paymentStatus,
+              totalPrice,
+              gateway,
+              // channelCreatedAt: new Date(),
+              order_items: {
+                create: orderItemValue.map((ele) => ({
+                  product: ele.id,
+                  quantity: Number(ele.quantity),
+                  price: Number(ele.price),
+                }))
+              },
+            }
+
+          },
+            {
+              onSuccess: async () => {
+                await refetch()
+                alert("create new order")
+              }, onError: (error) => {
+                alert(error)
+              },
+            })
+        } catch (error) {
+          console.log('error123: ', error);
+        }
+      }
+
+      console.log('error++')
     }
   })
-  console.log('000', formik.values)
+
+
+  console.log('formik', formik.values)
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
-
-
 
 
   const [orderItemInput, setOrderItemInput] = useState([{ id: '', name: '', quantity: '', price: '' }]);
@@ -300,12 +441,14 @@ export const OrdersList = () => {
   };
 
 
+
   return (
     <div className="grid w-full">
       <div className="col-12">
         <div className="card flex justify-content-between align-items-center m-0">
           <h2>Orders</h2>
-          <div className="flex justify-content-end align-items-center">
+
+          <div className="flex gap-4 justify-content-end align-items-center">
             <Button
               icon="pi pi-plus"
               label="Create Order"
@@ -313,223 +456,161 @@ export const OrdersList = () => {
                 setOrderDialog(!orderDialog)
               }}
             />
+            <div>
+
+
+              <Button
+                icon="pi pi-plus"
+                label="Test Order"
+                className="block ml-auto"
+                onClick={async () => {
+
+                  try {
+
+                    const order = createNewOrder({
+                      customer: {
+                        firstName: "Varun",
+                        lastName: "J",
+                        shopifyId: "1425636985",
+                        addresses: {
+                          create: {
+                            buildingNumber: "56",
+                            areaStreet: "street",
+                            landmarkName: "mark",
+                            cityCountryProvince: "Mysore",
+                            state: "Karnataka",
+                            pincode: "560079",
+                            country: 1,
+                            emails_emails_addressesToaddresses: {
+                              create: [
+                                {
+                                  email: "test2@gmail.com",
+                                },
+                              ],
+                            },
+                            contact_number: {
+                              create: [
+                                {
+                                  type: "mobile",
+                                  number: "1",
+                                },
+                              ],
+                            }
+
+                          }
+                        }
+                      },
+                      order: {
+                        orderStatus: 4,
+                        isShippingIsBilling: true,
+                        shippingAddress: {
+                          buildingNumber: "123",
+                          areaStreet: "Main St.",
+                          landmarkName: "Central Park",
+                          cityCountryProvince: "New York",
+                          state: "NY",
+                          pincode: "10001",
+                          country: 1,
+                          emails_emails_addressesToaddresses: {
+                            create: [
+                              {
+                                email: "shiptest2@gmail.com",
+                              },
+                            ],
+                          },
+                          contact_number: {
+                            create: [
+                              {
+                                type: "landline",
+                                number: "1425",
+                              },
+                            ],
+                          }
+                        },
+                        billingAddress: {
+                          buildingNumber: "456",
+                          areaStreet: "Broadway",
+                          landmarkName: "Times Square",
+                          cityCountryProvince: "New York",
+                          state: "NY",
+                          pincode: "10001",
+                          country: 1,
+                          emails_emails_addressesToaddresses: {
+                            create: [
+                              {
+                                email: "Billtest2@gmail.com",
+                              },
+                            ],
+                          },
+                          contact_number: {
+                            create: [
+                              {
+                                type: "landline",
+                                number: "1",
+                              },
+                            ],
+                          }
+                        },
+                        paymentStatus: "unpaid",
+                        totalPrice: 200,
+                        gateway: "paytm",
+                        channelCreatedAt: new Date(),
+                        order_items: {
+                          create: [{
+                            product: 11,
+                            quantity: 10,
+                            price: 123,
+                          }, {
+                            product: 12,
+                            quantity: 10,
+                            price: 123,
+                          }]
+                        },
+
+                      }
+
+                    },
+                      {
+                        onSuccess: async () => {
+                          await refetch()
+                          alert("created")
+                        }, onError: (error) => {
+                          alert(error)
+                        },
+                      })
+                  } catch (error) {
+                    console.log('error123: ', error);
+
+                  }
+
+                }}
+              ></Button>
+            </div>
           </div>
         </div>
+
+
+
       </div>
-
-      {/* <div className="col-12">
-        {orderDialog &&
-          <div className="card m-0">
-            <div className="flex justify-content-between align-items-center">
-              <h4>Create Product</h4>
-              <Button
-                icon="pi pi-times"
-              // onClick={() => setProductEditState(!productEditState)}
-              />
-            </div>
-            <div className="formgrid grid pl-2">
-              <div className="col-12">
-                <span className="text-lg">Customer Details</span>
-              </div>
-              {[{
-                label: "First Name"},
-              { label: "Last Name" },
-              { label: "Email ID" },
-              { label: "Contact Number" },
-              { label: "TotalPrice" },
-              { label: "Order Status" },
-              { label: "Payment Status" },
-              { label: "Gateway " },
-              ].map(({ label }, index) => (
-                <div key={index} className="field col-12 lg:col-2 md:col-6 mt-5">
-                  <span className="p-float-label">
-                    <InputText
-                    // disabled={disableField}
-                    // id={"sku"}
-                    // placeholder='SKU'
-                    // name={"sku"}
-                    // value={formik.values.sku}
-                    // autoFocus
-                    // className={classNames({ "p-invalid ": isFormFieldValid("description") })}
-                    />
-                    <label
-                    // htmlFor={"sku"}
-                    // className={classNames({ "p-error": isFormFieldValid("sku") })}
-                    >
-                      {label}
-                    </label>
-                  </span>
-                </div>
-              ))}
-
-            </div>
-            <div className="flex mt-4 ">
-              <Button
-                type="submit"
-                className="mr-2 "
-                label="SUBMIT"
-              // label={editUpdateProduct ? 'UPDATE' : 'SUBMIT'}
-              />
-              <Button
-                className="p-button-secondary"
-                type="button"
-                label="CANCEL"
-                onClick={() => {
-                  setOrderDialog(false)
-                }}
-              />
-            </div>
-          </div>
-      <Button
-        icon="pi pi-plus"
-        label="Test Order"
-        className="block ml-auto"
-        onClick={async () => {
-
-          try {
-
-            const order = createNewOrder({
-              customer: {
-                firstName: "Varun",
-                lastName: "J",
-                shopifyId: "1425636985",
-                addresses: {
-                  create: {
-                    buildingNumber: "56",
-                    areaStreet: "street",
-                    landmarkName: "mark",
-                    cityCountryProvince: "Mysore",
-                    state: "Karnataka",
-                    pincode: "560079",
-                    country: 1,
-                    emails_emails_addressesToaddresses: {
-                      create: [
-                        {
-                          email: "test2@gmail.com",
-                        },
-                      ],
-                    },
-                    contact_number: {
-                      create: [
-                        {
-                          type: "landline",
-                          number: "1",
-                        },
-                      ],
-                    }
-
-                  }
-                }
-              },
-              order: {
-                orderStatus: 4,
-                isShippingIsBilling: true,
-                shippingAddress: {
-                  buildingNumber: "123",
-                  areaStreet: "Main St.",
-                  landmarkName: "Central Park",
-                  cityCountryProvince: "New York",
-                  state: "NY",
-                  pincode: "10001",
-                  country: 1,
-                  emails_emails_addressesToaddresses: {
-                    create: [
-                      {
-                        email: "shiptest2@gmail.com",
-                      },
-                    ],
-                  },
-                  contact_number: {
-                    create: [
-                      {
-                        type: "landline",
-                        number: "1425",
-                      },
-                    ],
-                  }
-                },
-                billingAddress: {
-                  buildingNumber: "456",
-                  areaStreet: "Broadway",
-                  landmarkName: "Times Square",
-                  cityCountryProvince: "New York",
-                  state: "NY",
-                  pincode: "10001",
-                  country: 1,
-                  emails_emails_addressesToaddresses: {
-                    create: [
-                      {
-                        email: "Billtest2@gmail.com",
-                      },
-                    ],
-                  },
-                  contact_number: {
-                    create: [
-                      {
-                        type: "landline",
-                        number: "1",
-                      },
-                    ],
-                  }
-                },
-                paymentStatus: "unpaid",
-                totalPrice: 200,
-                gateway: "paytm",
-                channelCreatedAt: new Date(),
-                order_items: {
-                  create: [{
-                    product: 11,
-                    quantity: 10,
-                    price: 123,
-                  }, {
-                    product: 12,
-                    quantity: 10,
-                    price: 123,
-                  }]
-                },
-
-              }
-
-            },
-              {
-                onSuccess: async () => {
-                  await refetch()
-                  alert("created")
-                }, onError: (error) => {
-                  alert(error)
-                },
-              })
-          } catch (error) {
-            console.log('error123: ', error);
-
-          }
-
-        }}
-      ></Button>
-        }
-      </div> */}
-
       {orderDialog &&
         <div className="card">
+          <div>
+            <h3>Customer Details</h3>
+
+            {/* <pre>{JSON.stringify(formik.values, null, 2)}</pre> */}
+
+          </div>
           <form onSubmit={formik.handleSubmit}
             className="p-fluid">
             <div className="formgrid grid">
               {[
                 { field: "firstName", label: "First Name" },
                 { field: "lastName", label: "Last Name" },
-                { field: "emailID", label: "Email ID" },
+                { field: "email", label: "Email ID" },
                 { field: "contactNumber", label: "Contact Number" },
                 { label: "Address", field: "address" },
-                
-                { label: "Area Street", field: "areaStreet" },
-                { label: "LandMark", field: "landmark Name" },
-                { label: "Building Number", field: "buildingNumber" },
+                { label: "LandMark", field: "landmarkName" },
                 { label: "Pincode", field: "pincode" },
-                // { field: "totalPrice", label: "Total Price" },
-                // { field: "quantity", label: "Quantity" },
-                // { field: "paymentStatus", label: "Payment Status" },
-                // { field: "gateway", label: "Gateway " },
-                // { field:"", label: 'Customer Id' },
               ].map((ele, i) => {
                 return (
                   <div key={`${ele.label}${i}`} className="field col-12 lg:col-2 md:col-6 mt-4">
@@ -566,11 +647,12 @@ export const OrdersList = () => {
                     completeMethod={searchCities}
                     field="city"
                     onChange={async (e) => {
+                      console.log('e.value + ', e.value);
                       let city = typeof e.value === "string" ? e.value : e.value.city
                       let state = typeof e.value === "string" ? " " : e.value.state
                       let country = typeof e.value === "string" ? "" : "India"
 
-                      await formik.setValues({ ...formik.values, city, state ,country})
+                      await formik.setValues({ ...formik.values, city, state, country })
                     }}
                     aria-label="cities"
                     dropdownAriaLabel="Select City"
@@ -621,33 +703,10 @@ export const OrdersList = () => {
                     htmlFor="country"
                     className={classNames({ "p-error": isFormFieldValid("country") })}
                   >
-                   Country
+                    Country
                   </label>
                 </span>
                 {getFormErrorMessage("country")}
-              </div>
-
-
-
-              <div className="field col-12 lg:col-2 md:col-6 mt-4">
-                <span className="p-float-label">
-                  <InputText
-                    disabled={true}
-                    id={"totalPrice"}
-                    // placeholder='SKU'
-                    name={"totalPrice"}
-                    value={formik.values.totalPrice}
-                    autoFocus
-                    className={classNames({ "p-invalid ": isFormFieldValid("description") })}
-                  />
-                  <label
-                    htmlFor={"totalPrice"}
-                    className={classNames({ "p-error": isFormFieldValid("sku") })}
-                  >
-                    TotalPrice
-                  </label>
-                </span>
-                {getFormErrorMessage("totalPrice")}
               </div>
 
               <div key={`Order Status`} className="field col-12 lg:col-5 md:col-6 mt-4">
@@ -663,7 +722,8 @@ export const OrdersList = () => {
                     onChange={(e) => {
                       const selectedOption = orderStatusOption.find(option => option.name === e.target.value.name);
                       const selectedOptionName = selectedOption ? selectedOption.name : null;
-                      formik.setFieldValue('orderStatus', selectedOptionName);
+                      console.log('selectedOptionName: ', selectedOption);
+                      formik.setFieldValue('orderStatus', selectedOption);
                     }}
 
                     className={classNames({ "p-invalid": isFormFieldValid("category") })}
@@ -678,7 +738,7 @@ export const OrdersList = () => {
                 {/* {getFormErrorMessage("category")} */}
               </div>
 
-              <div key={`Customer`} className="field col-12 lg:col-5 md:col-6 mt-4">
+              {/* <div key={`Customer`} className="field col-12 lg:col-5 md:col-6 mt-4">
                 <span className="p-float-label">
                   <AutoComplete
                     id="Customer"
@@ -704,8 +764,8 @@ export const OrdersList = () => {
                     Customer
                   </label>
                 </span>
-                {/* {getFormErrorMessage("category")} */}
-              </div>
+                {getFormErrorMessage("category")}
+              </div> */}
 
               <div key={`gateway`} className="field col-12 lg:col-5 md:col-6 mt-4">
                 <span className="p-float-label">
@@ -718,7 +778,7 @@ export const OrdersList = () => {
                     completeMethod={searchGateway}
                     field="name"
                     onChange={(e) => {
-                      const selectedOrderItem = gatewayOptions.find(option_ => option_.name === e.value.name);
+                      const selectedOrderItem = gatewayOptions.find(option_ => option_.name === e.value?.name);
                       const selectedItemsOptionName = selectedOrderItem ? selectedOrderItem.name : null;
                       formik.setFieldValue('gateway', selectedItemsOptionName);
                     }}
@@ -736,8 +796,9 @@ export const OrdersList = () => {
                 {/* {getFormErrorMessage("category")} */}
               </div>
 
+
               <div key={`paymentStatus`} className="field col-12 lg:col-5 md:col-6 mt-4">
-                <span className="p-float-label">
+                <span className="p-float-label ">
                   <AutoComplete
                     id="paymentStatus"
                     value={formik.values.paymentStatus}
@@ -763,11 +824,10 @@ export const OrdersList = () => {
                     Payment Status
                   </label>
                 </span>
-                {/* {getFormErrorMessage("category")} */}
               </div>
 
-              <div>
-                <div className="">
+              <div className="">
+                <div className="col-12">
                   {orderItemInput.map((ele, index) => (
                     <div key={index} className='flex gap-4 align-items-center mt-3'>
                       <span className="p-float-label">
@@ -795,7 +855,7 @@ export const OrdersList = () => {
                           htmlFor={"type"}
                           className={classNames({ "p-error": isFormFieldValid("type") })}
                         >
-                          Order Items
+                          Products
                         </label>
                       </span>
 
@@ -849,7 +909,10 @@ export const OrdersList = () => {
                       <Button
                         icon="pi pi-plus"
                         className="m-1"
-                        onClick={handleAddInput}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          handleAddInput();
+                        }}
                         style={{ height: '40px' }}
                       />
                     </div>
@@ -857,18 +920,53 @@ export const OrdersList = () => {
                   }
                 </div>
               </div>
-
+              <div className="field col-12 lg:col-2 md:col-6 mt-4">
+                <span className="p-float-label">
+                  <InputText
+                    disabled={true}
+                    id={"totalPrice"}
+                    // placeholder='SKU'
+                    name={"totalPrice"}
+                    value={formik.values.totalPrice}
+                    autoFocus
+                    className={classNames({ "p-invalid ": isFormFieldValid("description") })}
+                  />
+                  <label
+                    htmlFor={"totalPrice"}
+                    className={classNames({ "p-error": isFormFieldValid("sku") })}
+                  >
+                    TotalPrice
+                  </label>
+                </span>
+                {getFormErrorMessage("totalPrice")}
+              </div>
 
               <div className="col-12">
-                <Checkbox
-                  value={formik.values.checkedAddress}
-                  checked={formik.values.checkedAddress === true}
-                  onChange={(e) => {
-                    formik.setFieldValue("checkedAddress", e.checked ? true : false);
-                  }}
-                  className="mt-2"
-                />
+                <h3 className="field col-12 lg:col-5 md:col-6 mt-4">Shipping Address</h3>
+                <AddressComponent errors={formik.errors.shippingAddress} value={formik.values.shippingAddress} setField={formik.setFieldValue} addressName={'shippingAddress'} />
               </div>
+
+              <div className="col-12">
+                <h3 className="field col-12 lg:col-5 md:col-6 mt-4">Billing Address</h3>
+                <AddressComponent errors={formik.errors.billingAddress} value={formik.values.billingAddress} setField={formik.setFieldValue} addressName={'billingAddress'} />
+              </div >
+
+              <div className="col-12 mt-3 grid align-items-center">
+                <label className="ml-3">Billing Address or Shipping Address same:</label>
+                <Checkbox
+                  disabled={true}
+                  value={formik.values.checkedAddress}
+                  checked={formik.values?.billingAddress?.address === formik.values?.shippingAddress?.address ? true : false}
+                  onChange={(e) => {
+                    formik.setFieldValue("checkedAddress", e.checked);
+
+                  }}
+                  className="ml-2"
+                />
+
+              </div>
+
+
             </div>
 
             <div className="flex mt-4">
@@ -884,6 +982,7 @@ export const OrdersList = () => {
                 label="CANCEL"
                 onClick={() => {
                   setOrderDialog(false)
+                  formik.resetForm()
                 }}
               />
             </div>
@@ -892,8 +991,6 @@ export const OrdersList = () => {
         </div>
 
       }
-      <pre>{JSON.stringify(formik.values, null, 2)}</pre>
-
 
 
       <div className="col-12">
@@ -905,11 +1002,162 @@ export const OrdersList = () => {
             // header={renderHeader}
             stripedRows
             className="text-s datatable-responsive"
+            onRowClick={async (e) => {
+              console.log('e.data: ', e.data);
+              setActiveRowData({ ...e.data })
+              setNewOrderUpdate(true)
+              setOrderDialog(true)
+              const name = e.data.customers
+              const _email = e.data.customers?.addresses?.emails_emails_addressesToaddresses.map((ele) => ele.email)
+              const _contactNumber = e.data.customers?.addresses?.contact_number.map((ele) => ele.number)
+              const _orderStatus = e.data.order_status.name
+              const _shippingAddress = e.data.addresses_orders_shippingAddressIdToaddresses
+              const _billingAddress = e.data.addresses_orders_billingAddressIdToaddresses
+
+              const _orderItems = e.data.order_items.map(({ quantity, price, products: { id, name, sku } }) => ({
+                id,
+                name: `${sku} - ${name}`,
+                quantity: quantity.toString(),
+                price: price.toString()
+              }));
+
+              // const _quantity = e.data.order_items.quantity
+              console.log('name: ', _billingAddress);
+
+              await formik.setValues({
+                ...e.data,
+                firstName: name.firstName,
+                lastName: name.lastName,
+                email: _email,
+                contactNumber: _contactNumber,
+                // order_status: _orderStatus,
+                shippingAddress:{
+                  address:_shippingAddress.areaStreet,
+                  landmarkName:_shippingAddress.landmarkName                  ,
+                  pincode:_shippingAddress.pincode,
+                  city:_shippingAddress.cityCountryProvince,
+                  state:_shippingAddress.state,
+                  country:'India'
+
+
+                },
+                billingAddress: {
+                  address: _billingAddress.areaStreet,
+                  landmarkName: _billingAddress.landmarkName,
+                  pincode:_billingAddress.pincode,
+                  city: _billingAddress.cityCountryProvince,
+                  state:_billingAddress.state,
+                  country:"India"
+
+
+                },
+                // orderItems: _orderItems,
+
+              })
+
+              scrolToTop?.current && scrolToTop?.current.scrollIntoView()
+
+              const test = {
+                "id": 131,
+                "orderStatus": 2,
+                "shippingAddressId": 604,
+                "billingAddressId": 605,
+                "createdAt": null,
+                "shopifyId": null,
+                "customerId": 147,
+                "paymentStatus": "Paid",
+                "totalPrice": 27000,
+                "gateway": "Paypal",
+                "channelCreatedAt": "2023-03-23T12:15:20.000Z",
+                "cursor": null,
+                "order_items": [
+                  {
+                    "id": 67,
+                    "order": 131,
+                    "product": 3,
+                    "quantity": 2,
+                    "price": 13500,
+                    "products": {
+                      "id": 3,
+                      "name": "Machine Tools",
+                      "sku": "TIFEC0045",
+                      "description": "Machine Tools update::",
+                      "length": null,
+                      "width": null,
+                      "height": null,
+                      "weight": null,
+                      "color": null,
+                      "hsnCode": null,
+                      "imageUrl": "https://loremflickr.com/320/240/device?random=1",
+                      "createdAT": null,
+                      "updatedAT": null,
+                      "customDuty": null,
+                      "gstTaxTypeCode": null,
+                      "taxCalcType": null,
+                      "status": "Active",
+                      "category": null,
+                      "brand": null,
+                      "costPrice": 10,
+                      "type": 1
+                    }
+                  }
+                ],
+                "order_status": {
+                  "id": 2,
+                  "name": "Unfulfilled",
+                  "description": "Order has not been fulfilled yet"
+                },
+                "addresses_orders_billingAddressIdToaddresses": {
+                  "id": 605,
+                  "buildingNumber": null,
+                  "areaStreet": "dfghjkl",
+                  "landmarkName": "67ytutgyg",
+                  "cityCountryProvince": "Adoni",
+                  "state": "Andhra Pradesh",
+                  "pincode": "09876543",
+                  "country": 1
+                },
+                "addresses_orders_shippingAddressIdToaddresses": {
+                  "id": 604,
+                  "buildingNumber": null,
+                  "areaStreet": "dfghjkl",
+                  "landmarkName": "67ytutgyg",
+                  "cityCountryProvince": "Adoni",
+                  "state": "Andhra Pradesh",
+                  "pincode": "09876543",
+                  "country": 1
+                },
+                "customers": {
+                  "id": 147,
+                  "firstName": "Akshara",
+                  "lastName": "Mishra",
+                  "addressesId": 603,
+                  "shopifyId": null,
+                  "addresses": {
+                    "contact_number": [
+                      {
+                        "id": 395,
+                        "type": "mobile",
+                        "number": "1234567890",
+                        "address": 603
+                      }
+                    ],
+                    "emails_emails_addressesToaddresses": [
+                      {
+                        "id": 127,
+                        "email": "scd@fds.af",
+                        "addresses": 603
+                      }
+                    ]
+                  }
+                }
+              }
+            }}
           >
             <Column
               // field={}
               header="Order Number"
-              body={(rowData) => rowData.shopifyId ? rowData.shopify.orderNumber : rowData.id}
+              body={(rowData) => rowData.shopifyId ? rowData?.shopify?.orderNumber : rowData.id}
             // className="text-center"
             />
             <Column
