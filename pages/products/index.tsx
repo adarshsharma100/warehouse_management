@@ -15,6 +15,7 @@ import { Toast } from "primereact/toast"
 
 import createProduct from "app/products/mutations/createProduct"
 import updateProduct from "app/products/mutations/updateProduct"
+import uploadCsvForProcessing from "app/pipeline/mutations/uploadCsvForProcessing"
 
 import getProducts from "app/products/queries/getProducts"
 
@@ -74,6 +75,8 @@ export const ProductsList = () => {
 
   const [createProductMutation, { isLoading: creatingProduct }] =
     useMutation(createProduct)
+
+  const [uploadCsvMutation] = useMutation(uploadCsvForProcessing)
 
   const [updateProductMutation, { isLoading: updatingProduct }] =
     useMutation(updateProduct)
@@ -844,7 +847,7 @@ export const ProductsList = () => {
                 }}
               />
             </div>
-            
+
           </form>
         </div>
       </div>

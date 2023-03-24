@@ -29,6 +29,7 @@ import getCustomers from "app/customers/queries/getCustomers";
 import { TriStateCheckbox } from 'primereact/tristatecheckbox';
 import { ToggleButton } from 'primereact/togglebutton';
 import { Checkbox } from "primereact/checkbox";
+import { JobStatus } from "components/JobStatus";
 import AddressComponent from "../../components/AddressComponent";
 
 
@@ -98,7 +99,7 @@ export const OrdersList = () => {
 
   const router = useRouter();
   const page = Number(router.query.page) || 0;
-  const [{ orders }, { refetch }] = usePaginatedQuery(getOrders, {
+  const [{ orders, jobId }, { refetch: refetchOrders }] = usePaginatedQuery(getOrders, {
     orderBy: { id: "asc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
@@ -112,14 +113,6 @@ export const OrdersList = () => {
     where: undefined
   })
   console.log('order_statuses: ', order_statuses);
-
-
-  const [{ order_items }] = useQuery(getOrder_items, {
-    orderBy: { id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-    where: undefined
-  })
 
   // const [{ customers }] = useQuery(getCustomers, {
   //   skip: undefined,
@@ -991,6 +984,9 @@ export const OrdersList = () => {
         </div>
 
       }
+      {/* <div className="col-12">
+        <JobStatus id={jobId} title={"Order Fetching Job"} />
+      </div> */}
 
 
       <div className="col-12">
@@ -1157,7 +1153,7 @@ export const OrdersList = () => {
             <Column
               // field={}
               header="Order Number"
-              body={(rowData) => rowData.shopifyId ? rowData?.shopify?.orderNumber : rowData.id}
+              body={(rowData) => rowData.shopifyId ? rowData.shopify?.orderNumber : rowData.id}
             // className="text-center"
             />
             <Column
@@ -1315,7 +1311,7 @@ export const OrdersList = () => {
                             orderStatus: e.target.value
                           }, {
                             onSuccess: async () => {
-                              await refetch()
+                              await refetchOrders()
                             }
                           })
                         }}
