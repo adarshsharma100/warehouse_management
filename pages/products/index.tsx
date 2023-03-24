@@ -11,7 +11,10 @@ import { InputText } from "primereact/inputtext"
 import { InputTextarea } from "primereact/inputtextarea"
 import { FileUpload } from "primereact/fileupload"
 import { Toast } from "primereact/toast"
+import { ProgressBar } from 'primereact/progressbar';
+import { Tag } from 'primereact/tag';
 
+import { Steps } from 'primereact/steps';
 import createProduct from "app/products/mutations/createProduct"
 import updateProduct from "app/products/mutations/updateProduct"
 import uploadCsvForProcessing from "app/pipeline/mutations/uploadCsvForProcessing"
@@ -35,6 +38,7 @@ import moment from "moment"
 import createProduct_tag from "app/product_tags/mutations/createProduct_tag"
 import { getAntiCSRFToken } from "@blitzjs/auth"
 import CreateKit_product from 'app/kit_products/mutations/createKit_product'
+import { Tooltip } from "primereact/tooltip"
 
 
 const dateFormat = (dateObj: Date | string) =>
@@ -71,6 +75,7 @@ export const ProductsList = () => {
   const [{ product_categories },] = useQuery(getProduct_categories, {
     orderBy: { id: "desc" },
   })
+  console.log('products: ', products);
 
 
   const [createProductMutation, { isLoading: creatingProduct }] = useMutation(createProduct)
@@ -87,6 +92,7 @@ export const ProductsList = () => {
     name: "",
     productName: '',
     description: "",
+    imageUrl: "",
     type: "",
     sku: "",
     unit: "",
@@ -102,7 +108,6 @@ export const ProductsList = () => {
     gstcode: "",
     hsnCode: "",
     tags: [],
-    imageurl: "",
     costPrice: "",
     mrp: "",
     basePrice: "",
@@ -197,6 +202,7 @@ export const ProductsList = () => {
   useEffect(() => {
     const obj = {
       value: [
+        { field: "imageUrl", header: "Image" },
         { field: "sku", header: "SKU" },
         { field: "name", header: "Name" },
         { field: "category", header: "Category" },
@@ -208,15 +214,7 @@ export const ProductsList = () => {
     }
     onColumnToggle(obj)
 
-    uploadCsvMutation(`eruid,description
-batman,uses technology
-superman,flies through the air
-spiderman,uses a web
-ghostrider, rides a motorcycle
-#GROUP_OBJECT_PROFILE#accessgroupGroupProfile
-cn,description
-daredevil,this group represents daredevils
-superhero,this group represents superheroes`)
+
   }, [])
   const clearFilter = () => {
     initFilters()
@@ -229,6 +227,10 @@ superhero,this group represents superheroes`)
     setFilters(_filters1)
     setGlobalFilterValue(value)
   }
+
+
+
+
   const initFilters = () => {
     setFilters({
       global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -423,6 +425,17 @@ superhero,this group represents superheroes`)
 
 
 
+  // const onUpload={async (e) => {
+  //   const file = e.files[0]
+    // const response = await fetch("/api/upload", {
+    //   method: "POST",
+    //   body: file,
+    // })
+  //   const { filename } = await response.json()
+  
+  // }
+
+ 
   const formik = useFormik({
     initialValues: productDetails,
     validationSchema: Yup.object().shape({
@@ -431,7 +444,7 @@ superhero,this group represents superheroes`)
     onSubmit: async (data) => {
       console.log('data: ', data);
 
-      const { name, description, category, sku, length, width, hsnCode, height, weight, costPrice, tags, color } = data
+      const { name, description, imageUrl, category, sku, length, width, hsnCode, height, weight, costPrice, tags, color, type } = data
 
       const tagsValue = tags.map(({ value }) => value)
 
@@ -466,7 +479,7 @@ superhero,this group represents superheroes`)
             },
             onError: (error) => {
               alert(`error ${error}`)
-              console.log('error',error)
+              console.log('error', error)
             }
           })
           await refetch()
@@ -478,6 +491,16 @@ superhero,this group represents superheroes`)
         }
       }
       else {
+
+        const _kit_products = {
+          create: productTypeValue.map((e) => ({
+            kitProductID: e.id,
+            quantity: Number(e.quantity)
+          }))
+        }
+
+      
+
         try {
           await createProductMutation(
             {
@@ -492,22 +515,25 @@ superhero,this group represents superheroes`)
               height: Number(height),
               weight: Number(weight),
               hsnCode: hsnCode,
+              imageUrl:filename,
               type: Number(formik?.values?.type?.id),
               product_tags: {
                 create: tagsValue.map((e) => ({ tags: e })),
               },
 
-              kit_products: {
-                create: productTypeValue.map((e) => ({
-                  kitProductID: e.id,
-                  quantity: Number(e.quantity)
-                }))
-              }
+              kit_products: type?.type === "BUNDLE" ? _kit_products : {}
             },
             {
               onSuccess: async (data) => {
-
                 alert('Created')
+                const uploadImage = async (e) =>{
+                  const file = e.files[0]
+                  const response = await fetch("/api/upload", {
+                    method: "POST",
+                    body: file,
+                  })
+                  const { filename } = await response.json()
+                }
               },
               onError: (error) => {
                 alert('not created!')
@@ -517,8 +543,7 @@ superhero,this group represents superheroes`)
           )
           await refetch()
         } catch (err) {
-
-
+          alert('Out error!!!')
         }
       }
       await refetch()
@@ -539,10 +564,12 @@ superhero,this group represents superheroes`)
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
 
-  const [imageUploadObject, setImageUpload] = useState(null)
+  const [imageUploadObject, setImageUploadObject] = useState(null)
   useEffect(() => {
     console.log('imageUploadObject: ', imageUploadObject);
   }, [imageUploadObject])
+
+
 
 
   const pCsvFormatDetails = {
@@ -592,8 +619,8 @@ superhero,this group represents superheroes`)
 
 
   const [inputs, setInputs] = useState([{ product: '', quantity: '' }]);
-  console.log('inputs: ',inputs);
-  
+  console.log('inputs: ', inputs);
+
   const handleAddInput = () => {
     setInputs([...inputs, { product: '', quantity: '' }]);
   };
@@ -617,7 +644,108 @@ superhero,this group represents superheroes`)
   };
 
 
-  
+  const [activeIndex, setActiveIndex] = useState(0);
+  const items = [
+    {
+      label: 'Create Products'
+    },
+    {
+      label: 'Image Upload'
+    },
+
+  ];
+
+
+  const [totalSize, setTotalSize] = useState(0);
+
+  const fileUploadRef = useRef(null);
+
+  const onTemplateSelect = (e) => {
+    let _totalSize = totalSize;
+    let files = e.files;
+
+    Object.keys(files).forEach((key) => {
+      _totalSize += files[key].size || 0;
+    });
+    // setImageUploadObject(files)
+    // console.log('files: ', imageUploadObject);
+    // formik.setValues({ ...formik, imageUrl: files })
+    setTotalSize(_totalSize);
+  };
+
+
+  const onTemplateUpload = (e) => {
+    let _totalSize = 0;
+
+    e.files.forEach((file) => {
+      _totalSize += file.size || 0;
+    });
+
+    setTotalSize(_totalSize);
+    toast.current.show({ severity: 'info', summary: 'Success', detail: 'File Uploaded' });
+  };
+
+  const onTemplateRemove = (file, callback) => {
+    setTotalSize(totalSize - file.size);
+    callback();
+  };
+
+  const onTemplateClear = () => {
+    setTotalSize(0);
+  };
+
+  const headerTemplate = (options) => {
+    const { className, chooseButton, uploadButton, cancelButton } = options;
+    const value = totalSize / 10000;
+    const formatedValue = fileUploadRef && fileUploadRef.current ? fileUploadRef.current.formatSize(totalSize) : '0 B';
+
+    return (
+      <div className={className} style={{ backgroundColor: 'transparent', display: 'flex', alignItems: 'center' }}>
+        {chooseButton}
+        {uploadButton}
+        {cancelButton}
+        <div className="flex align-items-center gap-3 ml-auto">
+          <span>{formatedValue} / 1 MB</span>
+          <ProgressBar value={value} showValue={false} style={{ width: '10rem', height: '12px' }}></ProgressBar>
+        </div>
+      </div>
+    );
+  };
+
+  const itemTemplate = (file, props) => {
+    return (
+      <div className="flex align-items-center flex-wrap">
+        <div className="flex align-items-center" style={{ width: '40%' }}>
+          <img alt={file.name} role="presentation" src={file.objectURL} width={100} />
+          <span className="flex flex-column text-left ml-3">
+            {file.name}
+            <small>{new Date().toLocaleDateString()}</small>
+          </span>
+        </div>
+        <Tag value={props.formatSize} severity="warning" className="px-3 py-2" />
+        <Button type="button" icon="pi pi-times" className="p-button-outlined p-button-rounded p-button-danger ml-auto" onClick={() => onTemplateRemove(file, props.onRemove)} />
+      </div>
+    );
+  };
+
+
+  const emptyTemplate = () => {
+    return (
+      <div className="flex align-items-center flex-column">
+        <i className="pi pi-image mt-3 p-5" style={{ fontSize: '5em', borderRadius: '50%', backgroundColor: 'var(--surface-b)', color: 'var(--surface-d)' }}></i>
+        <span style={{ fontSize: '1.2em', color: 'var(--text-color-secondary)' }} className="my-5">
+          Drag and Drop Image Here
+        </span>
+      </div>
+    );
+  };
+
+  const chooseOptions = { icon: 'pi pi-fw pi-images', iconOnly: true, className: 'custom-choose-btn p-button-rounded p-button-outlined' };
+  const uploadOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, className: 'custom-upload-btn p-button-success p-button-rounded p-button-outlined' };
+  const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger p-button-rounded p-button-outlined' };
+
+
+
 
   return (
     <div className="grid w-full">
@@ -635,7 +763,7 @@ superhero,this group represents superheroes`)
                 className="ml-1"
                 onClick={() => {
                   refetch()
-                  setInputs([{product:null,quantity:null}])
+                  setInputs([{ product: null, quantity: null }])
                   formik.resetForm()
                   setSelectedStatus(null)
                   setProductEditState(false)
@@ -722,27 +850,29 @@ superhero,this group represents superheroes`)
 
 
         <div className="card">
-          <div className="flex justify-content-between">
-            <h4>{activeProduct ? "Update" : "Create"} Product</h4>
-            <h4>{productEditState ? <Button
-              icon="pi pi-pencil"
-              className="m-1"
-              onClick={() => { setProductEditState(!productEditState); setEditUpdateProduct(!editUpdateProduct) }}
-            /> : <Button
-              icon="pi pi-pencil"
-              className="m-1"
-              onClick={() => setProductEditState(!productEditState)}
-            />}</h4>
-          </div>
 
-          <form
-            onSubmit={formik.handleSubmit}
-            className="p-fluid"
-          >
-            <div className="formgrid grid">
-              <div className="field col-12">
-                {/* //TODO: @Varun: the below code will have to be adjusted for file upload */}
-                {/* <FileUpload
+          <div>
+            <div className="flex justify-content-between">
+              <h4>{activeProduct ? "Update" : "Create"} Product</h4>
+              <h4>{productEditState ? <Button
+                icon="pi pi-pencil"
+                className="m-1"
+                onClick={() => { setProductEditState(!productEditState); setEditUpdateProduct(!editUpdateProduct) }}
+              /> : <Button
+                icon="pi pi-pencil"
+                className="m-1"
+                onClick={() => setProductEditState(!productEditState)}
+              />}</h4>
+            </div>
+
+            <form
+              onSubmit={formik.handleSubmit}
+              className="p-fluid"
+            >
+              <div className="formgrid grid">
+                <div className="field col-12">
+                  {/* //TODO: @Varun: the below code will have to be adjusted for file upload */}
+                  {/* <FileUpload
                   cancelOptions={true}
                   name="product_image"
                   url="/api/upload"
@@ -753,244 +883,275 @@ superhero,this group represents superheroes`)
                   }}
                   auto={true}
                   onSelect={async (e) => {
-                    setImageUpload(e.files[0])
+                    setImageUploadObject(e.files[0])
                   }}
                 /> */}
-              </div>
-              <div className="field col-12 lg:col-2 md:col-6 mt-4">
-                <span className="p-float-label">
-                  <InputText
-                    disabled={disableField}
-                    id={"sku"}
-                    placeholder='SKU'
-                    name={"sku"}
-                    value={formik.values.sku}
-                    autoFocus
-                    className={classNames({ "p-invalid ": isFormFieldValid("description") })}
-                  />
-                  <label
-                    htmlFor={"sku"}
-                    className={classNames({ "p-error": isFormFieldValid("sku") })}
-                  >
-                    SKU
-                  </label>
-                </span>
-                {getFormErrorMessage("sku")}
-              </div>
-              {
-                [
-                  { type: 'text', label: "Name*", field: "name", header: "Name" },
-                  // { type: 'text', label: "sku*", field: "sku", header: "SKU" },
-                  { type: 'text', label: "Length", field: "length", header: "Length" },
-                  { type: 'text', label: "Width", field: "width", header: "Width" },
-                  { type: 'text', label: "Height", field: "height", header: "Height" },
-                  { type: 'text', label: "Weight", field: "weight", header: "Weight" },
-                  { type: 'text', label: "Color", field: "color", header: "Color" },
-                  { type: 'text', label: "Brand", field: "brand", header: "Brand" },
-                  { type: 'text', label: "Tax type code", field: "taxcode", header: "Tax code" },
-                  { type: 'text', label: "Gst Tax type code", field: "gstcode", header: "Gst Code" },
-                  { type: 'text', label: "HSN code", field: "hsnCode", header: "HSN Code" },
-                  { type: 'text', label: "Cost Price", field: "costPrice", header: "Cost Price" },
-                  { type: 'text', label: "Tax Calculation Type", field: "taxCalcuation", header: "Tax Calcuation" },
-                ].map((ele, i) => {
-                  if (ele.type === "text") {
-                    return (
-                      <div key={`${ele.field}${i}`} className="field col-12 lg:col-2 md:col-6 mt-4">
-                        <span className="p-float-label">
-                          <InputText
-                            disabled={productEditState}
-                            id={ele.field}
-                            name={ele.field}
-                            value={formik.values[ele.field]}
-                            onChange={formik.handleChange}
-                            autoFocus
-                            className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
-                          />
-                          <label
-                            htmlFor={ele.field}
-                            className={classNames({ "p-error": isFormFieldValid(ele.field) })}
-                          >
-                            {ele.label}
-                          </label>
-                        </span>
-                        {getFormErrorMessage(ele.field)}
-                      </div>
-                    )
-                  } else {
-                  }
-                })
-              }
-              <div key={`category`} className="field col-12 lg:col-5 md:col-6 mt-4">
-                <span className="p-float-label">
-                  <AutoComplete
-                    id="category"
-                    // disabled={editState}
-                    disabled={productEditState}
-                    value={formik?.values?.category?.name}
-                    dropdown
-                    forceSelection
-                    suggestions={categorySuggestions}
-                    completeMethod={searchCategory}
-                    field="name"
-                    onChange={async (e) => {
-                // console.log("event :e",formik?.values?.category?.name)
-
-                      let sku = `TIF${e.value?.code}${products.length + 1}`
-                      let category = typeof e.target.value === "string" ? e.value : e.value
-
-                      await formik.setValues({
-                        ...formik.values,
-                        sku,
-                        category
-                      })
-                    }}
-                    aria-label="Product Category"
-                    dropdownAriaLabel="Product Categorys"
-                    className={classNames({ "p-invalid": isFormFieldValid("category") })}
-                  />
-                  <label
-                    htmlFor={"category"}
-                    className={classNames({ "p-error": isFormFieldValid("category") })}
-                  >
-                    Category
-                  </label>
-                </span>
-                {getFormErrorMessage("category")}
-              </div>
-
-              <div key={`productType`} className="field col-12 lg:col-5 md:col-6 mt-4">
-                <span className="p-float-label">
-                  <Dropdown
-                    disabled={productEditState}
-                    value={selectedStatus}
-                    onChange={async (e) => {
-                      setSelectedStatus(e.value)
-                      formik.setFieldValue("type", e.value);
-                    }}
-                    options={StatusCheck}
-                    optionLabel="type"
-                    placeholder="Type"
-                    className="w-full"
-                  />
-                  <label
-                    htmlFor={"type"}
-                    className={classNames({ "p-error": isFormFieldValid("type") })}
-                  >
-                    Product Type
-                  </label>
-                </span>
-                {getFormErrorMessage("category")}
-              </div>
-            </div>
-
-
-            <div className="">
-
-              {selectedStatus?.type === 'BUNDLE' ?
-                <div>
-                  <div className="">
-                    {inputs.map((input, index) => (
-                      <div key={index} className='flex gap-4 align-items-center mt-3'>
-                        <span className="p-float-label">
-                          <AutoComplete
-                            id="name"
-                            value={input?.name || input.product}
-                            suggestions={kitSuggestions}
-                            completeMethod={kitSearchCategory}
-                            disabled={productEditState}
-                            dropdown
-                            forceSelection
-                            field="name"
-                            onChange={async (e) => {
-                              console.log(e?.value?.name, 'event')
-                              handleInputChange(e, index)
-                              const test = [...inputs]
-                              test[index] = { ...e?.value, }
-                              setInputs(test)
-                              console.log(inputs,"event input")
-                            }}
-                            aria-label="products"
-                            dropdownAriaLabel="Select Product"
-                            className={classNames({ "p-invalid": isFormFieldValid("name") })}
-                            style={{ width: '400px' }}
-                          />
-                          <label
-                            htmlFor={"type"}
-                            className={classNames({ "p-error": isFormFieldValid("type") })}
-                          >
-                            Kit Product
-                          </label>
-                        </span>
-
-                        <span className="p-float-label">
-                          <InputText
-                            className=''
-                            disabled={productEditState}
-                            type='text'
-                            name='quantity'
-                            value={input.quantity}
-                            onChange={async (e) => {
-                              handleInputChange(e, index)
-
-                            }}
-                            style={{ width: '400px' }}
-                          />
-                          <label
-                            htmlFor={"type"}
-                            className={classNames({ "p-error": isFormFieldValid("type") })}
-                          >
-                            Quantity
-                          </label>
-                        </span>
-
-                        <Button
-                          icon="pi pi-minus"
-                          className="p-2 m-1"
-                          onClick={() => handleRemoveInput(index)}
-                          style={{ height: '40px' }}
-                        />
-
-                        <Button
-                          icon="pi pi-plus"
-                          className="m-1"
-                          onClick={(e) =>{
-                            e.preventDefault()
-                            handleAddInput()
-                          }}
-                          style={{ height: '40px' }}
-                        />
-                      </div>
-                    ))
+                </div>
+                <div className="field col-12 lg:col-2 md:col-6 mt-4">
+                  <span className="p-float-label">
+                    <InputText
+                      disabled={disableField}
+                      id={"sku"}
+                      placeholder='SKU'
+                      name={"sku"}
+                      value={formik.values.sku}
+                      autoFocus
+                      className={classNames({ "p-invalid ": isFormFieldValid("description") })}
+                    />
+                    <label
+                      htmlFor={"sku"}
+                      className={classNames({ "p-error": isFormFieldValid("sku") })}
+                    >
+                      SKU
+                    </label>
+                  </span>
+                  {getFormErrorMessage("sku")}
+                </div>
+                {
+                  [
+                    { type: 'text', label: "Name*", field: "name", header: "Name" },
+                    // { type: 'text', label: "sku*", field: "sku", header: "SKU" },
+                    { type: 'text', label: "Length", field: "length", header: "Length" },
+                    { type: 'text', label: "Width", field: "width", header: "Width" },
+                    { type: 'text', label: "Height", field: "height", header: "Height" },
+                    { type: 'text', label: "Weight", field: "weight", header: "Weight" },
+                    { type: 'text', label: "Color", field: "color", header: "Color" },
+                    { type: 'text', label: "Brand", field: "brand", header: "Brand" },
+                    { type: 'text', label: "Tax type code", field: "taxcode", header: "Tax code" },
+                    { type: 'text', label: "Gst Tax type code", field: "gstcode", header: "Gst Code" },
+                    { type: 'text', label: "HSN code", field: "hsnCode", header: "HSN Code" },
+                    { type: 'text', label: "Cost Price", field: "costPrice", header: "Cost Price" },
+                    { type: 'text', label: "Tax Calculation Type", field: "taxCalcuation", header: "Tax Calcuation" },
+                  ].map((ele, i) => {
+                    if (ele.type === "text") {
+                      return (
+                        <div key={`${ele.field}${i}`} className="field col-12 lg:col-2 md:col-6 mt-4">
+                          <span className="p-float-label">
+                            <InputText
+                              disabled={productEditState}
+                              id={ele.field}
+                              name={ele.field}
+                              value={formik.values[ele.field]}
+                              onChange={formik.handleChange}
+                              autoFocus
+                              className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
+                            />
+                            <label
+                              htmlFor={ele.field}
+                              className={classNames({ "p-error": isFormFieldValid(ele.field) })}
+                            >
+                              {ele.label}
+                            </label>
+                          </span>
+                          {getFormErrorMessage(ele.field)}
+                        </div>
+                      )
+                    } else {
                     }
-                  </div>
+                  })
+                }
+                <div key={`category`} className="field col-12 lg:col-5 md:col-6 mt-4">
+                  <span className="p-float-label">
+                    <AutoComplete
+                      id="category"
+                      // disabled={editState}
+                      disabled={productEditState}
+                      value={formik?.values?.category?.name}
+                      dropdown
+                      forceSelection
+                      suggestions={categorySuggestions}
+                      completeMethod={searchCategory}
+                      field="name"
+                      onChange={async (e) => {
+                        // console.log("event :e",formik?.values?.category?.name)
 
+                        let sku = `TIF${e.value?.code}${products.length + 1}`
+                        let category = typeof e.target.value === "string" ? e.value : e.value
+
+                        await formik.setValues({
+                          ...formik.values,
+                          sku,
+                          category
+                        })
+                      }}
+                      aria-label="Product Category"
+                      dropdownAriaLabel="Product Categorys"
+                      className={classNames({ "p-invalid": isFormFieldValid("category") })}
+                    />
+                    <label
+                      htmlFor={"category"}
+                      className={classNames({ "p-error": isFormFieldValid("category") })}
+                    >
+                      Category
+                    </label>
+                  </span>
+                  {getFormErrorMessage("category")}
                 </div>
 
-                : null}
-            </div>
+                <div key={`productType`} className="field col-12 lg:col-5 md:col-6 mt-4">
+                  <span className="p-float-label">
+                    <Dropdown
+                      disabled={productEditState}
+                      value={selectedStatus}
+                      onChange={async (e) => {
+                        setSelectedStatus(e.value)
+                        formik.setFieldValue("type", e.value);
+                      }}
+                      options={StatusCheck}
+                      optionLabel="type"
+                      placeholder="Type"
+                      className="w-full"
+                    />
+                    <label
+                      htmlFor={"type"}
+                      className={classNames({ "p-error": isFormFieldValid("type") })}
+                    >
+                      Product Type
+                    </label>
+                  </span>
+                  {getFormErrorMessage("category")}
+                </div>
+              </div>
 
-            <div className="flex mt-4">
-              <Button
-                type="submit"
-                className="mr-2 "
-                label={editUpdateProduct ? 'UPDATE' : 'SUBMIT'}
-              />
-              <Button
-                className="p-button-secondary"
-                type="button"
-                label="CANCEL"
-                onClick={() => {
-                  formik.resetForm()
-                 
-                  setSelectedStatus(null)
-                  setProductDialog(false)
-                  setProductEditState(false)
-                  setActiveProduct(false)
-                }}
-              />
-            </div>
-            
-          </form>
+
+              <div className="">
+
+                {selectedStatus?.type === 'BUNDLE' ?
+                  <div>
+                    <div className="">
+                      {inputs.map((input, index) => (
+                        <div key={index} className='flex gap-4 align-items-center mt-3'>
+                          <span className="p-float-label">
+                            <AutoComplete
+                              id="name"
+                              value={input?.name || input.product}
+                              suggestions={kitSuggestions}
+                              completeMethod={kitSearchCategory}
+                              disabled={productEditState}
+                              dropdown
+                              forceSelection
+                              field="name"
+                              onChange={async (e) => {
+                                console.log(e?.value?.name, 'event')
+                                handleInputChange(e, index)
+                                const test = [...inputs]
+                                test[index] = { ...e?.value, }
+                                setInputs(test)
+                                console.log(inputs, "event input")
+                              }}
+                              aria-label="products"
+                              dropdownAriaLabel="Select Product"
+                              className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                              style={{ width: '400px' }}
+                            />
+                            <label
+                              htmlFor={"type"}
+                              className={classNames({ "p-error": isFormFieldValid("type") })}
+                            >
+                              Kit Product
+                            </label>
+                          </span>
+
+                          <span className="p-float-label">
+                            <InputText
+                              className=''
+                              disabled={productEditState}
+                              type='text'
+                              name='quantity'
+                              value={input.quantity}
+                              onChange={async (e) => {
+                                handleInputChange(e, index)
+
+                              }}
+                              style={{ width: '400px' }}
+                            />
+                            <label
+                              htmlFor={"type"}
+                              className={classNames({ "p-error": isFormFieldValid("type") })}
+                            >
+                              Quantity
+                            </label>
+                          </span>
+
+                          <Button
+                            icon="pi pi-minus"
+                            className="p-2 m-1"
+                            onClick={() => handleRemoveInput(index)}
+                            style={{ height: '40px' }}
+                          />
+
+                          <Button
+                            icon="pi pi-plus"
+                            className="m-1"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              handleAddInput()
+                            }}
+                            style={{ height: '40px' }}
+                          />
+                        </div>
+                      ))
+                      }
+                    </div>
+
+                  </div>
+
+                  : null}
+              </div>
+
+              <div className="">
+                <div>
+
+                  <Tooltip target=".custom-choose-btn" content="Choose" position="bottom" />
+                  <Tooltip target=".custom-upload-btn" content="Upload" position="bottom" />
+                  <Tooltip target=".custom-cancel-btn" content="Clear" position="bottom" />
+                </div>
+
+                <FileUpload
+                  ref={fileUploadRef}
+                  name="product_image"
+                  url="/api/upload"
+                  multiple
+                  accept="image/*"
+                  maxFileSize={1000000}
+                  onBeforeSend={(event) => {
+                    event.xhr.setRequestHeader("anti-csrf", antiCSRFToken)
+                  }}
+                  // onSelect={onTemplateSelect}
+                  onSelect={async (e) => {
+                    const file = e.files[0];
+                    setImageUploadObject(file)
+                    formik.setValues({ ...formik, 'imageUrl': file.objectURL });
+                  }}
+                  onUpload={onTemplateUpload} onError={onTemplateClear} onClear={onTemplateClear}
+                  headerTemplate={headerTemplate} itemTemplate={itemTemplate} emptyTemplate={emptyTemplate}
+                  chooseOptions={chooseOptions} uploadOptions={uploadOptions} cancelOptions={cancelOptions} />
+              </div>
+
+              <div className="flex mt-4">
+                <Button
+                  type="submit"
+                  className="mr-2 "
+                  label={editUpdateProduct ? 'UPDATE' : 'SUBMIT'}
+                />
+                <Button
+                  className="p-button-secondary"
+                  type="button"
+                  label="CANCEL"
+                  onClick={() => {
+                    formik.resetForm()
+
+                    setSelectedStatus(null)
+                    setProductDialog(false)
+                    setProductEditState(false)
+                    setActiveProduct(false)
+                  }}
+                />
+              </div>
+
+            </form>
+          </div>
+
         </div>
       </div >
 
@@ -1012,9 +1173,9 @@ superhero,this group represents superheroes`)
               setProductEditState(true)
               setActiveProduct(true)
               setProductDialog(true)
-              
+
               setSelectedStatus(e.data.product_types)
-           
+
 
               const _kitData = e.data.kit_products.map((prod) => {
                 const { products_kit_products_kitProductIDToproducts: product, quantity } = prod
@@ -1024,8 +1185,8 @@ superhero,this group represents superheroes`)
                 })
               });
               setInputs(_kitData)
-            
-             
+
+
               await formik.setValues({
                 ...e.data,
                 type: e.data.product_types.type,
@@ -1034,6 +1195,9 @@ superhero,this group represents superheroes`)
               scrolToTop?.current && scrolToTop?.current.scrollIntoView()
             }}
           >
+
+
+            {/* <Column header="Image" body={rowData =>  <img src={rowData.imageUrl} />}/> */}
             <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} />
             <Column header="Category" body={rowData => <p>{rowData.product_categories?.name}</p>} />
             {/* <Column header="Category" body={rowData => {rowData.product_categories.name}} /> */}
