@@ -25,6 +25,7 @@ import getPurchase_order_statuses from "app/purchase_order_statuses/queries/getP
 import getRfq from "app/rfqs/queries/getRfq"
 import { useFormik } from "formik"
 import moment from "moment"
+import { useRouter } from "next/router"
 import { AutoComplete } from "primereact/autocomplete"
 import { Button } from "primereact/button"
 import { Calendar } from "primereact/calendar"
@@ -310,7 +311,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     setNewPOCode(`PO#${nextPoId}`)
   }
   const productOptions = products.map(({ id, name, vendor_products, costPrice, sku }) => {
-    //sample 
+    //sample
     //   {
     //     "id": 3,
     //     "name": "Machine Tools",
@@ -391,20 +392,16 @@ const CreateNewPo = React.forwardRef((props, ref) => {
   }, [updatingMutationError, creatingMutationError,])
 
   useEffect(() => {
-    createNewPOCode()
+    setPoCodeChecked(true)
   })
 
   useEffect(() => {
-
     if (rfq.rfqId) {
       updateFormValues({ itemsLength: true, }).catch((error) => {
         console.log("While setting po values from rfq", error)
       })
       console.log('rfqset: ', rfq);
     }
-
-
-
   }, [rfq])
 
 
@@ -537,7 +534,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
   const searchPoStatuses = createSearchFunction(po_statuses, setPoStatuses)
   const searchFromParty = createSearchFunction(fromParty, setFromPartySuggetions)
   const searchTerms = createSearchFunction(poTerms, setTermsSuggetions)
-
+  const router = useRouter()
   const findProductVpID = (i, list) => {
     const currentVendor = Number(formik.values.vendor_vendor_id)
     const vendorProducts = vendor_products.filter((prod) => prod.vendor
@@ -562,7 +559,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     initialValues: purchaseDetails,
     validationSchema: Yup.object().shape({
       vendor_vendor_id: Yup.string().required("*Required"),
-      po_code: Yup.string().required("*Required"),
+      // po_code: Yup.string().required("*Required"),
       // po_description: Yup.string().required("*Required"),
       expiry_date: Yup.string().required("*Required"),
       expected_delivery: Yup.string().required("*Required"),
@@ -709,11 +706,11 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               expiryDate: expiry_date,
               piNumber: piNumber || null,
               piDate: piDate || null,
-              rfq_purchase_orders_rfqTorfq: {
+              rfq_purchase_orders_rfqTorfq: rfq.rfqId ? {
                 connect: rfq.rfqId && {
                   id: rfq.rfqId
                 }
-              },
+              } : undefined,
               purchase_orders: {
                 connect: amendedFrom && {
                   id: Number(amendedFrom) || null
@@ -750,11 +747,28 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               }
             },
             {
-              onSuccess: async (data) => {
+              onSuccess: async ({ po_products }) => {
+                const productIds = itemList.map(data => data.products_product_id).filter(data => data)
+                console.log('productIds: ', productIds);
                 toast?.current.show(tsuccess(null, "PO Created Successfully"))
+                if (router.query.hasOwnProperty("rfqdata")) {
+                  const { rfqdata } = router.query;
+                  const parsedRfqdata = JSON.parse(rfqdata)
+                  const newProducts = parsedRfqdata.rfq_products.filter(data => !productIds.includes(data.product))
+                  console.log('parsedRfqdata.rfq_products: ', parsedRfqdata.rfq_products);
+                  router.replace({
+                    pathname: '/purchase_orders',
+                    query: newProducts.length ? {
+                      rfqdata: JSON.stringify({
+                        ...parsedRfqdata,
+                        rfq_products: newProducts
+                      })
+                    } : {},
+                  }).catch(console.log("While removing Query from URL"))
+                }
                 // toast?.current.show(tsuccess(null, `${priorList.length} needs to pe poED `))
 
-                // logic to submit and generatenewpo 
+                // logic to submit and generatenewpo
                 // if (priorList.length) {
                 //   const rfqDetails = await invoke(getRfq, {
                 //     id: activeRow?.id
@@ -891,15 +905,15 @@ const CreateNewPo = React.forwardRef((props, ref) => {
 
   }, [formik?.values.vendor_vendor_id])
 
-  useEffect(() => {
-    if (poCodeChecked && purchaseDialog && !poEditState) {
-      updateFormValues({ po_code: newPOCode })
-        // .then((res) => console.log("newCode", res))
-        .catch((error) => {
-          console.log("From updateFormValues", error)
-        })
-    }
-  }, [poCodeChecked, purchaseDialog])
+  // useEffect(() => {
+  //   if (poCodeChecked && purchaseDialog && !poEditState) {
+  //     updateFormValues({ po_code: newPOCode })
+  //       // .then((res) => console.log("newCode", res))
+  //       .catch((error) => {
+  //         console.log("From updateFormValues", error)
+  //       })
+  //   }
+  // }, [poCodeChecked, purchaseDialog])
 
   const updateFormValues = async (fields) => {
     await formik.setValues({ ...formik.values, ...fields })
@@ -999,7 +1013,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                   id="po_code"
                   name=""
                   // className="mr-2 w-22rem"
-                  value={formik.values.po_code}
+                  value={poCodeChecked ? "Auto Generated" : formik.values.po_code}
                   onChange={formik.handleChange}
                   disabled={poCodeChecked}
                   className={classNames({ "p-invalid": isFormFieldValid("po_code") })}
