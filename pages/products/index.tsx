@@ -2,7 +2,6 @@ import { Suspense, useState, useRef, useEffect } from "react"
 import { invoke, useMutation, useQuery } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
 import papa from "papaparse"
-
 import Layout from "layouts/Layout"
 import { DataTable } from "primereact/datatable"
 import { MultiSelect } from "primereact/multiselect"
@@ -45,7 +44,6 @@ const columns = [
   { field: "name", header: "Name" },
   { field: "description", header: "Description" },
   { field: "unit", header: "Unit" },
-  { field: "category", header: "Category" },
   { field: "length", header: "Length" },
   { field: "width", header: "Width" },
   { field: "height", header: "Height" },
@@ -71,7 +69,7 @@ export const ProductsList = () => {
 
   console.log('products: ', products);
   const [{ product_categories },] = useQuery(getProduct_categories, {
-    orderBy: { id: "asc" },
+    orderBy: { id: "desc" },
   })
 
 
@@ -85,7 +83,6 @@ export const ProductsList = () => {
   const intialProductDetails = {
     quantity: '',
     kitProductID: '',
-
 
     name: "",
     productName: '',
@@ -202,7 +199,7 @@ export const ProductsList = () => {
       value: [
         { field: "sku", header: "SKU" },
         { field: "name", header: "Name" },
-        { field: "image", header: "Image" },
+        { field: "category", header: "Category" },
         { field: "description", header: "Description" },
         { field: "color", header: "Color" },
         { field: "height", header: "Height" },
@@ -449,32 +446,34 @@ superhero,this group represents superheroes`)
           await updateActiveProduct({
             id: activeProductId,
             name: name,
-            description: description,
-            color,
-            height: Number(height),
-            weight: Number(weight),
-            product_tags: {
-              create: tagsValue.map((e) => ({ tags: e })),
-            },
-            kit_products: {
-              create: productTypeValue.map((e) => ({
-                kitProductID: e.id,
-                quantity: Number(e.quantity)
-              }))
-            }
+            // description: description,
+            // color,
+            // height: Number(height),
+            // weight: Number(weight),
+            // product_tags: {
+            //   create: tagsValue.map((e) => ({ tags: e })),
+            // },
+            // kit_products: {
+            //   create: productTypeValue.map((e) => ({
+            //     kitProductID: e.id,
+            //     quantity: Number(e.quantity)
+            //   }))
+            // }
 
           }, {
             onSuccess: () => {
               alert('Update Done')
             },
-            onError: (data) => {
-              alert(`error ${data}`)
+            onError: (error) => {
+              alert(`error ${error}`)
+              console.log('error',error)
             }
           })
           await refetch()
 
         } catch (error) {
-          alert('Error', error)
+          alert('Error',)
+          console.log(error)
 
         }
       }
@@ -499,9 +498,9 @@ superhero,this group represents superheroes`)
               },
 
               kit_products: {
-                create: productTypeValue?.map((e) => ({
-                  kitProductID: formik.values.kitProductID.id,
-                  quantity: Number(formik?.values?.quantity),
+                create: productTypeValue.map((e) => ({
+                  kitProductID: e.id,
+                  quantity: Number(e.quantity)
                 }))
               }
             },
@@ -585,27 +584,16 @@ superhero,this group represents superheroes`)
 
 
   const [selectedStatus, setSelectedStatus] = useState(null);
-  const [checkBundle, setCheckBundle] = useState(false)
-
   console.log('selectedStatus: ', selectedStatus);
   const StatusCheck = [
     { id: 1, type: 'SIMPLE' },
     { id: 2, type: 'BUNDLE' },
   ];
-  useEffect(() => {
-    if (selectedStatus?.name === 'Bundle') {
-      setCheckBundle(true);
-    } else {
-      setCheckBundle(false);
-    }
-  }, [selectedStatus]);
+
 
   const [inputs, setInputs] = useState([{ product: '', quantity: '' }]);
-
-  console.log('inputs: ',);
-  // 
-
-
+  console.log('inputs: ',inputs);
+  
   const handleAddInput = () => {
     setInputs([...inputs, { product: '', quantity: '' }]);
   };
@@ -629,8 +617,7 @@ superhero,this group represents superheroes`)
   };
 
 
-  console.log('xx: ', inputs);
-
+  
 
   return (
     <div className="grid w-full">
@@ -647,6 +634,10 @@ superhero,this group represents superheroes`)
                 label="Add Products"
                 className="ml-1"
                 onClick={() => {
+                  refetch()
+                  setInputs([{product:null,quantity:null}])
+                  formik.resetForm()
+                  setSelectedStatus(null)
                   setProductEditState(false)
                   setActiveProduct(false)
                   setProductDetails(intialProductDetails)
@@ -842,7 +833,7 @@ superhero,this group represents superheroes`)
                     completeMethod={searchCategory}
                     field="name"
                     onChange={async (e) => {
-
+                // console.log("event :e",formik?.values?.category?.name)
 
                       let sku = `TIF${e.value?.code}${products.length + 1}`
                       let category = typeof e.target.value === "string" ? e.value : e.value
@@ -903,7 +894,7 @@ superhero,this group represents superheroes`)
                         <span className="p-float-label">
                           <AutoComplete
                             id="name"
-                            value={input?.product}
+                            value={input?.name || input.product}
                             suggestions={kitSuggestions}
                             completeMethod={kitSearchCategory}
                             disabled={productEditState}
@@ -911,13 +902,12 @@ superhero,this group represents superheroes`)
                             forceSelection
                             field="name"
                             onChange={async (e) => {
-                              console.log(e.value, 'event')
+                              console.log(e?.value?.name, 'event')
                               handleInputChange(e, index)
                               const test = [...inputs]
-                              test[index] = { ...e.value }
+                              test[index] = { ...e?.value, }
                               setInputs(test)
-
-
+                              console.log(inputs,"event input")
                             }}
                             aria-label="products"
                             dropdownAriaLabel="Select Product"
@@ -963,7 +953,10 @@ superhero,this group represents superheroes`)
                         <Button
                           icon="pi pi-plus"
                           className="m-1"
-                          onClick={handleAddInput}
+                          onClick={(e) =>{
+                            e.preventDefault()
+                            handleAddInput()
+                          }}
                           style={{ height: '40px' }}
                         />
                       </div>
@@ -988,6 +981,8 @@ superhero,this group represents superheroes`)
                 label="CANCEL"
                 onClick={() => {
                   formik.resetForm()
+                 
+                  setSelectedStatus(null)
                   setProductDialog(false)
                   setProductEditState(false)
                   setActiveProduct(false)
@@ -1014,12 +1009,12 @@ superhero,this group represents superheroes`)
             onRowClick={async (e) => {
               console.log('e.data: ', e.data);
               setActiveRowData({ ...e.data })
-              console.log(e.data.product_categories,'e.data.product_categories')
               setProductEditState(true)
               setActiveProduct(true)
               setProductDialog(true)
-              setCheckBundle(true)
+              
               setSelectedStatus(e.data.product_types)
+           
 
               const _kitData = e.data.kit_products.map((prod) => {
                 const { products_kit_products_kitProductIDToproducts: product, quantity } = prod
@@ -1029,6 +1024,7 @@ superhero,this group represents superheroes`)
                 })
               });
               setInputs(_kitData)
+            
              
               await formik.setValues({
                 ...e.data,
@@ -1039,6 +1035,8 @@ superhero,this group represents superheroes`)
             }}
           >
             <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} />
+            <Column header="Category" body={rowData => <p>{rowData.product_categories?.name}</p>} />
+            {/* <Column header="Category" body={rowData => {rowData.product_categories.name}} /> */}
             {columnComponents}
           </DataTable>
         </div>
