@@ -445,6 +445,8 @@ model vendor_products {
   products    products               @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_products_products1")
   vendors     vendors                @relation(fields: [vendor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_products_vendors1")
 
+  @@unique([product, priority], map: "product_priority")
+  @@unique([product, vendor], map: "product_vendor")
   @@index([product], map: "fk_vendor_products_products1_idx")
   @@index([vendor], map: "fk_vendor_products_vendors1_idx")
 }
