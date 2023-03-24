@@ -28,9 +28,9 @@ export default resolver.pipe(
             kit_products: {
               include: { products_kit_products_kitProductIDToproducts: true, },
             },
-            product_categories:true,
-            product_types:true,
-            
+            product_categories: true,
+            product_types: true,
+
           },
 
         }),

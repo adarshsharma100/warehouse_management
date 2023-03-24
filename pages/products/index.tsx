@@ -903,7 +903,7 @@ export const ProductsList = () => {
                               const test = [...inputs]
                               test[index] = { ...e.value }
                               setInputs(test)
-                              
+
 
                             }}
                             aria-label="products"
@@ -928,7 +928,7 @@ export const ProductsList = () => {
                             value={input.quantity}
                             onChange={async (e) => {
                               handleInputChange(e, index)
-                             
+
                             }}
                             style={{ width: '400px' }}
                           />
@@ -1000,6 +1000,7 @@ export const ProductsList = () => {
             onRowClick={async (e) => {
               console.log('e.data: ', e.data);
               setActiveRowData({ ...e.data })
+              console.log(e.data.product_categories,'e.data.product_categories')
               setProductEditState(true)
               setActiveProduct(true)
               setProductDialog(true)
@@ -1014,17 +1015,11 @@ export const ProductsList = () => {
                 })
               });
               setInputs(_kitData)
-
-
-
-
-
+             
               await formik.setValues({
                 ...e.data,
                 type: e.data.product_types.type,
                 category: e.data.product_categories,
-
-
               })
               scrolToTop?.current && scrolToTop?.current.scrollIntoView()
             }}
