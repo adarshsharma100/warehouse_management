@@ -2,7 +2,6 @@ import { Suspense, useState, useRef, useEffect } from "react"
 import { invoke, useMutation, useQuery } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
 import papa from "papaparse"
-
 import Layout from "layouts/Layout"
 import { DataTable } from "primereact/datatable"
 import { MultiSelect } from "primereact/multiselect"
@@ -12,7 +11,10 @@ import { InputText } from "primereact/inputtext"
 import { InputTextarea } from "primereact/inputtextarea"
 import { FileUpload } from "primereact/fileupload"
 import { Toast } from "primereact/toast"
+import { ProgressBar } from 'primereact/progressbar';
+import { Tag } from 'primereact/tag';
 
+import { Steps } from 'primereact/steps';
 import createProduct from "app/products/mutations/createProduct"
 import updateProduct from "app/products/mutations/updateProduct"
 import uploadCsvForProcessing from "app/pipeline/mutations/uploadCsvForProcessing"
@@ -35,7 +37,8 @@ import getProduct_categories from "app/product_categories/queries/getProduct_cat
 import moment from "moment"
 import createProduct_tag from "app/product_tags/mutations/createProduct_tag"
 import { getAntiCSRFToken } from "@blitzjs/auth"
-
+import CreateKit_product from 'app/kit_products/mutations/createKit_product'
+import { Tooltip } from "primereact/tooltip"
 
 
 const dateFormat = (dateObj: Date | string) =>
@@ -45,7 +48,6 @@ const columns = [
   { field: "name", header: "Name" },
   { field: "description", header: "Description" },
   { field: "unit", header: "Unit" },
-  { field: "category", header: "Category" },
   { field: "length", header: "Length" },
   { field: "width", header: "Width" },
   { field: "height", header: "Height" },
@@ -68,23 +70,29 @@ export const ProductsList = () => {
   const [{ products }, { refetch }] = useQuery(getProducts, {
     orderBy: { id: "asc" },
   })
+
   console.log('products: ', products);
   const [{ product_categories },] = useQuery(getProduct_categories, {
-    orderBy: { id: "asc" },
+    orderBy: { id: "desc" },
   })
+  console.log('products: ', products);
 
-  const [createProductMutation, { isLoading: creatingProduct }] =
-    useMutation(createProduct)
 
+  const [createProductMutation, { isLoading: creatingProduct }] = useMutation(createProduct)
   const [uploadCsvMutation] = useMutation(uploadCsvForProcessing)
 
-  const [updateProductMutation, { isLoading: updatingProduct }] =
-    useMutation(updateProduct)
+  const [updateProductMutation, { isLoading: updatingProduct }] = useMutation(updateProduct)
+  const [updateActiveProduct] = useMutation(updateProduct)
+  const [kitCreateMutaton] = useMutation(CreateKit_product)
 
   const intialProductDetails = {
+    quantity: '',
+    kitProductID: '',
+
     name: "",
     productName: '',
     description: "",
+    imageUrl: "",
     type: "",
     sku: "",
     unit: "",
@@ -100,7 +108,6 @@ export const ProductsList = () => {
     gstcode: "",
     hsnCode: "",
     tags: [],
-    imageurl: "",
     costPrice: "",
     mrp: "",
     basePrice: "",
@@ -108,7 +115,18 @@ export const ProductsList = () => {
     taxCalcuation: "",
   }
 
+
+  const productOptions = products.map(({ id, name, sku, description }) => {
+    return {
+      name: `${sku} - ${name}`,
+      id,
+      description,
+    }
+  })
+
   const [categories_options, setCategoriesOption] = useState(product_categories)
+  const [kitCategories_options, setKitCategoriesOption] = useState(productOptions)
+
 
   const [productDetails, setProductDetails] = useState(intialProductDetails)
   const [productDialog, setProductDialog] = useState(false)
@@ -117,20 +135,26 @@ export const ProductsList = () => {
 
   const [activeProduct, setActiveProduct] = useState(true)
   const [activeRowData, setActiveRowData] = useState({})
+  console.log('activeRowData: ', activeRowData);
   const [errorProducts, setErrorProducts] = useState([])
   const [btnVisibility, setBtnVisibility] = useState(false)
   const [filteredSuggestions, setFilteredSuggestions] = useState<any>(null)
 
-  const productOptions = products.map(({ product_id, name, products_sku, description }) => {
-    return {
-      name: `${products_sku} - ${name}`,
-      product_id,
-      description,
-    }
-  })
+
+  // const productOptions = products.map(
+  //   ({ id, name, sku, vendor_products, costPrice }) => {
+  //     return {
+  //       name: `${sku} - ${name}`,
+  //       id,
+  //       // vendorID: vendor_products?.map((ele) => ele.vendor_vendor_id),
+  //       costPrice
+  //     }
+  //   }
+  // )
 
 
-  const productsId = products.map((ele, i) => ele.product_id)
+  const productsId = products.map((ele, i) => ele.id)
+  console.log('productsId: ', productsId);
   const inventoryProductsId = products.map((ele, i) => ele.products_product_id)
 
   const avilableProductsID = filterExistingValues(productsId, inventoryProductsId)
@@ -146,6 +170,7 @@ export const ProductsList = () => {
   const [ErrorMsgs, setErrorMsgs] = useState([])
   const [unitSuggestions, setUnitSuggestions] = useState<any>(null)
   const [categorySuggestions, setCategorySuggestions] = useState<any>(null)
+  const [kitSuggestions, setKitSuggestions] = useState<any>(null)
   const [filters, setFilters] = useState(null)
   const [globalFilterValue, setGlobalFilterValue] = useState("")
 
@@ -177,9 +202,10 @@ export const ProductsList = () => {
   useEffect(() => {
     const obj = {
       value: [
+        { field: "imageUrl", header: "Image" },
         { field: "sku", header: "SKU" },
         { field: "name", header: "Name" },
-        { field: "image", header: "Image" },
+        { field: "category", header: "Category" },
         { field: "description", header: "Description" },
         { field: "color", header: "Color" },
         { field: "height", header: "Height" },
@@ -188,15 +214,7 @@ export const ProductsList = () => {
     }
     onColumnToggle(obj)
 
-    uploadCsvMutation(`eruid,description
-batman,uses technology
-superman,flies through the air
-spiderman,uses a web
-ghostrider, rides a motorcycle
-#GROUP_OBJECT_PROFILE#accessgroupGroupProfile
-cn,description
-daredevil,this group represents daredevils
-superhero,this group represents superheroes`)
+
   }, [])
   const clearFilter = () => {
     initFilters()
@@ -209,6 +227,10 @@ superhero,this group represents superheroes`)
     setFilters(_filters1)
     setGlobalFilterValue(value)
   }
+
+
+
+
   const initFilters = () => {
     setFilters({
       global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -322,6 +344,8 @@ superhero,this group represents superheroes`)
 
 
   const searchCategory = createSearchFunction(categories_options, setCategorySuggestions)
+  const kitSearchCategory = createSearchFunction(kitCategories_options, setKitSuggestions)
+
 
   const onBasicUpload = async (e) => {
     let index = 2
@@ -399,7 +423,17 @@ superhero,this group represents superheroes`)
 
   const [editUpdateProduct, setEditUpdateProduct] = useState(false)
 
-  const [updateActiveProduct] = useMutation(updateProduct)
+
+
+  // const onUpload={async (e) => {
+  //   const file = e.files[0]
+  // const response = await fetch("/api/upload", {
+  //   method: "POST",
+  //   body: file,
+  // })
+  //   const { filename } = await response.json()
+
+  // }
 
 
   const formik = useFormik({
@@ -410,60 +444,70 @@ superhero,this group represents superheroes`)
     onSubmit: async (data) => {
       console.log('data: ', data);
 
-      const { name, description, sku, length, width,
-        hsnCode,
-        height, weight, costPrice, tags
-        , color } = data
+      const { name, description, imageUrl, category, sku, length, width, hsnCode, height, weight, costPrice, tags, color, type } = data
 
       const tagsValue = tags.map(({ value }) => value)
 
+      const productTypeValue = inputs?.map((i) => ({
+        id: i?.id,
+        quantity: i?.quantity
+      }))
       const { id: activeProductId } = activeRowData
-
-
-      // const formData = new FormData();
-      // if (imageUploadObject) {
-      //   console.log('---imageUploadObject: ', imageUploadObject);
-      //   formData.append("file", imageUploadObject);
-      // }
-      // console.log('formData: ', formData.get("file"));
-
-
       if (editUpdateProduct) {
 
         try {
           await updateActiveProduct({
             id: activeProductId,
             name: name,
-            description: description,
-            color,
-            height: Number(height),
-            weight: Number(weight),
-            product_tags: {
-              create: tagsValue.map((e) => ({ tags: e })),
-              // deleteTags:tagsValue.map((e) => ({id}))
-            }
+            // description: description,
+            // color,
+            // height: Number(height),
+            // weight: Number(weight),
+            // product_tags: {
+            //   create: tagsValue.map((e) => ({ tags: e })),
+            // },
+            // kit_products: {
+            //   create: productTypeValue.map((e) => ({
+            //     kitProductID: e.id,
+            //     quantity: Number(e.quantity)
+            //   }))
+            // }
+
           }, {
             onSuccess: () => {
               alert('Update Done')
             },
-            onError: (data) => {
-              alert(`error ${data}`)
+            onError: (error) => {
+              alert(`error ${error}`)
+              console.log('error', error)
             }
           })
           await refetch()
 
         } catch (error) {
-          alert('Error', error)
+          alert('Error',)
+          console.log(error)
 
         }
       }
       else {
+
+        const _kit_products = {
+          create: productTypeValue.map((e) => ({
+            kitProductID: e.id,
+            quantity: Number(e.quantity)
+          }))
+        }
+
+
+
         try {
           await createProductMutation(
             {
               name: name,
               description: description,
               sku,
+              category: Number(formik?.values?.category?.id),
               costPrice: Number(costPrice),
               color,
               length: Number(length),
@@ -471,30 +515,35 @@ superhero,this group represents superheroes`)
               height: Number(height),
               weight: Number(weight),
               hsnCode: hsnCode,
+              imageUrl: filename,
+              type: Number(formik?.values?.type?.id),
               product_tags: {
                 create: tagsValue.map((e) => ({ tags: e })),
-              }
-              // imageUrl: imageurl,
-              // gstTaxTypeCode: gstcode,
-              // taxCalcType: taxCalcuation,
-              // category: category,
-              // brand: brand
+              },
+
+              kit_products: type?.type === "BUNDLE" ? _kit_products : {}
             },
             {
               onSuccess: async (data) => {
-                console.log('data: ', data);
-
+                alert('Created')
+                const uploadImage = async (e) => {
+                  const file = e.files[0]
+                  const response = await fetch("/api/upload", {
+                    method: "POST",
+                    body: file,
+                  })
+                  const { filename } = await response.json()
+                }
               },
               onError: (error) => {
-                // alert(`error ${data}`)
+                alert('not created!')
                 console.log('createProductMutation error: ', error);
               }
             }
           )
-          // await refetch()
+          await refetch()
         } catch (err) {
-
-
+          alert('Out error!!!')
         }
       }
       await refetch()
@@ -506,15 +555,21 @@ superhero,this group represents superheroes`)
     },
   })
 
+
+
+  console.log(formik.values, 'formik')
+
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
 
-  const [imageUploadObject, setImageUpload] = useState(null)
+  const [imageUploadObject, setImageUploadObject] = useState(null)
   useEffect(() => {
     console.log('imageUploadObject: ', imageUploadObject);
   }, [imageUploadObject])
+
+
 
 
   const pCsvFormatDetails = {
@@ -554,14 +609,17 @@ superhero,this group represents superheroes`)
     setErrorMsgs(msgArray)
   }
 
+
   const [selectedStatus, setSelectedStatus] = useState(null);
+  console.log('selectedStatus: ', selectedStatus);
   const StatusCheck = [
-    { name: 'Simple' },
-    { name: 'Bundle' },
+    { id: 1, type: 'SIMPLE' },
+    { id: 2, type: 'BUNDLE' },
   ];
 
-  const [inputs, setInputs] = useState([{ product: '', quantity: '' }]);
 
+  const [inputs, setInputs] = useState([{ product: '', quantity: '' }]);
+  console.log('inputs: ', inputs);
 
   const handleAddInput = () => {
     setInputs([...inputs, { product: '', quantity: '' }]);
@@ -569,6 +627,9 @@ superhero,this group represents superheroes`)
 
 
   const handleRemoveInput = (index) => {
+    if (inputs.length === 1) {
+      return; // don't remove the only input
+    }
     const newInputs = [...inputs];
     newInputs.splice(index, 1);
     setInputs(newInputs);
@@ -581,12 +642,108 @@ superhero,this group represents superheroes`)
     newInputs[index][name] = value;
     setInputs(newInputs);
   };
-  // let category = typeof e.target.value === "string" ? e.value : e.value
 
-  // await formik.setValues({
-  //   ...formik.values,
-  //   category,
-  // })
+
+  const [activeIndex, setActiveIndex] = useState(0);
+  const items = [
+    {
+      label: 'Create Products'
+    },
+    {
+      label: 'Image Upload'
+    },
+
+  ];
+
+
+  const [totalSize, setTotalSize] = useState(0);
+
+  const fileUploadRef = useRef(null);
+
+  const onTemplateSelect = (e) => {
+    let _totalSize = totalSize;
+    let files = e.files;
+
+    Object.keys(files).forEach((key) => {
+      _totalSize += files[key].size || 0;
+    });
+    // setImageUploadObject(files)
+    // console.log('files: ', imageUploadObject);
+    // formik.setValues({ ...formik, imageUrl: files })
+    setTotalSize(_totalSize);
+  };
+
+
+  const onTemplateUpload = (e) => {
+    let _totalSize = 0;
+
+    e.files.forEach((file) => {
+      _totalSize += file.size || 0;
+    });
+
+    setTotalSize(_totalSize);
+    toast.current.show({ severity: 'info', summary: 'Success', detail: 'File Uploaded' });
+  };
+
+  const onTemplateRemove = (file, callback) => {
+    setTotalSize(totalSize - file.size);
+    callback();
+  };
+
+  const onTemplateClear = () => {
+    setTotalSize(0);
+  };
+
+  const headerTemplate = (options) => {
+    const { className, chooseButton, uploadButton, cancelButton } = options;
+    const value = totalSize / 10000;
+    const formatedValue = fileUploadRef && fileUploadRef.current ? fileUploadRef.current.formatSize(totalSize) : '0 B';
+
+    return (
+      <div className={className} style={{ backgroundColor: 'transparent', display: 'flex', alignItems: 'center' }}>
+        {chooseButton}
+        {uploadButton}
+        {cancelButton}
+        <div className="flex align-items-center gap-3 ml-auto">
+          <span>{formatedValue} / 1 MB</span>
+          <ProgressBar value={value} showValue={false} style={{ width: '10rem', height: '12px' }}></ProgressBar>
+        </div>
+      </div>
+    );
+  };
+
+  const itemTemplate = (file, props) => {
+    return (
+      <div className="flex align-items-center flex-wrap">
+        <div className="flex align-items-center" style={{ width: '40%' }}>
+          <img alt={file.name} role="presentation" src={file.objectURL} width={100} />
+          <span className="flex flex-column text-left ml-3">
+            {file.name}
+            <small>{new Date().toLocaleDateString()}</small>
+          </span>
+        </div>
+        <Tag value={props.formatSize} severity="warning" className="px-3 py-2" />
+        <Button type="button" icon="pi pi-times" className="p-button-outlined p-button-rounded p-button-danger ml-auto" onClick={() => onTemplateRemove(file, props.onRemove)} />
+      </div>
+    );
+  };
+
+
+  const emptyTemplate = () => {
+    return (
+      <div className="flex align-items-center flex-column">
+        <i className="pi pi-image mt-3 p-5" style={{ fontSize: '5em', borderRadius: '50%', backgroundColor: 'var(--surface-b)', color: 'var(--surface-d)' }}></i>
+        <span style={{ fontSize: '1.2em', color: 'var(--text-color-secondary)' }} className="my-5">
+          Drag and Drop Image Here
+        </span>
+      </div>
+    );
+  };
+
+  const chooseOptions = { icon: 'pi pi-fw pi-images', iconOnly: true, className: 'custom-choose-btn p-button-rounded p-button-outlined' };
+  const uploadOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, className: 'custom-upload-btn p-button-success p-button-rounded p-button-outlined' };
+  const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger p-button-rounded p-button-outlined' };
+
 
 
 
@@ -605,13 +762,17 @@ superhero,this group represents superheroes`)
                 label="Add Products"
                 className="ml-1"
                 onClick={() => {
+                  refetch()
+                  setInputs([{ product: null, quantity: null }])
+                  formik.resetForm()
+                  setSelectedStatus(null)
                   setProductEditState(false)
                   setActiveProduct(false)
                   setProductDetails(intialProductDetails)
                   setProductDialog(!productDialog)
                 }}
               />
-              <span className="flex justify-content-center align-items-center">
+              {/* <span className="flex justify-content-center align-items-center">
                 <FileUpload
                   className="ml-2 inline-block "
                   mode="basic"
@@ -643,7 +804,7 @@ superhero,this group represents superheroes`)
                 className="ml-2"
                 label="CSV format"
                 onClick={() => createCSVFormat(pCsvFormatDetails)}
-              />
+              /> */}
             </div>
           </div>
         </div>
@@ -689,27 +850,29 @@ superhero,this group represents superheroes`)
 
 
         <div className="card">
-          <div className="flex justify-content-between">
-            <h4>{activeProduct ? "Update" : "Create"} Product</h4>
-            <h4>{productEditState ? <Button
-              icon="pi pi-pencil"
-              className="m-1"
-              onClick={() => { setProductEditState(!productEditState); setEditUpdateProduct(!editUpdateProduct) }}
-            /> : <Button
-              icon="pi pi-pencil"
-              className="m-1"
-              onClick={() => setProductEditState(!productEditState)}
-            />}</h4>
-          </div>
 
-          <form
-            onSubmit={formik.handleSubmit}
-            className="p-fluid"
-          >
-            <div className="formgrid grid">
-              <div className="field col-12">
-                {/* //TODO: @Varun: the below code will have to be adjusted for file upload */}
-                {/* <FileUpload
+          <div>
+            <div className="flex justify-content-between">
+              <h4>{activeProduct ? "Update" : "Create"} Product</h4>
+              <h4>{productEditState ? <Button
+                icon="pi pi-pencil"
+                className="m-1"
+                onClick={() => { setProductEditState(!productEditState); setEditUpdateProduct(!editUpdateProduct) }}
+              /> : <Button
+                icon="pi pi-pencil"
+                className="m-1"
+                onClick={() => setProductEditState(!productEditState)}
+              />}</h4>
+            </div>
+
+            <form
+              onSubmit={formik.handleSubmit}
+              className="p-fluid"
+            >
+              <div className="formgrid grid">
+                <div className="field col-12">
+                  {/* //TODO: @Varun: the below code will have to be adjusted for file upload */}
+                  {/* <FileUpload
                   cancelOptions={true}
                   name="product_image"
                   url="/api/upload"
@@ -720,203 +883,216 @@ superhero,this group represents superheroes`)
                   }}
                   auto={true}
                   onSelect={async (e) => {
-                    setImageUpload(e.files[0])
+                    setImageUploadObject(e.files[0])
                   }}
                 /> */}
+                </div>
+                <div className="field col-12 lg:col-2 md:col-6 mt-4">
+                  <span className="p-float-label">
+                    <InputText
+                      disabled={disableField}
+                      id={"sku"}
+                      placeholder='SKU'
+                      name={"sku"}
+                      value={formik.values.sku}
+                      autoFocus
+                      className={classNames({ "p-invalid ": isFormFieldValid("description") })}
+                    />
+                    <label
+                      htmlFor={"sku"}
+                      className={classNames({ "p-error": isFormFieldValid("sku") })}
+                    >
+                      SKU
+                    </label>
+                  </span>
+                  {getFormErrorMessage("sku")}
+                </div>
+                {
+                  [
+                    { type: 'text', label: "Name*", field: "name", header: "Name" },
+                    // { type: 'text', label: "sku*", field: "sku", header: "SKU" },
+                    { type: 'text', label: "Length", field: "length", header: "Length" },
+                    { type: 'text', label: "Width", field: "width", header: "Width" },
+                    { type: 'text', label: "Height", field: "height", header: "Height" },
+                    { type: 'text', label: "Weight", field: "weight", header: "Weight" },
+                    { type: 'text', label: "Color", field: "color", header: "Color" },
+                    { type: 'text', label: "Brand", field: "brand", header: "Brand" },
+                    { type: 'text', label: "Tax type code", field: "taxcode", header: "Tax code" },
+                    { type: 'text', label: "Gst Tax type code", field: "gstcode", header: "Gst Code" },
+                    { type: 'text', label: "HSN code", field: "hsnCode", header: "HSN Code" },
+                    { type: 'text', label: "Cost Price", field: "costPrice", header: "Cost Price" },
+                    { type: 'text', label: "Tax Calculation Type", field: "taxCalcuation", header: "Tax Calcuation" },
+                  ].map((ele, i) => {
+                    if (ele.type === "text") {
+                      return (
+                        <div key={`${ele.field}${i}`} className="field col-12 lg:col-2 md:col-6 mt-4">
+                          <span className="p-float-label">
+                            <InputText
+                              disabled={productEditState}
+                              id={ele.field}
+                              name={ele.field}
+                              value={formik.values[ele.field]}
+                              onChange={formik.handleChange}
+                              autoFocus
+                              className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
+                            />
+                            <label
+                              htmlFor={ele.field}
+                              className={classNames({ "p-error": isFormFieldValid(ele.field) })}
+                            >
+                              {ele.label}
+                            </label>
+                          </span>
+                          {getFormErrorMessage(ele.field)}
+                        </div>
+                      )
+                    } else {
+                    }
+                  })
+                }
+                <div key={`category`} className="field col-12 lg:col-5 md:col-6 mt-4">
+                  <span className="p-float-label">
+                    <AutoComplete
+                      id="category"
+                      // disabled={editState}
+                      disabled={productEditState}
+                      value={formik?.values?.category?.name}
+                      dropdown
+                      forceSelection
+                      suggestions={categorySuggestions}
+                      completeMethod={searchCategory}
+                      field="name"
+                      onChange={async (e) => {
+                        // console.log("event :e",formik?.values?.category?.name)
+
+                        let sku = `TIF${e.value?.code}${products.length + 1}`
+                        let category = typeof e.target.value === "string" ? e.value : e.value
+
+                        await formik.setValues({
+                          ...formik.values,
+                          sku,
+                          category
+                        })
+                      }}
+                      aria-label="Product Category"
+                      dropdownAriaLabel="Product Categorys"
+                      className={classNames({ "p-invalid": isFormFieldValid("category") })}
+                    />
+                    <label
+                      htmlFor={"category"}
+                      className={classNames({ "p-error": isFormFieldValid("category") })}
+                    >
+                      Category
+                    </label>
+                  </span>
+                  {getFormErrorMessage("category")}
+                </div>
+
+                <div key={`productType`} className="field col-12 lg:col-5 md:col-6 mt-4">
+                  <span className="p-float-label">
+                    <Dropdown
+                      disabled={productEditState}
+                      value={selectedStatus}
+                      onChange={async (e) => {
+                        setSelectedStatus(e.value)
+                        formik.setFieldValue("type", e.value);
+                      }}
+                      options={StatusCheck}
+                      optionLabel="type"
+                      placeholder="Type"
+                      className="w-full"
+                    />
+                    <label
+                      htmlFor={"type"}
+                      className={classNames({ "p-error": isFormFieldValid("type") })}
+                    >
+                      Product Type
+                    </label>
+                  </span>
+                  {getFormErrorMessage("category")}
+                </div>
               </div>
-              <div className="field col-12 lg:col-2 md:col-6 mt-4">
-                <span className="p-float-label">
-                  <InputText
-                    disabled={disableField}
-                    id={"sku"}
-                    placeholder='SKU'
-                    name={"sku"}
-                    value={formik.values.sku}
-                    autoFocus
-                    className={classNames({ "p-invalid ": isFormFieldValid("description") })}
-                  />
-                  <label
-                    htmlFor={"sku"}
-                    className={classNames({ "p-error": isFormFieldValid("sku") })}
-                  >
-                    SKU
-                  </label>
-                </span>
-                {getFormErrorMessage("sku")}
+
+              <div className="flex mt-4">
+                <Button
+                  type="submit"
+                  className="mr-2 "
+                  label={editUpdateProduct ? 'UPDATE' : 'SUBMIT'}
+                />
+                <Button
+                  className="p-button-secondary"
+                  type="button"
+                  label="CANCEL"
+                  onClick={() => {
+                    formik.resetForm()
+                    setProductDialog(false)
+                    setProductEditState(false)
+                    setActiveProduct(false)
+                  }}
+                />
               </div>
-              {
-                [
-                  { type: 'text', label: "Name*", field: "name", header: "Name" },
-                  { type: 'text', label: "Length", field: "length", header: "Length" },
-                  { type: 'text', label: "Width", field: "width", header: "Width" },
-                  { type: 'text', label: "Height", field: "height", header: "Height" },
-                  { type: 'text', label: "Weight", field: "weight", header: "Weight" },
-                  { type: 'text', label: "Color", field: "color", header: "Color" },
-                  { type: 'text', label: "Brand", field: "brand", header: "Brand" },
-                  { type: 'text', label: "Tax type code", field: "taxcode", header: "Tax code" },
-                  { type: 'text', label: "Gst Tax type code", field: "gstcode", header: "Gst Code" },
-                  { type: 'text', label: "HSN code", field: "hsnCode", header: "HSN Code" },
-                  { type: 'text', label: "Cost Price", field: "costPrice", header: "Cost Price" },
-                  { type: 'text', label: "Tax Calculation Type", field: "taxCalcuation", header: "Tax Calcuation" },
-                ].map((ele, i) => {
-                  if (ele.type === "text") {
-                    return (
-                      <div key={`${ele.field}${i}`} className="field col-12 lg:col-2 md:col-6 mt-4">
-                        <span className="p-float-label">
-                          <InputText
-                            disabled={productEditState}
-                            id={ele.field}
-                            name={ele.field}
-                            value={formik.values[ele.field]}
-                            onChange={formik.handleChange}
-                            autoFocus
-                            className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
-                          />
-                          <label
-                            htmlFor={ele.field}
-                            className={classNames({ "p-error": isFormFieldValid(ele.field) })}
-                          >
-                            {ele.label}
-                          </label>
-                        </span>
-                        {getFormErrorMessage(ele.field)}
-                      </div>
-                    )
-                  } else {
-                  }
+
+            </form>
+          </div>
+        </div>
+
+        <div className="col-12" >
+          <div className="card">
+            <DataTable
+              value={products}
+              responsiveLayout="scroll"
+              showGridlines
+              header={header1}
+              filters={filters}
+              className="text-s datatable-responsive"
+              filterDisplay="menu"
+              emptyMessage="No Results found."
+              rowHover={true}
+              onRowClick={async (e) => {
+                console.log('e.data: ', e.data);
+                setActiveRowData({ ...e.data })
+                setProductEditState(true)
+                setActiveProduct(true)
+                setProductDialog(true)
+
+                setSelectedStatus(e.data.product_types)
+
+
+                const _kitData = e.data.kit_products.map((prod) => {
+                  const { products_kit_products_kitProductIDToproducts: product, quantity } = prod
+                  return ({
+                    product: { ...product, name: `${product.sku}-${product.name}` },
+                    quantity,
+                  })
+                });
+                setInputs(_kitData)
+
+
+                await formik.setValues({
+                  ...e.data,
+                  type: e.data.product_types.type,
+                  category: e.data.product_categories,
                 })
-              }
-              <div key={`category`} className="field col-12 lg:col-5 md:col-6 mt-4">
-                <span className="p-float-label">
-                  <AutoComplete
-                    id="category"
-                    // disabled={editState}
-                    disabled={productEditState}
-                    value={formik?.values?.category?.name}
-                    dropdown
-                    forceSelection
-                    suggestions={categorySuggestions}
-                    completeMethod={searchCategory}
-                    field="name"
-                    onChange={async (e) => {
-
-
-                      let sku = `TIF${e.value?.code}${products.length + 1}`
-                      let category = typeof e.target.value === "string" ? e.value : e.value
-
-                      await formik.setValues({
-                        ...formik.values,
-                        sku,
-                        category,
-                      })
-                    }}
-                    aria-label="Product Category"
-                    dropdownAriaLabel="Product Categorys"
-                    className={classNames({ "p-invalid": isFormFieldValid("category") })}
-                  />
-                  <label
-                    htmlFor={"category"}
-                    className={classNames({ "p-error": isFormFieldValid("category") })}
-                  >
-                    Category
-                  </label>
-                </span>
-                {getFormErrorMessage("category")}
-              </div>
-              <div key={`productType`} className="field col-12 lg:col-5 md:col-6 mt-4">
-                <span className="p-float-label">
-                  <Dropdown
-                    disabled={productEditState}
-                    value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.value)}
-                    options={StatusCheck}
-                    optionLabel="name"
-                    placeholder="Type"
-                    className="w-full"
-                  />
-                  <label
-                    htmlFor={"type"}
-                    className={classNames({ "p-error": isFormFieldValid("type") })}
-                  >
-                    Product Type
-                  </label>
-                </span>
-                {getFormErrorMessage("category")}
-              </div>
-            </div>
-
-            <div className="flex mt-4">
-              <Button
-                type="submit"
-                className="mr-2 "
-                label={editUpdateProduct ? 'UPDATE' : 'SUBMIT'}
-              />
-              <Button
-                className="p-button-secondary"
-                type="button"
-                label="CANCEL"
-                onClick={() => {
-                  formik.resetForm()
-                  setProductDialog(false)
-                  setProductEditState(false)
-                  setActiveProduct(false)
-                }}
-              />
-            </div>
-
-          </form>
-        </div>
-      </div>
-
-      <div>{showData}</div>
-      {/* <div><pre>{JSON.stringify(inputs,null,2)}</pre></div> */}
-
-      <div className="col-12">
-        <div className="card">
-          <DataTable
-            value={products}
-            responsiveLayout="scroll"
-            showGridlines
-            header={header1}
-            filters={filters}
-            className="text-s datatable-responsive"
-            filterDisplay="menu"
-            emptyMessage="No Results found."
-            rowHover={true}
-            onRowClick={async (e) => {
-              setActiveRowData({ ...e.data })
-              setProductEditState(true)
-              setActiveProduct(true)
-              setProductDialog(true)
-              await formik.setValues({
-                ...e.data,
-              })
-              scrolToTop?.current && scrolToTop?.current.scrollIntoView()
-            }}
-          >
-
-            {/* <Column header="Image" body={rowData => <img src={`${rowData.imageUrl}`} alt="imageData" style={{ width: '300px', height: '220px' }} />} /> */}
-            {/* <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} /> */}
-            {/* <Link href="/product/[id]" as={`/product/${product.id}`}>
-            {product.name}
-          </Link> */}
-            <Column header="SKU" body={rowData => <Link href="/products/[id]" as={`/products/${rowData.id}`} >{rowData.sku}</Link>} />
-            {columnComponents}
-          </DataTable>
-        </div>
-      </div>
-    </div>
-  )
+                scrolToTop?.current && scrolToTop?.current.scrollIntoView()
+              }}
+            >
+              <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} />
+              {columnComponents}
+            </DataTable>
+          </div>
+        </div >
+      </div >
+      )
 }
 
 const ProductsPage = () => {
   return (
-    <Suspense fallback={<Loading />}>
-      <Layout>
-        <ProductsList />
-      </Layout>
-    </Suspense>
-  )
+      <Suspense fallback={<Loading />}>
+        <Layout>
+          <ProductsList />
+        </Layout>
+      </Suspense>
+      )
 }
-ProductsPage.authenticate = true
-export default ProductsPage
+      ProductsPage.authenticate = true
+      export default ProductsPage

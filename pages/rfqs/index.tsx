@@ -77,7 +77,7 @@ import getAgreement_terms from "app/agreement_terms/queries/getAgreement_terms"
 import { spawn } from "child_process"
 import RFQPO from "components/RFQPO"
 import getEmails from "app/emails/queries/getEmails"
-import { Chip } from "primereact/Chip"
+// import { Chip } from "primereact/Chip"
 // import Image from "next/image"
 import { Image } from "blitz"
 
@@ -5215,9 +5215,8 @@ export const RfqsList = () => {
         }))
         : undefined
 
-
-
       if (rfqEditState) {
+
         if (activeRow?.rfq_sentto?.length === 0) {
 
 
