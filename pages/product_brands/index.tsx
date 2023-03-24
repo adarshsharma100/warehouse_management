@@ -80,6 +80,7 @@ export const Product_brandsList = () => {
           console.log('error: ', error);
         }
       }
+      setProductBrandDiolog(false)
     }
   })
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
