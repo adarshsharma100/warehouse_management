@@ -87,8 +87,7 @@ const Home: BlitzPage = () => {
             <h1 className="mt-6 text-2xl font-bold text-primary">Welcome to Inventory</h1>
 
             <p className="mt-4 text-gray-500">
-              Hi there! Welcome to Watch Mojo. Today we will be rounding up our top picks for anime
-              of the year. :)
+              Welcome to our warehouse management application. Log in to start optimizing your warehouse operations. Thank you for choosing our platform! :)
             </p>
             <LoginForm
               onSuccess={(_user) => {
