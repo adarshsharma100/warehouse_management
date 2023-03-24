@@ -1,5 +1,6 @@
 import { resolver } from "@blitzjs/rpc"
 import db from "db"
+import moment from "moment"
 import { z } from "zod"
 
 const CreateGrn = z.object({
@@ -15,9 +16,28 @@ const CreateGrn = z.object({
   // po_products:z.unknown(),
 })
 
-export default resolver.pipe(resolver.zod(CreateGrn), resolver.authorize(), async (input) => {
-  // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-  const grn = await db.grn.create({ data: input })
+export default resolver.pipe(
+  resolver.zod(CreateGrn),
+  resolver.authorize(),
+  async ({ grnNumber, ...input }) => {
+    // TODO: in multi-tenant app, you must add validation to ensure correct tenant
 
-  return grn
-})
+    const grn = await db.grn.create({
+      data: {
+        grnNumber: grnNumber.trim() ?? moment().format("x"),
+        ...input,
+      },
+    })
+
+    if (!grnNumber.trim()) {
+      await db.grn.update({
+        where: { id: grn.id },
+        data: {
+          grnNumber: `GRN#${grn.id}`,
+        },
+      })
+    }
+
+    return grn
+  }
+)

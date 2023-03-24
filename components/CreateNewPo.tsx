@@ -392,20 +392,16 @@ const CreateNewPo = React.forwardRef((props, ref) => {
   }, [updatingMutationError, creatingMutationError,])
 
   useEffect(() => {
-    createNewPOCode()
+    setPoCodeChecked(true)
   })
 
   useEffect(() => {
-
     if (rfq.rfqId) {
       updateFormValues({ itemsLength: true, }).catch((error) => {
         console.log("While setting po values from rfq", error)
       })
       console.log('rfqset: ', rfq);
     }
-
-
-
   }, [rfq])
 
 
@@ -563,7 +559,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     initialValues: purchaseDetails,
     validationSchema: Yup.object().shape({
       vendor_vendor_id: Yup.string().required("*Required"),
-      po_code: Yup.string().required("*Required"),
+      // po_code: Yup.string().required("*Required"),
       // po_description: Yup.string().required("*Required"),
       expiry_date: Yup.string().required("*Required"),
       expected_delivery: Yup.string().required("*Required"),
@@ -909,15 +905,15 @@ const CreateNewPo = React.forwardRef((props, ref) => {
 
   }, [formik?.values.vendor_vendor_id])
 
-  useEffect(() => {
-    if (poCodeChecked && purchaseDialog && !poEditState) {
-      updateFormValues({ po_code: newPOCode })
-        // .then((res) => console.log("newCode", res))
-        .catch((error) => {
-          console.log("From updateFormValues", error)
-        })
-    }
-  }, [poCodeChecked, purchaseDialog])
+  // useEffect(() => {
+  //   if (poCodeChecked && purchaseDialog && !poEditState) {
+  //     updateFormValues({ po_code: newPOCode })
+  //       // .then((res) => console.log("newCode", res))
+  //       .catch((error) => {
+  //         console.log("From updateFormValues", error)
+  //       })
+  //   }
+  // }, [poCodeChecked, purchaseDialog])
 
   const updateFormValues = async (fields) => {
     await formik.setValues({ ...formik.values, ...fields })
@@ -1017,7 +1013,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                   id="po_code"
                   name=""
                   // className="mr-2 w-22rem"
-                  value={formik.values.po_code}
+                  value={poCodeChecked ? "Auto Generated" : formik.values.po_code}
                   onChange={formik.handleChange}
                   disabled={poCodeChecked}
                   className={classNames({ "p-invalid": isFormFieldValid("po_code") })}

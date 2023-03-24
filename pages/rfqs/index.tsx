@@ -101,7 +101,7 @@ export const RfqsList = () => {
   //   take: ITEMS_PER_PAGE,
   // })
   const [{ rfqs }, { error: rfqError, refetch }] = useQuery(getRfqs, {
-    orderBy: { id: "asc" },
+    orderBy: { id: "desc" },
   })
   const [{ emails },] = useQuery(getEmails, {
     orderBy: { id: "asc" },
@@ -5217,9 +5217,6 @@ export const RfqsList = () => {
 
 
       if (rfqEditState) {
-
-
-
         if (activeRow?.rfq_sentto?.length === 0) {
 
 

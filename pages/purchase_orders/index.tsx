@@ -82,7 +82,7 @@ export const Purchase_ordersList = () => {
   const [{ purchase_orders, hasMore }, { error: getPoError, refetch }] = usePaginatedQuery(
     getPurchase_orders,
     {
-      orderBy: { id: "asc" },
+      orderBy: { id: "desc" },
       skip: ITEMS_PER_PAGE * page,
       take: ITEMS_PER_PAGE,
     }

@@ -5,7 +5,7 @@ import sendEmail from "helperFunctions/rfqMail"
 import moment from "moment"
 
 const CreateRfq = z.object({
-  rfqNumber: z.unknown(),
+  rfqNumber: z.string(),
   description: z.string(),
   expectedDod: z.date(),
   rfq_products: z.unknown(),
@@ -23,7 +23,7 @@ export default resolver.pipe(
 
     const rfq = await db.rfq.create({
       data: {
-        rfqNumber: moment().format("x"),
+        rfqNumber: rfqNumber?.trim() ?? moment().format("x"),
         ...input,
       },
       include: {
@@ -36,7 +36,7 @@ export default resolver.pipe(
       },
     })
 
-    if (!rfqNumber || !rfqNumber?.length)
+    if (!rfqNumber || !rfqNumber?.trim()?.length)
       await db.rfq.update({
         where: { id: rfq.id },
         data: {
