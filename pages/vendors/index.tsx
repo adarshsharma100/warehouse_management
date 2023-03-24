@@ -58,588 +58,38 @@ export const VendorsList = () => {
   const page = Number(router.query.page) || 0
 
   const [{ vendors }, { refetch, error: getVendorError }] = useQuery(getVendors, {
-    orderBy: { id: "asc" },
+    orderBy: { id: "desc" },
     skip: undefined,
     where: undefined,
     take: undefined
   })
 
-  // console.log("vendors", vendors[0])
+  console.log("vendors", vendors)
 
   // let getVendorError
 
-  // const vendors = [
-  //   {
-  //     vendor_id: 1,
-  //     vendor_code: "DA",
-  //     vendor_email: "mdatif796@gmail.com",
-  //     vendor_city: "Panaji",
-  //     vendor_contact: "4562879123",
-  //     vendor_state: "Goa",
-  //     vendor_gstin: "GSTRIO783211111",
-  //     vendor: "Dylan Alisson",
-  //     address: "Rio ",
-  //     credit_period: "411",
-  //     lead_time: "471",
-  //     status: false,
-  //     vendor_tags: [
-  //       {
-  //         id: 52,
-  //         vendor_vendor_id: 1,
-  //         tags_id: 1,
-  //         tags: {
-  //           id: 1,
-  //           name: "best",
-  //           color: "#ffcdd2",
-  //         },
-  //       },
-  //       {
-  //         id: 51,
-  //         vendor_vendor_id: 1,
-  //         tags_id: 21,
-  //         tags: {
-  //           id: 21,
-  //           name: "specializations",
-  //           color: "A9927D",
-  //         },
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     vendor_id: 2,
-  //     vendor_code: "UE",
-  //     vendor_email: "udederson@gmail.com",
-  //     vendor_city: "Manuguru",
-  //     vendor_contact: "8956237845",
-  //     vendor_state: "Andhra Pradesh",
-  //     vendor_gstin: "GSTMAN012541111",
-  //     vendor: "Ud Ederson",
-  //     address: "Manaus",
-  //     credit_period: "5",
-  //     lead_time: "4",
-  //     status: true,
-  //     vendor_tags: [
-  //       {
-  //         id: 12,
-  //         vendor_vendor_id: 2,
-  //         tags_id: 1,
-  //         tags: {
-  //           id: 1,
-  //           name: "best",
-  //           color: "#ffcdd2",
-  //         },
-  //       },
-  //       {
-  //         id: 3,
-  //         vendor_vendor_id: 2,
-  //         tags_id: 2,
-  //         tags: {
-  //           id: 2,
-  //           name: "poor",
-  //           color: "#FCFF4B",
-  //         },
-  //       },
-  //       {
-  //         id: 29,
-  //         vendor_vendor_id: 2,
-  //         tags_id: 6,
-  //         tags: {
-  //           id: 6,
-  //           name: "priority",
-  //           color: "F1A208",
-  //         },
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     vendor_id: 3,
-  //     vendor_code: "TE",
-  //     vendor_email: "thomasEdison@gmail.com",
-  //     vendor_city: "Miraj",
-  //     vendor_contact: "8954236172",
-  //     vendor_state: "Maharashtra",
-  //     vendor_gstin: "GSTMIL009222222",
-  //     vendor: "Thomas Edison",
-  //     address: "Milan",
-  //     credit_period: "4",
-  //     lead_time: "4",
-  //     status: false,
-  //     vendor_tags: [
-  //       {
-  //         id: 7,
-  //         vendor_vendor_id: 3,
-  //         tags_id: 1,
-  //         tags: {
-  //           id: 1,
-  //           name: "best",
-  //           color: "#ffcdd2",
-  //         },
-  //       },
-  //       {
-  //         id: 30,
-  //         vendor_vendor_id: 3,
-  //         tags_id: 4,
-  //         tags: {
-  //           id: 4,
-  //           name: "delivery time",
-  //           color: "#FFFFFF",
-  //         },
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     vendor_id: 4,
-  //     vendor_code: "KM",
-  //     vendor_email: "kamehameha@gmail.com",
-  //     vendor_city: "Tonk",
-  //     vendor_contact: "7856124391",
-  //     vendor_state: "Rajasthan",
-  //     vendor_gstin: "GSTTK0097811111",
-  //     vendor: "Kamehameha",
-  //     address: "Tokyo",
-  //     credit_period: "7",
-  //     lead_time: "4",
-  //     status: true,
-  //     vendor_tags: [
-  //       {
-  //         id: 9,
-  //         vendor_vendor_id: 4,
-  //         tags_id: 1,
-  //         tags: {
-  //           id: 1,
-  //           name: "best",
-  //           color: "#ffcdd2",
-  //         },
-  //       },
-  //       {
-  //         id: 31,
-  //         vendor_vendor_id: 4,
-  //         tags_id: 10,
-  //         tags: {
-  //           id: 10,
-  //           name: "certifications",
-  //           color: "5E4352",
-  //         },
-  //       },
-  //       {
-  //         id: 33,
-  //         vendor_vendor_id: 4,
-  //         tags_id: 21,
-  //         tags: {
-  //           id: 21,
-  //           name: "specializations",
-  //           color: "A9927D",
-  //         },
-  //       },
-  //       {
-  //         id: 32,
-  //         vendor_vendor_id: 4,
-  //         tags_id: 25,
-  //         tags: {
-  //           id: 25,
-  //           name: "awards",
-  //           color: null,
-  //         },
-  //       },
-  //       {
-  //         id: 19,
-  //         vendor_vendor_id: 4,
-  //         tags_id: 26,
-  //         tags: {
-  //           id: 26,
-  //           name: "inventory",
-  //           color: "A1B5D8",
-  //         },
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     vendor_id: 5,
-  //     vendor_code: "RH",
-  //     vendor_email: "rahul@gmail.com",
-  //     vendor_city: "Dumka",
-  //     vendor_contact: "4556788925",
-  //     vendor_state: "Jharkhand",
-  //     vendor_gstin: "GSTDUB012541111",
-  //     vendor: "Rahul",
-  //     address: "Dubai",
-  //     credit_period: "3",
-  //     lead_time: "4",
-  //     status: true,
-  //     vendor_tags: [
-  //       {
-  //         id: 16,
-  //         vendor_vendor_id: 5,
-  //         tags_id: 12,
-  //         tags: {
-  //           id: 12,
-  //           name: "customer service",
-  //           color: "427AA1",
-  //         },
-  //       },
-  //       {
-  //         id: 20,
-  //         vendor_vendor_id: 5,
-  //         tags_id: 14,
-  //         tags: {
-  //           id: 14,
-  //           name: "payment options",
-  //           color: "D9F9A5",
-  //         },
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     vendor_id: 123,
-  //     vendor_code: "VJ",
-  //     vendor_email: "varunram.66@gmail.com",
-  //     vendor_city: "Bangalore",
-  //     vendor_contact: "7892496089",
-  //     vendor_state: "Karnataka",
-  //     vendor_gstin: "GSTN97313398111",
-  //     vendor: "Varun",
-  //     address: "Hennur",
-  //     credit_period: "12",
-  //     lead_time: "21",
-  //     status: false,
-  //     vendor_tags: [
-  //       {
-  //         id: 21,
-  //         vendor_vendor_id: 123,
-  //         tags_id: 2,
-  //         tags: {
-  //           id: 2,
-  //           name: "poor",
-  //           color: "#FCFF4B",
-  //         },
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     vendor_id: 133,
-  //     vendor_code: "iotif",
-  //     vendor_email: "iot@gmail.com",
-  //     vendor_city: "Gopalganj",
-  //     vendor_contact: "4567892567",
-  //     vendor_state: "Bihar",
-  //     vendor_gstin: "GSTO14562398745",
-  //     vendor: "TIF",
-  //     address: "banglore",
-  //     credit_period: "10",
-  //     lead_time: "12",
-  //     status: false,
-  //     vendor_tags: [
-  //       {
-  //         id: 5,
-  //         vendor_vendor_id: 133,
-  //         tags_id: 1,
-  //         tags: {
-  //           id: 1,
-  //           name: "best",
-  //           color: "#ffcdd2",
-  //         },
-  //       },
-  //       {
-  //         id: 22,
-  //         vendor_vendor_id: 133,
-  //         tags_id: 30,
-  //         tags: {
-  //           id: 30,
-  //           name: "logistics",
-  //           color: "b908c9",
-  //         },
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     vendor_id: 134,
-  //     vendor_code: "KR",
-  //     vendor_email: "kar@gmail.com",
-  //     vendor_city: "Cambay",
-  //     vendor_contact: "8987634523",
-  //     vendor_state: "Gujarat",
-  //     vendor_gstin: "GSTI87640111111",
-  //     vendor: "Karan",
-  //     address: "12th street ",
-  //     credit_period: "4",
-  //     lead_time: "5",
-  //     status: true,
-  //     vendor_tags: [
-  //       {
-  //         id: 53,
-  //         vendor_vendor_id: 134,
-  //         tags_id: 4,
-  //         tags: {
-  //           id: 4,
-  //           name: "delivery time",
-  //           color: "#FFFFFF",
-  //         },
-  //       },
-  //       {
-  //         id: 54,
-  //         vendor_vendor_id: 134,
-  //         tags_id: 16,
-  //         tags: {
-  //           id: 16,
-  //           name: "warranty",
-  //           color: "679436",
-  //         },
-  //       },
-  //       {
-  //         id: 23,
-  //         vendor_vendor_id: 134,
-  //         tags_id: 20,
-  //         tags: {
-  //           id: 20,
-  //           name: "lead time",
-  //           color: "EAC5D8",
-  //         },
-  //       },
-  //       {
-  //         id: 55,
-  //         vendor_vendor_id: 134,
-  //         tags_id: 22,
-  //         tags: {
-  //           id: 22,
-  //           name: "availability",
-  //           color: "D9F9A5",
-  //         },
-  //       },
-  //       {
-  //         id: 56,
-  //         vendor_vendor_id: 134,
-  //         tags_id: 101,
-  //         tags: {
-  //           id: 101,
-  //           name: "awesome",
-  //           color: "5E0035",
-  //         },
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     vendor_id: 135,
-  //     vendor_code: "RA",
-  //     vendor_email: "raj@gail.com",
-  //     vendor_city: "banglor",
-  //     vendor_contact: "1546237964",
-  //     vendor_state: "Karnataka",
-  //     vendor_gstin: "GSTI14254572222",
-  //     vendor: "Raj",
-  //     address: "11th street",
-  //     credit_period: "11",
-  //     lead_time: "12",
-  //     status: true,
-  //     vendor_tags: [
-  //       {
-  //         id: 6,
-  //         vendor_vendor_id: 135,
-  //         tags_id: 1,
-  //         tags: {
-  //           id: 1,
-  //           name: "best",
-  //           color: "#ffcdd2",
-  //         },
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     vendor_id: 147,
-  //     vendor_code: "FK",
-  //     vendor_email: "xylene8@gmail.com",
-  //     vendor_city: "Salur",
-  //     vendor_contact: "4567891238",
-  //     vendor_state: "Andhra Pradesh",
-  //     vendor_gstin: "GSTIN6786543467",
-  //     vendor: "Frank",
-  //     address: "11",
-  //     credit_period: "11",
-  //     lead_time: "11",
-  //     status: true,
-  //     vendor_tags: [
-  //       {
-  //         id: 25,
-  //         vendor_vendor_id: 147,
-  //         tags_id: 2,
-  //         tags: {
-  //           id: 2,
-  //           name: "poor",
-  //           color: "#FCFF4B",
-  //         },
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     vendor_id: 168,
-  //     vendor_code: "z",
-  //     vendor_email: "z@g.com",
-  //     vendor_city: "Chirala",
-  //     vendor_contact: "1456987856",
-  //     vendor_state: "Andhra Pradesh",
-  //     vendor_gstin: "145698712345698",
-  //     vendor: "z",
-  //     address: "asd",
-  //     credit_period: "45",
-  //     lead_time: "56",
-  //     status: true,
-  //     vendor_tags: [
-  //       {
-  //         id: 35,
-  //         vendor_vendor_id: 168,
-  //         tags_id: 5,
-  //         tags: {
-  //           id: 5,
-  //           name: "location",
-  //           color: "#E4D6A7",
-  //         },
-  //       },
-  //       {
-  //         id: 26,
-  //         vendor_vendor_id: 168,
-  //         tags_id: 26,
-  //         tags: {
-  //           id: 26,
-  //           name: "inventory",
-  //           color: "A1B5D8",
-  //         },
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     vendor_id: 170,
-  //     vendor_code: "asq",
-  //     vendor_email: "d@c.com",
-  //     vendor_city: "Wanaparthy",
-  //     vendor_contact: "1234567894",
-  //     vendor_state: "Andhra Pradesh",
-  //     vendor_gstin: "123456789568745",
-  //     vendor: "q",
-  //     address: "sda",
-  //     credit_period: "12",
-  //     lead_time: "45",
-  //     status: true,
-  //     vendor_tags: [
-  //       {
-  //         id: 18,
-  //         vendor_vendor_id: 170,
-  //         tags_id: 15,
-  //         tags: {
-  //           id: 15,
-  //           name: "return policy",
-  //           color: "A9927D",
-  //         },
-  //       },
-  //       {
-  //         id: 36,
-  //         vendor_vendor_id: 170,
-  //         tags_id: 19,
-  //         tags: {
-  //           id: 19,
-  //           name: "quantity discounts",
-  //           color: "005C69",
-  //         },
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     vendor_id: 171,
-  //     vendor_code: "m",
-  //     vendor_email: "m2@G.COM",
-  //     vendor_city: "Zahirabad",
-  //     vendor_contact: "1456239875",
-  //     vendor_state: "Andhra Pradesh",
-  //     vendor_gstin: "123654789632145",
-  //     vendor: "m",
-  //     address: "WSAQ",
-  //     credit_period: "45",
-  //     lead_time: "69",
-  //     status: true,
-  //     vendor_tags: [
-  //       {
-  //         id: 17,
-  //         vendor_vendor_id: 171,
-  //         tags_id: 2,
-  //         tags: {
-  //           id: 2,
-  //           name: "poor",
-  //           color: "#FCFF4B",
-  //         },
-  //       },
-  //       {
-  //         id: 34,
-  //         vendor_vendor_id: 171,
-  //         tags_id: 19,
-  //         tags: {
-  //           id: 19,
-  //           name: "quantity discounts",
-  //           color: "005C69",
-  //         },
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     vendor_id: 173,
-  //     vendor_code: "SWD",
-  //     vendor_email: "SD@GMAIL.COM",
-  //     vendor_city: "Bellampalle",
-  //     vendor_contact: "7895263654",
-  //     vendor_state: "Andhra Pradesh",
-  //     vendor_gstin: "SDEF412C5D6E3S6",
-  //     vendor: "vj",
-  //     address: "STRING ",
-  //     credit_period: "56",
-  //     lead_time: "85",
-  //     status: true,
-  //     vendor_tags: [
-  //       {
-  //         id: 27,
-  //         vendor_vendor_id: 173,
-  //         tags_id: 21,
-  //         tags: {
-  //           id: 21,
-  //           name: "specializations",
-  //           color: "A9927D",
-  //         },
-  //       },
-  //       {
-  //         id: 13,
-  //         vendor_vendor_id: 173,
-  //         tags_id: 22,
-  //         tags: {
-  //           id: 22,
-  //           name: "availability",
-  //           color: "D9F9A5",
-  //         },
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     vendor_id: 192,
-  //     vendor_code: "AS",
-  //     vendor_email: "AS@gmail.com",
-  //     vendor_city: "AS",
-  //     vendor_contact: "AS",
-  //     vendor_state: "AS",
-  //     vendor_gstin: "AS",
-  //     vendor: "AS",
-  //     address: "AS",
-  //     credit_period: "AS",
-  //     lead_time: "AS",
-  //     status: true,
-  //     vendor_tags: [],
-  //   },
-  // ]
+  const VendorAddress = (rowData) => {
+    const addresses = rowData?.vendor_branches[0]?.addresses
+
+    const addressString = `${addresses?.buildingNumber}${addresses?.landmarkName ? `, ${addresses?.landmarkName}` : ''}${addresses?.cityCountryProvince ? `, ${addresses?.cityCountryProvince}` : ''}${addresses?.state ? `, ${addresses?.state}` : ''}${addresses?.pincode ? ` - ${addresses?.pincode}` : ''}`;
+
+    return addressString
+  }
 
   const columns = [
     { field: "name", header: "Vendor" },
     { field: "code", header: "Code" },
-    { field: "branch_code", header: "BranchCode" },
-    { field: "email", header: "Email" },
-    { field: "vendor_city", header: "City" },
-    { field: "vendor_state", header: "State" },
-    { field: "contact", header: "Contact" },
+    { field: "", header: "Branch Code", body: (rowData) => rowData?.vendor_branches[0]?.branchCode },
+    { field: "email", header: "Email", body: (rowData) => rowData?.vendor_branches[0]?.addresses?.emails_emails_addressesToaddresses[0]?.email },
+    { field: "vendor_city", header: "City", body: (rowData) => rowData?.vendor_branches[0]?.addresses?.cityCountryProvince },
+    { field: "vendor_state", header: "State", body: (rowData) => rowData?.vendor_branches[0]?.addresses?.state },
+    {
+      field: "vendor_state", header: "Country",
+      body: (rowData) => rowData?.vendor_branches[0]?.addresses?.country_addresses_countryTocountry?.name
+    },
+    { field: "contact", header: "Contact", body: (rowData) => rowData?.vendor_branches[0]?.addresses?.contact_number[0]?.number },
     { field: "gstin", header: "GSTIN" },
-    { field: "address", header: "Address" },
+    { field: "address", header: "Address", body: (rowData) => VendorAddress(rowData) },
     { field: "leadTime", header: "Lead Time" },
     { field: 'vendorScore', header: 'Vendor Score ' },
     { field: "creditPeriod", header: "Credit Peroid" },
@@ -707,6 +157,10 @@ export const VendorsList = () => {
     vendor_city: "",
     vendor_state: "",
     tags: [],
+    status: "",
+    branch_code: "",
+    pincode: "",
+    landmarkName: ""
     // addresses:
   }
   const styles4TagsComponent = {
@@ -803,14 +257,14 @@ export const VendorsList = () => {
   const [activeVendor, setActiveVendor] = useState(false)
   console.log("activeVendor", activeVendor)
   const [activeVendorData, setActiveVendorData] = useState({})
-  console.log('activeVendorData: ', activeVendorData);
   const [vendorEditState, setVendorEditState] = useState(false)
   const [activeRowData, setActiveRowData] = useState({})
   const [productEditState, setProductEditState] = useState(false)
   const [productDialog, setProductDialog] = useState(false)
   const scrolToTop = useRef<HTMLDivElement>(null)
   const [showData, setShowData] = useState([])
-  const [selectedColumns, setSelectedColumns] = useState(columns)
+  const [selectedColumns, setSelectedColumns] = useState([])
+  console.log('selectedColumns: ', selectedColumns);
 
   const onColumnToggle = (event) => {
     let selectedColumns = event.value
@@ -824,44 +278,60 @@ export const VendorsList = () => {
   const [selectedStatus, setSelectedStatus] = useState(null);
   const StatusCheck = [
     { name: 'Active' },
-    { name: 'InActive' },
+    { name: 'Inactive' },
   ];
 
   const header = (
     <div style={{ textAlign: "left" }}>
       <MultiSelect
         value={selectedColumns}
-        options={columns}
-        optionLabel="header"
-        onChange={onColumnToggle}
+        // options={columns}
+        options={columns.map(({ header, field }) => ({
+          label: header,
+          value: field
+        }))}
+        // optionLabel="header"
+        // onChange={onColumnToggle}
+        // onChange={(e) => {
+        //   setSelectedColumns(e.value)
+        //   console.log("e.value", "e.value");
+        // }}
         style={{ width: "20em" }}
       />
     </div>
   )
 
-  const columnComponents = selectedColumns.map((col) => {
-    return (
-      <Column
-        key={col.field}
-        field={col.field}
-        header={col.header}
-        filter
-        filterPlaceholder="Search...."
-      />
-    )
-  })
+  // const columnComponents = selectedColumns.map((col) => {
+  //   return (
+  //     <Column
+  //       key={col.field}
+  //       field={col.field}
+  //       header={col.header}
+  //       body={col.body}
+  //       filter
+  //       filterPlaceholder="Search...."
+  //     />
+  //   )
+  // })
+
+  const columnComponents = columns.reduce((acc, curr) => {
+    if (selectedColumns.includes(curr.field))
+      return [
+        ...acc,
+        <Column
+          key={curr.field}
+          field={curr.field}
+          header={curr.header}
+          body={curr.body}
+        />
+      ];
+    return acc;
+  }, []);
 
   useEffect(() => {
-    const obj = {
-      value: [
-        { field: "name", header: "Vendor" },
-        { field: "code", header: "Code" },
-        { field: 'vendorScore', header: 'Vendor Score ' },
-        { field: "gstin", header: "GSTIN" },
-        { field: "creditPeriod", header: "credit Peroid" },
-      ],
-    }
-    onColumnToggle(obj)
+
+    const defaultColumns = columns.filter(col => !["creditPeriod"].includes(col.field)).map(col => col.field)
+    setSelectedColumns(defaultColumns)
   }, [])
 
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
@@ -873,7 +343,6 @@ export const VendorsList = () => {
       </div>
     )
   }
-  console.log("active", activeVendorData)
 
   const [filters, setFilters] = useState({})
   const [globalFilterValue, setGlobalFilterValue] = useState("")
@@ -960,9 +429,14 @@ export const VendorsList = () => {
       <div className="flex justify-content-between">
         <MultiSelect
           value={selectedColumns}
-          options={columns}
-          optionLabel="header"
-          onChange={onColumnToggle}
+          // options={columns}
+          options={columns.map(({ header, field }) => ({
+            label: header,
+            value: field
+          }))}
+          // optionLabel="header"
+          // onChange={onColumnToggle}
+          onChange={(e) => setSelectedColumns(e.value)}
           style={{ width: "20em" }}
         />
         <div className="flex gap-4">
@@ -1127,26 +601,63 @@ export const VendorsList = () => {
     }),
 
     onSubmit: async (data) => {
-      console.log("data++", data)
-      const { id: activeVendorId } = activeVendorData
-      const { name, code, vendorScore, contact, creditPeriod, leadTime, gstin, email } = data
+      console.log("formData", data)
+
+      const { id: activeVendorId,
+        vendor_branches: [{ id: vendorBranchId, address: addressId }] } = activeVendorData
+      const { name, code, vendorScore, contact, creditPeriod, leadTime, gstin, email, address, vendor_city
+        , vendor_state, branch_code, landmarkName, pincode, status } = data
+
       if (activeVendor) {
+        const vendor_branches = {
+          update: [
+            {
+              where: {
+                id: vendorBranchId,
+              },
+              data: {
+                branchCode: branch_code,
+                // addresses: {
+                //   update: {
+                //     where: {
+                //       id: addressId
+                //     },
+                //     data: {
+                //       areaStreet: address,
+                //       landmarkName,
+                //       cityCountryProvince: vendor_city,
+                //       state: vendor_state,
+                //       pincode,
+                //       country: 1,
+                //     }
+                //   },
+                // }
+
+              }
+            }
+          ],
+        }
+
         try {
           await updateActiveVender({
             id: activeVendorId,
             name,
             code,
-            status: "Active",
-            vendorScore: Number(vendorScore),
-            creditPeriod: Number(creditPeriod),
             gstin,
-            leadTime: Number(leadTime)
+            creditPeriod: parseInt(creditPeriod),
+            leadTime: parseInt(leadTime),
+            status: status?.name,
+            vendorScore: parseInt(vendorScore),
+            vendor_branches,
+
           }, {
-            onSuccess: () => {
-              alert('update Done')
+            onSuccess: async () => {
+              toast?.current?.show(tsuccess("Updtaed", "Vendor Updated"))
+              await refetch()
+              setVendorDialog(false)
+              setActiveVendor(false)
             },
             onError: (data) => {
-              // alert('error', data)
               console.log(data, 'dataError')
             }
           }
@@ -1157,139 +668,73 @@ export const VendorsList = () => {
         }
       } else {
         try {
-          await createVendorMutation(
-            {
-              name,
-              code,
-              status: "Active",
-              creditPeriod: Number(creditPeriod),
-              gstin,
-              vendorScore: Number(vendorScore),
-              leadTime: Number(leadTime),
-            }, {
-            onSuccess: () => {
-              alert('create successfully')
-            },
-            onError: () => {
-              alert(`error: ${data}`)
-              console.log('error:', data)
-            }
-          }
-          )
-          await refetch()
-        } catch (error) {
-          alert('error++')
-          console.log(error, 'error')
-        }
-      }
-      await refetch()
-      // await refeatchTags()
-      setActiveVendor(false)
-      setVendorDialog(false)
-      setVendorEditState(false)
-      formik.resetForm()
-
-
-      // setShowData(<pre>{JSON.stringify(data, null, 2)}</pre>)
-
-
-
-      return
-      const { vendor_id, tags, vendor_tags } = data
-      const newTags = data.tags.filter((ele) => ele?.__isNew__)
-
-      const existingTagIds = activeVendorData?.vendor_tags?.map(({ tags }, i) => tags.id)
-
-      const tagsToFilter = tags
-        .filter((ele, i) => typeof ele?.value === "number")
-        .map((ele) => ele.value)
-      console.log("tagsToFilter", tagsToFilter)
-
-      const tagsToConnect = filterExistingValues(tagsToFilter, existingTagIds).map((ele) => ({
-        tags_id: ele,
-      }))
-
-      const tagsToDelete = filterExistingValues(existingTagIds, tagsToFilter).map((ele) => ele)
-
-      console.log("Connecting", {
-        tagsToConnect,
-        existingTagIds,
-        tagsToDelete,
-      })
-
-      try {
-        await Promise.all(
-          newTags.map(
-            async (ele) =>
-              await createTags(
-                { name: ele.label },
-                {
-                  onSuccess: async ({ id }) =>
-                    await updateVendorMutation(
-                      {
-                        vendor_id,
-                        vendor_tags: {
-                          create: [
-                            {
-                              tags_id: id,
-                            },
-                          ],
-                        },
-                      }
-                      // {
-                      //   onSuccess: (data) => {
-                      //     toast?.current?.show(tsuccess(null, JSON.stringify(data, null, 2)))
-                      //   },
-                      //   onError: (data) =>
-                      //     toast?.current?.show(tsuccess(null, JSON.stringify(data, null, 2))),
-                      // }
-                    ),
-                }
-              )
-          )
-        )
-        await refeatchTags()
-
-        if (!activeVendor) {
-          await createVendorMutation(
-            { ...data },
-            {
-              onSuccess: () => {
-                toast?.current?.show(tsuccess(null, "Vendor Created successfully"))
+          const mail = {
+            create: [
+              {
+                email
               },
-            }
-          )
-        } else {
-          console.log(data)
-          removeKeyFromObj(data, "vendor_tags", "tags")
-          await updateVendorMutation(
-            {
-              ...data,
-              vendor_tags: {
-                create: tagsToConnect,
-                deleteMany: {
-                  tags_id: {
-                    in: tagsToDelete,
+            ],
+          }
+
+          const contact_number = {
+            create: [
+              {
+                type: "mobile",
+                number: contact,
+              },
+            ],
+          }
+
+          const vendor_branches = {
+            create: [
+              {
+                branchCode: branch_code,
+                addresses: {
+                  create: {
+                    // buildingNumber: "1",
+                    areaStreet: address,
+                    landmarkName,
+                    cityCountryProvince: vendor_city,
+                    state: vendor_state,
+                    pincode,
+                    country: 1,
+                    emails_emails_addressesToaddresses: mail,
+                    contact_number,
                   },
                 },
               },
+            ],
+          }
+
+
+          const vendor = await createVendorMutation({
+            name,
+            code,
+            gstin,
+            creditPeriod: parseInt(creditPeriod),
+            leadTime: parseInt(leadTime),
+            status: status?.name,
+            vendorScore: parseInt(vendorScore),
+            vendor_branches,
+          }, {
+            onSuccess: async () => {
+
+              setVendorDialog(false)
+              formik.resetForm()
+              await refetch()
+
+              setVendorDialog(false)
+              setVendorEditState(false)
+
             },
-            {
-              onSuccess: () => {
-                toast?.current?.show(tsuccess("Updated", "Vendor updated successfully"))
-              },
+            onError: () => {
+              toast?.current?.show(tError(null, "Could not create Vendor"))
             }
-          )
+          })
+        } catch (error) {
+          console.log("vendorCreationError ", error)
         }
-      } catch (error) {
-        console.log(error)
       }
-      await refetch()
-      await refeatchTags()
-      setActiveVendor(false)
-      setVendorDialog(false)
-      setVendorEditState(false)
-      formik.resetForm()
     },
   })
 
@@ -1357,11 +802,6 @@ export const VendorsList = () => {
               className="ml-1"
               onClick={async () => {
 
-                const cretae = await createVendorMutation()
-
-                return
-
-
                 setVendorDetails(initialVendorState)
                 setVendorDialog(true)
                 setVendorEditState(true)
@@ -1415,16 +855,9 @@ export const VendorsList = () => {
           }`}
       >
         <div className="card p-4 mb-2 ">
-          
+
           <form className="p-fluid" onSubmit={formik.handleSubmit}>
-            {activeVendor && (
-              <span
-                className={`badge status-${activeVendorData.status ? "active" : "inactive"
-                  } mb-3 inline-block`}
-              >
-                {activeVendorData.status ? "Active" : "Inactive"}
-              </span>
-            )}
+
             <div className="mb2 flex justify-content-between">
               <h4 className="mb0 align-self-center">
                 {<span>{activeVendor ? "Update " : "Create "}</span>}
@@ -1444,34 +877,7 @@ export const VendorsList = () => {
                     tooltip="Edit Form"
                     tooltipOptions={{ position: "top" }}
                   />
-                  <Button
-                    disabled={!vendorEditState}
-                    icon="bi bi-subtract"
-                    className="m-1"
-                    tooltip={`Make ${activeVendorData.status === false ? "Active" : "Inactive"}`}
-                    tooltipOptions={{ position: "top" }}
-                    onClick={async (e) => {
-                      e.preventDefault()
-                      // e.stopPropagation()
 
-                      await updateVendorMutation(
-                        {
-                          vendor_id: activeVendorData?.vendor_id,
-                          status: activeVendorData?.status === false ? true : false,
-                        },
-                        {
-                          onSuccess: (data) => {
-                            toast?.current?.show(tsuccess(null, JSON.stringify(data, null, 2)))
-                            activeVendorData.status = data.status
-                          },
-                          onError: (data) =>
-                            toast?.current?.show(tError(null, JSON.stringify(data, null, 2))),
-                        }
-                      )
-
-                      await refetch()
-                    }}
-                  />
                 </div>
               )}
             </div>
@@ -1488,6 +894,8 @@ export const VendorsList = () => {
                 { type: "text", label: "Credit Period", field: "creditPeriod" },
                 { type: "text", label: "Lead Time", field: "leadTime" },
                 { type: "text", label: "Address", field: "address" },
+                { type: "text", label: "Landmark", field: "landmarkName" },
+                { type: "text", label: "pincode", field: "pincode" },
               ].map((ele, i) => {
                 return (
                   <div
@@ -1566,35 +974,35 @@ export const VendorsList = () => {
                 </span>
                 {getFormErrorMessage("vendor_state")}
               </div>
-
-              {/* <div className="field col-12  mt-4">
-                <div className="p-float-label">
-                  <Chips
-                    className="min-w-min"
-                    id="tags"
-                    value={formik.values.tags}
-                    onChange={async (e) => {
-                      const tags = e.value
-                      await formik.setValues({
-                        ...formik.values,
-                        tags,
-                      })
-                    }}
-                  ></Chips>
-
+              <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                <span className="p-float-label">
+                  <Dropdown
+                    id="status"
+                    value={formik.values.status}
+                    onChange={formik.handleChange}
+                    options={StatusCheck}
+                    optionLabel="name"
+                    disabled={!vendorEditState}
+                    placeholder="Status" className="w-full md:w-14rem" />
                   <label
-                    htmlFor="tags"
-                    className={classNames({ "p-error": isFormFieldValid("vendor_city") })}
+                    htmlFor="status"
+                    className={classNames({ "p-error": isFormFieldValid("status") })}
                   >
-                    Tags
+                    Status
                   </label>
-                </div>
-              </div> */}
-              <div className="mt-4">
-                <Dropdown value={selectedStatus} onChange={(e) => setSelectedStatus(e.value)} options={StatusCheck} optionLabel="name"
-                  placeholder="Active InActive" className="w-full md:w-14rem" />
+                </span>
+                {getFormErrorMessage("status")}
               </div>
-              <div className="field col-12  mt-4">
+
+
+              {/* <div className="mt-4">
+                <Dropdown
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.value)}
+                  options={StatusCheck} optionLabel="name"
+                  placeholder="Status" className="w-full md:w-14rem" />
+              </div> */}
+              {/* <div className="field col-12  mt-4">
                 <div className="p-float-label">
                   <Creatable
                     classNamePrefix="tags"
@@ -1613,7 +1021,7 @@ export const VendorsList = () => {
                     Tags
                   </label>
                 </div>
-              </div>
+              </div> */}
             </div>
 
 
@@ -1622,14 +1030,14 @@ export const VendorsList = () => {
                 <Button
                   type="submit"
                   className="mr-2"
-                  label={activeVendor ? "UPDATE" : "ADD VENDOR"}
+                  label={activeVendor ? "UPDATE" : "SUBMIT"}
                 />
               )}
               <Button
                 className="p-button-secondary flex-grow-0"
                 style={{ maxWidth: "50%" }}
                 type="button"
-                label="Cancel"
+                label="CANCEL"
                 onClick={() => {
                   formik.resetForm()
                   setActiveVendor(false)
@@ -1686,20 +1094,110 @@ export const VendorsList = () => {
             header={header1}
             filterDisplay="menu"
             onRowClick={async (e) => {
+
+              const sampleform = {
+                "name": "varun",
+                "code": "XC",
+                "vendorScore": "1",
+                "email": "sacasdcas",
+                "contact": "41324",
+                "gstin": "fdasf423",
+                "creditPeriod": "34",
+                "leadTime": "34",
+                "address": "zffszfds",
+                "vendor_city": "Banganapalle",
+                "vendor_state": "Andhra Pradesh",
+                "tags": [],
+                "status": {
+                  "name": "Active"
+                },
+                "branch_code": "CX",
+                "pincode": "fdsfdsf",
+                "landmarkName": "dgsfd"
+              }
               setActiveVendorData({ ...e.data })
-              console.log(activeVendorData, "datavendor")
-              // const tags = e.data.vendor_tags.map(({ tags }, i) => ({
-              //   value: tags.id,
-              //   label: tags.name,
-              //   color: tags.color,
-              // }))
-              console.log("tags", e.data)
+              console.log("onrowclick", e.data)
               setVendorDialog(true)
               setActiveVendor(true)
-              console.log(e.data)
+              const rowObj = {
+                "id": 166,
+                "name": "vega",
+                "code": "VG001",
+                "gstin": "4142586967",
+                "creditPeriod": 12,
+                "leadTime": 11,
+                "status": "Active",
+                "vendorScore": 1,
+                "vendor_products": [],
+                "vendor_branches": [
+                  {
+                    "id": 27,
+                    "branchCode": "VGA",
+                    "address": 608,
+                    "vendor": 166,
+                    "addresses": {
+                      "id": 608,
+                      "buildingNumber": null,
+                      "areaStreet": "#22 /1 lorem ipsum",
+                      "landmarkName": "Egg Head",
+                      "cityCountryProvince": "Bapatla",
+                      "state": "Andhra Pradesh",
+                      "pincode": "14258635",
+                      "country": 1,
+                      "contact_number": [
+                        {
+                          "id": 400,
+                          "type": "mobile",
+                          "number": "9785641356",
+                          "address": 608
+                        }
+                      ],
+                      "emails_emails_addressesToaddresses": [
+                        {
+                          "id": 132,
+                          "email": "vga@gmail.com",
+                          "addresses": 608
+                        }
+                      ],
+                      "country_addresses_countryTocountry": {
+                        "id": 1,
+                        "name": "India"
+                      }
+                    }
+                  }
+                ]
+              }
+
+              const {
+                status: vendorStatus,
+                vendor_branches: [{
+                  branchCode,
+                  addresses: {
+                    areaStreet,
+                    landmarkName,
+                    pincode,
+                    cityCountryProvince,
+                    state,
+                    contact_number: [{ number }],
+                    emails_emails_addressesToaddresses: [{ email: _mail }]
+                  }
+                }],
+              } = e.data
+
               await formik.setValues({
                 ...e.data,
-                tags,
+                branch_code: branchCode,
+                email: _mail,
+                contact: number,
+                address: areaStreet,
+                landmarkName: landmarkName,
+                pincode,
+                vendor_city: cityCountryProvince,
+                vendor_state: state,
+                status: {
+                  name: vendorStatus
+                }
+
               })
               scrollToTop?.current.scrollIntoView()
             }}
@@ -1888,7 +1386,7 @@ export const VendorsList = () => {
            </DataTable>
         </div> 
        </div>   */}
-    </div>
+    </div >
   )
 }
 

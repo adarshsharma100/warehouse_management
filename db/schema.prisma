@@ -542,6 +542,31 @@ model customers {
   @@index([addressesId], map: "fk_customers_addresses1_idx")
 }
 
+model shopify {
+  id             Int      @id @default(autoincrement())
+  orderId        String?  @db.VarChar(150)
+  orderNumber    String?  @db.VarChar(150)
+  orderStatusUrl String?  @db.VarChar(200)
+  orders         orders[]
+
+  @@index([shippingAddressId], map: "fk_orders_addresses1_idx")
+  @@index([billingAddressId], map: "fk_orders_addresses2_idx")
+  @@index([customerId], map: "fk_orders_customers1_idx")
+  @@index([shopifyId], map: "fk_orders_shopify1_idx")
+}
+
+model customers {
+  id          Int       @id @default(autoincrement())
+  firstName   String?   @db.VarChar(45)
+  lastName    String?   @db.VarChar(45)
+  addressesId Int
+  shopifyId   String?   @db.VarChar(45)
+  addresses   addresses @relation(fields: [addressesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_customers_addresses1")
+  orders      orders[]
+
+  @@index([addressesId], map: "fk_customers_addresses1_idx")
+}
+
 model job_types {
   id   Int     @id @default(autoincrement())
   name String? @db.VarChar(45)
