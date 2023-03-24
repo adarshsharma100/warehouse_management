@@ -58,28 +58,38 @@ export const VendorsList = () => {
   const page = Number(router.query.page) || 0
 
   const [{ vendors }, { refetch, error: getVendorError }] = useQuery(getVendors, {
-    orderBy: { id: "asc" },
+    orderBy: { id: "desc" },
     skip: undefined,
     where: undefined,
     take: undefined
   })
 
-  // console.log("vendors", vendors[0])
+  console.log("vendors", vendors)
 
   // let getVendorError
 
+  const VendorAddress = (rowData) => {
+    const addresses = rowData?.vendor_branches[0]?.addresses
 
+    const addressString = `${addresses?.buildingNumber}${addresses?.landmarkName ? `, ${addresses?.landmarkName}` : ''}${addresses?.cityCountryProvince ? `, ${addresses?.cityCountryProvince}` : ''}${addresses?.state ? `, ${addresses?.state}` : ''}${addresses?.pincode ? ` - ${addresses?.pincode}` : ''}`;
+
+    return addressString
+  }
 
   const columns = [
     { field: "name", header: "Vendor" },
     { field: "code", header: "Code" },
-    { field: "branch_code", header: "BranchCode" },
-    { field: "email", header: "Email" },
-    { field: "vendor_city", header: "City" },
-    { field: "vendor_state", header: "State" },
-    { field: "contact", header: "Contact" },
+    { field: "", header: "Branch Code", body: (rowData) => rowData?.vendor_branches[0]?.branchCode },
+    { field: "email", header: "Email", body: (rowData) => rowData?.vendor_branches[0]?.addresses?.emails_emails_addressesToaddresses[0]?.email },
+    { field: "vendor_city", header: "City", body: (rowData) => rowData?.vendor_branches[0]?.addresses?.cityCountryProvince },
+    { field: "vendor_state", header: "State", body: (rowData) => rowData?.vendor_branches[0]?.addresses?.state },
+    {
+      field: "vendor_state", header: "Country",
+      body: (rowData) => rowData?.vendor_branches[0]?.addresses?.country_addresses_countryTocountry?.name
+    },
+    { field: "contact", header: "Contact", body: (rowData) => rowData?.vendor_branches[0]?.addresses?.contact_number[0]?.number },
     { field: "gstin", header: "GSTIN" },
-    { field: "address", header: "Address" },
+    { field: "address", header: "Address", body: (rowData) => VendorAddress(rowData) },
     { field: "leadTime", header: "Lead Time" },
     { field: 'vendorScore', header: 'Vendor Score ' },
     { field: "creditPeriod", header: "Credit Peroid" },
@@ -247,14 +257,14 @@ export const VendorsList = () => {
   const [activeVendor, setActiveVendor] = useState(false)
   console.log("activeVendor", activeVendor)
   const [activeVendorData, setActiveVendorData] = useState({})
-  console.log('activeVendorData: ', activeVendorData);
   const [vendorEditState, setVendorEditState] = useState(false)
   const [activeRowData, setActiveRowData] = useState({})
   const [productEditState, setProductEditState] = useState(false)
   const [productDialog, setProductDialog] = useState(false)
   const scrolToTop = useRef<HTMLDivElement>(null)
   const [showData, setShowData] = useState([])
-  const [selectedColumns, setSelectedColumns] = useState(columns)
+  const [selectedColumns, setSelectedColumns] = useState([])
+  console.log('selectedColumns: ', selectedColumns);
 
   const onColumnToggle = (event) => {
     let selectedColumns = event.value
@@ -275,37 +285,53 @@ export const VendorsList = () => {
     <div style={{ textAlign: "left" }}>
       <MultiSelect
         value={selectedColumns}
-        options={columns}
-        optionLabel="header"
-        onChange={onColumnToggle}
+        // options={columns}
+        options={columns.map(({ header, field }) => ({
+          label: header,
+          value: field
+        }))}
+        // optionLabel="header"
+        // onChange={onColumnToggle}
+        // onChange={(e) => {
+        //   setSelectedColumns(e.value)
+        //   console.log("e.value", "e.value");
+        // }}
         style={{ width: "20em" }}
       />
     </div>
   )
 
-  const columnComponents = selectedColumns.map((col) => {
-    return (
-      <Column
-        key={col.field}
-        field={col.field}
-        header={col.header}
-        filter
-        filterPlaceholder="Search...."
-      />
-    )
-  })
+  // const columnComponents = selectedColumns.map((col) => {
+  //   return (
+  //     <Column
+  //       key={col.field}
+  //       field={col.field}
+  //       header={col.header}
+  //       body={col.body}
+  //       filter
+  //       filterPlaceholder="Search...."
+  //     />
+  //   )
+  // })
+
+  const columnComponents = columns.reduce((acc, curr) => {
+    if (selectedColumns.includes(curr.field))
+      return [
+        ...acc,
+        <Column
+          key={curr.field}
+          field={curr.field}
+          header={curr.header}
+          body={curr.body}
+        />
+      ];
+    return acc;
+  }, []);
 
   useEffect(() => {
-    const obj = {
-      value: [
-        { field: "name", header: "Vendor" },
-        { field: "code", header: "Code" },
-        { field: 'vendorScore', header: 'Vendor Score ' },
-        { field: "gstin", header: "GSTIN" },
-        { field: "creditPeriod", header: "credit Peroid" },
-      ],
-    }
-    onColumnToggle(obj)
+
+    const defaultColumns = columns.filter(col => !["creditPeriod"].includes(col.field)).map(col => col.field)
+    setSelectedColumns(defaultColumns)
   }, [])
 
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
@@ -317,7 +343,6 @@ export const VendorsList = () => {
       </div>
     )
   }
-  console.log("active", activeVendorData)
 
   const [filters, setFilters] = useState({})
   const [globalFilterValue, setGlobalFilterValue] = useState("")
@@ -404,9 +429,14 @@ export const VendorsList = () => {
       <div className="flex justify-content-between">
         <MultiSelect
           value={selectedColumns}
-          options={columns}
-          optionLabel="header"
-          onChange={onColumnToggle}
+          // options={columns}
+          options={columns.map(({ header, field }) => ({
+            label: header,
+            value: field
+          }))}
+          // optionLabel="header"
+          // onChange={onColumnToggle}
+          onChange={(e) => setSelectedColumns(e.value)}
           style={{ width: "20em" }}
         />
         <div className="flex gap-4">
@@ -571,44 +601,63 @@ export const VendorsList = () => {
     }),
 
     onSubmit: async (data) => {
-      console.log("data++", data)
+      console.log("formData", data)
 
-      const { id: activeVendorId } = activeVendorData
+      const { id: activeVendorId,
+        vendor_branches: [{ id: vendorBranchId, address: addressId }] } = activeVendorData
       const { name, code, vendorScore, contact, creditPeriod, leadTime, gstin, email, address, vendor_city
         , vendor_state, branch_code, landmarkName, pincode, status } = data
-      //
-      //   {
-      //     "name": "asasdaadsas",
-      //     "code": "sadadas",
-      //     "vendorScore": "asfsa",
-      //     "email": "asdda",
-      //     "contact": "1411312321",
-      //     "gstin": "123123",
-      //     "creditPeriod": "dsfsd",
-      //     "leadTime": "sdgf",
-      //     "address": "sdfsd",
-      //     "vendor_city": "Badepalle",
-      //     "vendor_state": "Andhra Pradesh",
-      //     "tags": [],
-      //     "branch_code": "sadasd"
-      // }
+
       if (activeVendor) {
+        const vendor_branches = {
+          update: [
+            {
+              where: {
+                id: vendorBranchId,
+              },
+              data: {
+                branchCode: branch_code,
+                addresses: {
+                  update: {
+                    where: {
+                      id: addressId
+                    },
+                    data: {
+                      areaStreet: address,
+                      landmarkName,
+                      cityCountryProvince: vendor_city,
+                      state: vendor_state,
+                      pincode,
+                      country: 1,
+                    }
+                  },
+                }
+
+              }
+            }
+          ],
+        }
+
         try {
           await updateActiveVender({
             id: activeVendorId,
             name,
             code,
-            status: "Active",
-            vendorScore: Number(vendorScore),
-            creditPeriod: Number(creditPeriod),
             gstin,
-            leadTime: Number(leadTime)
+            creditPeriod: parseInt(creditPeriod),
+            leadTime: parseInt(leadTime),
+            status: status?.name,
+            vendorScore: parseInt(vendorScore),
+            vendor_branches,
+
           }, {
-            onSuccess: () => {
-              alert('update Done')
+            onSuccess: async () => {
+              toast?.current?.show(tsuccess("Updtaed", "Vendor Updated"))
+              await refetch()
+              setVendorDialog(false)
+              setActiveVendor(false)
             },
             onError: (data) => {
-              // alert('error', data)
               console.log(data, 'dataError')
             }
           }
@@ -669,156 +718,23 @@ export const VendorsList = () => {
             vendor_branches,
           }, {
             onSuccess: async () => {
-              alert('create successfully')
-              // setVendorDialog(false)
+
+              setVendorDialog(false)
               formik.resetForm()
               await refetch()
 
+              setVendorDialog(false)
+              setVendorEditState(false)
+
             },
             onError: () => {
-              alert(`error: ${data}`)
-              console.log('error:', data)
+              toast?.current?.show(tError(null, "Could not create Vendor"))
             }
           })
         } catch (error) {
           console.log("vendorCreationError ", error)
         }
-
-
-        // try {
-        //   await createVendorMutation(
-        //     {
-        //       name,
-        //       code,
-        //       status: "Active",
-        //       creditPeriod: Number(creditPeriod),
-        //       gstin,
-        //       vendorScore: Number(vendorScore),
-        //       leadTime: Number(leadTime),
-        //     }, {
-        //     onSuccess: () => {
-        //       alert('create successfully')
-        //     },
-        //     onError: () => {
-        //       alert(`error: ${data}`)
-        //       console.log('error:', data)
-        //     }
-        //   }
-        //   )
-        //   await refetch()
-        // } catch (error) {
-        //   alert('error++')
-        //   console.log(error, 'error')
-        // }
       }
-
-      // await refeatchTags()
-      setActiveVendor(false)
-
-
-
-
-
-      // setShowData(<pre>{JSON.stringify(data, null, 2)}</pre>)
-
-
-
-      return
-      const { vendor_id, tags, vendor_tags } = data
-      const newTags = data.tags.filter((ele) => ele?.__isNew__)
-
-      const existingTagIds = activeVendorData?.vendor_tags?.map(({ tags }, i) => tags.id)
-
-      const tagsToFilter = tags
-        .filter((ele, i) => typeof ele?.value === "number")
-        .map((ele) => ele.value)
-      console.log("tagsToFilter", tagsToFilter)
-
-      const tagsToConnect = filterExistingValues(tagsToFilter, existingTagIds).map((ele) => ({
-        tags_id: ele,
-      }))
-
-      const tagsToDelete = filterExistingValues(existingTagIds, tagsToFilter).map((ele) => ele)
-
-      console.log("Connecting", {
-        tagsToConnect,
-        existingTagIds,
-        tagsToDelete,
-      })
-
-      try {
-        await Promise.all(
-          newTags.map(
-            async (ele) =>
-              await createTags(
-                { name: ele.label },
-                {
-                  onSuccess: async ({ id }) =>
-                    await updateVendorMutation(
-                      {
-                        vendor_id,
-                        vendor_tags: {
-                          create: [
-                            {
-                              tags_id: id,
-                            },
-                          ],
-                        },
-                      }
-                      // {
-                      //   onSuccess: (data) => {
-                      //     toast?.current?.show(tsuccess(null, JSON.stringify(data, null, 2)))
-                      //   },
-                      //   onError: (data) =>
-                      //     toast?.current?.show(tsuccess(null, JSON.stringify(data, null, 2))),
-                      // }
-                    ),
-                }
-              )
-          )
-        )
-        await refeatchTags()
-
-        if (!activeVendor) {
-          await createVendorMutation(
-            { ...data },
-            {
-              onSuccess: () => {
-                toast?.current?.show(tsuccess(null, "Vendor Created successfully"))
-              },
-            }
-          )
-        } else {
-          console.log(data)
-          removeKeyFromObj(data, "vendor_tags", "tags")
-          await updateVendorMutation(
-            {
-              ...data,
-              vendor_tags: {
-                create: tagsToConnect,
-                deleteMany: {
-                  tags_id: {
-                    in: tagsToDelete,
-                  },
-                },
-              },
-            },
-            {
-              onSuccess: () => {
-                toast?.current?.show(tsuccess("Updated", "Vendor updated successfully"))
-              },
-            }
-          )
-        }
-      } catch (error) {
-        console.log(error)
-      }
-      await refetch()
-      await refeatchTags()
-      setActiveVendor(false)
-      setVendorDialog(false)
-      setVendorEditState(false)
-      formik.resetForm()
     },
   })
 
@@ -941,14 +857,7 @@ export const VendorsList = () => {
         <div className="card p-4 mb-2 ">
 
           <form className="p-fluid" onSubmit={formik.handleSubmit}>
-            {activeVendor && (
-              <span
-                className={`badge status-${activeVendorData.status ? "active" : "inactive"
-                  } mb-3 inline-block`}
-              >
-                {activeVendorData.status ? "Active" : "Inactive"}
-              </span>
-            )}
+
             <div className="mb2 flex justify-content-between">
               <h4 className="mb0 align-self-center">
                 {<span>{activeVendor ? "Update " : "Create "}</span>}
@@ -968,34 +877,7 @@ export const VendorsList = () => {
                     tooltip="Edit Form"
                     tooltipOptions={{ position: "top" }}
                   />
-                  <Button
-                    disabled={!vendorEditState}
-                    icon="bi bi-subtract"
-                    className="m-1"
-                    tooltip={`Make ${activeVendorData.status === false ? "Active" : "Inactive"}`}
-                    tooltipOptions={{ position: "top" }}
-                    onClick={async (e) => {
-                      e.preventDefault()
-                      // e.stopPropagation()
 
-                      await updateVendorMutation(
-                        {
-                          vendor_id: activeVendorData?.vendor_id,
-                          status: activeVendorData?.status === false ? true : false,
-                        },
-                        {
-                          onSuccess: (data) => {
-                            toast?.current?.show(tsuccess(null, JSON.stringify(data, null, 2)))
-                            activeVendorData.status = data.status
-                          },
-                          onError: (data) =>
-                            toast?.current?.show(tError(null, JSON.stringify(data, null, 2))),
-                        }
-                      )
-
-                      await refetch()
-                    }}
-                  />
                 </div>
               )}
             </div>
@@ -1100,6 +982,7 @@ export const VendorsList = () => {
                     onChange={formik.handleChange}
                     options={StatusCheck}
                     optionLabel="name"
+                    disabled={!vendorEditState}
                     placeholder="Status" className="w-full md:w-14rem" />
                   <label
                     htmlFor="status"
@@ -1147,14 +1030,14 @@ export const VendorsList = () => {
                 <Button
                   type="submit"
                   className="mr-2"
-                  label={activeVendor ? "UPDATE" : "ADD VENDOR"}
+                  label={activeVendor ? "UPDATE" : "SUBMIT"}
                 />
               )}
               <Button
                 className="p-button-secondary flex-grow-0"
                 style={{ maxWidth: "50%" }}
                 type="button"
-                label="Cancel"
+                label="CANCEL"
                 onClick={() => {
                   formik.resetForm()
                   setActiveVendor(false)
@@ -1211,20 +1094,110 @@ export const VendorsList = () => {
             header={header1}
             filterDisplay="menu"
             onRowClick={async (e) => {
+
+              const sampleform = {
+                "name": "varun",
+                "code": "XC",
+                "vendorScore": "1",
+                "email": "sacasdcas",
+                "contact": "41324",
+                "gstin": "fdasf423",
+                "creditPeriod": "34",
+                "leadTime": "34",
+                "address": "zffszfds",
+                "vendor_city": "Banganapalle",
+                "vendor_state": "Andhra Pradesh",
+                "tags": [],
+                "status": {
+                  "name": "Active"
+                },
+                "branch_code": "CX",
+                "pincode": "fdsfdsf",
+                "landmarkName": "dgsfd"
+              }
               setActiveVendorData({ ...e.data })
-              console.log(activeVendorData, "datavendor")
-              // const tags = e.data.vendor_tags.map(({ tags }, i) => ({
-              //   value: tags.id,
-              //   label: tags.name,
-              //   color: tags.color,
-              // }))
-              console.log("tags", e.data)
+              console.log("onrowclick", e.data)
               setVendorDialog(true)
               setActiveVendor(true)
-              console.log(e.data)
+              const rowObj = {
+                "id": 166,
+                "name": "vega",
+                "code": "VG001",
+                "gstin": "4142586967",
+                "creditPeriod": 12,
+                "leadTime": 11,
+                "status": "Active",
+                "vendorScore": 1,
+                "vendor_products": [],
+                "vendor_branches": [
+                  {
+                    "id": 27,
+                    "branchCode": "VGA",
+                    "address": 608,
+                    "vendor": 166,
+                    "addresses": {
+                      "id": 608,
+                      "buildingNumber": null,
+                      "areaStreet": "#22 /1 lorem ipsum",
+                      "landmarkName": "Egg Head",
+                      "cityCountryProvince": "Bapatla",
+                      "state": "Andhra Pradesh",
+                      "pincode": "14258635",
+                      "country": 1,
+                      "contact_number": [
+                        {
+                          "id": 400,
+                          "type": "mobile",
+                          "number": "9785641356",
+                          "address": 608
+                        }
+                      ],
+                      "emails_emails_addressesToaddresses": [
+                        {
+                          "id": 132,
+                          "email": "vga@gmail.com",
+                          "addresses": 608
+                        }
+                      ],
+                      "country_addresses_countryTocountry": {
+                        "id": 1,
+                        "name": "India"
+                      }
+                    }
+                  }
+                ]
+              }
+
+              const {
+                status: vendorStatus,
+                vendor_branches: [{
+                  branchCode,
+                  addresses: {
+                    areaStreet,
+                    landmarkName,
+                    pincode,
+                    cityCountryProvince,
+                    state,
+                    contact_number: [{ number }],
+                    emails_emails_addressesToaddresses: [{ email: _mail }]
+                  }
+                }],
+              } = e.data
+
               await formik.setValues({
                 ...e.data,
-                tags,
+                branch_code: branchCode,
+                email: _mail,
+                contact: number,
+                address: areaStreet,
+                landmarkName: landmarkName,
+                pincode,
+                vendor_city: cityCountryProvince,
+                vendor_state: state,
+                status: {
+                  name: vendorStatus
+                }
+
               })
               scrollToTop?.current.scrollIntoView()
             }}
@@ -1413,7 +1386,7 @@ export const VendorsList = () => {
            </DataTable>
         </div> 
        </div>   */}
-    </div>
+    </div >
   )
 }
 

@@ -32,9 +32,10 @@ export default resolver.pipe(
             vendor_branches: {
               include: {
                 addresses: {
-                  select: {
+                  include: {
                     contact_number: true,
                     emails_emails_addressesToaddresses: true,
+                    country_addresses_countryTocountry: true,
                   },
                 },
               },
