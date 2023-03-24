@@ -644,7 +644,7 @@ superhero,this group represents superheroes`)
                   setProductDialog(!productDialog)
                 }}
               />
-              <span className="flex justify-content-center align-items-center">
+              {/* <span className="flex justify-content-center align-items-center">
                 <FileUpload
                   className="ml-2 inline-block "
                   mode="basic"
@@ -676,7 +676,7 @@ superhero,this group represents superheroes`)
                 className="ml-2"
                 label="CSV format"
                 onClick={() => createCSVFormat(pCsvFormatDetails)}
-              />
+              /> */}
             </div>
           </div>
         </div>
