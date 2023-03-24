@@ -440,6 +440,7 @@ superhero,this group represents superheroes`)
             weight: Number(weight),
             product_tags: {
               create: tagsValue.map((e) => ({ tags: e })),
+              // deleteTags:tagsValue.map((e) => ({id}))
             }
           }, {
             onSuccess: () => {
@@ -473,6 +474,11 @@ superhero,this group represents superheroes`)
               product_tags: {
                 create: tagsValue.map((e) => ({ tags: e })),
               }
+              // imageUrl: imageurl,
+              // gstTaxTypeCode: gstcode,
+              // taxCalcType: taxCalcuation,
+              // category: category,
+              // brand: brand
             },
             {
               onSuccess: async (data) => {
@@ -857,7 +863,7 @@ superhero,this group represents superheroes`)
                 }}
               />
             </div>
-            
+
           </form>
         </div>
       </div>
@@ -888,7 +894,13 @@ superhero,this group represents superheroes`)
               scrolToTop?.current && scrolToTop?.current.scrollIntoView()
             }}
           >
-            <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} />
+
+            {/* <Column header="Image" body={rowData => <img src={`${rowData.imageUrl}`} alt="imageData" style={{ width: '300px', height: '220px' }} />} /> */}
+            {/* <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} /> */}
+            {/* <Link href="/product/[id]" as={`/product/${product.id}`}>
+            {product.name}
+          </Link> */}
+            <Column header="SKU" body={rowData => <Link href="/products/[id]" as={`/products/${rowData.id}`} >{rowData.sku}</Link>} />
             {columnComponents}
           </DataTable>
         </div>
