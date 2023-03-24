@@ -24,7 +24,16 @@ export default resolver.pipe(
           where,
           orderBy,
           include: {
-            products: true,
+            products: {
+              include: {
+                product_types: true,
+              },
+            },
+            shelves: {
+              include: {
+                shelf_type: true,
+              },
+            },
           },
           // select: {
           //   inventory_product_id: true,
