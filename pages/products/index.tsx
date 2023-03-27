@@ -828,6 +828,7 @@ export const ProductsList = () => {
             <ErrorCard ErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
           ))}
       </div>
+
       <div
         className={`col-12 ${errorProducts.length
           ? "visible scalein animation-duration-200"
@@ -855,7 +856,9 @@ export const ProductsList = () => {
             })}
           </ul>
         </div>
+
       </div>
+
       <div
         className={`col-12 ${productDialog
           ? "visible scalein animation-duration-200"
@@ -1166,65 +1169,67 @@ export const ProductsList = () => {
 
             </form>
           </div>
-        </div>
-
-        <div className="col-12" >
-          <div className="card">
-            <DataTable
-              value={products}
-              responsiveLayout="scroll"
-              showGridlines
-              header={header1}
-              filters={filters}
-              className="text-s datatable-responsive"
-              filterDisplay="menu"
-              emptyMessage="No Results found."
-              rowHover={true}
-              onRowClick={async (e) => {
-                console.log('e.data: ', e.data);
-                setActiveRowData({ ...e.data })
-                setProductEditState(true)
-                setActiveProduct(true)
-                setProductDialog(true)
-
-                setSelectedStatus(e.data.product_types)
-
-
-                const _kitData = e.data.kit_products.map((prod) => {
-                  const { products_kit_products_kitProductIDToproducts: product, quantity } = prod
-                  return ({
-                    product: { ...product, name: `${product.sku}-${product.name}` },
-                    quantity,
-                  })
-                });
-                setInputs(_kitData)
-
-
-                await formik.setValues({
-                  ...e.data,
-                  type: e.data.product_types.type,
-                  category: e.data.product_categories,
-                })
-                scrolToTop?.current && scrolToTop?.current.scrollIntoView()
-              }}
-            >
-              <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} />
-              {columnComponents}
-            </DataTable>
-          </div>
         </div >
+      </div>
+
+      <div className="col-12" >
+        <div className="card">
+          <DataTable
+            value={products}
+            responsiveLayout="scroll"
+            showGridlines
+            header={header1}
+            filters={filters}
+            className="text-s datatable-responsive"
+            filterDisplay="menu"
+            emptyMessage="No Results found."
+            rowHover={true}
+            onRowClick={async (e) => {
+              console.log('e.data: ', e.data);
+              setActiveRowData({ ...e.data })
+              setProductEditState(true)
+              setActiveProduct(true)
+              setProductDialog(true)
+
+              setSelectedStatus(e.data.product_types)
+
+
+              const _kitData = e.data.kit_products.map((prod) => {
+                const { products_kit_products_kitProductIDToproducts: product, quantity } = prod
+                return ({
+                  product: { ...product, name: `${product.sku}-${product.name}` },
+                  quantity,
+                })
+              });
+              setInputs(_kitData)
+
+
+              await formik.setValues({
+                ...e.data,
+                type: e.data.product_types.type,
+                category: e.data.product_categories,
+              })
+              scrolToTop?.current && scrolToTop?.current.scrollIntoView()
+            }}
+          >
+            <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} />
+            {columnComponents}
+          </DataTable>
+
+        </div>
       </div >
-      )
+    </div >
+  )
 }
 
 const ProductsPage = () => {
   return (
-      <Suspense fallback={<Loading />}>
-        <Layout>
-          <ProductsList />
-        </Layout>
-      </Suspense>
-      )
+    <Suspense fallback={<Loading />}>
+      <Layout>
+        <ProductsList />
+      </Layout>
+    </Suspense>
+  )
 }
-      ProductsPage.authenticate = true
-      export default ProductsPage
+ProductsPage.authenticate = true
+export default ProductsPage
