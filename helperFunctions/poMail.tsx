@@ -1,5 +1,4 @@
 import db from "db"
-// import { mail } from "./mail"
 import { e_mail } from "./e_mail"
 import { renderToStream } from "@react-pdf/renderer"
 import MyDocument from "components/PoMailTemplate"

@@ -1,4 +1,5 @@
 import moment from "moment"
+import { FilterMatchMode, FilterOperator } from "primereact/api"
 
 export const cities = [
   { city: "Kolhapur", state: "Maharashtra" },
@@ -1483,6 +1484,27 @@ export const cities = [
   { city: "Chennai", state: "Tamil Nadu" },
   { city: "Coimbatore", state: "Tamil Nadu" },
 ]
+
+export const initialFliterRules = {
+
+  andContains: {
+    operator: FilterOperator.AND,
+    constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+  },
+  orContains: {
+    operator: FilterOperator.OR,
+    constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
+  },
+  equals: {
+    operator: FilterOperator.OR,
+    constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }],
+  },
+  dateIs: {
+    operator: FilterOperator.AND,
+    constraints: [{ value: null, matchMode: FilterMatchMode.DATE_IS }],
+  }
+
+}
 
 export const createCSVFormat = (fileData) => {
   const { headers, name } = fileData
