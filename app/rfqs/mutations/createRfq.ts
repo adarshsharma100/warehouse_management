@@ -13,6 +13,7 @@ const CreateRfq = z.object({
   agreement: z.string(),
   status: z.string(),
   rfq: z.unknown(),
+  ammendedFrom: z.number().optional().nullable(),
 })
 
 export default resolver.pipe(
@@ -27,7 +28,11 @@ export default resolver.pipe(
         ...input,
       },
       include: {
-        rfq_products: true,
+        rfq_products: {
+          include: {
+            products: true
+          }
+        },
         rfq_sentto: {
           select: {
             emails: true,
@@ -36,12 +41,21 @@ export default resolver.pipe(
       },
     })
 
+    let renamedRfq;
+
     if (!rfqNumber || !rfqNumber?.trim()?.length)
-      await db.rfq.update({
+      renamedRfq = await db.rfq.update({
         where: { id: rfq.id },
         data: {
           rfqNumber: `RFQ#${rfq.id}`,
         },
+        include: {
+          rfq_products: {
+            include: {
+              products: true
+            }
+          }
+        }
       })
 
     if (rfq?.rfq_sentto?.length) {
@@ -55,9 +69,12 @@ export default resolver.pipe(
           return acc
         }, {})
       )
+      console.log('groupedEmails: ', groupedEmails);
+
       for (let i = 0; i < groupedEmails.length; i++)
-        await sendEmail(null, rfq, { id: rfq.id, creation: true }, groupedEmails[i])
+        await sendEmail((!rfqNumber ? renamedRfq : rfq), groupedEmails[i])
     }
-    return rfq
+
+    return !rfqNumber ? renamedRfq : rfq
   }
 )

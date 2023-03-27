@@ -1,22 +1,14 @@
 import db from "db"
 import { e_mail } from "./e_mail"
-// import { mail } from "./mail"
 
-const sendEmail = async (data, rfq, info, emailGroup) => {
-  console.log("rfq_data: ", {
-    rfq,
-    info,
-  })
+const sendEmail = async (rfq, emailGroup) => {
 
   const {
-    id,
     rfqNumber,
     description,
-    status,
-    expectedDod,
     agreement,
     createdAt,
-    updatedAt,
+    rfq_products: products,
     ammendedFrom
   } = rfq
 
@@ -26,34 +18,10 @@ const sendEmail = async (data, rfq, info, emailGroup) => {
     const FindammendedRfq = await db.rfq.findUnique({
       where: { id: ammendedFrom },
     })
-
     ammendedRfq = FindammendedRfq
-
   }
 
   const { rfqNumber: ammendedFromRfq } = ammendedRfq
-
-  console.log('ammendedRfq: ', ammendedRfq);
-
-  const products = await db.rfq_products.findMany({
-    where: { rfq: rfq?.id },
-    include: { products: true },
-  })
-
-  console.log('products: ', products);
-  const rfqSentto = await db.rfq_sentto.findMany({
-    where: { rfq: info.id },
-    include: {
-      emails: true
-    }
-  })
-  const sentmails = rfqSentto.map(({ emails: { email } }) => email)
-  console.log('sentmails: ', sentmails);
-
-  const emailLists = data?.rfq_sentto?.create?.length
-    ? data?.rfq_sentto?.create.map(({ email }) => email)
-    : sentmails
-
 
   const headersArray = ["Sl No.", "Item", "Image", "Qty", "Target Price"]
 
@@ -100,7 +68,7 @@ const sendEmail = async (data, rfq, info, emailGroup) => {
   </div>
 </section>
   `
-  const csvHeader = "Sl No,Item,Image,Qty,Target Price\n"
+  const csvHeader = headersArray.join(',') + '\n';
 
   const csvBody = products.map((ele, i) => {
     const {
@@ -113,8 +81,6 @@ const sendEmail = async (data, rfq, info, emailGroup) => {
   })
   const csvData = csvHeader + csvBody.join("")
 
-  console.log("csvData", csvData)
-
   const attachment = [
     {
       filename: "Products.csv",
@@ -123,23 +89,12 @@ const sendEmail = async (data, rfq, info, emailGroup) => {
   ]
 
   const subject = ammendedRfq?.rfqNumber ? `${rfqNumber}- Ammended From ${ammendedFromRfq}` : `${rfqNumber}`
-  console.log('subject: ', {
-    subject,
-    ammendedFromRfq
-  });
 
-  if (emailGroup)
-    e_mail(emailGroup, subject, html, attachment).catch(
-      (error) => console.log(error)
-    )
-  else
-    await Promise.all(
-      emailLists.map((email) => {
-        e_mail(email, subject, html, attachment).catch(
-          (error) => console.log(error)
-        )
-      })
-    )
+
+  e_mail(emailGroup, subject, html, attachment).catch(
+    (error) => console.log(error)
+  )
+
 }
 
 export default sendEmail
