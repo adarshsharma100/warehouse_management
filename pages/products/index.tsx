@@ -436,6 +436,19 @@ export const ProductsList = () => {
   // }
 
 
+
+  const [filename, setFilename] = useState('');
+
+  const uploadImage = async (e) => {
+    const file = e.files[0]
+    const response = await fetch("/api/upload", {
+      method: "POST",
+      body: file,
+    })
+    const { filename } = await response.json()
+    setFilename(filename);
+  }
+
   const formik = useFormik({
     initialValues: productDetails,
     validationSchema: Yup.object().shape({
@@ -558,6 +571,7 @@ export const ProductsList = () => {
 
 
   console.log(formik.values, 'formik')
+  console.log('formik.error', formik.errors)
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
@@ -675,6 +689,7 @@ export const ProductsList = () => {
 
 
   const onTemplateUpload = (e) => {
+    console.log('e dataPPP: ', e);
     let _totalSize = 0;
 
     e.files.forEach((file) => {
@@ -1011,6 +1026,123 @@ export const ProductsList = () => {
                   </span>
                   {getFormErrorMessage("category")}
                 </div>
+              </div>
+
+
+              <div className="">
+
+                {selectedStatus?.type === 'BUNDLE' ?
+                  <div>
+                    <div className="">
+                      {inputs.map((input, index) => (
+                        <div key={index} className='flex gap-4 align-items-center mt-3'>
+                          <span className="p-float-label">
+                            <AutoComplete
+                              id="name"
+                              value={input?.name || input.product}
+                              suggestions={kitSuggestions}
+                              completeMethod={kitSearchCategory}
+                              disabled={productEditState}
+                              dropdown
+                              forceSelection
+                              field="name"
+                              onChange={async (e) => {
+                                console.log(e?.value?.name, 'event')
+                                handleInputChange(e, index)
+                                const test = [...inputs]
+                                test[index] = { ...e?.value, }
+                                setInputs(test)
+                                console.log(inputs, "event input")
+                              }}
+                              aria-label="products"
+                              dropdownAriaLabel="Select Product"
+                              className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                              style={{ width: '400px' }}
+                            />
+                            <label
+                              htmlFor={"type"}
+                              className={classNames({ "p-error": isFormFieldValid("type") })}
+                            >
+                              Kit Product
+                            </label>
+                          </span>
+
+                          <span className="p-float-label">
+                            <InputText
+                              className=''
+                              disabled={productEditState}
+                              type='text'
+                              name='quantity'
+                              value={input.quantity}
+                              onChange={async (e) => {
+                                handleInputChange(e, index)
+
+                              }}
+                              style={{ width: '400px' }}
+                            />
+                            <label
+                              htmlFor={"type"}
+                              className={classNames({ "p-error": isFormFieldValid("type") })}
+                            >
+                              Quantity
+                            </label>
+                          </span>
+
+                          <Button
+                            icon="pi pi-minus"
+                            className="p-2 m-1"
+                            onClick={() => handleRemoveInput(index)}
+                            style={{ height: '40px' }}
+                          />
+
+                          <Button
+                            icon="pi pi-plus"
+                            className="m-1"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              handleAddInput()
+                            }}
+                            style={{ height: '40px' }}
+                          />
+                        </div>
+                      ))
+                      }
+                    </div>
+
+                  </div>
+
+                  : null}
+              </div>
+
+              <div className="">
+                <div>
+
+                  <Tooltip target=".custom-choose-btn" content="Choose" position="bottom" />
+                  <Tooltip target=".custom-upload-btn" content="Upload" position="bottom" />
+                  <Tooltip target=".custom-cancel-btn" content="Clear" position="bottom" />
+                </div>
+
+                <FileUpload
+                  ref={fileUploadRef}
+                  name="product_image"
+                  url="/api/upload"
+                  // multiple
+                  accept="image/*"
+                  maxFileSize={1000000}
+                  onBeforeSend={(event) => {
+                    event.xhr.setRequestHeader("anti-csrf", antiCSRFToken)
+                  }}
+                  // onSelect={onTemplateSelect}
+                  onSelect={async (e) => {
+                    const file = e.files[0];
+                    setImageUploadObject(file)
+                    formik.setValues({ ...formik, 'imageUrl': file.objectURL });
+                  }}
+
+                  onUpload={onTemplateUpload}
+                  onError={onTemplateClear} onClear={onTemplateClear}
+                  headerTemplate={headerTemplate} itemTemplate={itemTemplate} emptyTemplate={emptyTemplate}
+                  chooseOptions={chooseOptions} uploadOptions={uploadOptions} cancelOptions={cancelOptions} />
               </div>
 
               <div className="flex mt-4">

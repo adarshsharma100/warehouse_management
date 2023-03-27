@@ -27,7 +27,7 @@ export default resolver.pipe(
   resolver.zod(CreateProduct),
   // resolver.authorize(),
   async (input) => {
-    console.log('input: ', input);
+    console.log('input123: ', input);
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const product = await db.products.create({ data: input })
 
