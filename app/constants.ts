@@ -1,5 +1,7 @@
 import moment from "moment"
+import React from "react"
 import { FilterMatchMode, FilterOperator } from "primereact/api"
+import { Calendar } from "primereact/calendar"
 
 export const cities = [
   { city: "Kolhapur", state: "Maharashtra" },
@@ -1485,7 +1487,9 @@ export const cities = [
   { city: "Coimbatore", state: "Tamil Nadu" },
 ]
 
-export const initialFliterRules = {
+export const initialFilterRules = {
+
+  global: { value: null, matchMode: FilterMatchMode.CONTAINS },
 
   andContains: {
     operator: FilterOperator.AND,
@@ -1674,3 +1678,11 @@ export const iletmListArrayCreation = (rfq_products) => {
 
   return poProducts
 }
+
+
+
+
+
+
+
+
