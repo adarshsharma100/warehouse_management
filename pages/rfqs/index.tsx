@@ -46,6 +46,7 @@ import getPurchase_orders from "app/purchase_orders/queries/getPurchase_orders"
 import getEmails from "app/emails/queries/getEmails"
 import getRfq from "app/rfqs/queries/getRfq"
 import { constants } from "zlib"
+import { dateFilterTemplate } from "components/FilterTemplates"
 
 const ITEMS_PER_PAGE = 100
 
@@ -145,17 +146,6 @@ export const RfqsList = () => {
     .map((term) => ({ name: term, value: term }))
   const searchStatus = createSearchFunction(rfqStatus, setrfqStatusSuggestions)
 
-  const dateFilterTemplate = (options) => {
-    return (
-      <Calendar
-        value={options.value}
-        onChange={(e) => options.filterCallback(e.value, options.index)}
-        dateFormat={calenderDateFormat()}
-        placeholder={calenderDateFormat()}
-        mask="99/99/9999"
-      />
-    )
-  }
 
   const columns = [
     {
@@ -285,7 +275,7 @@ export const RfqsList = () => {
 
     return po
   }
-  console.log('findPO: ', findPO(170, 3));
+
 
 
 
@@ -294,12 +284,14 @@ export const RfqsList = () => {
       return [
         ...acc,
         <Column
-          key={curr.field}
-          field={curr.field}
-          header={curr.header}
-          body={curr.body}
-          filter={curr.filter}
-          filterPlaceholder={curr.filterPlaceholder}
+          key={curr?.field}
+          field={curr?.field}
+          header={curr?.header}
+          body={curr?.body}
+          filter={curr?.filter}
+          filterPlaceholder={curr?.filterPlaceholder}
+          dataType={curr?.dataType}
+          filterElement={curr?.filterElement}
         />
       ];
     return acc;

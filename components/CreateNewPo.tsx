@@ -32,7 +32,6 @@ import LoaderFullScreen from "./LoaderFullScreen"
 const CreateNewPo = React.forwardRef((props, ref) => {
   const {
     products,
-    purchaseDetails,
     itemList,
     setItemList,
     activeRow,
@@ -64,6 +63,24 @@ const CreateNewPo = React.forwardRef((props, ref) => {
       orderBy: { id: "asc" },
     }
   )
+  const initialPurchaseState = {
+    vendor_vendor_id: "",
+    po_code: "",
+    po_description: "",
+    expiry_date: "",
+    expected_delivery: "",
+    from_party: "",
+    terms: "",
+    rfq_id: "",
+    itemsLength: false,
+    purchase_order_status: "",
+    vendor_Emails: [],
+    agreement: "",
+    piNumber: "",
+    piDate: ""
+  }
+
+  const [purchaseDetails, setPurchaseDetails] = useState(initialPurchaseState)
 
   const [createPurchaseOrderMutation, { isLoading: creatingPO, error: creatingMutationError }] =
     useMutation(createPurchase_order)
@@ -82,6 +99,10 @@ const CreateNewPo = React.forwardRef((props, ref) => {
   React.useImperativeHandle(ref, () => ({
     setReadOnlyForm,
     formik,
+    setPurchaseDetails,
+    initialPurchaseState,
+    setPriorList,
+    setShowPriorList,
   }))
 
   const [filterProductOptions, setFilterProductOptions] = useState<any>(null)
@@ -150,7 +171,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
       updateFormValues({ itemsLength: true, }).catch((error) => {
         console.log("While setting po values from rfq", error)
       })
-      console.log('rfqset: ', rfq);
+        ;
     }
   }, [rfq])
 
@@ -164,86 +185,6 @@ const CreateNewPo = React.forwardRef((props, ref) => {
   }, [poEditState, activeRow])
 
   const updatePoValues = async () => {
-
-    //   {
-    //     "id": 13,
-    //     "poNumber": "PO#13",
-    //     "agreement": "",
-    //     "description": "",
-    //     "expectedDod": "2023-03-30T18:30:00.000Z",
-    //     "rejectedReason": null,
-    //     "expiryDate": "2023-03-30T18:30:00.000Z",
-    //     "approvedOn": null,
-    //     "createdAT": "2023-03-05T15:49:26.000Z",
-    //     "updatedAT": "2023-03-05T15:49:26.000Z",
-    //     "rfq": null,
-    //     "vendor": 1,
-    //     "status": 1,
-    //     "po_term": 5,
-    //     "approvedBy": null,
-    //     "ammendedFrom": null,
-    //     "piNumber": "axd123",
-    //     "piDate": "2023-03-29T18:30:00.000Z",
-    //     "po_status": {
-    //         "id": 1,
-    //         "name": "Created",
-    //         "description": "The PO has been successfully created."
-    //     },
-    //     "vendors": {
-    //         "id": 1,
-    //         "name": "Dylan Alisson",
-    //         "code": "DA",
-    //         "gstin": "GSTRIO783211111",
-    //         "creditPeriod": 5,
-    //         "leadTime": 4,
-    //         "status": "Active",
-    //         "vendorScore": 1
-    //     },
-    //     "po_terms": {
-    //         "id": 5,
-    //         "name": "Net-45",
-    //         "description": "Net-45"
-    //     },
-    //     "po_products": [
-    //         {
-    //             "id": 18,
-    //             "quantity": 21,
-    //             "price": 563,
-    //             "vendorProduct": 4,
-    //             "purchaseOrder": 13,
-    //             "vendor_products": {
-    //                 "id": 4,
-    //                 "sku": "LMN-3456",
-    //                 "priority": 1,
-    //                 "status": "Active",
-    //                 "product": 55,
-    //                 "vendor": 1,
-    //                 "products": {
-    //                     "id": 55,
-    //                     "name": "Pen",
-    //                     "sku": "TIFCC30",
-    //                     "description": "",
-    //                     "length": 234,
-    //                     "width": 33,
-    //                     "height": 0,
-    //                     "weight": 123,
-    //                     "color": "",
-    //                     "hsnCode": "",
-    //                     "imageUrl": null,
-    //                     "createdAT": null,
-    //                     "updatedAT": null,
-    //                     "customDuty": null,
-    //                     "gstTaxTypeCode": null,
-    //                     "taxCalcType": null,
-    //                     "status": "Active",
-    //                     "category": null,
-    //                     "brand": null,
-    //                     "costPrice": 563
-    //                 }
-    //             }
-    //         }
-    //     ]
-    // }
     const {
       vendor,
       description,
@@ -273,14 +214,11 @@ const CreateNewPo = React.forwardRef((props, ref) => {
       piNumber,
       piDate,
 
-      // from_party,
-      // rfq_id,
     })
   }
 
   const searchProducts = createSearchFunction(filterProductOptions, setProductsSuggestions)
   const searchVendor = createSearchFunction(vendorOptions, setVendorSuggestions)
-  // const searchAgreement = createSearchFunction(poStatusList, setPoFilteredAgreements)
   const searchPoStatuses = createSearchFunction(po_statuses, setPoStatuses)
   const searchFromParty = createSearchFunction(fromParty, setFromPartySuggetions)
   const searchTerms = createSearchFunction(poTerms, setTermsSuggetions)
@@ -293,15 +231,6 @@ const CreateNewPo = React.forwardRef((props, ref) => {
       (ele) => ele.product
         === Number(list[i]?.products_product_id)
     )[0].id
-
-    console.log('findProductVpID: ', {
-      vendor_products,
-      currentVendor,
-      vendorProducts,
-      vpId,
-      list: list[i],
-    });
-
     return Number(vpId)
   }
 
@@ -309,36 +238,16 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     initialValues: purchaseDetails,
     validationSchema: Yup.object().shape({
       vendor_vendor_id: Yup.string().required("*Required"),
-      // po_code: Yup.string().required("*Required"),
-      // po_description: Yup.string().required("*Required"),
       expiry_date: Yup.string().required("*Required"),
       expected_delivery: Yup.string().required("*Required"),
-      // from_party: Yup.string().required("*Required"),
-      // purchase_order_status: Yup.mixed().required("*Required"),
       vendor: Yup.string().required("*Required"),
       terms: Yup.mixed().required("*Required"),
       itemsLength: Yup.boolean().equals([true], "⚠ Please select atleast one product").required(),
     }),
     onSubmit: async (data) => {
-      const itemsData = itemList.filter((ele, i) => {
-        return ele.products_product_id
-      }).length
-      // if (!itemsData) {
-      //   formik.setErrors({ itemsLength: "⚠ Please select atleast one product" })
-      //   return
-      // }
-
+      console.log('qqq ', data);
       const productList = itemList.filter((ele, i) => ele.products_product_id)
-
-
-
       const vendorEmailIds = data?.vendor_Emails?.map(({ id }) => ({ email: id }))
-      console.log('vendorEmailIds: ', vendorEmailIds);
-
-
-
-
-      setAmendingPO(false)
 
 
       const {
@@ -356,7 +265,6 @@ const CreateNewPo = React.forwardRef((props, ref) => {
         amendedFrom,
       } = data
 
-      console.log('activeRow: ', activeRow);
       const newProducts = productList.filter((ele) => !ele.id)
       const existingProducts = productList.filter((ele) => ele.id)
 
@@ -368,15 +276,6 @@ const CreateNewPo = React.forwardRef((props, ref) => {
         return !array.includes(item)
       })
 
-
-      console.log("PO Form:", {
-        ...data,
-        // productList,
-        // productList,
-        newProducts,
-        existingProducts,
-        deletelist, id: activeRow?.id
-      })
 
       if (poEditState) {
         try {
@@ -444,8 +343,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
         }
       } else {
         try {
-          console.log("purchaseDetails", purchaseDetails)
-          console.log("itemList", itemList)
+
           const purchaseOrder = await createPurchaseOrderMutation(
             {
               poNumber: po_code,
@@ -498,13 +396,16 @@ const CreateNewPo = React.forwardRef((props, ref) => {
             {
               onSuccess: async ({ po_products }) => {
                 const productIds = itemList.map(data => data.products_product_id).filter(data => data)
-                console.log('productIds: ', productIds);
+
+                setShowPriorList(false)
+                setPriorList([])
+                setAmendingPO(false)
+
                 toast?.current.show(tsuccess(null, "PO Created Successfully"))
                 if (router.query.hasOwnProperty("rfqdata")) {
                   const { rfqdata } = router.query;
                   const parsedRfqdata = JSON.parse(rfqdata)
                   const newProducts = parsedRfqdata.rfq_products.filter(data => !productIds.includes(data.product))
-                  console.log('parsedRfqdata.rfq_products: ', parsedRfqdata.rfq_products);
                   router.replace({
                     pathname: '/purchase_orders',
                     query: newProducts.length ? {
@@ -527,16 +428,13 @@ const CreateNewPo = React.forwardRef((props, ref) => {
           console.log("error: ", error)
         }
       }
-
       refetchFuns?.forEach(async (ele) => await ele())
 
-      // await refetch()
-      // await refetchPoProducts()
+
     },
   })
-  // console.log("formik.errors", formik.errors)
-  // console.log("priorList", priorList)
-  console.log("formik.values", formik.values)
+
+
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
@@ -547,12 +445,9 @@ const CreateNewPo = React.forwardRef((props, ref) => {
   const getAllBranchesEmails = branches => branches?.reduce((acc, curr) => {
     const currentBrnachEmails = curr?.addresses?.emails_emails_addressesToaddresses
     if (currentBrnachEmails.length) {
-      console.log('currentBrnachEmails: ', currentBrnachEmails);
       const emailsList = currentBrnachEmails.map(({ email, id }) => ({ email, id }))
-      console.log('emailsList: ', emailsList);
       acc = [...acc, ...emailsList]
     }
-    console.log('acc: ', acc);
 
     return acc
 
@@ -564,7 +459,6 @@ const CreateNewPo = React.forwardRef((props, ref) => {
 
     const _poValue = itemList.reduce(
       (acc, { quantity, price_per_unit }) => {
-        console.log('quantity, price: ', { quantity, price_per_unit });
 
         if (typeof quantity === 'number' && typeof price_per_unit === 'number') {
 
@@ -572,7 +466,6 @@ const CreateNewPo = React.forwardRef((props, ref) => {
         }
         return acc
       }, 0)
-    console.log('itemListfromuseffect: ', itemList);
 
     setPoValue(_poValue)
   }, [itemList])
@@ -582,8 +475,6 @@ const CreateNewPo = React.forwardRef((props, ref) => {
 
   useEffect(() => {
     const selectedVendorId = formik.values?.vendor_vendor_id
-
-
     const selectedVendor = vendors
       .find((vendor) => vendor?.id === selectedVendorId)
 
@@ -591,7 +482,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     const allBranchesEmails = getAllBranchesEmails(selectedVendor?.vendor_branches)
 
     updateFormValues({ vendor_Emails: allBranchesEmails }).catch((error) =>
-      console.log("formikvalueserror", error)
+      console.log("formikValuesError", error)
     )
 
     // saving previous Vendors
@@ -603,8 +494,6 @@ const CreateNewPo = React.forwardRef((props, ref) => {
 
     const vendorID = formik.values.vendor_vendor_id
     const filterProducts = productOptions.filter((ele) => ele.vendorID.includes(Number(vendorID)))
-    console.log('vendorProducts: ', { products, productOptions, filterProducts });
-    // console.log("filterProducts", filterProducts)
 
     setFilterProductOptions(filterProducts)
     if (!poEditState) {
@@ -618,9 +507,6 @@ const CreateNewPo = React.forwardRef((props, ref) => {
         (ele, i) => !vendorProductsIds.includes(ele.products_product_id) && ele.products_product_id
       )
       priorValues.length ? setShowPriorList(true) : setShowPriorList(false)
-      //setShowPriorList(priorValues.length > 0)
-
-      // console.log("priorValues", priorValues.length)
 
       setPriorList([...priorValues])
       //   const itemlistIds = itemList.map((ele) => ele.products_product_id)
@@ -634,16 +520,6 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     }
 
   }, [formik?.values.vendor_vendor_id])
-
-  // useEffect(() => {
-  //   if (poCodeChecked && purchaseDialog && !poEditState) {
-  //     updateFormValues({ po_code: newPOCode })
-  //       // .then((res) => console.log("newCode", res))
-  //       .catch((error) => {
-  //         console.log("From updateFormValues", error)
-  //       })
-  //   }
-  // }, [poCodeChecked, purchaseDialog])
 
   const updateFormValues = async (fields) => {
     await formik.setValues({ ...formik.values, ...fields })
@@ -694,11 +570,10 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                   onClick={(e) => {
                     e.preventDefault()
                     const activePOStatus = activeRow?.po_status?.name
-                    console.log("activePOStatus: ", activePOStatus)
 
                     if (!["Approved", "Amended"].includes(activePOStatus)) {
                       toast?.current.show(tWarn(null, "Can only  send mail if PO is Approved "))
-                      // toast?.current.show(tsuccess(null, "Cannot change Status already Approved"))
+
                     } else {
                       setActiveRow({ ...activeRow, ...formik.values })
                       setSendPoDialog(true)
@@ -711,24 +586,15 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                   className="m-1"
                   tooltip="Amend PO"
                   tooltipOptions={{ position: "top" }}
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     e.preventDefault()
                     setAmendingPO(true)
                     setPoEditState(false)
                     setReadOnlyForm(false)
+                    await updateFormValues({ po_code: "", amendedFrom: activeRow.id })
 
                   }}
                 />
-                {/* <Button
-                  icon="pi pi-info-circle"
-                  className="m-1"
-                  tooltip="More Info"
-                  tooltipOptions={{ position: "top" }}
-                  onClick={async (e) => {
-                    e.preventDefault()
-                    window.location.href = `/purchase_orders/${activeRow.po_id}`
-                  }}
-                /> */}
               </div>
             )}
           </div>
@@ -804,51 +670,61 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               </div>
               {getFormErrorMessage("vendor_vendor_id")}
             </div>
+            {/* Rendering date components by array */}
+            {[
+              { field: "expiry_date", label: "Expiry Date", },
+              { field: "expected_delivery", label: "Expected Delivery", },
+              { field: "piDate", label: "PI Date", }
 
-            <div className="field col-12 lg:col-4 mt-2">
-              <div className="p-float-label">
-                <Calendar
-                  id="expiry_date"
-                  disabled={readOnlyForm}
-                  minDate={new Date()}
-                  // id="basic"
-                  value={formik.values.expiry_date}
-                  onChange={formik.handleChange}
-                  className={classNames({ "p-invalid": isFormFieldValid("expiry_date") })}
-                  dateFormat={calenderDateFormat()}
-                />
-                <label
-                  htmlFor="expiry_date"
-                  className={classNames({ "p-error": isFormFieldValid("expiry_date") })}
-                >
-                  Expiry Date
-                </label>
+            ].map(({ field, label }, i) => (
+              <div className="field col-12 lg:col-4 mt-2" key={i}>
+                <div className="p-float-label">
+                  <Calendar
+                    id={field}
+                    disabled={readOnlyForm}
+                    minDate={new Date()}
+                    value={formik.values[field]}
+                    onChange={formik.handleChange}
+                    className={classNames({ "p-invalid": isFormFieldValid(field) })}
+                    dateFormat={calenderDateFormat()}
+                  />
+                  <label
+                    htmlFor={label}
+                    className={classNames({ "p-error": isFormFieldValid(field) })}
+                  >
+                    {label}
+                  </label>
+                </div>
+                {getFormErrorMessage(field)}
               </div>
-              {getFormErrorMessage("expiry_date")}
-            </div>
+            ))}
 
 
-            <div className="field col-12 lg:col-4 mt-2">
-              <div className="p-float-label">
-                <Calendar
-                  minDate={new Date()}
-                  // className="mr-2 w-22rem"
-                  id="expected_delivery"
-                  disabled={readOnlyForm}
-                  value={formik.values.expected_delivery}
-                  onChange={formik.handleChange}
-                  className={classNames({ "p-invalid": isFormFieldValid("expected_delivery") })}
-                  dateFormat={calenderDateFormat()}
-                />
-                <label
-                  htmlFor="expected_delivery"
-                  className={classNames({ "p-error": isFormFieldValid("expected_delivery") })}
-                >
-                  Expected Delivery
-                </label>
+            {[
+              { field: "po_description", label: "PO Description" },
+              { field: "agreement", label: "Agreement" },
+              { field: "piNumber", label: "Pi Number" },
+            ].map(({ field, label }, i) => (
+              <div className="field col-12 lg:col-4 mt-2" key={i}>
+                <span className="p-float-label">
+                  <InputText
+                    id={field}
+                    disabled={readOnlyForm}
+                    value={formik.values[field]}
+                    onChange={formik.handleChange}
+                    className={classNames({ "p-invalid": isFormFieldValid(field) })}
+                    autoFocus
+                  />
+                  <label
+                    htmlFor={field}
+                    className={classNames({ "p-error": isFormFieldValid(field) })}
+                  >
+                    {label}
+                  </label>
+                </span>
+                {getFormErrorMessage(field)}
               </div>
-              {getFormErrorMessage("expected_delivery")}
-            </div>
+            ))}
             <div className="field col-12 lg:col-4 mt-2">
               <div className="p-float-label">
                 <AutoComplete
@@ -883,44 +759,6 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               {getFormErrorMessage("purchase_order_status")}
             </div>
             <div className="field col-12 lg:col-4 mt-2">
-              <span className="p-float-label">
-                <InputText
-                  id="po_description"
-                  disabled={readOnlyForm}
-                  value={formik.values.po_description}
-                  onChange={formik.handleChange}
-                  className={classNames({ "p-invalid": isFormFieldValid("po_description") })}
-                  autoFocus
-                />
-                <label
-                  htmlFor="po_description"
-                  className={classNames({ "p-error": isFormFieldValid("po_description") })}
-                >
-                  PO Description
-                </label>
-              </span>
-              {getFormErrorMessage("po_description")}
-            </div>
-            <div className="field col-12 lg:col-4 mt-2">
-              <span className="p-float-label">
-                <InputText
-                  id="agreement"
-                  disabled={readOnlyForm}
-                  value={formik.values.agreement}
-                  onChange={formik.handleChange}
-                  className={classNames({ "p-invalid": isFormFieldValid("agreement") })}
-                  autoFocus
-                />
-                <label
-                  htmlFor="agreement"
-                  className={classNames({ "p-error": isFormFieldValid("agreement") })}
-                >
-                  Agreement
-                </label>
-              </span>
-              {getFormErrorMessage("agreement")}
-            </div>
-            <div className="field col-12 lg:col-4 mt-2">
               <div className="p-float-label">
                 <AutoComplete
                   id="terms"
@@ -951,51 +789,6 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                 </label>
               </div>
               {getFormErrorMessage("terms")}
-            </div>
-
-            <div className="field col-12 lg:col-4 mt-2">
-              <span className="p-float-label ">
-                <InputText
-                  id="piNumber"
-                  name=""
-                  // className="mr-2 w-22rem"
-                  value={formik.values.piNumber}
-                  onChange={formik.handleChange}
-                  disabled={readOnlyForm}
-
-
-                  className={classNames({ "p-invalid": isFormFieldValid("piNumber") })}
-                />
-                <label
-                  htmlFor="piNumber"
-                  className={classNames({ "p-error": isFormFieldValid("piNumber") })}
-                >
-                  PI Number
-                </label>
-              </span>
-              {getFormErrorMessage("piNumber")}
-
-            </div>
-            <div className="field col-12 lg:col-4 mt-2">
-              <div className="p-float-label">
-                <Calendar
-                  minDate={new Date()}
-                  // className="mr-2 w-22rem"
-                  id="piDate"
-                  disabled={readOnlyForm}
-                  value={formik.values.piDate}
-                  onChange={formik.handleChange}
-                  className={classNames({ "p-invalid": isFormFieldValid("piDate") })}
-                  dateFormat={calenderDateFormat()}
-                />
-                <label
-                  htmlFor="piDate"
-                  className={classNames({ "p-error": isFormFieldValid("piDate") })}
-                >
-                  PI Date
-                </label>
-              </div>
-              {getFormErrorMessage("piDate")}
             </div>
             <div className="field col-12 lg:col-4 mt-2">
               <div className="p-float-label">
@@ -1048,7 +841,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               </span>
               {getFormErrorMessage("po_value")}
             </div>
-            {amendingPO && (
+            {/* {amendingPO && (
               <div className="field col-12 mt-2">
                 <span className="p-float-label">
                   <InputTextarea
@@ -1069,7 +862,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                 </span>
                 {getFormErrorMessage("ammendedNotes")}
               </div>
-            )}
+            )} */}
             <div className="field col-12  mt-2">
               <div className="mb-3">Emails</div>
               <div className="flex align-items-center flex-wrap">
@@ -1151,7 +944,6 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                       dropdown
                       field="name"
                       onChange={async (e) => {
-                        console.log("event understand", e.value)
                         let product_id = typeof e.value === "string" ? "" : e.value?.product_id
                         let name = typeof e.value === "string" ? e.value : e.value?.name
                         let price_per_unit = typeof e.value === "string" ? e.value : e.value?.Price
@@ -1162,11 +954,6 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                         data[i].price_per_unit = price_per_unit
                         data[i].quantity = ""
 
-                        // if (!e.value.name) {
-                        //   await formik.setValues({ ...formik.values, itemsLength: false })
-                        // } else {
-                        //   await formik.setValues({ ...formik.values, itemsLength: true })
-                        // }
                         let itemsLength = !e.value?.name ? false : true
                         await formik.setValues({ ...formik.values, itemsLength })
 
@@ -1249,6 +1036,9 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                 setPriorList([])
                 setShowPriorList(false)
                 setAmendingPO(false)
+                router.replace({
+                  pathname: "/purchase_orders"
+                }).catch(err => console.log(err))
               }}
             />
           </div>
@@ -1260,149 +1050,3 @@ const CreateNewPo = React.forwardRef((props, ref) => {
 
 export default CreateNewPo
 
-// activeRow data Example
-
-// const activeRowData ={
-//   "po_id": 111,
-//   "po_type": "sss",
-//   "updated_on": "2022-11-15T11:46:48.081Z",
-//   "approved_on": "Invalid date",
-//   "created_at": "15-11-2022, 17:11",
-//   "from_party": "TIF Labs",
-//   "expiry_date": "2022-11-22T18:30:00.000Z",
-//   "expected_delivery": "2022-11-24T18:30:00.000Z",
-//   "agreement": "Approved",
-//   "po_description": "Sensor Bundle",
-//   "po_code": "PO#111",
-//   "rfq_id": 18,
-//   "grn_grn_id": 28,
-//   "note": null,
-//   "agreement_terms_id": 1,
-//   "purchase_order_terms": "Net-45",
-//   "purchase_order_status_id": 1,
-//   "vendor_vendor_id": 3,
-//   "vendor": "Thomas Edison",
-//   "purchase_order_products": [
-//       {
-//           "pop_id": 14,
-//           "vendor_products_vp_id": 8,
-//           "vendor_products_vendor_vendor_id": 3,
-//           "vendor_products_products_product_id": 7,
-//           "quantity": 89,
-//           "price_per_unit": 85,
-//           "received_quantity": 0,
-//           "purchase_order_po_id": 8,
-//           "purchase_order_vendor_vendor_id": 3,
-//           "vendor_products": {
-//               "vp_id": 8,
-//               "unit_price": 45,
-//               "vendor_vendor_id": 3,
-//               "products_product_id": 7,
-//               "enabled": 1,
-//               "priority": 2,
-//               "vendor_sku": "TE107",
-//               "products": {
-//                   "product_id": 7,
-//                   "name": "Heat Flame Sensor",
-//                   "description": "description heat",
-//                   "product_type": "Sensors",
-//                   "products_sku": "TIF007",
-//                   "Price": 56,
-//                   "product_unit": null
-//               }
-//           }
-//       },
-//       {
-//           "pop_id": 155,
-//           "vendor_products_vp_id": 20,
-//           "vendor_products_vendor_vendor_id": 3,
-//           "vendor_products_products_product_id": 5,
-//           "quantity": 7,
-//           "price_per_unit": 56,
-//           "received_quantity": 0,
-//           "purchase_order_po_id": 8,
-//           "purchase_order_vendor_vendor_id": 3,
-//           "vendor_products": {
-//               "vp_id": 20,
-//               "unit_price": 120,
-//               "vendor_vendor_id": 3,
-//               "products_product_id": 5,
-//               "enabled": 1,
-//               "priority": 1,
-//               "vendor_sku": "TE105",
-//               "products": {
-//                   "product_id": 5,
-//                   "name": "MQ-135 gas sensor Module",
-//                   "description": "description 135",
-//                   "product_type": "Sensors",
-//                   "products_sku": "TIF005",
-//                   "Price": 56,
-//                   "product_unit": null
-//               }
-//           }
-//       },
-//       {
-//           "pop_id": 156,
-//           "vendor_products_vp_id": 83,
-//           "vendor_products_vendor_vendor_id": 3,
-//           "vendor_products_products_product_id": 4,
-//           "quantity": 47,
-//           "price_per_unit": 42,
-//           "received_quantity": 0,
-//           "purchase_order_po_id": 8,
-//           "purchase_order_vendor_vendor_id": 3,
-//           "vendor_products": {
-//               "vp_id": 83,
-//               "unit_price": 0,
-//               "vendor_vendor_id": 3,
-//               "products_product_id": 4,
-//               "enabled": 1,
-//               "priority": 1,
-//               "vendor_sku": "TE104",
-//               "products": {
-//                   "product_id": 4,
-//                   "name": "E18-D80NK Infrared Sensor Module",
-//                   "description": "description",
-//                   "product_type": "Sensors",
-//                   "products_sku": "TIF004",
-//                   "Price": 42,
-//                   "product_unit": null
-//               }
-//           }
-//       },
-//       {
-//           "pop_id": 157,
-//           "vendor_products_vp_id": 5,
-//           "vendor_products_vendor_vendor_id": 3,
-//           "vendor_products_products_product_id": 3,
-//           "quantity": 14,
-//           "price_per_unit": 24,
-//           "received_quantity": 0,
-//           "purchase_order_po_id": 8,
-//           "purchase_order_vendor_vendor_id": 3,
-//           "vendor_products": {
-//               "vp_id": 5,
-//               "unit_price": 50,
-//               "vendor_vendor_id": 3,
-//               "products_product_id": 3,
-//               "enabled": 1,
-//               "priority": 4,
-//               "vendor_sku": "TE103",
-//               "products": {
-//                   "product_id": 3,
-//                   "name": "Waterproof Ultrasonic Sensor",
-//                   "description": "water-desp",
-//                   "product_type": "Sensors",
-//                   "products_sku": "TIF003",
-//                   "Price": 24,
-//                   "product_unit": "combo"
-//               }
-//           }
-//       }
-//   ],
-//   "purchase_order_status": {
-//       "id": 1,
-//       "name": "Created ",
-//       "description": "The PO has been successfully created."
-//   }
-// }

@@ -2,7 +2,6 @@ import { resolver } from "@blitzjs/rpc"
 import db from "db"
 import { z } from "zod"
 import moment from "moment"
-import sendPoEmail from "helperFunctions/poMail"
 
 const CreatePurchase_order = z.object({
   poNumber: z.unknown(),
@@ -18,14 +17,7 @@ const CreatePurchase_order = z.object({
   po_products: z.unknown(),
   po_sentto: z.unknown(),
   purchase_orders: z.unknown(),
-  // rfq: z.number().optional().nullable(),
   rfq_purchase_orders_rfqTorfq: z.unknown(),
-  // amendedFrom: z.number().optional().nullable().nullish(),
-
-  // from_party: z.string(),
-  // rfq_id: z.number().optional(),
-  // agreement_terms_id: z.number(),
-  // purchase_order_status_id: z.number(),
 })
 
 export default resolver.pipe(
@@ -33,8 +25,6 @@ export default resolver.pipe(
   resolver.authorize(),
   async ({ poNumber, ...input }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-    const test = poNumber?.trim()?.length > 0 ? poNumber : moment().format("x")
-    console.log("test: ", test)
     const purchase_order = await db.purchase_orders.create({
       data: {
         poNumber: poNumber?.trim()?.length > 0 ? poNumber : moment().format("x"),
@@ -54,7 +44,6 @@ export default resolver.pipe(
       })
     }
 
-    // await sendPoEmail(input, purchase_order)
 
     return purchase_order
   }

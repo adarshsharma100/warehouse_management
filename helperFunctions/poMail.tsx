@@ -4,57 +4,7 @@ import { renderToStream } from "@react-pdf/renderer"
 import MyDocument from "components/PoMailTemplate"
 
 const sendPoEmail = async (po) => {
-  console.log('PoEmail789: ', po);
-  /*
-  {
-  id: 2,
-  poNumber: 'PO#6',
-  agreement: 'sdsdsd',
-  description: 'axsc',
-  expectedDod: '2023-03-28T18:30:00.000Z',
-  rejectedReason: null,
-  expiryDate: '2023-03-28T18:30:00.000Z',
-  approvedOn: null,
-  createdAT: '2023-03-03T11:32:31.000Z',
-  updatedAT: '2023-03-03T11:32:31.000Z',
-  rfq: null,
-  vendor: ' DA: Dylan Alisson',
-  status: 3,
-  po_term: 2,
-  approvedBy: null,
-  amendedFrom: null,
-  piNumber: null,
-  piDate: null,
-  po_status: {
-    id: 3,
-    name: 'Approved',
-    description: 'The PO has been approved to be placed with/em'
-  },
-  vendors: {
-    id: 1,
-    name: 'Dylan Alisson',
-    code: 'DA',
-    gstin: 'GSTRIO783211111',
-    creditPeriod: 5,
-    leadTime: 4,
-    status: 'Active',
-    vendorScore: 1,
-    vendor_branches: [ [Object], [Object] ]
-  },
-  po_terms: { id: 2, name: 'Net-30', description: 'Net-30' },
-  po_products: [],
-  vendor_vendor_id: 1,
-  po_code: 'PO#6',
-  expiry_date: '2023-03-28T18:30:00.000Z',
-  expected_delivery: '2023-03-28T18:30:00.000Z',
-  itemsLength: true,
-  purchase_order_status: {
-    id: 3,
-    name: 'Approved',
-    description: 'The PO has been approved to be placed with/em'
-  },
-  terms: { id: 2, name: 'Net-30', description: 'Net-30' }
-}*/
+
   const {
     poNumber,
     description,
@@ -65,7 +15,6 @@ const sendPoEmail = async (po) => {
     po_terms: { name: poTerm },
     po_products,
     vendors,
-    // purchase_orders: { poNumber: amendedFrom }
   } = po
 
 
@@ -86,26 +35,19 @@ const sendPoEmail = async (po) => {
     emails_emails_addressesToaddresses,
     contact_number
   } = vendor_branches[0].addresses
-  console.log('vendor_branches[0].addresses: ', vendor_branches[0].addresses);
 
   const vendor_contact = contact_number.map(({ number }) => number).join(", ")
 
-
-  // const addressParts = Object.keys(vendor_branches[0].addresses)
-  //   .filter(key => !["id", "emails_emails_addressesToaddresses"].includes(key))
-  //   .map(key => `${key || ''}`)
   const addressParts = [`${buildingNumber || ''}`, `${areaStreet || ''}`, `${landmarkName || ''}`, `${cityCountryProvince || ''}`, `${state || ''}`, `${pincode || ''}`, `${country || ''}`];
 
   const address = addressParts.filter(part => part !== '').join(', ');
 
   const vendor_Emails = emails_emails_addressesToaddresses.map(({ email }) => email)
-  console.log('vendor_Emails: ', vendor_Emails);
 
+  const headersArray = ["Sl No.", "Name", "Vendor-SKU", "Product-SKU", "Quantity", "Unit Price", "Total"]
+  const email = [...vendor_Emails]
 
-  console.log('address: ', address);
-  const email = ["varunram.66@gmail.com", ...vendor_Emails]
-
-  const csvHeader = "Sl No,Name,Vendor-SKU,Product-SKU,Description,Quantity,Unit Price,Total\n"
+  const csvHeader = headersArray.join() + "\n"
 
   const csvBody = po_products.map(
 
@@ -122,12 +64,7 @@ const sendPoEmail = async (po) => {
       ].toString() + "\n"
   )
   const csvData = csvHeader + csvBody.join("")
-  // console.log("csvData", csvData)
-  // const csvData = "name,age,gender\nAlice,25,female\nBob,30,male\nCharlie,35,male" \\EXAMPLE
 
-  const headersArray = ["Sl No.", "Name", "Vendor-SKU", "Product-SKU", "Quantity", "Unit Price", "Total"]
-
-  console.log('vendor123: ', vendorName);
 
 
   const html = `<div style="position: relative;">

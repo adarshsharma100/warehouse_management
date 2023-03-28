@@ -34,6 +34,7 @@ import { useCurrentUser } from "app/core/hooks/useCurrentUser"
 import CreateNewPo from "components/CreateNewPo"
 import { MultiSelect } from "primereact/multiselect"
 import { FilterMatchMode } from "primereact/api"
+import { dateFilterTemplate } from "components/FilterTemplates"
 
 
 const ITEMS_PER_PAGE = 250
@@ -80,48 +81,14 @@ export const Purchase_ordersList = () => {
 
   const [purchaseDialog, setPurchaseDialog] = useState(false)
   const initialItemState = {
-    purchase_order_po_id: "",
-    purchase_order_purchase_order_status_pos_id: 1,
-    purchase_order_vendor_vendor_id: "",
-    vendor_products_vp_id: "",
-    vendor_products_vendor_vendor_id: "",
-    vendor_products_products_product_id: "",
     quantity: "-",
     price_per_unit: "-",
-    received_quantity: 0,
     products_product_id: "",
     product_name: "",
   }
 
   const [itemList, setItemList] = useState([initialItemState])
-  const initialPurchaseState = {
-    vendor_vendor_id: "",
-    po_code: "",
-    po_description: "",
-    expiry_date: "",
-    expected_delivery: "",
-    from_party: "",
-    terms: "",
-    rfq_id: "",
-    itemsLength: false,
-    purchase_order_status: "",
-    vendor_Emails: [],
-    agreement: "",
-    piNumber: "",
-    piDate: ""
-  }
 
-  function dateFilterTemplate(options) {
-    return (
-      <Calendar
-        value={options.value}
-        onChange={(e) => options.filterCallback(e.value, options.index)}
-        dateFormat={calenderDateFormat()}
-        placeholder={calenderDateFormat()}
-        mask="99/99/9999"
-      />
-    )
-  }
   const columns = [
     {
       field: "poNumber",
@@ -164,7 +131,6 @@ export const Purchase_ordersList = () => {
     {
       field: "po_status",
       header: "Status",
-
       body: (rowData) => rowData.po_status?.name,
       filter: true,
       filterPlaceholder: "Search by Status"
@@ -172,8 +138,6 @@ export const Purchase_ordersList = () => {
   ];
 
   const [selectedColumns, setSelectedColumns] = useState([])
-
-  const [purchaseDetails, setPurchaseDetails] = useState(initialPurchaseState)
   const [sendPoDialog, setSendPoDialog] = useState(false)
   const [activeRow, setActiveRow] = useState({})
   const [poEditState, setPoEditState] = useState(false)
@@ -196,7 +160,8 @@ export const Purchase_ordersList = () => {
       const twoFields = arrayFillCopy(2, initialItemState)
       setPoEditState(false)
       setPurchaseDialog(true)
-      setPurchaseDetails(initialPurchaseState)
+      Po?.current?.setPurchaseDetails(
+        Po?.current?.initialPurchaseState)
       Po?.current?.formik.setValues({ itemsLength: true })
 
       const poProducts = iletmListArrayCreation(rfq_products)
@@ -381,11 +346,12 @@ export const Purchase_ordersList = () => {
           filterField={curr?.filterField}
           filterElement={curr?.filterElement}
           dataType={curr?.dataType}
-
         />
       ];
     return acc;
   }, []);
+
+
 
   useEffect(() => {
     const defaultColumns = columns.filter(col => !["description"].includes(col.field)).map(col => col.field)
@@ -465,8 +431,12 @@ export const Purchase_ordersList = () => {
                 const fiveFields = arrayFillCopy(5, initialItemState)
                 setPoEditState(false)
                 setPurchaseDialog(true)
-                setPurchaseDetails(initialPurchaseState)
+                Po?.current?.setPurchaseDetails(
+                  Po?.current?.initialPurchaseState)
                 setItemList(fiveFields)
+                Po?.current?.setPriorList([])
+                Po?.current?.setShowPriorList(false)
+
               }}
             ></Button>
           </div>
@@ -477,8 +447,6 @@ export const Purchase_ordersList = () => {
 
         <CreateNewPo
           products={products}
-          purchaseDetails={purchaseDetails}
-          setPurchaseDetails={setPurchaseDetails}
           itemList={itemList}
           setItemList={setItemList}
           activeRow={activeRow}
@@ -497,7 +465,6 @@ export const Purchase_ordersList = () => {
           setSendPoDialog={setSendPoDialog}
           rfq={rfq}
           setRfq={setRfq}
-          initialPurchaseState={initialPurchaseState}
           userId={userId}
         />
 
