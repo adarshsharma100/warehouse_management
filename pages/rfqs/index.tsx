@@ -36,7 +36,7 @@ import {
   tError,
   tWarn,
   getRemainingPoProducts,
-  initialFliterRules
+  initialFilterRules
 } from "app/constants"
 import { Toast } from "primereact/toast"
 import { getAntiCSRFToken } from "@blitzjs/auth"
@@ -251,13 +251,13 @@ export const RfqsList = () => {
   const [vendorEmailSuggestions, setVendorEmailSuggestions] = useState<any>(null)
   const initialColumnFilters = {
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    rfqNumber: initialFliterRules.andContains,
-    description: initialFliterRules.andContains,
-    updatedAt: initialFliterRules.dateIs,
-    createdAt: initialFliterRules.dateIs,
-    active: initialFliterRules.andContains,
-    agreement: initialFliterRules.andContains,
-    status: initialFliterRules.andContains,
+    rfqNumber: initialFilterRules.andContains,
+    description: initialFilterRules.andContains,
+    updatedAt: initialFilterRules.dateIs,
+    createdAt: initialFilterRules.dateIs,
+    active: initialFilterRules.andContains,
+    agreement: initialFilterRules.andContains,
+    status: initialFilterRules.andContains,
   }
   const [filters, setFilters] = useState(initialColumnFilters)
   const [globalFilterValue, setGlobalFilterValue] = useState("")
