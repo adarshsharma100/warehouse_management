@@ -19,7 +19,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const ordersQuery = gql`
   query orders($after: String) {
-    orders(first: 3, after: $after) {
+    orders(first: 3, after: $after, reverse: true) {
       nodes {
         id
         displayFinancialStatus
@@ -95,8 +95,8 @@ const ordersQuery = gql`
 
 const getAllOrders = async (orders = [], after = null, timeout = 100) => {
   console.log(`Completed: ${orders.length}`)
-  //TODO: remove return
-  if (orders.length > 0) return orders
+  // //TODO: remove return
+  // if (orders.length > 0) return orders
   try {
     await sleep(timeout)
     const latestOrder = await db.shopify.findMany({
@@ -123,7 +123,8 @@ const getAllOrders = async (orders = [], after = null, timeout = 100) => {
   } catch (error) {
     console.log("error! ", error)
     console.log("timeout: ", timeout)
-    return getAllOrders(orders, after, timeout + 100)
+    const newTimeout = timeout > 10000 ? 5000 : timeout + 100
+    return getAllOrders(orders, after, newTimeout)
   }
 }
 

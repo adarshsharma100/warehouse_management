@@ -670,123 +670,6 @@ export const ProductsList = () => {
                 </div>
               </div>
 
-
-              <div className="">
-
-                {selectedStatus?.type === 'BUNDLE' ?
-                  <div>
-                    <div className="">
-                      {inputs.map((input, index) => (
-                        <div key={index} className='flex gap-4 align-items-center mt-3'>
-                          <span className="p-float-label">
-                            <AutoComplete
-                              id="name"
-                              value={input?.name || input.product}
-                              suggestions={kitSuggestions}
-                              completeMethod={kitSearchCategory}
-                              disabled={productEditState}
-                              dropdown
-                              forceSelection
-                              field="name"
-                              onChange={async (e) => {
-
-                                handleInputChange(e, index)
-                                const test = [...inputs]
-                                test[index] = { ...e?.value, }
-                                setInputs(test)
-
-                              }}
-                              aria-label="products"
-                              dropdownAriaLabel="Select Product"
-                              className={classNames({ "p-invalid": isFormFieldValid("name") })}
-                              style={{ width: '400px' }}
-                            />
-                            <label
-                              htmlFor={"type"}
-                              className={classNames({ "p-error": isFormFieldValid("type") })}
-                            >
-                              Kit Product
-                            </label>
-                          </span>
-
-                          <span className="p-float-label">
-                            <InputText
-                              className=''
-                              disabled={productEditState}
-                              type='text'
-                              name='quantity'
-                              value={input.quantity}
-                              onChange={async (e) => {
-                                handleInputChange(e, index)
-
-                              }}
-                              style={{ width: '400px' }}
-                            />
-                            <label
-                              htmlFor={"type"}
-                              className={classNames({ "p-error": isFormFieldValid("type") })}
-                            >
-                              Quantity
-                            </label>
-                          </span>
-
-                          <Button
-                            icon="pi pi-minus"
-                            className="p-2 m-1"
-                            onClick={() => handleRemoveInput(index)}
-                            style={{ height: '40px' }}
-                          />
-
-                          <Button
-                            icon="pi pi-plus"
-                            className="m-1"
-                            onClick={(e) => {
-                              e.preventDefault()
-                              handleAddInput()
-                            }}
-                            style={{ height: '40px' }}
-                          />
-                        </div>
-                      ))
-                      }
-                    </div>
-
-                  </div>
-
-                  : null}
-              </div>
-
-              <div className="">
-                <div>
-
-                  <Tooltip target=".custom-choose-btn" content="Choose" position="bottom" />
-                  <Tooltip target=".custom-upload-btn" content="Upload" position="bottom" />
-                  <Tooltip target=".custom-cancel-btn" content="Clear" position="bottom" />
-                </div>
-
-                <FileUpload
-                  ref={fileUploadRef}
-                  name="product_image"
-                  url="/api/upload"
-                  // multiple
-                  accept="image/*"
-                  maxFileSize={1000000}
-                  onBeforeSend={(event) => {
-                    event.xhr.setRequestHeader("anti-csrf", antiCSRFToken)
-                  }}
-                  // onSelect={onTemplateSelect}
-                  onSelect={async (e) => {
-                    const file = e.files[0];
-                    setImageUploadObject(file)
-                    formik.setValues({ ...formik, 'imageUrl': file.objectURL });
-                  }}
-
-                  onUpload={onTemplateUpload}
-                  onError={onTemplateClear} onClear={onTemplateClear}
-                  headerTemplate={headerTemplate} itemTemplate={itemTemplate} emptyTemplate={emptyTemplate}
-                  chooseOptions={chooseOptions} uploadOptions={uploadOptions} cancelOptions={cancelOptions} />
-              </div>
-
               <div className="flex mt-4">
                 <Button
                   type="submit"
@@ -808,67 +691,66 @@ export const ProductsList = () => {
 
             </form>
           </div>
-        </div >
-      </div>
-
-      <div className="col-12" >
-        <div className="card">
-          <DataTable
-            value={products}
-            responsiveLayout="scroll"
-            showGridlines
-            header={productsTableHeader}
-            filters={filters}
-            className="text-s datatable-responsive"
-            filterDisplay="menu"
-            emptyMessage="No Results found."
-            rowHover={true}
-            onRowClick={async (e) => {
-
-              setActiveRowData({ ...e.data })
-              setProductEditState(true)
-              setActiveProduct(true)
-              setProductDialog(true)
-
-              setSelectedStatus(e.data.product_types)
-
-
-              const _kitData = e.data.kit_products.map((prod) => {
-                const { products_kit_products_kitProductIDToproducts: product, quantity } = prod
-                return ({
-                  product: { ...product, name: `${product.sku}-${product.name}` },
-                  quantity,
-                })
-              });
-              setInputs(_kitData)
-
-
-              await formik.setValues({
-                ...e.data,
-                type: e.data.product_types.type,
-                category: e.data.product_categories,
-              })
-              scrolToTop?.current && scrolToTop?.current.scrollIntoView()
-            }}
-          >
-            <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} />
-            {columnComponents}
-          </DataTable>
-
         </div>
+
+        <div className="col-12" >
+          <div className="card">
+            <DataTable
+              value={products}
+              responsiveLayout="scroll"
+              showGridlines
+              header={productsTableHeader}
+              filters={filters}
+              className="text-s datatable-responsive"
+              filterDisplay="menu"
+              emptyMessage="No Results found."
+              rowHover={true}
+              onRowClick={async (e) => {
+
+                setActiveRowData({ ...e.data })
+                setProductEditState(true)
+                setActiveProduct(true)
+                setProductDialog(true)
+
+                setSelectedStatus(e.data.product_types)
+
+
+                const _kitData = e.data.kit_products.map((prod) => {
+                  const { products_kit_products_kitProductIDToproducts: product, quantity } = prod
+                  return ({
+                    product: { ...product, name: `${product.sku}-${product.name}` },
+                    quantity,
+                  })
+                });
+                setInputs(_kitData)
+
+
+                await formik.setValues({
+                  ...e.data,
+                  type: e.data.product_types.type,
+                  category: e.data.product_categories,
+                })
+                scrolToTop?.current && scrolToTop?.current.scrollIntoView()
+              }}
+            >
+              <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} />
+              {columnComponents}
+            </DataTable>
+
+          </div>
+        </div >
       </div >
-    </div >
-  )
+      )
 }
 
 const ProductsPage = () => {
   return (
-    <Suspense fallback={<Loading />}>
-      <Layout>
-        <ProductsList />
-      </Layout>
-    </Suspense>
-  )
+      <Suspense fallback={<Loading />}>
+        <Layout>
+          <ProductsList />
+        </Layout>
+      </Suspense>
+      )
 }
-ProductsPage.authenticate = true
-export default ProductsPage
+      ProductsPage.authenticate = true
+      export default ProductsPage

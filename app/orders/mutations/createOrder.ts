@@ -126,8 +126,8 @@ export default resolver.pipe(
             order_items,
           },
         })
+        console.log("order123: ", order)
         return order
-        // console.log("order123: ", order)
       } catch (error) {
         console.log("error12: ", error)
       }
