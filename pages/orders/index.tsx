@@ -136,7 +136,7 @@ export const OrdersList = () => {
   const [createNewOrder] = useMutation(createOrder)
   const [updateNewOrder, { isLoading }] = useMutation(updateOrder)
   const [orderItemsDetails, setOrderItemsDetails] = useState(initialOrderDetails)
-  const [orderDialog, setOrderDialog] = useState(true)
+  const [orderDialog, setOrderDialog] = useState(false)
   const [orderStatusOption, setOrderStatusOption] = useState(order_statuses)
   const [orderStatusSuggestions, setOderStatusSuggestions] = useState<any>(null)
 
@@ -221,6 +221,9 @@ export const OrdersList = () => {
 
   }, [])
 
+
+
+
   const CustomerParams = [
     { name: 'firstName', requiredMessage: 'FirstName is required' },
     { name: 'lastName', requiredMessage: 'LastName is required' },
@@ -239,6 +242,164 @@ export const OrdersList = () => {
       then: Yup.string().required(requiredMessage),
     });
   });
+
+  const handleRowClick = async (e) => {
+    console.log('e.data: ', e.originalEvent.target.classList[0]);
+    const onclickClass = e.originalEvent.target.classList[0]
+    // e.preventDefault()
+    // e.stopPropagation()
+    if (["p-dropdown-trigger", "OrderStatus", "p-dropdown-trigger-icon", "p-dropdown-label"].includes(onclickClass)) {
+      return
+    }
+    setActiveRowData({ ...e.data })
+    setNewOrderUpdate(true)
+    setOrderDialog(true)
+    const name = e.data.customers
+    const _email = e.data.customers?.addresses?.emails_emails_addressesToaddresses.map((ele) => ele.email)
+    const _contactNumber = e.data.customers?.addresses?.contact_number.map((ele) => ele.number)
+    const _orderStatus = e.data.order_status.name
+    const _shippingAddress = e.data.addresses_orders_shippingAddressIdToaddresses
+    const _billingAddress = e.data.addresses_orders_billingAddressIdToaddresses
+
+    const _orderItems = e.data.order_items.map(({ quantity, price, products: { id, name, sku } }) => ({
+      id,
+      name: `${sku} - ${name}`,
+      quantity: quantity.toString(),
+      price: price.toString()
+    }));
+
+    // const _quantity = e.data.order_items.quantity
+    console.log('name: ', _billingAddress);
+
+    await formik.setValues({
+      ...e.data,
+      firstName: name.firstName,
+      lastName: name.lastName,
+      email: _email,
+      contactNumber: _contactNumber,
+      // order_status: _orderStatus,
+      shippingAddress: {
+        address: _shippingAddress.areaStreet,
+        landmarkName: _shippingAddress.landmarkName,
+        pincode: _shippingAddress.pincode,
+        city: _shippingAddress.cityCountryProvince,
+        state: _shippingAddress.state,
+        country: 'India'
+
+
+      },
+      billingAddress: {
+        address: _billingAddress.areaStreet,
+        landmarkName: _billingAddress.landmarkName,
+        pincode: _billingAddress.pincode,
+        city: _billingAddress.cityCountryProvince,
+        state: _billingAddress.state,
+        country: "India"
+
+
+      },
+      // orderItems: _orderItems,
+
+    })
+
+    scrollToTop?.current && scrollToTop?.current.scrollIntoView()
+
+    const test = {
+      "id": 131,
+      "orderStatus": 2,
+      "shippingAddressId": 604,
+      "billingAddressId": 605,
+      "createdAt": null,
+      "shopifyId": null,
+      "customerId": 147,
+      "paymentStatus": "Paid",
+      "totalPrice": 27000,
+      "gateway": "Paypal",
+      "channelCreatedAt": "2023-03-23T12:15:20.000Z",
+      "cursor": null,
+      "order_items": [
+        {
+          "id": 67,
+          "order": 131,
+          "product": 3,
+          "quantity": 2,
+          "price": 13500,
+          "products": {
+            "id": 3,
+            "name": "Machine Tools",
+            "sku": "TIFEC0045",
+            "description": "Machine Tools update::",
+            "length": null,
+            "width": null,
+            "height": null,
+            "weight": null,
+            "color": null,
+            "hsnCode": null,
+            "imageUrl": "https://loremflickr.com/320/240/device?random=1",
+            "createdAT": null,
+            "updatedAT": null,
+            "customDuty": null,
+            "gstTaxTypeCode": null,
+            "taxCalcType": null,
+            "status": "Active",
+            "category": null,
+            "brand": null,
+            "costPrice": 10,
+            "type": 1
+          }
+        }
+      ],
+      "order_status": {
+        "id": 2,
+        "name": "Unfulfilled",
+        "description": "Order has not been fulfilled yet"
+      },
+      "addresses_orders_billingAddressIdToaddresses": {
+        "id": 605,
+        "buildingNumber": null,
+        "areaStreet": "dfghjkl",
+        "landmarkName": "67ytutgyg",
+        "cityCountryProvince": "Adoni",
+        "state": "Andhra Pradesh",
+        "pincode": "09876543",
+        "country": 1
+      },
+      "addresses_orders_shippingAddressIdToaddresses": {
+        "id": 604,
+        "buildingNumber": null,
+        "areaStreet": "dfghjkl",
+        "landmarkName": "67ytutgyg",
+        "cityCountryProvince": "Adoni",
+        "state": "Andhra Pradesh",
+        "pincode": "09876543",
+        "country": 1
+      },
+      "customers": {
+        "id": 147,
+        "firstName": "Akshara",
+        "lastName": "Mishra",
+        "addressesId": 603,
+        "shopifyId": null,
+        "addresses": {
+          "contact_number": [
+            {
+              "id": 395,
+              "type": "mobile",
+              "number": "1234567890",
+              "address": 603
+            }
+          ],
+          "emails_emails_addressesToaddresses": [
+            {
+              "id": 127,
+              "email": "scd@fds.af",
+              "addresses": 603
+            }
+          ]
+        }
+      }
+    }
+  }
 
 
   const formik = useFormik({
@@ -945,157 +1106,158 @@ export const OrdersList = () => {
             // header={renderHeader}
             stripedRows
             className="text-s datatable-responsive"
-            onRowClick={async (e) => {
-              console.log('e.data: ', e.data);
-              setActiveRowData({ ...e.data })
-              setNewOrderUpdate(true)
-              setOrderDialog(true)
-              const name = e.data.customers
-              const _email = e.data.customers?.addresses?.emails_emails_addressesToaddresses.map((ele) => ele.email)
-              const _contactNumber = e.data.customers?.addresses?.contact_number.map((ele) => ele.number)
-              const _orderStatus = e.data.order_status.name
-              const _shippingAddress = e.data.addresses_orders_shippingAddressIdToaddresses
-              const _billingAddress = e.data.addresses_orders_billingAddressIdToaddresses
+            onRowClick={handleRowClick}
+          // onRowClick={async (e) => {
+          //   console.log('e.data: ', e.data);
+          //   setActiveRowData({ ...e.data })
+          //   setNewOrderUpdate(true)
+          //   setOrderDialog(true)
+          //   const name = e.data.customers
+          //   const _email = e.data.customers?.addresses?.emails_emails_addressesToaddresses.map((ele) => ele.email)
+          //   const _contactNumber = e.data.customers?.addresses?.contact_number.map((ele) => ele.number)
+          //   const _orderStatus = e.data.order_status.name
+          //   const _shippingAddress = e.data.addresses_orders_shippingAddressIdToaddresses
+          //   const _billingAddress = e.data.addresses_orders_billingAddressIdToaddresses
 
-              const _orderItems = e.data.order_items.map(({ quantity, price, products: { id, name, sku } }) => ({
-                id,
-                name: `${sku} - ${name}`,
-                quantity: quantity.toString(),
-                price: price.toString()
-              }));
+          //   const _orderItems = e.data.order_items.map(({ quantity, price, products: { id, name, sku } }) => ({
+          //     id,
+          //     name: `${sku} - ${name}`,
+          //     quantity: quantity.toString(),
+          //     price: price.toString()
+          //   }));
 
-              // const _quantity = e.data.order_items.quantity
-              console.log('name: ', _billingAddress);
+          //   // const _quantity = e.data.order_items.quantity
+          //   console.log('name: ', _billingAddress);
 
-              await formik.setValues({
-                ...e.data,
-                firstName: name.firstName,
-                lastName: name.lastName,
-                email: _email,
-                contactNumber: _contactNumber,
-                // order_status: _orderStatus,
-                shippingAddress: {
-                  address: _shippingAddress.areaStreet,
-                  landmarkName: _shippingAddress.landmarkName,
-                  pincode: _shippingAddress.pincode,
-                  city: _shippingAddress.cityCountryProvince,
-                  state: _shippingAddress.state,
-                  country: 'India'
-
-
-                },
-                billingAddress: {
-                  address: _billingAddress.areaStreet,
-                  landmarkName: _billingAddress.landmarkName,
-                  pincode: _billingAddress.pincode,
-                  city: _billingAddress.cityCountryProvince,
-                  state: _billingAddress.state,
-                  country: "India"
+          //   await formik.setValues({
+          //     ...e.data,
+          //     firstName: name.firstName,
+          //     lastName: name.lastName,
+          //     email: _email,
+          //     contactNumber: _contactNumber,
+          //     // order_status: _orderStatus,
+          //     shippingAddress: {
+          //       address: _shippingAddress.areaStreet,
+          //       landmarkName: _shippingAddress.landmarkName,
+          //       pincode: _shippingAddress.pincode,
+          //       city: _shippingAddress.cityCountryProvince,
+          //       state: _shippingAddress.state,
+          //       country: 'India'
 
 
-                },
-                // orderItems: _orderItems,
+          //     },
+          //     billingAddress: {
+          //       address: _billingAddress.areaStreet,
+          //       landmarkName: _billingAddress.landmarkName,
+          //       pincode: _billingAddress.pincode,
+          //       city: _billingAddress.cityCountryProvince,
+          //       state: _billingAddress.state,
+          //       country: "India"
 
-              })
 
-              scrollToTop?.current && scrollToTop?.current.scrollIntoView()
+          //     },
+          //     // orderItems: _orderItems,
 
-              const test = {
-                "id": 131,
-                "orderStatus": 2,
-                "shippingAddressId": 604,
-                "billingAddressId": 605,
-                "createdAt": null,
-                "shopifyId": null,
-                "customerId": 147,
-                "paymentStatus": "Paid",
-                "totalPrice": 27000,
-                "gateway": "Paypal",
-                "channelCreatedAt": "2023-03-23T12:15:20.000Z",
-                "cursor": null,
-                "order_items": [
-                  {
-                    "id": 67,
-                    "order": 131,
-                    "product": 3,
-                    "quantity": 2,
-                    "price": 13500,
-                    "products": {
-                      "id": 3,
-                      "name": "Machine Tools",
-                      "sku": "TIFEC0045",
-                      "description": "Machine Tools update::",
-                      "length": null,
-                      "width": null,
-                      "height": null,
-                      "weight": null,
-                      "color": null,
-                      "hsnCode": null,
-                      "imageUrl": "https://loremflickr.com/320/240/device?random=1",
-                      "createdAT": null,
-                      "updatedAT": null,
-                      "customDuty": null,
-                      "gstTaxTypeCode": null,
-                      "taxCalcType": null,
-                      "status": "Active",
-                      "category": null,
-                      "brand": null,
-                      "costPrice": 10,
-                      "type": 1
-                    }
-                  }
-                ],
-                "order_status": {
-                  "id": 2,
-                  "name": "Unfulfilled",
-                  "description": "Order has not been fulfilled yet"
-                },
-                "addresses_orders_billingAddressIdToaddresses": {
-                  "id": 605,
-                  "buildingNumber": null,
-                  "areaStreet": "dfghjkl",
-                  "landmarkName": "67ytutgyg",
-                  "cityCountryProvince": "Adoni",
-                  "state": "Andhra Pradesh",
-                  "pincode": "09876543",
-                  "country": 1
-                },
-                "addresses_orders_shippingAddressIdToaddresses": {
-                  "id": 604,
-                  "buildingNumber": null,
-                  "areaStreet": "dfghjkl",
-                  "landmarkName": "67ytutgyg",
-                  "cityCountryProvince": "Adoni",
-                  "state": "Andhra Pradesh",
-                  "pincode": "09876543",
-                  "country": 1
-                },
-                "customers": {
-                  "id": 147,
-                  "firstName": "Akshara",
-                  "lastName": "Mishra",
-                  "addressesId": 603,
-                  "shopifyId": null,
-                  "addresses": {
-                    "contact_number": [
-                      {
-                        "id": 395,
-                        "type": "mobile",
-                        "number": "1234567890",
-                        "address": 603
-                      }
-                    ],
-                    "emails_emails_addressesToaddresses": [
-                      {
-                        "id": 127,
-                        "email": "scd@fds.af",
-                        "addresses": 603
-                      }
-                    ]
-                  }
-                }
-              }
-            }}
+          //   })
+
+          //   scrollToTop?.current && scrollToTop?.current.scrollIntoView()
+
+          //   const test = {
+          //     "id": 131,
+          //     "orderStatus": 2,
+          //     "shippingAddressId": 604,
+          //     "billingAddressId": 605,
+          //     "createdAt": null,
+          //     "shopifyId": null,
+          //     "customerId": 147,
+          //     "paymentStatus": "Paid",
+          //     "totalPrice": 27000,
+          //     "gateway": "Paypal",
+          //     "channelCreatedAt": "2023-03-23T12:15:20.000Z",
+          //     "cursor": null,
+          //     "order_items": [
+          //       {
+          //         "id": 67,
+          //         "order": 131,
+          //         "product": 3,
+          //         "quantity": 2,
+          //         "price": 13500,
+          //         "products": {
+          //           "id": 3,
+          //           "name": "Machine Tools",
+          //           "sku": "TIFEC0045",
+          //           "description": "Machine Tools update::",
+          //           "length": null,
+          //           "width": null,
+          //           "height": null,
+          //           "weight": null,
+          //           "color": null,
+          //           "hsnCode": null,
+          //           "imageUrl": "https://loremflickr.com/320/240/device?random=1",
+          //           "createdAT": null,
+          //           "updatedAT": null,
+          //           "customDuty": null,
+          //           "gstTaxTypeCode": null,
+          //           "taxCalcType": null,
+          //           "status": "Active",
+          //           "category": null,
+          //           "brand": null,
+          //           "costPrice": 10,
+          //           "type": 1
+          //         }
+          //       }
+          //     ],
+          //     "order_status": {
+          //       "id": 2,
+          //       "name": "Unfulfilled",
+          //       "description": "Order has not been fulfilled yet"
+          //     },
+          //     "addresses_orders_billingAddressIdToaddresses": {
+          //       "id": 605,
+          //       "buildingNumber": null,
+          //       "areaStreet": "dfghjkl",
+          //       "landmarkName": "67ytutgyg",
+          //       "cityCountryProvince": "Adoni",
+          //       "state": "Andhra Pradesh",
+          //       "pincode": "09876543",
+          //       "country": 1
+          //     },
+          //     "addresses_orders_shippingAddressIdToaddresses": {
+          //       "id": 604,
+          //       "buildingNumber": null,
+          //       "areaStreet": "dfghjkl",
+          //       "landmarkName": "67ytutgyg",
+          //       "cityCountryProvince": "Adoni",
+          //       "state": "Andhra Pradesh",
+          //       "pincode": "09876543",
+          //       "country": 1
+          //     },
+          //     "customers": {
+          //       "id": 147,
+          //       "firstName": "Akshara",
+          //       "lastName": "Mishra",
+          //       "addressesId": 603,
+          //       "shopifyId": null,
+          //       "addresses": {
+          //         "contact_number": [
+          //           {
+          //             "id": 395,
+          //             "type": "mobile",
+          //             "number": "1234567890",
+          //             "address": 603
+          //           }
+          //         ],
+          //         "emails_emails_addressesToaddresses": [
+          //           {
+          //             "id": 127,
+          //             "email": "scd@fds.af",
+          //             "addresses": 603
+          //           }
+          //         ]
+          //       }
+          //     }
+          //   }
+          // }}
           >
             <Column
               // field={}
@@ -1247,6 +1409,7 @@ export const OrdersList = () => {
                 else
                   return (
                     <pre>
+
                       <Dropdown
                         value={rowData.orderStatus}
                         options={order_statuses}
@@ -1263,10 +1426,14 @@ export const OrdersList = () => {
                             }
                           })
                         }}
+
+
+
                       />
                     </pre>
                   )
               }}
+              className="OrderStatus"
             />
           </DataTable>
         </div>

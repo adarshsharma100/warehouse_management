@@ -401,7 +401,7 @@ export const Vendor_productsList = () => {
                 setNewProduct(initialProductState)
               }}
             ></Button>
-            <span className=" flex justify-content-center align-items-center">
+            {/* <span className=" flex justify-content-center align-items-center">
               <FileUpload
                 accept=".csv"
                 className="ml-2 inline-block "
@@ -427,14 +427,13 @@ export const Vendor_productsList = () => {
                 tooltip="Clear the File"
                 tooltipOptions={{ position: "top" }}
               />
-            </span>
-
-            <Button
+            </span> */}
+            {/* <Button
               icon="pi pi-download"
               className="ml-2"
               label="CSV format"
               onClick={() => createCSVFormat(vpCsvFormatDetails)}
-            />
+            /> */}
           </div>
         </div>
         {!errorProducts.length &&
