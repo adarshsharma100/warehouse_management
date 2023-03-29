@@ -69,4 +69,12 @@ export const Product = z.object({
   brand: z.number().optional(),
   costPrice: z.number(),
   type: z.number(),
+  kitProducts: z.array(z.object({
+    product: z.object({
+      name: z.string(),
+      id: z.number(),
+      description
+    }),
+    quantity: z.number()
+  }))
 })
