@@ -356,7 +356,7 @@ export const ProductsList = () => {
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
-    return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
+    return isFormFieldValid(name) && <small className="p-error">{formik?.errors?.[name]}</small>
   }
 
   const removeErrorBox = (i) => {
@@ -651,6 +651,17 @@ export const ProductsList = () => {
                       disabled={productEditState}
                       value={formik.values.type}
                       onChange={async (e) => {
+                        if (e.value === 2) {
+                          //Handle BUNDLE type
+                          await formik.setValues({
+                            ...formik.values,
+                            type: e.value,
+                            kitProducts: [{
+                              product: undefined,
+                              quantity: 1
+                            }]
+                          })
+                        }
                         await formik.setFieldValue("type", e.value);
                       }}
                       options={productTypes}
@@ -668,6 +679,102 @@ export const ProductsList = () => {
                   </span>
                   {getFormErrorMessage("type")}
                 </div>
+                {formik.values.type === 2 && <div key="kit_products" className="field col-12">
+                  <div className="card surface-ground">
+                    <div className="grid">
+                      <div className="col-12">
+                        <span className="text-lg">Kit Products</span>
+                      </div>
+                      {formik.values.kitProducts.map(({ product, quantity }, index) => (
+                        <>
+                          <div key={`kit-product-${index}`} className="field col-12 lg:col-9 mt-5">
+                            <span className="p-float-label">
+                              <AutoComplete
+                                id={`kitProducts[${index}]?.product`}
+                                name={`kitProducts[${index}]?.product`}
+                                suggestions={kitSuggestions}
+                                completeMethod={kitSearchCategory}
+                                dropdown
+                                forceSelection
+                                field="name"
+                                value={product}
+                                onChange={async (e) => {
+                                  await formik.setFieldValue("kitProducts", formik.values.kitProducts.map((kitProduct, i) => {
+                                    if (i !== index)
+                                      return kitProduct
+                                    return {
+                                      ...kitProduct,
+                                      product: e.value,
+                                    }
+                                  }))
+                                }}
+                              />
+                              <label
+                                htmlFor={`kitProducts[${index}].product.`}
+                                className={classNames({ "p-error": isFormFieldValid(`kitProducts.0.product.name`) })}
+                              >
+                                Kit Product
+                              </label>
+                            </span>
+                            {
+                              formik.errors.kitProducts?.[index]?.product &&
+                              <small className="p-error">{formik.errors.kitProducts?.[index]?.product}</small>
+                            }
+                          </div>
+                          <div key={`kit-product-quantity-${index}`} className="field col-12 lg:col-2 mt-5">
+                            <span className="p-float-label">
+                              <InputNumber
+                                id={`kitProducts[${index}]?.quantity`}
+                                name={`kitProducts[${index}]?.quantity`}
+                                step={1}
+                                showButtons
+                                value={quantity}
+                                onChange={async (e) => {
+                                  await formik.setFieldValue("kitProducts", formik.values.kitProducts.map((kitProduct, i) => {
+                                    if (i !== index)
+                                      return kitProduct
+                                    return {
+                                      ...kitProduct,
+                                      quantity: e.value,
+                                    }
+                                  }))
+                                }}
+                              />
+                              <label
+                                htmlFor={"type"}
+                                className={classNames({ "p-error": isFormFieldValid("type") })}
+                              >
+                                Quantity
+                              </label>
+                            </span>
+                            {
+                              formik.errors.kitProducts?.[index]?.quantity &&
+                              <small className="p-error">{formik.errors.kitProducts?.[index]?.quantity}</small>
+                            }
+                          </div>
+                          <div className="field col-1 p-buttonset mt-5">
+                            {index !== 0 && <Button
+                              className="p-button-secondary"
+                              icon="pi pi-trash"
+                              onClick={async (e) => {
+                                e.preventDefault()
+                                await formik.setFieldValue("kitProducts", formik.values.kitProducts.filter((data, i) => index !== i))
+                              }}
+                            />}
+                            <Button icon="pi pi-plus-circle" onClick={async (e) => {
+                              e.preventDefault()
+                              await formik.setFieldValue("kitProducts", formik.values.kitProducts.reduce((acc, curr, i) => {
+                                if (index !== i)
+                                  return [...acc, curr]
+                                return [...acc, curr, { product: undefined, quantity: 1 }]
+                              }, []))
+                            }} />
+                          </div>
+                        </>
+                      ))}
+                    </div>
+                  </div>
+                </div>}
               </div>
 
               <div className="flex mt-4">
