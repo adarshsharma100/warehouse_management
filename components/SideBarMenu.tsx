@@ -72,6 +72,11 @@ const SideBarMenu = () => {
 
       ],
     },
+    {
+      label: "Orders",
+      icon: " pi pi-fw pi-file",
+      command: () => (window.location.href = "/orders"),
+    },
 
   ]
 

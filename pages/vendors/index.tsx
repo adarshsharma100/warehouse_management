@@ -77,7 +77,7 @@ export const VendorsList = () => {
   }
 
   const columns = [
-    { field: "name", header: "Vendor" },
+    { field: "name", header: "Vendor", filter: true, filterPlaceholder: "Search bu Vendor name" },
     { field: "code", header: "Code" },
     { field: "", header: "Branch Code", body: (rowData) => rowData?.vendor_branches[0]?.branchCode },
     { field: "email", header: "Email", body: (rowData) => rowData?.vendor_branches[0]?.addresses?.emails_emails_addressesToaddresses[0]?.email },
@@ -323,6 +323,9 @@ export const VendorsList = () => {
           field={curr.field}
           header={curr.header}
           body={curr.body}
+          filter={curr.filter}
+          filterPlaceholder={curr?.filterPlaceholder}
+        // className={curr.field === "address" ? "tooltip-pr" : null}
         />
       ];
     return acc;
@@ -362,7 +365,7 @@ export const VendorsList = () => {
     setFilters({
       global: { value: null, matchMode: FilterMatchMode.CONTAINS },
 
-      vendor: {
+      name: {
         operator: FilterOperator.AND,
         constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
       },
@@ -807,7 +810,7 @@ export const VendorsList = () => {
                 setVendorEditState(true)
               }}
             ></Button>
-            <span className=" flex justify-content-center align-items-center">
+            {/* <span className=" flex justify-content-center align-items-center">
               <FileUpload
                 className="ml-2 inline-block "
                 mode="basic"
@@ -839,7 +842,7 @@ export const VendorsList = () => {
               className="ml-2"
               label="CSV format"
               onClick={() => createCSVFormat(vCsvFormatDetails)}
-            />
+            /> */}
           </div>
         </div>
         {!errorProducts.length &&
@@ -1204,11 +1207,10 @@ export const VendorsList = () => {
           >
             {columnComponents}
 
-            <Column
+            {/* <Column
               field="status"
               header="Status"
               body={(rowData) => {
-                // console.log("rowData", rowData.status)
                 return (
                   <span className={`badge status-${rowData.status ? "active" : "inactive"}`}>
                     {rowData.status ? "Active" : "Inactive"}
@@ -1218,7 +1220,7 @@ export const VendorsList = () => {
               filter
               filterElement={statusFilterTemplate}
             // className="text-center"
-            />
+            /> */}
           </DataTable>
         </div>
       </div>
