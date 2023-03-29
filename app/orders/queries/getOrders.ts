@@ -31,21 +31,19 @@ export default resolver.pipe(
           include: {
             order_items: {
               include: {
-                 products: true,
+                products: true,
               },
-
             },
             order_status: true,
-            // shopify: true,
-            addresses_orders_billingAddressIdToaddresses:true,
-            addresses_orders_shippingAddressIdToaddresses:true,
+            shopify: true,
+            addresses_orders_billingAddressIdToaddresses: true,
+            addresses_orders_shippingAddressIdToaddresses: true,
             customers: {
               include: {
                 addresses: {
                   select: {
                     contact_number: true,
                     emails_emails_addressesToaddresses: true,
-
                   },
                 },
               },

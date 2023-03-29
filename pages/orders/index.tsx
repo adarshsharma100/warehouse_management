@@ -1100,8 +1100,8 @@ export const OrdersList = () => {
             <Column
               // field={}
               header="Order Number"
-              // body={(rowData) => rowData.shopifyId ? rowData.shopify?.orderNumber : rowData.id}
-              body={(rowData) => <pre>{JSON.stringify(rowData, null, 2)}</pre>}
+              body={(rowData) => rowData.shopifyId ? rowData.shopify?.orderNumber.slice(20) : rowData.id}
+            // body={(rowData) => <pre>{JSON.stringify(rowData.shopify, null, 2)}</pre>}
             // className="text-center"
             />
             <Column
