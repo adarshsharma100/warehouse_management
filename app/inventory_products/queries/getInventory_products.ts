@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc"
 import db, { Prisma } from "db"
 
 interface GetInventory_productsInput
-  extends Pick<Prisma.inventory_productsFindManyArgs, "where" | "orderBy" | "skip" | "take"> {}
+  extends Pick<Prisma.inventory_productsFindManyArgs, "where" | "orderBy" | "skip" | "take"> { }
 
 export default resolver.pipe(
   resolver.authorize(),
@@ -32,6 +32,14 @@ export default resolver.pipe(
             shelves: {
               include: {
                 shelf_type: true,
+                areas: {
+                  include: {
+                    warehouse_areas_warehouseTowarehouse: true
+                  }
+                },
+
+
+
               },
             },
           },

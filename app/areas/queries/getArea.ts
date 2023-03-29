@@ -14,10 +14,9 @@ export default resolver.pipe(resolver.zod(GetArea), resolver.authorize(), async 
     where: { id },
     include: {
       shelves: {
-        include:{
-          shelf_type:true,
-          // shelfType:true,
-          areas:true
+        include: {
+          shelf_type: true,
+          areas: true
         }
       },
     },
