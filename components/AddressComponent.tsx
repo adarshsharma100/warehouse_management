@@ -8,8 +8,8 @@ import { InputText } from "primereact/inputtext";
 import { useState } from "react";
 
 
-const AddressComponent = ({ value, setField, addressName, errors }) => {
-    console.log('props: ', value);
+const AddressComponent = ({ value, setField, addressName, errors, }) => {
+    console.log('shippErrors ', errors);
 
     const [addressSuggestion, setAddressSuggestion] = useState<any>(null)
     const searchCities = (event: { query: string }) => {
@@ -63,7 +63,7 @@ const AddressComponent = ({ value, setField, addressName, errors }) => {
                                 />
                                 <label
                                     htmlFor={ele.label}
-                                    // className={classNames({ "p-error": isFormFieldValid(ele.label) })}
+                                // className={classNames({ "p-error": isFormFieldValid(ele.field) })}
                                 >
                                     {ele.label}
                                 </label>

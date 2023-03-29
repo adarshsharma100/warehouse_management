@@ -390,7 +390,7 @@ export const RfqsList = () => {
               body: (rowData) => {
                 console.log('rowData: ', rowData);
                 const _po = findPO(rowData?.rfq, rowData?.product)
-                return <a href={`/purchase_orders/${_po}`} > {_po?.poNumber ?? "N/A"}</a>
+                return <a href={`/purchase_orders/${_po?.poNumber}`} > {_po?.poNumber ?? "N/A"}</a>
               },
             },
             { field: "products.name", header: "Name", },
@@ -882,7 +882,7 @@ export const RfqsList = () => {
                         id="rfq_description"
                         name="rfq_description"
                         value={formik.values.rfq_description}
-                        disabled={readOnlyForm || rfqEditState}
+                        disabled={readOnlyForm || mailSent}
                         onChange={formik.handleChange}
                         className={classNames({ "p-invalid": isFormFieldValid("rfq_description") })}
                         autoFocus
