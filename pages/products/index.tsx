@@ -692,65 +692,66 @@ export const ProductsList = () => {
             </form>
           </div>
         </div>
+      </div>
+      <div className="col-12" >
+        <div className="card">
+          <DataTable
+            value={products}
+            responsiveLayout="scroll"
+            showGridlines
+            header={productsTableHeader}
+            filters={filters}
+            className="text-s datatable-responsive"
+            filterDisplay="menu"
+            emptyMessage="No Results found."
+            rowHover={true}
+            onRowClick={async (e) => {
 
-        <div className="col-12" >
-          <div className="card">
-            <DataTable
-              value={products}
-              responsiveLayout="scroll"
-              showGridlines
-              header={productsTableHeader}
-              filters={filters}
-              className="text-s datatable-responsive"
-              filterDisplay="menu"
-              emptyMessage="No Results found."
-              rowHover={true}
-              onRowClick={async (e) => {
+              setActiveRowData({ ...e.data })
+              setProductEditState(true)
+              setActiveProduct(true)
+              setProductDialog(true)
 
-                setActiveRowData({ ...e.data })
-                setProductEditState(true)
-                setActiveProduct(true)
-                setProductDialog(true)
-
-                setSelectedStatus(e.data.product_types)
-
-
-                const _kitData = e.data.kit_products.map((prod) => {
-                  const { products_kit_products_kitProductIDToproducts: product, quantity } = prod
-                  return ({
-                    product: { ...product, name: `${product.sku}-${product.name}` },
-                    quantity,
-                  })
-                });
-                setInputs(_kitData)
+              setSelectedStatus(e.data.product_types)
 
 
-                await formik.setValues({
-                  ...e.data,
-                  type: e.data.product_types.type,
-                  category: e.data.product_categories,
+              const _kitData = e.data.kit_products.map((prod) => {
+                const { products_kit_products_kitProductIDToproducts: product, quantity } = prod
+                return ({
+                  product: { ...product, name: `${product.sku}-${product.name}` },
+                  quantity,
                 })
-                scrolToTop?.current && scrolToTop?.current.scrollIntoView()
-              }}
-            >
-              <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} />
-              {columnComponents}
-            </DataTable>
+              });
+              setInputs(_kitData)
 
-          </div>
-        </div >
+
+              await formik.setValues({
+                ...e.data,
+                type: e.data.product_types.type,
+                category: e.data.product_categories,
+              })
+              scrolToTop?.current && scrolToTop?.current.scrollIntoView()
+            }}
+          >
+            <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} />
+            {columnComponents}
+          </DataTable>
+
+        </div>
       </div >
-      )
+    </div >
+
+  )
 }
 
 const ProductsPage = () => {
   return (
-      <Suspense fallback={<Loading />}>
-        <Layout>
-          <ProductsList />
-        </Layout>
-      </Suspense>
-      )
+    <Suspense fallback={<Loading />}>
+      <Layout>
+        <ProductsList />
+      </Layout>
+    </Suspense>
+  )
 }
-      ProductsPage.authenticate = true
-      export default ProductsPage
+ProductsPage.authenticate = true
+export default ProductsPage
