@@ -1,8 +1,8 @@
-import { Suspense, useState } from "react";
+import { Suspense, useState, useRef, useEffect } from "react";
 import { Routes } from "@blitzjs/next";
 import Head from "next/head";
 import Link from "next/link";
-import { useRouter } from "next/router";
+import { useRouter } from "next/router"; useRef
 import { useQuery, useMutation } from "@blitzjs/rpc";
 import { useParam } from "@blitzjs/next";
 import Layout from 'layouts/Layout'
@@ -17,6 +17,8 @@ import UpdateArea from 'app/areas/mutations/updateArea';
 import getAreas from "app/areas/queries/getAreas";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
+import { Toast } from "primereact/toast";
+import { tsuccess } from "app/constants";
 
 // import deleteWarehouse from "src/warehouses/mutations/deleteWarehouse";
 
@@ -33,8 +35,7 @@ const columns = [
 export const Warehouse = () => {
   const router = useRouter();
   const warehouseId = useParam("warehouseId", "number");
-  const [warehouse] = useQuery(getWarehouse, { id: warehouseId });
-  console.log('warehouse: ', warehouse);
+  const [warehouse, { refetch: refetchWarehouse }] = useQuery(getWarehouse, { id: warehouseId, orderBy: "desc" });
   const [areas, setAreas] = useState(warehouse?.areas_areas_warehouseTowarehouse)
   const [active, setActive] = useState(false)
   const [areasData, setAreasData] = useState(initialAreas)
@@ -45,8 +46,7 @@ export const Warehouse = () => {
   const [updateAreas, setUpdateAreas] = useState(false)
   const [activeAreas, setActiveAreas] = useState({})
 
-
-
+  const toast = useRef(null)
 
   const formik = useFormik({
     initialValues: areasData,
@@ -64,9 +64,11 @@ export const Warehouse = () => {
             name,
             description,
           }, {
-            onSuccess: (data) => {
-              alert("Updated!")
-              console.log('data: ', data);
+            onSuccess: async (data) => {
+              await refetchWarehouse()
+              toast?.current.show(tsuccess("Updated", `Area is  updated `))
+              setActive(!active)
+
             },
             onError: (error) => {
               alert("Not updated :(")
@@ -83,12 +85,15 @@ export const Warehouse = () => {
             warehouse: warehouse.id,
             description,
           }, {
-            onSuccess: (data) => {
+            onSuccess: async (data) => {
               alert('Created!')
+              toast?.current.show(tsuccess("Created", `Area is  Created `))
+              setActive(!active)
+              await refetchWarehouse()
               console.log('data: ', data);
             },
             onError: (error) => {
-              alert('OnError')
+
               console.log('error: ', error);
             }
           }
@@ -123,18 +128,36 @@ export const Warehouse = () => {
     router.push(`/areas/${areasId}`);
   };
 
+
+  useEffect(() => {
+    setAreas(warehouse?.areas_areas_warehouseTowarehouse)
+  }, [warehouse])
+
+
   return (
     <div>
       <Head>
         <title>{warehouse.name}</title>
       </Head>
-      <div className='card '>
-        <h2 className='mb-0'>{warehouse?.name}</h2>
+      <div className='card flex justify-content-between align-content-center'>
+        <Toast ref={toast} />
+        <h2 className='m-0'>{warehouse?.name}</h2>
+        <Button
+          onClick={() => {
+            formik.resetForm();
+            setEditAreas(false);
+            setUpdateAreas(false);
+            setActive(!active)
+          }}
+          icon='pi pi-plus'
+          label="Add Areas">
+        </Button>
+
       </div>
 
       <form className="p-fluid" onSubmit={formik.handleSubmit}>
         {active &&
-          <div className="card">
+          <div className="card ">
             {editAreas ? <h2>Update Areas</h2> : <h2>Create Areas</h2>}
             <div className="formgrid grid">
               {[
@@ -196,17 +219,7 @@ export const Warehouse = () => {
       </form>
 
       <div className="flex justify-content-end">
-        <Button
-          onClick={() => {
-            formik.resetForm();
-            setEditAreas(false);
-            setUpdateAreas(false);
-            setActive(!active)
-          }}
-          icon='pi pi-plus'
-          label="Add Areas">
 
-        </Button>
       </div>
 
       <div className="col-12 card mt-5">

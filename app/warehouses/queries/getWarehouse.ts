@@ -13,10 +13,10 @@ export default resolver.pipe(
   resolver.authorize(),
   async ({ id }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-    const warehouse = await db.warehouse.findFirst({ 
-      where: { id } ,
+    const warehouse = await db.warehouse.findFirst({
+      where: { id },
       include: {
-        areas_areas_warehouseTowarehouse:true
+        areas_areas_warehouseTowarehouse: true
       }
     });
 

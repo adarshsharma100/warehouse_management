@@ -484,10 +484,10 @@ export const RfqsList = () => {
             onSuccess: async (data) => {
               const rfqNumber = data?.rfqNumber
               toast?.current.show(
-                tsuccess("Updated", `${rfqNumber} is now updated sucessfully`),
+                tsuccess("Updated", `${rfqNumber} is now updated successfully`),
 
-                setActiveRow({})
               )
+              setActiveRow({})
               await refetch()
               setRfqDialog(false)
               formik.resetForm()

@@ -1,4 +1,4 @@
-import { Suspense, useState } from "react";
+import { Suspense, useState, useRef, useEffect } from "react";
 import { Routes } from "@blitzjs/next";
 import Head from "next/head";
 import Link from "next/link";
@@ -19,8 +19,9 @@ import createShelf from "app/shelves/mutations/createShelf";
 import { DataTable } from "primereact/datatable";
 import getShelves from "app/shelves/queries/getShelves";
 import { Column } from "primereact/column";
-import { createSearchFunction } from "app/constants";
+import { createSearchFunction, tsuccess } from "app/constants";
 import updateShelf from "app/shelves/mutations/updateShelf";
+import { Toast } from "primereact/toast";
 
 const initialShelf = {
   sellable: '',
@@ -34,13 +35,13 @@ const initialShelf = {
 }
 
 const columns = [
-  { field: "sellable", header: "Sellable" },
   { field: "number", header: "Number" },
   { field: "length", header: "Length" },
   { field: "width", header: "Width" },
   { field: "loadingStrength", header: "Loading Strength" },
   { field: "reach", header: "Reach" },
-  { field: "shelfType", header: "Shelf Type" },
+  { field: "shelf_type.name", header: "Shelf Type" },
+  { field: "sellable", header: "Sellable" },
 
 ]
 export const Area = () => {
@@ -56,7 +57,6 @@ export const Area = () => {
     where: undefined,
     take: undefined
   })
-  console.log('shelves: ', shelves);
   const [createShelfMutation,] = useMutation(createShelf)
   const [updateShelfsMutation] = useMutation(updateShelf)
 
@@ -68,11 +68,13 @@ export const Area = () => {
   const [selectedColumns, setSelectedColumns] = useState(columns)
   const [rowDataStore, setRowDataStore] = useState({})
 
-  const [checkUpdate,setCheckUpdate] = useState(false)
+  const [checkUpdate, setCheckUpdate] = useState(false)
 
-  const [area, { refetch }] = useQuery(getArea, { id: areaId });
+  const [area, { refetch: refetchArea }] = useQuery(getArea, { id: areaId });
   console.log('area: ', area);
 
+
+  const [shelvesList, setShelvesList] = useState(area?.shelves)
   const [active, setActive] = useState(false)
   const [shelfData, setShelfData] = useState(initialShelf)
   const [editAreas, setEditAreas] = useState(false)
@@ -80,7 +82,6 @@ export const Area = () => {
   const [items, setItems] = useState(shelf_types);
   console.log('items: ', items);
   const [updateShelfs, setUpdateShelfs] = useState(false);
-
   console.log('items: ', items);
   const [status, setStatus] = useState()
   const search = (event) => {
@@ -89,9 +90,13 @@ export const Area = () => {
   }
 
 
+
+
   const [sellableValue, setSellableValue] = useState(null);
   const [sellableSuggestions, setSellableSuggestions] = useState(null)
   const [shelfTypeSuggestions, setShelfTypeSuggestions] = useState(null)
+
+  const toast = useRef(null)
 
   console.log('sellableValue: ', sellableValue);
   const boolOptions = [
@@ -107,7 +112,7 @@ export const Area = () => {
     validationSchema: Yup.object().shape({
       number: Yup.string().required("*Required")
     }),
- 
+
     onSubmit: async (data) => {
       const { number, length, width, loadingStrength, reach, area, shelfType, sellable } = data
       const { id: areaRowId } = rowDataStore
@@ -116,14 +121,24 @@ export const Area = () => {
           await updateShelfsMutation({
             id: areaRowId,
             number,
+            length: Number(length),
+            width: Number(width),
+            loadingStrength: Number(loadingStrength),
+            reach,
+            sellable: sellable?.value,
+            shelfType: shelfType?.id
+
           }, {
-            onSuccess: (data) => {
-              console.log('data: ', data);
-              alert('Updated!')
+            onSuccess: async (data) => {
+              toast?.current.show(tsuccess("Updated", `Shelf is  updated`))
+              setActive(!active)
+              await refetchArea()
+
             },
-            onError: (error) => {
+            onError: async (error) => {
               console.log('error: ', error);
-              alert('update Error', error)
+              // alert('update Error', error)s
+              await refetchArea()
             }
           })
 
@@ -144,8 +159,8 @@ export const Area = () => {
             shelfType: shelfType?.id
           }, {
             onSuccess: (data) => {
-              console.log('data: ', data);
-              alert('Created!')
+              toast?.current.show(tsuccess("Created", `Shelf is  created`))
+              setActive(!active)
             },
             onError: (error) => {
               console.log('error: ', error);
@@ -157,8 +172,6 @@ export const Area = () => {
           console.log('error: ', error);
         }
       }
-      refetch()
-      setActive(false)
 
     }
   })
@@ -181,14 +194,35 @@ export const Area = () => {
     )
   })
 
+  useEffect(() => {
+    setShelvesList(area?.shelves)
+  }, [area])
+
+
+
+
+
+
   return (
     <>
       <Head>
         <title>{area?.name}-Area</title>
       </Head>
 
-      <div className='card '>
-        <h2 className='mb-0'>{area?.name}-Area</h2>
+      <div className='card flex justify-content-between align-content-center '>
+        <Toast ref={toast} />
+        <h2 className='m-0'>{area?.name}-Area</h2>
+        <Button
+          onClick={() => {
+            formik.resetForm()
+            setUpdateShelfs(false)
+            setActive(!active)
+            setEditAreas(false)
+            setCheckUpdate(false)
+          }}
+          icon='pi pi-plus' label="Add Shelf">
+
+        </Button>
       </div>
 
       <form className="p-fluid" onSubmit={formik.handleSubmit}>
@@ -300,16 +334,7 @@ export const Area = () => {
 
       </form>
 
-      <div className="flex justify-content-end">
-        <Button onClick={() => {
-          formik.resetForm()
-          setUpdateShelfs(false)
-          setActive(!active)
-          setEditAreas(false)
-          setCheckUpdate(false)
-        }}
-          icon='pi pi-plus' label="Add Shelf"></Button>
-      </div>
+
 
       <div className="card col-12">
         <DataTable

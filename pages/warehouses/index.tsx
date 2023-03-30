@@ -16,6 +16,8 @@ import CreateWarehouse from 'app/warehouses/mutations/createWarehouse';
 import UpdateWarehouse from 'app/warehouses/mutations/updateWarehouse';
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
+import { tsuccess } from "app/constants";
+import { Toast } from "primereact/toast";
 
 const ITEMS_PER_PAGE = 100;
 const initialWarehouse = {
@@ -36,8 +38,8 @@ export const WarehousesList = () => {
   //   skip: ITEMS_PER_PAGE * page,
   //   take: ITEMS_PER_PAGE,
   // });
-  const [{ warehouses }, { refetch, }] = useQuery(getWarehouses, {
-    orderBy: { id: "asc" },
+  const [{ warehouses }, { refetch: refetchWarehouses, }] = useQuery(getWarehouses, {
+    orderBy: { id: "desc" },
     skip: undefined,
     where: undefined,
     take: undefined
@@ -54,6 +56,7 @@ export const WarehousesList = () => {
   console.log('activeWarehouse: ', activeWarehouse);
   const [updateWareHouse, setUpdateWareHouse] = useState(false)
   const [editWarehouse, setEditWarehouse] = useState(false)
+  const toast = useRef(null)
 
   const formik = useFormik({
     initialValues: warehouse,
@@ -72,9 +75,11 @@ export const WarehousesList = () => {
             name,
             description,
           }, {
-            onSuccess: (data) => {
-              alert("Updated!")
-              console.log('data: ', data);
+            onSuccess: async (data) => {
+              toast?.current.show(tsuccess("Updated", `Warehouse is now updated`))
+              setActive(!active)
+              await refetchWarehouses()
+
             },
             onError: (error) => {
               alert("not updated :(")
@@ -91,9 +96,10 @@ export const WarehousesList = () => {
             name,
             description,
           }, {
-            onSuccess: (data) => {
-              alert("Created!")
-              console.log('data: ', data);
+            onSuccess: async (data) => {
+              toast?.current.show(tsuccess("Created", `Warehouse is now Created`))
+              setActive(!active)
+              await refetchWarehouses();
             },
             onError: (error) => {
               alert('OnError')
@@ -142,8 +148,20 @@ export const WarehousesList = () => {
       </Head>
 
 
-      <div className='card'>
-        <h2 className='mb-0'>Warehouse</h2>
+      <div className='card flex justify-content-between align-content-center'>
+        <Toast ref={toast} />
+        <h2 className='m-0'>Warehouse</h2>
+        <Button
+          onClick={() => {
+            formik.resetForm();
+            setActive(!active);
+            setUpdateWareHouse(false);
+            setEditWarehouse(false)
+          }}
+          icon='pi pi-plus'
+          label="Add Warehouse"
+        >
+        </Button>
       </div>
 
       <form className="p-fluid" onSubmit={formik.handleSubmit}>
@@ -206,20 +224,8 @@ export const WarehousesList = () => {
           </div>}
       </form>
 
-      <div className="flex justify-content-end">
-        <Button
+      <div className=" justify-content-end">
 
-          onClick={() => {
-            formik.resetForm();
-            setActive(!active);
-            setUpdateWareHouse(false);
-            setEditWarehouse(false)
-          }}
-          icon='pi pi-plus'
-          label="Add Warehouse"
-        >
-
-        </Button>
       </div>
       <div className="col-12 card">
         <DataTable
