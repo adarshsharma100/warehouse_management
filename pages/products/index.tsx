@@ -280,7 +280,8 @@ export const ProductsList = () => {
         costPrice,
         tags,
         color,
-        type
+        type,
+        kitProducts
       } = data
 
       // const tagsValue = tags.map(({ value }) => value)
@@ -321,9 +322,14 @@ export const ProductsList = () => {
           // imageUrl: filename,
           type,
           kit_products: type === 2 ? {
-            create: productTypeValue.map((e) => ({
-              kitProductID: e.id,
-              quantity: Number(e.quantity)
+            create: kitProducts.map(({ product, quantity }) => ({
+              products_kit_products_productsIdToproducts: {
+                connect: {
+                  id: product.id
+                }
+              },
+              quantity,
+
             }))
           } : undefined
         },
