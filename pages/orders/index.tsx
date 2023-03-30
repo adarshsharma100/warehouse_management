@@ -103,7 +103,7 @@ export const OrdersList = () => {
   const router = useRouter();
   const page = Number(router.query.page) || 0;
   const [{ orders, jobId }, { refetch: refetchOrders }] = usePaginatedQuery(getOrders, {
-    orderBy: { id: "asc" },
+    orderBy: { id: "desc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   });
@@ -222,26 +222,43 @@ export const OrdersList = () => {
   }, [])
 
 
-
+  const address = [
+    { name: 'address', requiredMessage: 'Address  is required' },
+    { name: 'pincode', requiredMessage: 'Pincode  is required' },
+    { name: 'city', requiredMessage: 'City is required' },
+    { name: 'state', requiredMessage: 'State  is required' },
+    { name: 'country', requiredMessage: 'Country status is required' },
+    { name: 'email', requiredMessage: 'Email is required', type: "email" },
+    { name: 'contactNumber', requiredMessage: 'Contact number is required' },
+  ];
 
   const CustomerParams = [
     { name: 'firstName', requiredMessage: 'FirstName is required' },
     { name: 'lastName', requiredMessage: 'LastName is required' },
-    { name: 'email', requiredMessage: 'Email is required' },
-    { name: 'contactNumber', requiredMessage: 'Contact number is required' },
-    { name: 'address', requiredMessage: 'Address  is required' },
-    { name: 'pincode', requiredMessage: 'Pincode  is required' },
-    { name: 'orderStatus', requiredMessage: 'Order status is required' },
-    { name: 'city', requiredMessage: 'City is required' },
-    { name: 'state', requiredMessage: 'State  is required' },
-    { name: 'country', requiredMessage: 'Country status is required' },
+    // { name: 'address', requiredMessage: 'Address  is required' },
+    // { name: 'pincode', requiredMessage: 'Pincode  is required' },
+    // { name: 'city', requiredMessage: 'City is required' },
+    // { name: 'state', requiredMessage: 'State  is required' },
+    // { name: 'country', requiredMessage: 'Country status is required' },
+    // { name: 'email', requiredMessage: 'Email is required' },
+    // { name: 'contactNumber', requiredMessage: 'Contact number is required' },
+    ...address
   ];
-  const CustomerParamSchema = CustomerParams.map(({ name, requiredMessage }) => {
+
+
+  const CustomerParamSchema = CustomerParams.map(({ requiredMessage }) => {
     return Yup.string().when("isExistingCustomer", {
       is: false,
       then: Yup.string().required(requiredMessage),
     });
   });
+  const addressSchema = address.map(({ requiredMessage }) => {
+    return Yup.string().required(requiredMessage);
+  });
+
+
+
+
 
   const handleRowClick = async (e) => {
     console.log('e.data: ', e.originalEvent.target.classList[0]);
@@ -304,108 +321,123 @@ export const OrdersList = () => {
 
     scrollToTop?.current && scrollToTop?.current.scrollIntoView()
 
-    const test = {
-      "id": 131,
-      "orderStatus": 2,
-      "shippingAddressId": 604,
-      "billingAddressId": 605,
-      "createdAt": null,
-      "shopifyId": null,
-      "customerId": 147,
-      "paymentStatus": "Paid",
-      "totalPrice": 27000,
-      "gateway": "Paypal",
-      "channelCreatedAt": "2023-03-23T12:15:20.000Z",
-      "cursor": null,
-      "order_items": [
-        {
-          "id": 67,
-          "order": 131,
-          "product": 3,
-          "quantity": 2,
-          "price": 13500,
-          "products": {
-            "id": 3,
-            "name": "Machine Tools",
-            "sku": "TIFEC0045",
-            "description": "Machine Tools update::",
-            "length": null,
-            "width": null,
-            "height": null,
-            "weight": null,
-            "color": null,
-            "hsnCode": null,
-            "imageUrl": "https://loremflickr.com/320/240/device?random=1",
-            "createdAT": null,
-            "updatedAT": null,
-            "customDuty": null,
-            "gstTaxTypeCode": null,
-            "taxCalcType": null,
-            "status": "Active",
-            "category": null,
-            "brand": null,
-            "costPrice": 10,
-            "type": 1
-          }
-        }
-      ],
-      "order_status": {
-        "id": 2,
-        "name": "Unfulfilled",
-        "description": "Order has not been fulfilled yet"
-      },
-      "addresses_orders_billingAddressIdToaddresses": {
-        "id": 605,
-        "buildingNumber": null,
-        "areaStreet": "dfghjkl",
-        "landmarkName": "67ytutgyg",
-        "cityCountryProvince": "Adoni",
-        "state": "Andhra Pradesh",
-        "pincode": "09876543",
-        "country": 1
-      },
-      "addresses_orders_shippingAddressIdToaddresses": {
-        "id": 604,
-        "buildingNumber": null,
-        "areaStreet": "dfghjkl",
-        "landmarkName": "67ytutgyg",
-        "cityCountryProvince": "Adoni",
-        "state": "Andhra Pradesh",
-        "pincode": "09876543",
-        "country": 1
-      },
-      "customers": {
-        "id": 147,
-        "firstName": "Akshara",
-        "lastName": "Mishra",
-        "addressesId": 603,
-        "shopifyId": null,
-        "addresses": {
-          "contact_number": [
-            {
-              "id": 395,
-              "type": "mobile",
-              "number": "1234567890",
-              "address": 603
-            }
-          ],
-          "emails_emails_addressesToaddresses": [
-            {
-              "id": 127,
-              "email": "scd@fds.af",
-              "addresses": 603
-            }
-          ]
-        }
-      }
-    }
+    // const test = {
+    //   "id": 131,
+    //   "orderStatus": 2,
+    //   "shippingAddressId": 604,
+    //   "billingAddressId": 605,
+    //   "createdAt": null,
+    //   "shopifyId": null,
+    //   "customerId": 147,
+    //   "paymentStatus": "Paid",
+    //   "totalPrice": 27000,
+    //   "gateway": "Paypal",
+    //   "channelCreatedAt": "2023-03-23T12:15:20.000Z",
+    //   "cursor": null,
+    //   "order_items": [
+    //     {
+    //       "id": 67,
+    //       "order": 131,
+    //       "product": 3,
+    //       "quantity": 2,
+    //       "price": 13500,
+    //       "products": {
+    //         "id": 3,
+    //         "name": "Machine Tools",
+    //         "sku": "TIFEC0045",
+    //         "description": "Machine Tools update::",
+    //         "length": null,
+    //         "width": null,
+    //         "height": null,
+    //         "weight": null,
+    //         "color": null,
+    //         "hsnCode": null,
+    //         "imageUrl": "https://loremflickr.com/320/240/device?random=1",
+    //         "createdAT": null,
+    //         "updatedAT": null,
+    //         "customDuty": null,
+    //         "gstTaxTypeCode": null,
+    //         "taxCalcType": null,
+    //         "status": "Active",
+    //         "category": null,
+    //         "brand": null,
+    //         "costPrice": 10,
+    //         "type": 1
+    //       }
+    //     }
+    //   ],
+    //   "order_status": {
+    //     "id": 2,
+    //     "name": "Unfulfilled",
+    //     "description": "Order has not been fulfilled yet"
+    //   },
+    //   "addresses_orders_billingAddressIdToaddresses": {
+    //     "id": 605,
+    //     "buildingNumber": null,
+    //     "areaStreet": "dfghjkl",
+    //     "landmarkName": "67ytutgyg",
+    //     "cityCountryProvince": "Adoni",
+    //     "state": "Andhra Pradesh",
+    //     "pincode": "09876543",
+    //     "country": 1
+    //   },
+    //   "addresses_orders_shippingAddressIdToaddresses": {
+    //     "id": 604,
+    //     "buildingNumber": null,
+    //     "areaStreet": "dfghjkl",
+    //     "landmarkName": "67ytutgyg",
+    //     "cityCountryProvince": "Adoni",
+    //     "state": "Andhra Pradesh",
+    //     "pincode": "09876543",
+    //     "country": 1
+    //   },
+    //   "customers": {
+    //     "id": 147,
+    //     "firstName": "Akshara",
+    //     "lastName": "Mishra",
+    //     "addressesId": 603,
+    //     "shopifyId": null,
+    //     "addresses": {
+    //       "contact_number": [
+    //         {
+    //           "id": 395,
+    //           "type": "mobile",
+    //           "number": "1234567890",
+    //           "address": 603
+    //         }
+    //       ],
+    //       "emails_emails_addressesToaddresses": [
+    //         {
+    //           "id": 127,
+    //           "email": "scd@fds.af",
+    //           "addresses": 603
+    //         }
+    //       ]
+    //     }
+    //   }
+    // }
   }
 
 
   const formik = useFormik({
     initialValues: orderItemsDetails,
     validationSchema: Yup.object().shape({
-      // ...Object.assign({}, ...CustomerParams.map((p, i) => ({ [p.name]: CustomerParamSchema[i] })))
+      ...Object.assign({}, ...CustomerParams.map((p, i) => ({ [p.name]: CustomerParamSchema[i] }))),
+      // shippingAddress: Yup.object().shape({
+      //   ...Object.assign({}, ...address.map((p, i) => ({ [p.name]: addressSchema[i] }))),
+      // })
+      // shippingAddress: Yup.object().shape({
+      //   address: Yup.string()
+      //     .required('Shipping address is required'),
+      //   pincode: Yup.string()
+      //     .required('Shipping pincode is required'),
+      //   city: Yup.string()
+      //     .required('Shipping city is required'),
+      //   state: Yup.string()
+      //     .required('Shipping state is required'),
+      //   country: Yup.string()
+      // })
+
       // lastName: Yup.string()
       //   .required('Last name is required'),
       // email: Yup.string()
@@ -626,7 +658,7 @@ export const OrdersList = () => {
   })
 
 
-  console.log('formik', formik.values)
+  console.log('formik', formik.errors)
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
@@ -669,7 +701,7 @@ export const OrdersList = () => {
 
 
   return (
-    <div className="grid w-full">
+    <div className="grid w-full" >
       <div className="col-12">
         <div className="card flex justify-content-between align-items-center m-0">
           <h2>Orders</h2>
@@ -1044,10 +1076,10 @@ export const OrdersList = () => {
 
                 <div className="col-12">
                   <h3 className="field col-12 lg:col-5 md:col-6 mt-4">Shipping Address</h3>
-                  <AddressComponent errors={formik.errors.shippingAddress} value={formik.values.shippingAddress} setField={formik.setFieldValue} addressName={'shippingAddress'} />
+                  <AddressComponent isFormFieldValid={isFormFieldValid} getFormErrorMessage={getFormErrorMessage} errors={formik.errors.shippingAddress} value={formik.values.shippingAddress} setField={formik.setFieldValue} addressName={'shippingAddress'} />
                 </div>
                 <div className="col-12 mt-3 grid align-items-center">
-                  <label className="ml-3">Billing Address or Shipping Address same:</label>
+                  <label className="ml-3">If Billing Address is Shipping Address:</label>
                   <Checkbox
                     // disabled={true}
                     checked={formik?.values?.isShippingIsBilling}
@@ -1438,7 +1470,7 @@ export const OrdersList = () => {
           </DataTable>
         </div>
       </div>
-    </div>
+    </div >
   )
 };
 

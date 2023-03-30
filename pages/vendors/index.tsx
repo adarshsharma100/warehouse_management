@@ -605,41 +605,47 @@ export const VendorsList = () => {
 
     onSubmit: async (data) => {
       console.log("formData", data)
+      console.log('activeVendorData: ', activeVendorData);
 
-      const { id: activeVendorId,
-        vendor_branches: [{ id: vendorBranchId, address: addressId }] } = activeVendorData
+      const {
+        id: activeVendorId,
+        //   vendor_branches: [{ id: vendorBranchId, address: addressId }]
+      } = activeVendorData
+
+
       const { name, code, vendorScore, contact, creditPeriod, leadTime, gstin, email, address, vendor_city
         , vendor_state, branch_code, landmarkName, pincode, status } = data
 
-      if (activeVendor) {
-        const vendor_branches = {
-          update: [
-            {
-              where: {
-                id: vendorBranchId,
-              },
-              data: {
-                branchCode: branch_code,
-                // addresses: {
-                //   update: {
-                //     where: {
-                //       id: addressId
-                //     },
-                //     data: {
-                //       areaStreet: address,
-                //       landmarkName,
-                //       cityCountryProvince: vendor_city,
-                //       state: vendor_state,
-                //       pincode,
-                //       country: 1,
-                //     }
-                //   },
-                // }
 
-              }
-            }
-          ],
-        }
+      if (activeVendor) {
+        // const vendor_branches = {
+        //   update: [
+        //     {
+        //       where: {
+        //         id: vendorBranchId,
+        //       },
+        //       data: {
+        //         branchCode: branch_code,
+        //         // addresses: {
+        //         //   update: {
+        //         //     where: {
+        //         //       id: addressId
+        //         //     },
+        //         //     data: {
+        //         //       areaStreet: address,
+        //         //       landmarkName,
+        //         //       cityCountryProvince: vendor_city,
+        //         //       state: vendor_state,
+        //         //       pincode,
+        //         //       country: 1,
+        //         //     }
+        //         //   },
+        //         // }
+
+        //       }
+        //     }
+        //   ],
+        // }
 
         try {
           await updateActiveVender({
@@ -651,7 +657,7 @@ export const VendorsList = () => {
             leadTime: parseInt(leadTime),
             status: status?.name,
             vendorScore: parseInt(vendorScore),
-            vendor_branches,
+            // vendor_branches,
 
           }, {
             onSuccess: async () => {
@@ -671,6 +677,7 @@ export const VendorsList = () => {
         }
       } else {
         try {
+
           const mail = {
             create: [
               {
@@ -687,6 +694,8 @@ export const VendorsList = () => {
               },
             ],
           }
+
+
 
           const vendor_branches = {
             create: [
@@ -790,6 +799,8 @@ export const VendorsList = () => {
     number: ele,
     id: i + 1,
   }))
+
+  console.log("formik", formik.errors)
 
   return (
     <div className="grid w-full mr-0" ref={scrollToTop}>
