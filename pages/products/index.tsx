@@ -37,6 +37,7 @@ import { validateZodSchema } from "blitz"
 import { Product } from "app/auth/validations"
 import { InputSwitch } from "primereact/inputswitch"
 import { InputNumber } from "primereact/inputnumber"
+import { InputTextarea } from "primereact/inputtextarea"
 
 
 const dateFormat = (dateObj: Date | string) =>
@@ -52,7 +53,7 @@ const columns = [
   { field: "weight", header: "Weight" },
   { field: "color", header: "Color" },
   { field: "brand", header: "Brand" },
-  { field: "taxcode", header: "Tax code" },
+  { field: "customDuty", header: "Custom Duty" },
   { field: "gstcode", header: "Gst Code" },
   { field: "hsnCode", header: "HSN Code" },
   { field: "costPrice", header: "Cost Price" },
@@ -73,6 +74,7 @@ const initialProductDetails = {
   color: undefined,
   hsnCode: undefined,
   imageUrl: undefined,
+  customDuty: undefined,
   gstTaxTypeCode: undefined,
   taxCalcType: undefined,
   category: undefined,
@@ -114,7 +116,7 @@ export const ProductsList = () => {
 
   // USE QUERY
   // <===START===>
-  const [{ products }, { refetch }] = useQuery(getProducts, { orderBy: { id: "asc" } })
+  const [{ products }, { refetch }] = useQuery(getProducts, { orderBy: { id: "desc" } })
   const [{ product_categories }] = useQuery(getProduct_categories, { orderBy: { id: "desc" } })
   // <===STOP===>
 
@@ -123,7 +125,7 @@ export const ProductsList = () => {
   const [createProductMutation, { isLoading: creatingProduct }] = useMutation(createProduct)
   const [uploadCsvMutation] = useMutation(uploadCsvForProcessing)
   const [updateProductMutation, { isLoading: updatingProduct }] = useMutation(updateProduct)
-  const [updateActiveProduct] = useMutation(updateProduct)
+  // const [updateActiveProduct] = useMutation(updateProduct)
   const [kitCreateMutaton] = useMutation(CreateKit_product)
   // <===STOP===>
 
@@ -139,7 +141,7 @@ export const ProductsList = () => {
   const [filters, setFilters] = useState<any>(null)
   const [globalFilterValue, setGlobalFilterValue] = useState("")
   const [selectedColumns, setSelectedColumns] = useState(columns)
-  const [editUpdateProduct, setEditUpdateProduct] = useState(false)
+  // const [editUpdateProduct, setEditUpdateProduct] = useState(false)
   const [filename, setFilename] = useState('');
   const [imageUploadObject, setImageUploadObject] = useState<any>(null)
   const [selectedStatus, setSelectedStatus] = useState<any>(null);
@@ -267,6 +269,9 @@ export const ProductsList = () => {
     initialValues: initialProductDetails,
     validate: validateZodSchema(Product),
     onSubmit: async (data) => {
+      console.log('data: ', data);
+
+      // return
       const {
         name,
         description,
@@ -281,25 +286,39 @@ export const ProductsList = () => {
         tags,
         color,
         type,
-        kitProducts
+        kitProducts,
+        customDuty,
+        gstcode,
+        taxCalcuation,
       } = data
 
       // const tagsValue = tags.map(({ value }) => value)
 
-      const productTypeValue = inputs?.map((i) => ({
-        id: i?.id,
-        quantity: i?.quantity
-      }))
+      // const productTypeValue = inputs?.map((i) => ({
+      //   id: i?.id,
+      //   quantity: i?.quantity
+      // }))
+
+
+
       const { id: activeProductId } = activeRowData
-      if (editUpdateProduct)
-        return await updateActiveProduct({
+      if (activeProduct)
+        return await updateProductMutation({
           id: activeProductId,
           name: name,
+          description,
+          customDuty,
+          gstTaxTypeCode: gstcode,
+          taxCalcType: taxCalcuation,
         },
           {
             onSuccess: async () => {
               toast.current.show({ severity: 'info', summary: 'Update Complete', detail: 'Product updated successfully' });
               await refetch()
+              setProductDialog(false)
+              setActiveProduct(false)
+              formik.resetForm()
+
             },
             onError: (error) => {
               toast.current.show({ severity: 'error', summary: 'Update Failed', detail: 'Product failed to update' });
@@ -310,6 +329,9 @@ export const ProductsList = () => {
         {
           name,
           description,
+          customDuty,
+          gstTaxTypeCode: gstcode,
+          taxCalcType: taxCalcuation,
           sku: moment().format('x'),
           category: category.id,
           costPrice,
@@ -345,6 +367,9 @@ export const ProductsList = () => {
             //   const { filename } = await response.json()
             // }
             await refetch()
+            setProductDialog(false)
+            formik.resetForm()
+
           },
           onError: (error) => {
             console.log('error: ', error);
@@ -359,6 +384,8 @@ export const ProductsList = () => {
       // formik.resetForm()
     },
   })
+
+  console.log('formik: ', formik.values);
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
@@ -478,13 +505,12 @@ export const ProductsList = () => {
                 label="Add Products"
                 className="ml-1"
                 onClick={() => {
-                  refetch()
                   setInputs([{ product: null, quantity: null }])
                   formik.resetForm()
                   setSelectedStatus(null)
-                  setProductEditState(false)
+                  setProductEditState(true)
                   setActiveProduct(false)
-                  setProductDialog(!productDialog)
+                  setProductDialog(true)
                 }}
               />
             </div>
@@ -539,15 +565,12 @@ export const ProductsList = () => {
           <div>
             <div className="flex justify-content-between">
               <h4>{activeProduct ? "Update" : "Create"} Product</h4>
-              <h4>{productEditState ? <Button
-                icon="pi pi-pencil"
-                className="m-1"
-                onClick={() => { setProductEditState(!productEditState); setEditUpdateProduct(!editUpdateProduct) }}
-              /> : <Button
-                icon="pi pi-pencil"
-                className="m-1"
-                onClick={() => setProductEditState(!productEditState)}
-              />}</h4>
+              <h4>{activeProduct &&
+                <Button
+                  icon="pi pi-pencil"
+                  className="m-1"
+                  onClick={() => { setProductEditState(!productEditState) }}
+                />}</h4>
             </div>
 
             <form
@@ -581,30 +604,41 @@ export const ProductsList = () => {
                     { type: 'number', label: "Weight", field: "weight", header: "Weight" },
                     { type: 'text', label: "Color", field: "color", header: "Color" },
                     // { type: 'text', label: "Brand", field: "brand", header: "Brand" },
-                    { type: 'text', label: "Tax type code", field: "taxcode", header: "Tax code" },
+                    { type: 'text', label: "Custom duty", field: "customDuty", header: "Tax code" },
                     { type: 'text', label: "Gst Tax type code", field: "gstcode", header: "Gst Code" },
                     { type: 'text', label: "HSN code", field: "hsnCode", header: "HSN Code" },
                     { type: 'number', label: "Cost Price", field: "costPrice", header: "Cost Price" },
                     { type: 'text', label: "Tax Calculation Type", field: "taxCalcuation", header: "Tax Calcuation" },
+                    { type: 'textArea', label: "Description", field: "description", header: "Name" },
                   ].map(({ field, type, label }, i) => {
                     return (
-                      <div key={`${field}${i}`} className="field col-12 lg:col-2 md:col-6 mt-4">
+                      <div key={`${field}${i}`} className={`field col-12 lg:${type === "textArea" ? "col-12" : "col-2"} md:col-6 mt-4`}>
                         <span className="p-float-label">
                           {
                             type === "text" ? (<InputText
-                              disabled={productEditState}
+                              disabled={!productEditState}
                               id={field}
                               name={field}
                               value={formik.values[field] ?? ""}
                               onChange={formik.handleChange}
                               className={classNames({ "p-invalid": isFormFieldValid(field) })}
-                            />) : (<InputNumber
-                              disabled={productEditState}
+                            />) : type === "number" ? (<InputNumber
+                              disabled={!productEditState}
                               id={field}
                               name={field}
                               value={formik.values[field]}
                               onChange={async (e) => {
                                 await formik.setFieldValue(field, e.value)
+                              }}
+                              autoFocus
+                              className={classNames({ "p-invalid": isFormFieldValid(field) })}
+                            />) : (<InputTextarea
+                              disabled={!productEditState}
+                              id={field}
+                              name={field}
+                              value={formik.values[field]}
+                              onChange={async (e) => {
+                                await formik.setFieldValue(field, e.target.value)
                               }}
                               autoFocus
                               className={classNames({ "p-invalid": isFormFieldValid(field) })}
@@ -626,7 +660,7 @@ export const ProductsList = () => {
                   <span className="p-float-label">
                     <AutoComplete
                       id="category"
-                      disabled={productEditState}
+                      disabled={!productEditState}
                       value={formik.values.category}
                       dropdown
                       forceSelection
@@ -654,7 +688,7 @@ export const ProductsList = () => {
                   <span className="p-float-label">
                     <Dropdown
                       id="type"
-                      disabled={productEditState}
+                      disabled={!productEditState}
                       value={formik.values.type}
                       onChange={async (e) => {
                         if (e.value === 2) {
@@ -783,14 +817,15 @@ export const ProductsList = () => {
                 </div>}
               </div>
 
-              <div className="flex mt-4">
-                <Button
+              <div className="flex mt-4 justify-content-end">
+                {productEditState && <Button
                   type="submit"
                   className="mr-2 "
-                  label={editUpdateProduct ? 'UPDATE' : 'SUBMIT'}
-                />
+                  label={activeProduct ? 'UPDATE' : 'SUBMIT'}
+                />}
                 <Button
-                  className="p-button-secondary"
+                  className="p-button-secondary flex-grow-0"
+                  style={{ maxWidth: "50%" }}
                   type="button"
                   label="CANCEL"
                   onClick={() => {
@@ -798,6 +833,10 @@ export const ProductsList = () => {
                     setProductDialog(false)
                     setProductEditState(false)
                     setActiveProduct(false)
+
+
+                    //TOdo: can not reset description value even after below line have to look into it
+                    // await formik.setFieldValue("description", undefined)
                   }}
                 />
               </div>
@@ -819,9 +858,7 @@ export const ProductsList = () => {
             emptyMessage="No Results found."
             rowHover={true}
             onRowClick={async (e) => {
-
               setActiveRowData({ ...e.data })
-              setProductEditState(true)
               setActiveProduct(true)
               setProductDialog(true)
 
@@ -837,11 +874,12 @@ export const ProductsList = () => {
               });
               setInputs(_kitData)
 
-
               await formik.setValues({
                 ...e.data,
-                type: e.data.product_types.type,
+                type: e?.data?.type,
                 category: e.data.product_categories,
+                gstcode: e?.data?.gstTaxTypeCode,
+                taxCalcuation: e?.data?.taxCalcType,
               })
               scrolToTop?.current && scrolToTop?.current.scrollIntoView()
             }}
