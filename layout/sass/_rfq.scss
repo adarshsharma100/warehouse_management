@@ -47,3 +47,18 @@
     white-space: initial;
   }
 }
+
+.hideLargeContent {
+  max-width: 30ch;
+  height: 20px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: height 5s ease-in-out;
+  text-align: justify;
+}
+
+.hideLargeContent:hover {
+  height: auto;
+  white-space: initial;
+}

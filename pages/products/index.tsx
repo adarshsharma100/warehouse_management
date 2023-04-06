@@ -38,6 +38,8 @@ import { Product } from "app/auth/validations"
 import { InputSwitch } from "primereact/inputswitch"
 import { InputNumber } from "primereact/inputnumber"
 import { InputTextarea } from "primereact/inputtextarea"
+import { OverlayPanel } from "primereact/overlaypanel"
+
 
 
 const dateFormat = (dateObj: Date | string) =>
@@ -45,8 +47,50 @@ const dateFormat = (dateObj: Date | string) =>
 
 const columns = [
   { field: "name", header: "Name" },
-  { field: "description", header: "Description" },
-  { field: "unit", header: "Unit" },
+  { field: "product_types.type", header: "Type" },
+  {
+    field: "Kit Products",
+    header: "Kit Products",
+    body: ({ kit_products }) => {
+      const orderItemOverlayRef = useRef(null);
+
+      return (
+        <>
+          {kit_products?.length ?
+            <div>
+              <Button
+                label={`kit Products`}
+                onClick={(e) => orderItemOverlayRef?.current?.toggle(e)}
+                className="p-button-link"
+              />
+              <OverlayPanel ref={orderItemOverlayRef}>
+                <div className="w-20rem">
+                  {kit_products?.map((product, i) => {
+                    const { quantity, products_kit_products_productsIdToproducts: { name, sku } } = product
+                    return (
+                      <div key={i} className="pt-2 pb-2">
+                        {[{ prop: "Name", value: name },
+                        { prop: "SKU", value: sku },
+                        { prop: "Quantity", value: quantity }
+                        ].map(({ prop, value }, index) => (
+                          <div key={index} className="grid">
+                            <label className="font-semibold col-4">{prop}:</label>
+                            <div className="col">
+                              {value?.toString()}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  })}
+
+                </div>
+              </OverlayPanel>
+            </div> : "N/A"}
+        </>
+      )
+    },
+  },
   { field: "length", header: "Length" },
   { field: "width", header: "Width" },
   { field: "height", header: "Height" },
@@ -58,6 +102,13 @@ const columns = [
   { field: "hsnCode", header: "HSN Code" },
   { field: "costPrice", header: "Cost Price" },
   { field: "taxCalcuation", header: "Tax Calcuation" },
+  {
+    field: "description",
+    header: "Description",
+    style: { width: '200px' },
+    body: ({ description }) => <div className="hideLargeContent">{description}</div>
+  },
+
   {
     header: "Created On",
     body: (rowData) => <div>{dateFormat(rowData.createdAt)}</div>,
@@ -92,22 +143,14 @@ const productTypes = [
 
 export const ProductsList = () => {
 
+
   // USE QUERY
   // <===START===>
   useEffect(() => {
-    const obj = {
-      value: [
-        { field: "imageUrl", header: "Image" },
-        { field: "sku", header: "SKU" },
-        { field: "name", header: "Name" },
-        { field: "category", header: "Category" },
-        { field: "description", header: "Description" },
-        { field: "color", header: "Color" },
-        { field: "height", header: "Height" },
-        { field: "hsnCode", header: "HSNCode" },
-      ],
-    }
-    onColumnToggle(obj)
+    const defaultColumns = columns.filter(col => !["updatedAt", "length", "width", "height", "weight", "brand", "customDuty", "taxCalcuation", "color", "hsnCode"].includes(col.field)).map(col => col.field)
+
+    setSelectedColumns(defaultColumns)
+
     setAntiCSRFToken(getAntiCSRFToken())
     initFilters()
   }, [])
@@ -117,6 +160,7 @@ export const ProductsList = () => {
   // USE QUERY
   // <===START===>
   const [{ products }, { refetch }] = useQuery(getProducts, { orderBy: { id: "desc" } })
+  console.log('products: ', products);
   const [{ product_categories }] = useQuery(getProduct_categories, { orderBy: { id: "desc" } })
   // <===STOP===>
 
@@ -140,7 +184,7 @@ export const ProductsList = () => {
   const [ErrorMsgs, setErrorMsgs] = useState([])
   const [filters, setFilters] = useState<any>(null)
   const [globalFilterValue, setGlobalFilterValue] = useState("")
-  const [selectedColumns, setSelectedColumns] = useState(columns)
+  const [selectedColumns, setSelectedColumns] = useState([])
   // const [editUpdateProduct, setEditUpdateProduct] = useState(false)
   const [filename, setFilename] = useState('');
   const [imageUploadObject, setImageUploadObject] = useState<any>(null)
@@ -163,17 +207,25 @@ export const ProductsList = () => {
     )
     setSelectedColumns(orderedSelectedColumns)
   }
-  const columnComponents = selectedColumns.map((col) => {
-    return (
-      <Column
-        key={col.field}
-        field={col.field}
-        header={col.header}
-        filter
-        filterPlaceholder="Search..."
-      />
-    )
-  })
+
+  const columnComponents = columns.reduce((acc, curr) => {
+    if (selectedColumns.includes(curr.field))
+      return [
+        ...acc,
+        <Column
+          key={curr?.field}
+          field={curr?.field}
+          header={curr?.header}
+          body={curr?.body}
+          filter={curr?.filter}
+          filterPlaceholder={curr?.filterPlaceholder}
+          dataType={curr?.dataType}
+          filterElement={curr?.filterElement}
+        />
+      ];
+    return acc;
+  }, []);
+
   const clearFilter = () => {
     initFilters()
   }
@@ -220,9 +272,11 @@ export const ProductsList = () => {
       <div className="flex justify-content-between">
         <MultiSelect
           value={selectedColumns}
-          options={columns}
-          optionLabel="header"
-          onChange={onColumnToggle}
+          options={columns?.map(({ header, field }) => ({
+            label: header,
+            value: field
+          }))}
+          onChange={(e) => setSelectedColumns(e.value)}
           style={{ width: "20em" }}
         />
         <div className="flex gap-4">
@@ -251,7 +305,7 @@ export const ProductsList = () => {
     return {
       name: `${sku} - ${name}`,
       id,
-      description,
+      // description,
     }
   }), setKitSuggestions)
 
@@ -269,7 +323,21 @@ export const ProductsList = () => {
     initialValues: initialProductDetails,
     validate: validateZodSchema(Product),
     onSubmit: async (data) => {
-      console.log('data: ', data);
+      console.log('formdata: ', data);
+
+      //function to create new kit products
+
+      const createKitProducts = (products) =>
+        products.map(({ product, quantity }) => ({
+          products_kit_products_productsIdToproducts: {
+            connect: {
+              id: product.id
+            }
+          },
+          quantity,
+
+        }))
+
 
       // return
       const {
@@ -301,15 +369,51 @@ export const ProductsList = () => {
 
 
 
-      const { id: activeProductId } = activeRowData
+      const { id: activeProductId, kit_products } = activeRowData
+
+      const existingKitProducts = kitProducts
+        .filter(product => product?.kitId)
+
+      const existingKitIds = existingKitProducts?.map(prod => prod.kitId)
+
+      const newKitProducts = kitProducts?.
+        filter(product => !product?.kitId)
+
+      const removedKitProducts = kit_products?.filter(({ id }) => !existingKitIds.includes(id))
+      console.log('removedKitProducts: ', removedKitProducts.map(product => product.id),);
+
+
       if (activeProduct)
         return await updateProductMutation({
           id: activeProductId,
           name: name,
           description,
+          length,
+          width,
+          height,
+          weight,
+          color,
+          hsnCode,
           customDuty,
           gstTaxTypeCode: gstcode,
           taxCalcType: taxCalcuation,
+          kit_products: {
+            updateMany: existingKitProducts.map(({ kitId, quantity }) => ({
+              where: {
+                id: kitId
+              },
+              data: {
+                quantity,
+              }
+            })),
+            create: createKitProducts(newKitProducts),
+            deleteMany: {
+              id: {
+                in: removedKitProducts.map(product => product?.id),
+              },
+            },
+
+          }
         },
           {
             onSuccess: async () => {
@@ -318,10 +422,13 @@ export const ProductsList = () => {
               setProductDialog(false)
               setActiveProduct(false)
               formik.resetForm()
+              setProductEditState(false)
 
             },
             onError: (error) => {
+              console.log('error: ', error);
               toast.current.show({ severity: 'error', summary: 'Update Failed', detail: 'Product failed to update' });
+
             }
           })
 
@@ -344,15 +451,7 @@ export const ProductsList = () => {
           // imageUrl: filename,
           type,
           kit_products: type === 2 ? {
-            create: kitProducts.map(({ product, quantity }) => ({
-              products_kit_products_productsIdToproducts: {
-                connect: {
-                  id: product.id
-                }
-              },
-              quantity,
-
-            }))
+            create: createKitProducts(kitProducts)
           } : undefined
         },
         {
@@ -489,6 +588,12 @@ export const ProductsList = () => {
   const chooseOptions = { icon: 'pi pi-fw pi-images', iconOnly: true, className: 'custom-choose-btn p-button-rounded p-button-outlined' };
   const uploadOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, className: 'custom-upload-btn p-button-success p-button-rounded p-button-outlined' };
   const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger p-button-rounded p-button-outlined' };
+
+
+
+  useEffect(() => {
+
+  }, [])
 
   return (
     <div className="grid w-full">
@@ -660,7 +765,7 @@ export const ProductsList = () => {
                   <span className="p-float-label">
                     <AutoComplete
                       id="category"
-                      disabled={!productEditState}
+                      disabled={!productEditState || activeProduct}
                       value={formik.values.category}
                       dropdown
                       forceSelection
@@ -688,7 +793,7 @@ export const ProductsList = () => {
                   <span className="p-float-label">
                     <Dropdown
                       id="type"
-                      disabled={!productEditState}
+                      disabled={!productEditState || activeProduct}
                       value={formik.values.type}
                       onChange={async (e) => {
                         if (e.value === 2) {
@@ -709,6 +814,7 @@ export const ProductsList = () => {
                       optionValue="id"
                       placeholder="Product Type"
                       className="w-full"
+
                     />
                     <label
                       htmlFor={"type"}
@@ -734,6 +840,7 @@ export const ProductsList = () => {
                                 name={`kitProducts[${index}]?.product`}
                                 suggestions={kitSuggestions}
                                 completeMethod={kitSearchCategory}
+                                disabled={!productEditState}
                                 dropdown
                                 forceSelection
                                 field="name"
@@ -769,6 +876,7 @@ export const ProductsList = () => {
                                 step={1}
                                 showButtons
                                 value={quantity}
+                                disabled={!productEditState}
                                 onChange={async (e) => {
                                   await formik.setFieldValue("kitProducts", formik.values.kitProducts.map((kitProduct, i) => {
                                     if (i !== index)
@@ -792,8 +900,8 @@ export const ProductsList = () => {
                               <small className="p-error">{formik.errors.kitProducts?.[index]?.quantity}</small>
                             }
                           </div>
-                          <div className="field col-1 p-buttonset mt-5">
-                            {index !== 0 && <Button
+                          {productEditState && <div className="field col-1 p-buttonset mt-5" style={{ height: "fit-content" }}>
+                            {index !== formik.values.kitProducts.length - 1 && <Button
                               className="p-button-secondary"
                               icon="pi pi-trash"
                               onClick={async (e) => {
@@ -809,7 +917,7 @@ export const ProductsList = () => {
                                 return [...acc, curr, { product: undefined, quantity: 1 }]
                               }, []))
                             }} />
-                          </div>
+                          </div>}
                         </>
                       ))}
                     </div>
@@ -864,12 +972,30 @@ export const ProductsList = () => {
 
               setSelectedStatus(e.data.product_types)
 
+              const samplekitProducts = [
+                {
+                  "product": {
+                    "name": "TIFLE189 - update",
+                    "id": 189
+                  },
+                  "quantity": 1
+                },
+                {
+                  "product": {
+                    "name": "TIFundefined171 - lock",
+                    "id": 171
+                  },
+                  "quantity": 1
+                }
+              ]
+
 
               const _kitData = e.data.kit_products.map((prod) => {
-                const { products_kit_products_kitProductIDToproducts: product, quantity } = prod
+                const { products_kit_products_productsIdToproducts: product, quantity, id: kitId } = prod
                 return ({
-                  product: { ...product, name: `${product.sku}-${product.name}` },
+                  product: { name: `${product.sku}-${product.name}`, id: product?.id, },
                   quantity,
+                  kitId,
                 })
               });
               setInputs(_kitData)
@@ -880,11 +1006,55 @@ export const ProductsList = () => {
                 category: e.data.product_categories,
                 gstcode: e?.data?.gstTaxTypeCode,
                 taxCalcuation: e?.data?.taxCalcType,
+                kitProducts: _kitData
+
               })
               scrolToTop?.current && scrolToTop?.current.scrollIntoView()
             }}
           >
             <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} />
+            {/* <Column
+              header="Kit Products"
+              body={({ kit_products }) => {
+                const orderItemOverlayRef = useRef(null);
+
+                return (
+                  <>
+                    {kit_products?.length ?
+                      <div>
+                        <Button
+                          label={`kit Products`}
+                          onClick={(e) => orderItemOverlayRef?.current?.toggle(e)}
+                          className="p-button-link"
+                        />
+                        <OverlayPanel ref={orderItemOverlayRef}>
+                          <div className="w-20rem">
+                            {kit_products?.map((product, i) => {
+                              const { quantity, products_kit_products_productsIdToproducts: { name, sku } } = product
+                              return (
+                                <div key={i} className="pt-2 pb-2">
+                                  {[{ prop: "Name", value: name },
+                                  { prop: "SKU", value: sku },
+                                  { prop: "Quantity", value: quantity }
+                                  ].map(({ prop, value }, index) => (
+                                    <div key={index} className="grid">
+                                      <label className="font-semibold col-4">{prop}:</label>
+                                      <div className="col">
+                                        {value?.toString()}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )
+                            })}
+
+                          </div>
+                        </OverlayPanel>
+                      </div> : "N/A"}
+                  </>
+                )
+              }} /> */}
+
             {columnComponents}
           </DataTable>
 
