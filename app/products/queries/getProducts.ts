@@ -32,6 +32,7 @@ export default resolver.pipe(
             },
             product_categories: true,
             product_types: true,
+            product_brand: true,
 
           },
 

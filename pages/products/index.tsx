@@ -23,7 +23,7 @@ import { useFormik } from "formik"
 import * as Yup from "yup"
 import classNames from "classnames"
 import { AutoComplete } from "primereact/autocomplete"
-import { createCSVFormat, createSearchFunction, filterExistingValues, tsuccess } from "app/constants"
+import { calenderDateFormat, createCSVFormat, createSearchFunction, dateFormat, filterExistingValues, initialFilterRules, tsuccess } from "app/constants"
 import ErrorCard from "components/ErrorCard"
 import LoaderFullScreen from "components/LoaderFullScreen"
 import { FilterMatchMode, FilterOperator } from "primereact/api"
@@ -39,15 +39,30 @@ import { InputSwitch } from "primereact/inputswitch"
 import { InputNumber } from "primereact/inputnumber"
 import { InputTextarea } from "primereact/inputtextarea"
 import { OverlayPanel } from "primereact/overlaypanel"
+import { dateFilterTemplate } from "components/FilterTemplates"
+import getProduct_brands from "app/product_brands/queries/getProduct_brands"
 
-
-
-const dateFormat = (dateObj: Date | string) =>
-  moment(new Date(dateObj)).format("DD-MM-YYYY, hh:mm")
 
 const columns = [
-  { field: "name", header: "Name" },
-  { field: "product_types.type", header: "Type" },
+  {
+    field: "sku",
+    header: "SKU",
+    filter: true,
+    filterPlaceholder: "Search by Sku",
+    body: rowData => <a href='/products/id'>{rowData.sku} </a>
+  },
+  {
+    field: "name",
+    header: "Name",
+    filter: true,
+    filterPlaceholder: "Search by Name"
+  },
+  {
+    field: "product_types.type",
+    header: "Type",
+    filter: true,
+    filterPlaceholder: "Search by Type"
+  },
   {
     field: "Kit Products",
     header: "Kit Products",
@@ -57,9 +72,9 @@ const columns = [
       return (
         <>
           {kit_products?.length ?
-            <div>
+            <div className="w-max">
               <Button
-                label={`kit Products`}
+                label={`Kit Products`}
                 onClick={(e) => orderItemOverlayRef?.current?.toggle(e)}
                 className="p-button-link"
               />
@@ -86,32 +101,73 @@ const columns = [
 
                 </div>
               </OverlayPanel>
-            </div> : "N/A"}
+            </div> : <div className="w-max text-center">N/A</div>}
         </>
       )
     },
   },
-  { field: "length", header: "Length" },
-  { field: "width", header: "Width" },
-  { field: "height", header: "Height" },
-  { field: "weight", header: "Weight" },
-  { field: "color", header: "Color" },
-  { field: "brand", header: "Brand" },
-  { field: "customDuty", header: "Custom Duty" },
-  { field: "gstcode", header: "Gst Code" },
-  { field: "hsnCode", header: "HSN Code" },
-  { field: "costPrice", header: "Cost Price" },
-  { field: "taxCalcuation", header: "Tax Calcuation" },
+  {
+    field: "length",
+    header: "Length"
+  },
+  {
+    field: "width",
+    header: "Width"
+  },
+  {
+    field: "height",
+    header: "Height"
+  },
+  {
+    field: "weight",
+    header: "Weight"
+  },
+  {
+    field: "color",
+    header: "Color"
+  },
+  {
+    field: "brand",
+    header: "Brand"
+  },
+  {
+    field: "customDuty",
+    header: "Custom Duty"
+  },
+  {
+    field: "gstcode",
+    header: "Gst Code"
+  },
+  {
+    field: "hsnCode",
+    header: "HSN Code"
+  },
+  {
+    field: "costPrice",
+    header: "Cost Price",
+    filter: true,
+    filterPlaceholder: "Search by Price"
+  },
+  {
+    field: "taxCalcuation",
+    header: "Tax Calcuation"
+  },
   {
     field: "description",
     header: "Description",
-    style: { width: '200px' },
+    filter: true,
+    filterPlaceholder: "Search by Description",
     body: ({ description }) => <div className="hideLargeContent">{description}</div>
   },
 
   {
+    field: "createdAT",
     header: "Created On",
-    body: (rowData) => <div>{dateFormat(rowData.createdAt)}</div>,
+    filterField: "createdAT",
+    filter: true,
+    filterElement: dateFilterTemplate,
+    dataType: "date",
+    body: (rowData) => <div>{dateFormat(rowData.createdAT)}</div>,
   },
 ]
 
@@ -139,29 +195,30 @@ const productTypes = [
   { id: 2, type: 'BUNDLE' },
 ];
 
+const initialColumnFilters = {
+  global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  sku: initialFilterRules.andContains,
+  name: initialFilterRules.andContains,
+  "product_types.type": initialFilterRules.andContains,
+  updatedAT: initialFilterRules.dateIs,
+  createdAT: initialFilterRules.dateIs,
+  costPrice: initialFilterRules.andContains,
+  agreement: initialFilterRules.andContains,
+  status: initialFilterRules.andContains,
+}
+
 
 
 export const ProductsList = () => {
-
-
-  // USE QUERY
-  // <===START===>
-  useEffect(() => {
-    const defaultColumns = columns.filter(col => !["updatedAt", "length", "width", "height", "weight", "brand", "customDuty", "taxCalcuation", "color", "hsnCode"].includes(col.field)).map(col => col.field)
-
-    setSelectedColumns(defaultColumns)
-
-    setAntiCSRFToken(getAntiCSRFToken())
-    initFilters()
-  }, [])
-  // <===STOP===>
-
 
   // USE QUERY
   // <===START===>
   const [{ products }, { refetch }] = useQuery(getProducts, { orderBy: { id: "desc" } })
   console.log('products: ', products);
   const [{ product_categories }] = useQuery(getProduct_categories, { orderBy: { id: "desc" } })
+  const [{ product_brands }] = useQuery(getProduct_brands, { orderBy: { id: "asc" } })
+
+
   // <===STOP===>
 
   // USE MUTATIONS
@@ -182,7 +239,7 @@ export const ProductsList = () => {
   const [activeRowData, setActiveRowData] = useState({})
   const [errorProducts, setErrorProducts] = useState([])
   const [ErrorMsgs, setErrorMsgs] = useState([])
-  const [filters, setFilters] = useState<any>(null)
+  const [filters, setFilters] = useState<any>(initialColumnFilters)
   const [globalFilterValue, setGlobalFilterValue] = useState("")
   const [selectedColumns, setSelectedColumns] = useState([])
   // const [editUpdateProduct, setEditUpdateProduct] = useState(false)
@@ -194,19 +251,12 @@ export const ProductsList = () => {
   const [unitSuggestions, setUnitSuggestions] = useState<any>(null)
   const [categorySuggestions, setCategorySuggestions] = useState<any>(null)
   const [kitSuggestions, setKitSuggestions] = useState<any>(null)
+  const [brandSuggestions, setBrandSuggestions] = useState([])
   // <===STOP===>
 
   const toast = useRef(null)
   const scrolToTop = useRef<HTMLDivElement>(null)
   const clearUpload = useRef<FileUpload>(null)
-
-  const onColumnToggle = (event) => {
-    let selectedColumns = event.value
-    let orderedSelectedColumns = columns.filter((col) =>
-      selectedColumns.some((sCol) => sCol.field === col.field)
-    )
-    setSelectedColumns(orderedSelectedColumns)
-  }
 
   const columnComponents = columns.reduce((acc, curr) => {
     if (selectedColumns.includes(curr.field))
@@ -227,7 +277,8 @@ export const ProductsList = () => {
   }, []);
 
   const clearFilter = () => {
-    initFilters()
+    setFilters(initialColumnFilters)
+    setGlobalFilterValue("")
   }
   const onGlobalFilterChange = (e) => {
     const value = e.target.value
@@ -237,36 +288,22 @@ export const ProductsList = () => {
     setFilters(_filters1)
     setGlobalFilterValue(value)
   }
-  const initFilters = () => {
-    setFilters({
-      global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-      products_sku: {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      },
-      name: {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      },
-      price: {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      },
-      product_type: {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      },
-      description: {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      },
-      product_unit: {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      },
-    })
-    setGlobalFilterValue("")
-  }
+
+
+  // USE Effect
+  // <===START===>
+  useEffect(() => {
+    const defaultColumns = columns.filter(col => !["updatedAt", "length", "width", "height", "weight", "brand", "customDuty", "taxCalcuation", "color", "hsnCode"].includes(col.field)).map(col => col.field)
+
+    setSelectedColumns(defaultColumns)
+
+    setAntiCSRFToken(getAntiCSRFToken())
+
+  }, [])
+  // <===STOP===>
+
+
+
   const renderHeader = () => {
     return (
       <div className="flex justify-content-between">
@@ -305,9 +342,10 @@ export const ProductsList = () => {
     return {
       name: `${sku} - ${name}`,
       id,
-      // description,
     }
   }), setKitSuggestions)
+
+  const searchBrand = createSearchFunction(product_brands, setBrandSuggestions)
 
   const uploadImage = async (e) => {
     const file = e.files[0]
@@ -325,6 +363,7 @@ export const ProductsList = () => {
     onSubmit: async (data) => {
       console.log('formdata: ', data);
 
+
       //function to create new kit products
 
       const createKitProducts = (products) =>
@@ -338,12 +377,11 @@ export const ProductsList = () => {
 
         }))
 
-
-      // return
       const {
         name,
         description,
         category,
+        brand,
         sku,
         length,
         width,
@@ -371,8 +409,8 @@ export const ProductsList = () => {
 
       const { id: activeProductId, kit_products } = activeRowData
 
-      const existingKitProducts = kitProducts
-        .filter(product => product?.kitId)
+      const existingKitProducts = kitProducts?.
+        filter(product => product?.kitId)
 
       const existingKitIds = existingKitProducts?.map(prod => prod.kitId)
 
@@ -388,6 +426,7 @@ export const ProductsList = () => {
           id: activeProductId,
           name: name,
           description,
+          costPrice,
           length,
           width,
           height,
@@ -441,6 +480,7 @@ export const ProductsList = () => {
           taxCalcType: taxCalcuation,
           sku: moment().format('x'),
           category: category.id,
+          brand: brand?.id,
           costPrice,
           color,
           length,
@@ -468,6 +508,7 @@ export const ProductsList = () => {
             await refetch()
             setProductDialog(false)
             formik.resetForm()
+            setProductEditState(false)
 
           },
           onError: (error) => {
@@ -476,11 +517,6 @@ export const ProductsList = () => {
           }
         }
       )
-
-      //TODO: @Varun dialog should close using onSucess not via formik submission
-      // setProductEditState(false)
-      // setProductDialog(false)
-      // formik.resetForm()
     },
   })
 
@@ -589,11 +625,6 @@ export const ProductsList = () => {
   const uploadOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, className: 'custom-upload-btn p-button-success p-button-rounded p-button-outlined' };
   const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger p-button-rounded p-button-outlined' };
 
-
-
-  useEffect(() => {
-
-  }, [])
 
   return (
     <div className="grid w-full">
@@ -731,7 +762,7 @@ export const ProductsList = () => {
                               disabled={!productEditState}
                               id={field}
                               name={field}
-                              value={formik.values[field]}
+                              value={formik.values[field] ?? undefined}
                               onChange={async (e) => {
                                 await formik.setFieldValue(field, e.value)
                               }}
@@ -741,7 +772,7 @@ export const ProductsList = () => {
                               disabled={!productEditState}
                               id={field}
                               name={field}
-                              value={formik.values[field]}
+                              value={formik.values[field] ?? ""}
                               onChange={async (e) => {
                                 await formik.setFieldValue(field, e.target.value)
                               }}
@@ -761,7 +792,7 @@ export const ProductsList = () => {
                     )
                   })
                 }
-                <div key={`category`} className="field col-12 lg:col-6 mt-4">
+                <div key={`category`} className="field col-12 lg:col-4 mt-4">
                   <span className="p-float-label">
                     <AutoComplete
                       id="category"
@@ -788,8 +819,35 @@ export const ProductsList = () => {
                   </span>
                   {getFormErrorMessage("category")}
                 </div>
+                <div key={`brand`} className="field col-12 lg:col-4 mt-4">
+                  <span className="p-float-label">
+                    <AutoComplete
+                      id="brand"
+                      disabled={!productEditState || activeProduct}
+                      value={formik.values.brand}
+                      dropdown
+                      forceSelection
+                      suggestions={brandSuggestions}
+                      completeMethod={searchBrand}
+                      field="name"
+                      onChange={async (e) => {
+                        await formik.setFieldValue("brand", e.value)
+                      }}
+                      aria-label="Product brand"
+                      dropdownAriaLabel="Product brand"
+                      className={classNames({ "p-invalid": isFormFieldValid("brand") })}
+                    />
+                    <label
+                      htmlFor={"brand"}
+                      className={classNames({ "p-error": isFormFieldValid("brand") })}
+                    >
+                      Brand
+                    </label>
+                  </span>
+                  {getFormErrorMessage("brand")}
+                </div>
 
-                <div key="type" className="field col-12 lg:col-6 mt-4">
+                <div key="type" className="field col-12 lg:col-4 mt-4">
                   <span className="p-float-label">
                     <Dropdown
                       id="type"
@@ -936,15 +994,11 @@ export const ProductsList = () => {
                   style={{ maxWidth: "50%" }}
                   type="button"
                   label="CANCEL"
-                  onClick={() => {
+                  onClick={async () => {
                     formik.resetForm()
                     setProductDialog(false)
                     setProductEditState(false)
                     setActiveProduct(false)
-
-
-                    //TOdo: can not reset description value even after below line have to look into it
-                    // await formik.setFieldValue("description", undefined)
                   }}
                 />
               </div>
@@ -972,23 +1026,6 @@ export const ProductsList = () => {
 
               setSelectedStatus(e.data.product_types)
 
-              const samplekitProducts = [
-                {
-                  "product": {
-                    "name": "TIFLE189 - update",
-                    "id": 189
-                  },
-                  "quantity": 1
-                },
-                {
-                  "product": {
-                    "name": "TIFundefined171 - lock",
-                    "id": 171
-                  },
-                  "quantity": 1
-                }
-              ]
-
 
               const _kitData = e.data.kit_products.map((prod) => {
                 const { products_kit_products_productsIdToproducts: product, quantity, id: kitId } = prod
@@ -1006,55 +1043,13 @@ export const ProductsList = () => {
                 category: e.data.product_categories,
                 gstcode: e?.data?.gstTaxTypeCode,
                 taxCalcuation: e?.data?.taxCalcType,
-                kitProducts: _kitData
+                kitProducts: _kitData,
+                brand: e?.data.product_brand,
 
               })
               scrolToTop?.current && scrolToTop?.current.scrollIntoView()
             }}
           >
-            <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} />
-            {/* <Column
-              header="Kit Products"
-              body={({ kit_products }) => {
-                const orderItemOverlayRef = useRef(null);
-
-                return (
-                  <>
-                    {kit_products?.length ?
-                      <div>
-                        <Button
-                          label={`kit Products`}
-                          onClick={(e) => orderItemOverlayRef?.current?.toggle(e)}
-                          className="p-button-link"
-                        />
-                        <OverlayPanel ref={orderItemOverlayRef}>
-                          <div className="w-20rem">
-                            {kit_products?.map((product, i) => {
-                              const { quantity, products_kit_products_productsIdToproducts: { name, sku } } = product
-                              return (
-                                <div key={i} className="pt-2 pb-2">
-                                  {[{ prop: "Name", value: name },
-                                  { prop: "SKU", value: sku },
-                                  { prop: "Quantity", value: quantity }
-                                  ].map(({ prop, value }, index) => (
-                                    <div key={index} className="grid">
-                                      <label className="font-semibold col-4">{prop}:</label>
-                                      <div className="col">
-                                        {value?.toString()}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )
-                            })}
-
-                          </div>
-                        </OverlayPanel>
-                      </div> : "N/A"}
-                  </>
-                )
-              }} /> */}
-
             {columnComponents}
           </DataTable>
 
