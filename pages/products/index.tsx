@@ -417,7 +417,7 @@ export const ProductsList = () => {
       const newKitProducts = kitProducts?.
         filter(product => !product?.kitId)
 
-      const removedKitProducts = kit_products?.filter(({ id }) => !existingKitIds.includes(id))
+      const removedKitProducts = kit_products?.filter(({ id }) => !existingKitIds?.includes(id))
       console.log('removedKitProducts: ', removedKitProducts.map(product => product.id),);
 
 
@@ -520,7 +520,6 @@ export const ProductsList = () => {
     },
   })
 
-  console.log('formik: ', formik.values);
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
