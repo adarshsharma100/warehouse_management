@@ -23,7 +23,7 @@ import { useFormik } from "formik"
 import * as Yup from "yup"
 import classNames from "classnames"
 import { AutoComplete } from "primereact/autocomplete"
-import { createCSVFormat, createSearchFunction, filterExistingValues, tsuccess } from "app/constants"
+import { calenderDateFormat, createCSVFormat, createSearchFunction, dateFormat, filterExistingValues, initialFilterRules, tsuccess } from "app/constants"
 import ErrorCard from "components/ErrorCard"
 import LoaderFullScreen from "components/LoaderFullScreen"
 import { FilterMatchMode, FilterOperator } from "primereact/api"
@@ -37,29 +37,137 @@ import { validateZodSchema } from "blitz"
 import { Product } from "app/auth/validations"
 import { InputSwitch } from "primereact/inputswitch"
 import { InputNumber } from "primereact/inputnumber"
+import { InputTextarea } from "primereact/inputtextarea"
+import { OverlayPanel } from "primereact/overlaypanel"
+import { dateFilterTemplate } from "components/FilterTemplates"
+import getProduct_brands from "app/product_brands/queries/getProduct_brands"
 
-
-const dateFormat = (dateObj: Date | string) =>
-  moment(new Date(dateObj)).format("DD-MM-YYYY, hh:mm")
 
 const columns = [
-  { field: "name", header: "Name" },
-  { field: "description", header: "Description" },
-  { field: "unit", header: "Unit" },
-  { field: "length", header: "Length" },
-  { field: "width", header: "Width" },
-  { field: "height", header: "Height" },
-  { field: "weight", header: "Weight" },
-  { field: "color", header: "Color" },
-  { field: "brand", header: "Brand" },
-  { field: "taxcode", header: "Tax code" },
-  { field: "gstcode", header: "Gst Code" },
-  { field: "hsnCode", header: "HSN Code" },
-  { field: "costPrice", header: "Cost Price" },
-  { field: "taxCalcuation", header: "Tax Calcuation" },
   {
+    field: "sku",
+    header: "SKU",
+    filter: true,
+    filterPlaceholder: "Search by Sku",
+    body: rowData => <a href='/products/id'>{rowData.sku} </a>
+  },
+  {
+    field: "name",
+    header: "Name",
+    filter: true,
+    filterPlaceholder: "Search by Name"
+  },
+  {
+    field: "product_types.type",
+    header: "Type",
+    filter: true,
+    filterPlaceholder: "Search by Type"
+  },
+  {
+    field: "Kit Products",
+    header: "Kit Products",
+    body: ({ kit_products }) => {
+      const orderItemOverlayRef = useRef(null);
+
+      return (
+        <>
+          {kit_products?.length ?
+            <div className="w-max">
+              <Button
+                label={`Kit Products`}
+                onClick={(e) => orderItemOverlayRef?.current?.toggle(e)}
+                className="p-button-link"
+              />
+              <OverlayPanel ref={orderItemOverlayRef}>
+                <div className="w-20rem">
+                  {kit_products?.map((product, i) => {
+                    const { quantity, products_kit_products_productsIdToproducts: { name, sku } } = product
+                    return (
+                      <div key={i} className="pt-2 pb-2">
+                        {[{ prop: "Name", value: name },
+                        { prop: "SKU", value: sku },
+                        { prop: "Quantity", value: quantity }
+                        ].map(({ prop, value }, index) => (
+                          <div key={index} className="grid">
+                            <label className="font-semibold col-4">{prop}:</label>
+                            <div className="col">
+                              {value?.toString()}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  })}
+
+                </div>
+              </OverlayPanel>
+            </div> : <div className="w-max text-center">N/A</div>}
+        </>
+      )
+    },
+  },
+  {
+    field: "length",
+    header: "Length"
+  },
+  {
+    field: "width",
+    header: "Width"
+  },
+  {
+    field: "height",
+    header: "Height"
+  },
+  {
+    field: "weight",
+    header: "Weight"
+  },
+  {
+    field: "color",
+    header: "Color"
+  },
+  {
+    field: "brand",
+    header: "Brand"
+  },
+  {
+    field: "customDuty",
+    header: "Custom Duty"
+  },
+  {
+    field: "gstcode",
+    header: "Gst Code"
+  },
+  {
+    field: "hsnCode",
+    header: "HSN Code"
+  },
+  {
+    field: "costPrice",
+    header: "Cost Price",
+    filter: true,
+    filterPlaceholder: "Search by Price"
+  },
+  {
+    field: "taxCalcuation",
+    header: "Tax Calcuation"
+  },
+  {
+    field: "description",
+    header: "Description",
+    filter: true,
+    filterPlaceholder: "Search by Description",
+    body: ({ description }) => <div className="hideLargeContent">{description}</div>
+  },
+
+  {
+    field: "createdAT",
     header: "Created On",
-    body: (rowData) => <div>{dateFormat(rowData.createdAt)}</div>,
+    filterField: "createdAT",
+    filter: true,
+    filterElement: dateFilterTemplate,
+    dataType: "date",
+    body: (rowData) => <div>{dateFormat(rowData.createdAT)}</div>,
   },
 ]
 
@@ -73,6 +181,7 @@ const initialProductDetails = {
   color: undefined,
   hsnCode: undefined,
   imageUrl: undefined,
+  customDuty: undefined,
   gstTaxTypeCode: undefined,
   taxCalcType: undefined,
   category: undefined,
@@ -86,36 +195,30 @@ const productTypes = [
   { id: 2, type: 'BUNDLE' },
 ];
 
+const initialColumnFilters = {
+  global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  sku: initialFilterRules.andContains,
+  name: initialFilterRules.andContains,
+  "product_types.type": initialFilterRules.andContains,
+  updatedAT: initialFilterRules.dateIs,
+  createdAT: initialFilterRules.dateIs,
+  costPrice: initialFilterRules.andContains,
+  agreement: initialFilterRules.andContains,
+  status: initialFilterRules.andContains,
+}
+
 
 
 export const ProductsList = () => {
 
   // USE QUERY
   // <===START===>
-  useEffect(() => {
-    const obj = {
-      value: [
-        { field: "imageUrl", header: "Image" },
-        { field: "sku", header: "SKU" },
-        { field: "name", header: "Name" },
-        { field: "category", header: "Category" },
-        { field: "description", header: "Description" },
-        { field: "color", header: "Color" },
-        { field: "height", header: "Height" },
-        { field: "hsnCode", header: "HSNCode" },
-      ],
-    }
-    onColumnToggle(obj)
-    setAntiCSRFToken(getAntiCSRFToken())
-    initFilters()
-  }, [])
-  // <===STOP===>
-
-
-  // USE QUERY
-  // <===START===>
-  const [{ products }, { refetch }] = useQuery(getProducts, { orderBy: { id: "asc" } })
+  const [{ products }, { refetch }] = useQuery(getProducts, { orderBy: { id: "desc" } })
+  console.log('products: ', products);
   const [{ product_categories }] = useQuery(getProduct_categories, { orderBy: { id: "desc" } })
+  const [{ product_brands }] = useQuery(getProduct_brands, { orderBy: { id: "asc" } })
+
+
   // <===STOP===>
 
   // USE MUTATIONS
@@ -123,7 +226,7 @@ export const ProductsList = () => {
   const [createProductMutation, { isLoading: creatingProduct }] = useMutation(createProduct)
   const [uploadCsvMutation] = useMutation(uploadCsvForProcessing)
   const [updateProductMutation, { isLoading: updatingProduct }] = useMutation(updateProduct)
-  const [updateActiveProduct] = useMutation(updateProduct)
+  // const [updateActiveProduct] = useMutation(updateProduct)
   const [kitCreateMutaton] = useMutation(CreateKit_product)
   // <===STOP===>
 
@@ -136,10 +239,10 @@ export const ProductsList = () => {
   const [activeRowData, setActiveRowData] = useState({})
   const [errorProducts, setErrorProducts] = useState([])
   const [ErrorMsgs, setErrorMsgs] = useState([])
-  const [filters, setFilters] = useState<any>(null)
+  const [filters, setFilters] = useState<any>(initialColumnFilters)
   const [globalFilterValue, setGlobalFilterValue] = useState("")
-  const [selectedColumns, setSelectedColumns] = useState(columns)
-  const [editUpdateProduct, setEditUpdateProduct] = useState(false)
+  const [selectedColumns, setSelectedColumns] = useState([])
+  // const [editUpdateProduct, setEditUpdateProduct] = useState(false)
   const [filename, setFilename] = useState('');
   const [imageUploadObject, setImageUploadObject] = useState<any>(null)
   const [selectedStatus, setSelectedStatus] = useState<any>(null);
@@ -148,32 +251,34 @@ export const ProductsList = () => {
   const [unitSuggestions, setUnitSuggestions] = useState<any>(null)
   const [categorySuggestions, setCategorySuggestions] = useState<any>(null)
   const [kitSuggestions, setKitSuggestions] = useState<any>(null)
+  const [brandSuggestions, setBrandSuggestions] = useState([])
   // <===STOP===>
 
   const toast = useRef(null)
   const scrolToTop = useRef<HTMLDivElement>(null)
   const clearUpload = useRef<FileUpload>(null)
 
-  const onColumnToggle = (event) => {
-    let selectedColumns = event.value
-    let orderedSelectedColumns = columns.filter((col) =>
-      selectedColumns.some((sCol) => sCol.field === col.field)
-    )
-    setSelectedColumns(orderedSelectedColumns)
-  }
-  const columnComponents = selectedColumns.map((col) => {
-    return (
-      <Column
-        key={col.field}
-        field={col.field}
-        header={col.header}
-        filter
-        filterPlaceholder="Search..."
-      />
-    )
-  })
+  const columnComponents = columns.reduce((acc, curr) => {
+    if (selectedColumns.includes(curr.field))
+      return [
+        ...acc,
+        <Column
+          key={curr?.field}
+          field={curr?.field}
+          header={curr?.header}
+          body={curr?.body}
+          filter={curr?.filter}
+          filterPlaceholder={curr?.filterPlaceholder}
+          dataType={curr?.dataType}
+          filterElement={curr?.filterElement}
+        />
+      ];
+    return acc;
+  }, []);
+
   const clearFilter = () => {
-    initFilters()
+    setFilters(initialColumnFilters)
+    setGlobalFilterValue("")
   }
   const onGlobalFilterChange = (e) => {
     const value = e.target.value
@@ -183,44 +288,32 @@ export const ProductsList = () => {
     setFilters(_filters1)
     setGlobalFilterValue(value)
   }
-  const initFilters = () => {
-    setFilters({
-      global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-      products_sku: {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      },
-      name: {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      },
-      price: {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      },
-      product_type: {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      },
-      description: {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      },
-      product_unit: {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      },
-    })
-    setGlobalFilterValue("")
-  }
+
+
+  // USE Effect
+  // <===START===>
+  useEffect(() => {
+    const defaultColumns = columns.filter(col => !["updatedAt", "length", "width", "height", "weight", "brand", "customDuty", "taxCalcuation", "color", "hsnCode"].includes(col.field)).map(col => col.field)
+
+    setSelectedColumns(defaultColumns)
+
+    setAntiCSRFToken(getAntiCSRFToken())
+
+  }, [])
+  // <===STOP===>
+
+
+
   const renderHeader = () => {
     return (
       <div className="flex justify-content-between">
         <MultiSelect
           value={selectedColumns}
-          options={columns}
-          optionLabel="header"
-          onChange={onColumnToggle}
+          options={columns?.map(({ header, field }) => ({
+            label: header,
+            value: field
+          }))}
+          onChange={(e) => setSelectedColumns(e.value)}
           style={{ width: "20em" }}
         />
         <div className="flex gap-4">
@@ -249,9 +342,10 @@ export const ProductsList = () => {
     return {
       name: `${sku} - ${name}`,
       id,
-      description,
     }
   }), setKitSuggestions)
+
+  const searchBrand = createSearchFunction(product_brands, setBrandSuggestions)
 
   const uploadImage = async (e) => {
     const file = e.files[0]
@@ -267,10 +361,27 @@ export const ProductsList = () => {
     initialValues: initialProductDetails,
     validate: validateZodSchema(Product),
     onSubmit: async (data) => {
+      console.log('formdata: ', data);
+
+
+      //function to create new kit products
+
+      const createKitProducts = (products) =>
+        products.map(({ product, quantity }) => ({
+          products_kit_products_productsIdToproducts: {
+            connect: {
+              id: product.id
+            }
+          },
+          quantity,
+
+        }))
+
       const {
         name,
         description,
         category,
+        brand,
         sku,
         length,
         width,
@@ -281,28 +392,82 @@ export const ProductsList = () => {
         tags,
         color,
         type,
-        kitProducts
+        kitProducts,
+        customDuty,
+        gstcode,
+        taxCalcuation,
       } = data
 
       // const tagsValue = tags.map(({ value }) => value)
 
-      const productTypeValue = inputs?.map((i) => ({
-        id: i?.id,
-        quantity: i?.quantity
-      }))
-      const { id: activeProductId } = activeRowData
-      if (editUpdateProduct)
-        return await updateActiveProduct({
+      // const productTypeValue = inputs?.map((i) => ({
+      //   id: i?.id,
+      //   quantity: i?.quantity
+      // }))
+
+
+
+      const { id: activeProductId, kit_products } = activeRowData
+
+      const existingKitProducts = kitProducts?.
+        filter(product => product?.kitId)
+
+      const existingKitIds = existingKitProducts?.map(prod => prod.kitId)
+
+      const newKitProducts = kitProducts?.
+        filter(product => !product?.kitId)
+
+      const removedKitProducts = kit_products?.filter(({ id }) => !existingKitIds?.includes(id))
+      console.log('removedKitProducts: ', removedKitProducts.map(product => product.id),);
+
+
+      if (activeProduct)
+        return await updateProductMutation({
           id: activeProductId,
           name: name,
+          description,
+          costPrice,
+          length,
+          width,
+          height,
+          weight,
+          color,
+          hsnCode,
+          customDuty,
+          gstTaxTypeCode: gstcode,
+          taxCalcType: taxCalcuation,
+          kit_products: {
+            updateMany: existingKitProducts.map(({ kitId, quantity }) => ({
+              where: {
+                id: kitId
+              },
+              data: {
+                quantity,
+              }
+            })),
+            create: createKitProducts(newKitProducts),
+            deleteMany: {
+              id: {
+                in: removedKitProducts.map(product => product?.id),
+              },
+            },
+
+          }
         },
           {
             onSuccess: async () => {
               toast.current.show({ severity: 'info', summary: 'Update Complete', detail: 'Product updated successfully' });
               await refetch()
+              setProductDialog(false)
+              setActiveProduct(false)
+              formik.resetForm()
+              setProductEditState(false)
+
             },
             onError: (error) => {
+              console.log('error: ', error);
               toast.current.show({ severity: 'error', summary: 'Update Failed', detail: 'Product failed to update' });
+
             }
           })
 
@@ -310,8 +475,12 @@ export const ProductsList = () => {
         {
           name,
           description,
+          customDuty,
+          gstTaxTypeCode: gstcode,
+          taxCalcType: taxCalcuation,
           sku: moment().format('x'),
           category: category.id,
+          brand: brand?.id,
           costPrice,
           color,
           length,
@@ -322,15 +491,7 @@ export const ProductsList = () => {
           // imageUrl: filename,
           type,
           kit_products: type === 2 ? {
-            create: kitProducts.map(({ product, quantity }) => ({
-              products_kit_products_productsIdToproducts: {
-                connect: {
-                  id: product.id
-                }
-              },
-              quantity,
-
-            }))
+            create: createKitProducts(kitProducts)
           } : undefined
         },
         {
@@ -345,6 +506,10 @@ export const ProductsList = () => {
             //   const { filename } = await response.json()
             // }
             await refetch()
+            setProductDialog(false)
+            formik.resetForm()
+            setProductEditState(false)
+
           },
           onError: (error) => {
             console.log('error: ', error);
@@ -352,13 +517,9 @@ export const ProductsList = () => {
           }
         }
       )
-
-      //TODO: @Varun dialog should close using onSucess not via formik submission
-      // setProductEditState(false)
-      // setProductDialog(false)
-      // formik.resetForm()
     },
   })
+
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
@@ -463,6 +624,7 @@ export const ProductsList = () => {
   const uploadOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, className: 'custom-upload-btn p-button-success p-button-rounded p-button-outlined' };
   const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger p-button-rounded p-button-outlined' };
 
+
   return (
     <div className="grid w-full">
       <Toast ref={toast} />
@@ -478,13 +640,12 @@ export const ProductsList = () => {
                 label="Add Products"
                 className="ml-1"
                 onClick={() => {
-                  refetch()
                   setInputs([{ product: null, quantity: null }])
                   formik.resetForm()
                   setSelectedStatus(null)
-                  setProductEditState(false)
+                  setProductEditState(true)
                   setActiveProduct(false)
-                  setProductDialog(!productDialog)
+                  setProductDialog(true)
                 }}
               />
             </div>
@@ -539,15 +700,12 @@ export const ProductsList = () => {
           <div>
             <div className="flex justify-content-between">
               <h4>{activeProduct ? "Update" : "Create"} Product</h4>
-              <h4>{productEditState ? <Button
-                icon="pi pi-pencil"
-                className="m-1"
-                onClick={() => { setProductEditState(!productEditState); setEditUpdateProduct(!editUpdateProduct) }}
-              /> : <Button
-                icon="pi pi-pencil"
-                className="m-1"
-                onClick={() => setProductEditState(!productEditState)}
-              />}</h4>
+              <h4>{activeProduct &&
+                <Button
+                  icon="pi pi-pencil"
+                  className="m-1"
+                  onClick={() => { setProductEditState(!productEditState) }}
+                />}</h4>
             </div>
 
             <form
@@ -581,30 +739,41 @@ export const ProductsList = () => {
                     { type: 'number', label: "Weight", field: "weight", header: "Weight" },
                     { type: 'text', label: "Color", field: "color", header: "Color" },
                     // { type: 'text', label: "Brand", field: "brand", header: "Brand" },
-                    { type: 'text', label: "Tax type code", field: "taxcode", header: "Tax code" },
+                    { type: 'text', label: "Custom duty", field: "customDuty", header: "Tax code" },
                     { type: 'text', label: "Gst Tax type code", field: "gstcode", header: "Gst Code" },
                     { type: 'text', label: "HSN code", field: "hsnCode", header: "HSN Code" },
                     { type: 'number', label: "Cost Price", field: "costPrice", header: "Cost Price" },
                     { type: 'text', label: "Tax Calculation Type", field: "taxCalcuation", header: "Tax Calcuation" },
+                    { type: 'textArea', label: "Description", field: "description", header: "Name" },
                   ].map(({ field, type, label }, i) => {
                     return (
-                      <div key={`${field}${i}`} className="field col-12 lg:col-2 md:col-6 mt-4">
+                      <div key={`${field}${i}`} className={`field col-12 lg:${type === "textArea" ? "col-12" : "col-2"} md:col-6 mt-4`}>
                         <span className="p-float-label">
                           {
                             type === "text" ? (<InputText
-                              disabled={productEditState}
+                              disabled={!productEditState}
                               id={field}
                               name={field}
                               value={formik.values[field] ?? ""}
                               onChange={formik.handleChange}
                               className={classNames({ "p-invalid": isFormFieldValid(field) })}
-                            />) : (<InputNumber
-                              disabled={productEditState}
+                            />) : type === "number" ? (<InputNumber
+                              disabled={!productEditState}
                               id={field}
                               name={field}
-                              value={formik.values[field]}
+                              value={formik.values[field] ?? undefined}
                               onChange={async (e) => {
                                 await formik.setFieldValue(field, e.value)
+                              }}
+                              autoFocus
+                              className={classNames({ "p-invalid": isFormFieldValid(field) })}
+                            />) : (<InputTextarea
+                              disabled={!productEditState}
+                              id={field}
+                              name={field}
+                              value={formik.values[field] ?? ""}
+                              onChange={async (e) => {
+                                await formik.setFieldValue(field, e.target.value)
                               }}
                               autoFocus
                               className={classNames({ "p-invalid": isFormFieldValid(field) })}
@@ -622,11 +791,11 @@ export const ProductsList = () => {
                     )
                   })
                 }
-                <div key={`category`} className="field col-12 lg:col-6 mt-4">
+                <div key={`category`} className="field col-12 lg:col-4 mt-4">
                   <span className="p-float-label">
                     <AutoComplete
                       id="category"
-                      disabled={productEditState}
+                      disabled={!productEditState || activeProduct}
                       value={formik.values.category}
                       dropdown
                       forceSelection
@@ -649,12 +818,39 @@ export const ProductsList = () => {
                   </span>
                   {getFormErrorMessage("category")}
                 </div>
+                <div key={`brand`} className="field col-12 lg:col-4 mt-4">
+                  <span className="p-float-label">
+                    <AutoComplete
+                      id="brand"
+                      disabled={!productEditState || activeProduct}
+                      value={formik.values.brand}
+                      dropdown
+                      forceSelection
+                      suggestions={brandSuggestions}
+                      completeMethod={searchBrand}
+                      field="name"
+                      onChange={async (e) => {
+                        await formik.setFieldValue("brand", e.value)
+                      }}
+                      aria-label="Product brand"
+                      dropdownAriaLabel="Product brand"
+                      className={classNames({ "p-invalid": isFormFieldValid("brand") })}
+                    />
+                    <label
+                      htmlFor={"brand"}
+                      className={classNames({ "p-error": isFormFieldValid("brand") })}
+                    >
+                      Brand
+                    </label>
+                  </span>
+                  {getFormErrorMessage("brand")}
+                </div>
 
-                <div key="type" className="field col-12 lg:col-6 mt-4">
+                <div key="type" className="field col-12 lg:col-4 mt-4">
                   <span className="p-float-label">
                     <Dropdown
                       id="type"
-                      disabled={productEditState}
+                      disabled={!productEditState || activeProduct}
                       value={formik.values.type}
                       onChange={async (e) => {
                         if (e.value === 2) {
@@ -675,6 +871,7 @@ export const ProductsList = () => {
                       optionValue="id"
                       placeholder="Product Type"
                       className="w-full"
+
                     />
                     <label
                       htmlFor={"type"}
@@ -700,6 +897,7 @@ export const ProductsList = () => {
                                 name={`kitProducts[${index}]?.product`}
                                 suggestions={kitSuggestions}
                                 completeMethod={kitSearchCategory}
+                                disabled={!productEditState}
                                 dropdown
                                 forceSelection
                                 field="name"
@@ -735,6 +933,7 @@ export const ProductsList = () => {
                                 step={1}
                                 showButtons
                                 value={quantity}
+                                disabled={!productEditState}
                                 onChange={async (e) => {
                                   await formik.setFieldValue("kitProducts", formik.values.kitProducts.map((kitProduct, i) => {
                                     if (i !== index)
@@ -758,8 +957,8 @@ export const ProductsList = () => {
                               <small className="p-error">{formik.errors.kitProducts?.[index]?.quantity}</small>
                             }
                           </div>
-                          <div className="field col-1 p-buttonset mt-5">
-                            {index !== 0 && <Button
+                          {productEditState && <div className="field col-1 p-buttonset mt-5" style={{ height: "fit-content" }}>
+                            {index !== formik.values.kitProducts.length - 1 && <Button
                               className="p-button-secondary"
                               icon="pi pi-trash"
                               onClick={async (e) => {
@@ -775,7 +974,7 @@ export const ProductsList = () => {
                                 return [...acc, curr, { product: undefined, quantity: 1 }]
                               }, []))
                             }} />
-                          </div>
+                          </div>}
                         </>
                       ))}
                     </div>
@@ -783,17 +982,18 @@ export const ProductsList = () => {
                 </div>}
               </div>
 
-              <div className="flex mt-4">
-                <Button
+              <div className="flex mt-4 justify-content-end">
+                {productEditState && <Button
                   type="submit"
                   className="mr-2 "
-                  label={editUpdateProduct ? 'UPDATE' : 'SUBMIT'}
-                />
+                  label={activeProduct ? 'UPDATE' : 'SUBMIT'}
+                />}
                 <Button
-                  className="p-button-secondary"
+                  className="p-button-secondary flex-grow-0"
+                  style={{ maxWidth: "50%" }}
                   type="button"
                   label="CANCEL"
-                  onClick={() => {
+                  onClick={async () => {
                     formik.resetForm()
                     setProductDialog(false)
                     setProductEditState(false)
@@ -819,9 +1019,7 @@ export const ProductsList = () => {
             emptyMessage="No Results found."
             rowHover={true}
             onRowClick={async (e) => {
-
               setActiveRowData({ ...e.data })
-              setProductEditState(true)
               setActiveProduct(true)
               setProductDialog(true)
 
@@ -829,24 +1027,28 @@ export const ProductsList = () => {
 
 
               const _kitData = e.data.kit_products.map((prod) => {
-                const { products_kit_products_kitProductIDToproducts: product, quantity } = prod
+                const { products_kit_products_productsIdToproducts: product, quantity, id: kitId } = prod
                 return ({
-                  product: { ...product, name: `${product.sku}-${product.name}` },
+                  product: { name: `${product.sku}-${product.name}`, id: product?.id, },
                   quantity,
+                  kitId,
                 })
               });
               setInputs(_kitData)
 
-
               await formik.setValues({
                 ...e.data,
-                type: e.data.product_types.type,
+                type: e?.data?.type,
                 category: e.data.product_categories,
+                gstcode: e?.data?.gstTaxTypeCode,
+                taxCalcuation: e?.data?.taxCalcType,
+                kitProducts: _kitData,
+                brand: e?.data.product_brand,
+
               })
               scrolToTop?.current && scrolToTop?.current.scrollIntoView()
             }}
           >
-            <Column header="SKU" body={rowData => <a href='/products/id'>{rowData.sku} </a>} />
             {columnComponents}
           </DataTable>
 

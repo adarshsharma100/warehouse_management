@@ -2,6 +2,7 @@ import moment from "moment"
 import React from "react"
 import { FilterMatchMode, FilterOperator } from "primereact/api"
 import { Calendar } from "primereact/calendar"
+import { Column } from "primereact/column"
 
 export const cities = [
   { city: "Kolhapur", state: "Maharashtra" },
