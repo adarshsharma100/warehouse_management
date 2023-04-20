@@ -128,9 +128,10 @@ export const OrderDetails = () => {
   const [selectedColumnsTwo] = useState(columnsTwo)
   const [dataSummery] = useState(summeryData)
   const [comments, setComments] = useState([]);
+  const [dialogBox, setDialogBox] = useState(false);
 
 
-  const  handleSubmit = (event)  =>{
+  const handleSubmit = (event) => {
     event.preventDefault();
     const newComment = {
       comment: event.target.elements.comment.value,
@@ -163,6 +164,40 @@ export const OrderDetails = () => {
       />
     )
   })
+
+  const togglePdf =()  =>{
+    setDialogBox(!dialogBox);
+  }
+
+
+  const PDFData = () => (
+    <Document>
+      <Page style={styles.page}>
+        <View style={styles.section}>
+          <Text style={{ fontSize: 24, fontWeight: 'bold' }}>Invoice Details</Text>
+          {/* <Image layout="fill" height={80} width={80} src="/tifLogo.png" style={{ width: 80, height: 80 }} /> */}
+          {/* <image src='/tifLogo.png' alt='logo' /> */}
+        </View>
+        {/* <View>
+          <DataTable value={itemData} responsiveLayout="scroll" showGridlines emptyMessage="No Results found." rowHover={true}>
+            <Column field="id" header="Product ID" />
+            <Column field="name" header="Product Name" />
+            <Column field="price" header="Price" />
+          </DataTable>
+        </View> */}
+      </Page>
+    </Document>
+  );
+
+  const MyPDFDownloadLink = () => (
+    <PDFDownloadLink document={<PDFData />} fileName="example.pdf">
+      {({ blob, url, loading, error }) => (
+        loading ? 'Loading document...' : 'Download now!'
+      )}
+    </PDFDownloadLink>
+  );
+
+
   return (
     <>
       <Head>
@@ -175,16 +210,16 @@ export const OrderDetails = () => {
             <div className="flex justify-content-between mt-3">
               <div className="font-bold" style={{ fontSize: '17px', textDecoration: 'underline', padding: '10px' }}>Invoice Details</div>
 
-              {/* <Button type="button" icon="pi pi-file-pdf"
+              <Button type="button" icon="pi pi-file-pdf"
                 severity="warning" tooltipOptions={{ position: "left" }}
-                tooltip="PDF" onClick={togglePdf} /> */}
+                tooltip="PDF" onClick={togglePdf} />
             </div>
 
             <div>
-              {/* <Dialog header="Invoice Details" visible={dialogBox} style={{ width: '50vw' }} onHide={() => setDialogBox(false)}>
+              <Dialog header="Invoice Details" visible={dialogBox} style={{ width: '50vw' }} onHide={() => setDialogBox(false)}>
                 pdf data
 
-              </Dialog> */}
+              </Dialog>
             </div>
 
             <div className="col-12 mt-3" >
