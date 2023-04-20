@@ -123,25 +123,14 @@ const orderDetails = {
   shoppingMethodTitle: 'Premium (Priority (2-4 days))',
 };
 
-
 export const OrderDetails = () => {
-  const router = useRouter();
-  const orderId = useParam("orderId", "number");
-  console.log('orderId: ', orderId);
-
-
-  const [orders, { refetch }] = useQuery(getOrder, { id: orderId })
-  console.log('orders: ', typeof orders);
-  const [yes]=useState(orders)
-  
-
-  const [dialogBox, setDialogBox] = useState(false);
-  const [comments, setComments] = useState([]);
   const [selectedColumns] = useState(columns)
   const [selectedColumnsTwo] = useState(columnsTwo)
   const [dataSummery] = useState(summeryData)
+  const [comments, setComments] = useState([]);
 
-  function handleSubmit(event) {
+
+  const  handleSubmit = (event)  =>{
     event.preventDefault();
     const newComment = {
       comment: event.target.elements.comment.value,
@@ -149,45 +138,6 @@ export const OrderDetails = () => {
     };
     setComments([...comments, newComment]);
     event.target.reset();
-  }
-
-  function togglePdf() {
-    setDialogBox(!dialogBox);
-  }
-
-
-  const PDFData = () => (
-    <Document>
-      <Page style={styles.page}>
-        <View style={styles.section}>
-          <Text style={{ fontSize: 24, fontWeight: 'bold' }}>Invoice Details</Text>
-          {/* <Image layout="fill" height={80} width={80} src="/tifLogo.png" style={{ width: 80, height: 80 }} /> */}
-          {/* <image src='/tifLogo.png' alt='logo' /> */}
-        </View>
-        {/* <View>
-          <DataTable value={itemData} responsiveLayout="scroll" showGridlines emptyMessage="No Results found." rowHover={true}>
-            <Column field="id" header="Product ID" />
-            <Column field="name" header="Product Name" />
-            <Column field="price" header="Price" />
-          </DataTable>
-        </View> */}
-      </Page>
-    </Document>
-  );
-
-  const MyPDFDownloadLink = () => (
-    <PDFDownloadLink document={<PDFData />} fileName="example.pdf">
-      {({ blob, url, loading, error }) => (
-        loading ? 'Loading document...' : 'Download now!'
-      )}
-    </PDFDownloadLink>
-  );
-
-
-  const [showDownloadLink, setShowDownloadLink] = useState(false);
-
-  const handleButtonClick = () => {
-    setShowDownloadLink(true);
   }
 
   const columnComponents = selectedColumns.map((col) => {
@@ -201,7 +151,6 @@ export const OrderDetails = () => {
       />
     )
   })
-
 
   const columnTwoComponents = selectedColumnsTwo.map((col) => {
     return (
@@ -220,103 +169,22 @@ export const OrderDetails = () => {
         <title>Order Details</title>
       </Head>
 
-
-
       <div className="card">
-
         <TabView>
           <TabPanel header="Invoice">
             <div className="flex justify-content-between mt-3">
               <div className="font-bold" style={{ fontSize: '17px', textDecoration: 'underline', padding: '10px' }}>Invoice Details</div>
 
-              <Button type="button" icon="pi pi-file-pdf"
+              {/* <Button type="button" icon="pi pi-file-pdf"
                 severity="warning" tooltipOptions={{ position: "left" }}
-                tooltip="PDF" onClick={togglePdf} />
+                tooltip="PDF" onClick={togglePdf} /> */}
             </div>
 
             <div>
-              <Dialog header="Invoice Details" visible={dialogBox} style={{ width: '50vw' }} onHide={() => setDialogBox(false)}>
-                {/* <div className="">
-                  <Image height={80} width={80} src='/tifLogo.png' />
-                </div>
+              {/* <Dialog header="Invoice Details" visible={dialogBox} style={{ width: '50vw' }} onHide={() => setDialogBox(false)}>
+                pdf data
 
-                <div className="col-12 mt-5" >
-                  <div className="flex gap-4  align-items-center">
-                    <div className="font-bold" style={{ fontSize: '17px', textDecoration: 'underline' }}>Invoice Details</div>
-                    <Button
-                      icon='pi pi-download'
-                      onClick={handleButtonClick}
-                      style={{ fontSize: '1.2rem', cursor: 'pointer' }}
-                    />
-                    {showDownloadLink && (
-                      <MyPDFDownloadLink />
-                    )}
-                  </div>
-
-                  <DataTable
-                    value={invoiceData}
-                    responsiveLayout="scroll"
-                    showGridlines
-                    // header={header1}
-                    // filters={filters}
-                    className="text-s datatable-responsive mt-4"
-                    filterDisplay="menu"
-                    emptyMessage="No Results found."
-                    rowHover={true}
-
-                  >
-                    {columnComponents}
-
-                  </DataTable>
-
-                </div >
-
-                <div className="col-12" >
-                  <div className="font-bold" style={{ fontSize: '17px', textDecoration: 'underline' }}>Item Details</div>
-
-                  <DataTable
-                    value={itemData}
-                    responsiveLayout="scroll"
-                    showGridlines
-                    // header={header1}
-                    // filters={filters}
-                    className="text-s datatable-responsive mt-4"
-                    filterDisplay="menu"
-                    emptyMessage="No Results found."
-                    rowHover={true}
-                  >
-                    {columnTwoComponents}
-
-                  </DataTable>
-
-                </div>
-
-                <div className="flex gap-5 ">
-                  <div className="text-lg p-2">
-                    <div className="mt-2">Sub-Total before Discount & Taxes</div>
-                    <div className="mt-2">Discounts</div>
-                    <div className="mt-2">Additional Tax</div>
-                    <div className="mt-2">Shipping Charge</div>
-                    <div className="mt-2">COD Charges</div>
-                    <div className="mt-2">Integrated GST</div>
-                    <div className="mt-2">Total Tax on Sales</div>
-                    <div className="mt-2 font-bold">Net Amount</div>
-                  </div>
-
-                  <div className="text-lg p-2 px-5">
-                    <div className="mt-2">₹ 950</div>
-                    <div className="mt-2">0.00</div>
-                    <div className="mt-2">₹0.00</div>
-                    <div className="mt-2">₹84.75</div>
-                    <div className="mt-2">₹0.00</div>
-                    <div className="mt-2">₹178.17</div>
-                    <div className="mt-2">₹178.17</div>
-                    <div className="font-bold mt-2" >₹1,168.00</div>
-                  </div>
-
-                </div> */}
-
-              </Dialog>
+              </Dialog> */}
             </div>
 
             <div className="col-12 mt-3" >
@@ -388,7 +256,6 @@ export const OrderDetails = () => {
               </div>
             </div>
           </TabPanel>
-
         </TabView>
 
         <div className="mt-6">
@@ -411,17 +278,11 @@ export const OrderDetails = () => {
             <Button label="Add a Comments" className="" />
           </div>
         </form>
-
-      </div >
-
-
-
-
-
-
+      </div>
     </>
-  );
-};
+  )
+}
+
 
 const ShowOrderPage = () => {
   return (
