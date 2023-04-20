@@ -12,6 +12,7 @@ import { Column } from "primereact/column";
 import { cities, dateFormat } from "app/constants";
 import createOrder from "app/orders/mutations/createOrder";
 import updateOrder from "app/orders/mutations/updateOrder";
+import CreateShipment from 'app/shipments/mutations/createShipment';
 import { OverlayPanel } from 'primereact/overlaypanel';
 import { InputText } from "primereact/inputtext";
 import { Dropdown } from "primereact/dropdown";
@@ -29,6 +30,7 @@ import { ToggleButton } from 'primereact/togglebutton';
 import { Checkbox } from "primereact/checkbox";
 import { JobStatus } from "components/JobStatus";
 import AddressComponent from "../../components/AddressComponent";
+import db from "db";
 
 
 const initialOrderDetails = {
@@ -699,27 +701,61 @@ export const OrdersList = () => {
     });
   };
 
-
+  const [createShipment] = useMutation(CreateShipment)
   const renderHeader = () => {
 
     return (
       <>
         <div className="flex justify-content-end">
           {checkVerified && (
+            // <Button
+            //   type="button"
+            //   icon="pi pi-verified"
+            //   label="verified"
+            //   className="p-button-outlined"
+            //   onClick={() => {
+            //     const activeIDs = selectedOrder.map(ele => ele?.id);
+            //     console.log('activeIDs: ', activeIDs);
+            //     if (activeIDs.length > 0) {
+            //       activeIDs.forEach(id => {
+            //         updateNewOrder({
+            //           id,
+            //           verified: 1
+            //         });
+            //       });
+            //     }
+            //   }}
+            // />
             <Button
               type="button"
               icon="pi pi-verified"
               label="verified"
               className="p-button-outlined"
-              onClick={() => {
+              onClick={async () => {
                 const activeIDs = selectedOrder.map(ele => ele?.id);
                 console.log('activeIDs: ', activeIDs);
                 if (activeIDs.length > 0) {
-                  activeIDs.forEach(id => {
-                    updateNewOrder({
+                  activeIDs.forEach(async id => {
+                    await updateNewOrder({
                       id,
                       verified: 1
                     });
+                    await createShipment({
+                      ordersId: id,
+                      shipmentNumber: "ROBO123",
+                      priority: 'LOW',
+                      shipmentStatus: 9,
+                    }, {
+                      onSuccess: (data) => {
+                        console.log('data:shipment ', data);
+                        alert("Done")
+                      },
+                      onError: (error) => {
+                        console.log("errorShipment", error)
+                        alert("error")
+                      }
+                    }
+                    );
                   });
                 }
               }}
@@ -736,7 +772,7 @@ export const OrdersList = () => {
   const [selectedOrder, setSelectedOrder] = useState([]);
   const [checkVerified, setCheckVerified] = useState(false)
   console.log('checkVerified: ', checkVerified);
-  console.log('selectedOrder: ', selectedOrder.map((i) => i.id));
+  console.log('selectedOrder: ', selectedOrder);
 
   useEffect(() => {
     if (selectedOrder && Object.keys(selectedOrder).length >= 1) {
