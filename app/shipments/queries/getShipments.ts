@@ -6,7 +6,7 @@ interface GetShipmentsInput
   extends Pick<
     Prisma.ShipmentFindManyArgs,
     "where" | "orderBy" | "skip" | "take"
-  > {}
+  > { }
 
 export default resolver.pipe(
   resolver.authorize(),
@@ -22,7 +22,24 @@ export default resolver.pipe(
       take,
       count: () => db.shipment.count({ where }),
       query: (paginateArgs) =>
-        db.shipment.findMany({ ...paginateArgs, where, orderBy }),
+        db.shipment.findMany({
+          ...paginateArgs,
+          where,
+          orderBy,
+          include: {
+            orders: {
+              include: {
+                order_items: {
+                  include: {
+                    products: true
+                  }
+                },
+                addresses_orders_shippingAddressIdToaddresses: true
+              }
+            },
+            shipment_status: true
+          }
+        }),
     });
 
     return {
