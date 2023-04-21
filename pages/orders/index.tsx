@@ -713,53 +713,143 @@ export const OrdersList = () => {
             //   icon="pi pi-verified"
             //   label="verified"
             //   className="p-button-outlined"
-            //   onClick={() => {
+
+
+            //   onClick={async () => {
             //     const activeIDs = selectedOrder.map(ele => ele?.id);
             //     console.log('activeIDs: ', activeIDs);
             //     if (activeIDs.length > 0) {
-            //       activeIDs.forEach(id => {
-            //         updateNewOrder({
+            //       activeIDs.forEach(async id => {
+            //         await updateNewOrder({
             //           id,
             //           verified: 1
             //         });
+            //         await createShipment({
+            //           ordersId: id,
+            //           shipmentNumber: "ROBO123",
+            //           priority: 'LOW',
+            //           shipment_items: {
+            //             create: {
+            //               order_items: "238",
+            //             }
+            //           }
+
+            //         }, {
+            //           onSuccess: (data) => {
+            //             console.log('data:shipment ', data);
+            //             alert("Done")
+            //           },
+            //           onError: (error) => {
+            //             console.log("errorShipment", error)
+            //             alert("error")
+            //           }
+            //         }
+            //         );
             //       });
             //     }
             //   }}
             // />
+
+
+            // <Button
+            //   type="button"
+            //   icon="pi pi-verified"
+            //   label="verified"
+            //   className="p-button-outlined"
+            //   onClick={async () => {
+            //     const activeIDs = selectedOrder.map((ele) => ele?.id);
+            //     const activeOrderItem = selectedOrder.map((ele) => ele?.order_items?.map((i) => i.id))
+
+            //     if (activeIDs.length > 0) {
+            //       activeIDs.forEach(async (id) => {
+            //         await updateNewOrder({
+            //           id,
+            //           verified: 1,
+            //         });
+            //         await createShipment({
+            //           ordersId: id,
+            //           shipmentNumber: `ROB0${Math.floor(Math.random() * 100000)}`,
+            //           priority: 'LOW',
+            //           shipment_items: {
+            //             // create: [
+            //             //   {
+            //             //     orderItemsId:48
+            //             //   },{
+            //             //     orderItemsId:49
+            //             //   }
+            //             // ]
+            //             create: activeOrderItem?.map((item) => {
+            //               return {
+            //                 orderItemsId: item.id
+            //               }
+            //             })
+            //           },
+            //         },
+            //           {
+            //             onSuccess: () => {
+            //               alert("Done shipment Item")
+            //             },
+            //             onError: (error) => {
+            //               console.log('error: ', error);
+            //               alert("error")
+            //             }
+            //           }
+            //         );
+            //       });
+
+            //     }
+            //   }}
+            // />
+
+
+
             <Button
               type="button"
               icon="pi pi-verified"
               label="verified"
               className="p-button-outlined"
               onClick={async () => {
-                const activeIDs = selectedOrder.map(ele => ele?.id);
-                console.log('activeIDs: ', activeIDs);
+                const activeIDs = selectedOrder.map((ele) => ele?.id);
+                const activeOrderItems = selectedOrder.map((ele) => ele?.order_items).flat();
+
                 if (activeIDs.length > 0) {
-                  activeIDs.forEach(async id => {
+                  activeIDs.forEach(async (id) => {
                     await updateNewOrder({
                       id,
-                      verified: 1
+                      verified: 1,
+                    });
+                    const shipmentNumber = `ROB0${Math.floor(Math.random() * 100000)}`;
+                    const shipmentItems = activeOrderItems.map((item) => {
+                      return {
+                        order_items: {
+                          connect: {
+                            id: item.id,
+                          },
+                        },
+                      };
                     });
                     await createShipment({
                       ordersId: id,
-                      shipmentNumber: "ROBO123",
+                      shipmentNumber,
                       priority: 'LOW',
-                      shipmentStatus: 9,
-                    }, {
-                      onSuccess: (data) => {
-                        console.log('data:shipment ', data);
-                        alert("Done")
+                      shipment_items: {
+                        create: shipmentItems,
                       },
-                      onError: (error) => {
-                        console.log("errorShipment", error)
-                        alert("error")
-                      }
-                    }
-                    );
+                    },
+                      {
+                        onSuccess: () => {
+                          alert("Done shipment Item");
+                        },
+                        onError: (error) => {
+                          console.log('error: ', error);
+                          alert("error");
+                        },
+                      });
                   });
                 }
               }}
             />
+
           )}
         </div>
 
@@ -781,6 +871,11 @@ export const OrdersList = () => {
       setCheckVerified(false);
     }
   }, [selectedOrder]);
+
+
+  function verifyOrder(order) {
+    return order.verified ? "Verified" : "Not Verified";
+  }
 
   return (
 
@@ -1217,7 +1312,7 @@ export const OrdersList = () => {
             value={orders}
             responsiveLayout="scroll"
             showGridlines
-            header={renderHeader}
+            // header={renderHeader}
             stripedRows
             className="text-s datatable-responsive"
             selection={selectedOrder}
@@ -1230,16 +1325,8 @@ export const OrdersList = () => {
               // field={}
               header="ID"
               body={(rowData) => rowData.Id ? rowData.id : rowData.id}
-            // body={(rowData) => <pre>{JSON.stringify(rowData.shopify, null, 2)}</pre>}
-            // className="text-center"
             />
-            {/* <Column
-              // field={}
-              header="Order Number"
-              body={(rowData) => rowData.shopifyId ? rowData.shopify?.orderNumber.slice(20) : rowData.id}
-            // body={(rowData) => <pre>{JSON.stringify(rowData.shopify, null, 2)}</pre>}
-            // className="text-center"
-            /> */}
+           
             <Column
               field=""
               header="Products"
@@ -1353,6 +1440,11 @@ export const OrdersList = () => {
                   )
               }}
               className="OrderStatus"
+            />
+            <Column
+            header="Verified orders"
+            body={verifyOrder}
+            bodyClassName={(rowData) => rowData.verified ? 'verified' : 'not-verified'}
             />
           </DataTable>
 

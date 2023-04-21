@@ -5,9 +5,10 @@ import { z } from "zod";
 const CreateShipment = z.object({
   shipmentNumber: z.string(),
   ordersId: z.number(),
-  onHold:z.boolean().optional(),
-  priority:z.string(),
-  shipmentStatus:z.number(),
+  onHold: z.boolean().optional(),
+  priority: z.string(),
+  // shipmentStatus:z.number(),
+  shipment_items: z.unknown(),
 });
 
 

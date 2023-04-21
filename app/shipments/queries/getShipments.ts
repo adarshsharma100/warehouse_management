@@ -27,6 +27,7 @@ export default resolver.pipe(
           where,
           orderBy,
           include: {
+
             orders: {
               include: {
                 order_items: {
@@ -37,7 +38,13 @@ export default resolver.pipe(
                 addresses_orders_shippingAddressIdToaddresses: true
               }
             },
-            shipment_status: true
+            shipment_status: true,
+            shipment_items:true
+            // shipment_items: {
+            //  include: {
+            //   order_items:true,
+            //  }
+            // }
           }
         }),
     });
