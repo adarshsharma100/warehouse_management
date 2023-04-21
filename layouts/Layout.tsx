@@ -329,9 +329,8 @@ const Layout = ({ children }) => {
 
   return (
     <div
-      className={`layout-wrapper layout-static ${
-        staticMenuInactive && "layout-static-sidebar-inactive"
-      }`}
+      className={`layout-wrapper layout-static ${staticMenuInactive && "layout-static-sidebar-inactive"
+        }`}
       onClick={onWrapperClick}
     >
       <Tooltip target=".layout-menu li a" />
@@ -343,7 +342,7 @@ const Layout = ({ children }) => {
         onMobileSubTopbarMenuClick={onMobileSubTopbarMenuClick}
       />
       <div className="layout-sidebar" onClick={onSidebarClick}>
-        <Image src={logo} height="35px" width="35px" alt="logo" />
+        <Image src={logo} height="55px" width="55px" alt="logo" />
         <SideBarIcons />
         {/* <AppMenu model={menu} onMenuItemClick={onMenuItemClick} layoutColorMode={layoutColorMode} /> */}
       </div>
