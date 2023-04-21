@@ -633,29 +633,29 @@ model role_permission {
 }
 
 model shipment {
-  id                Int                @id @default(autoincrement())
-  shipmentNumber    String             @db.VarChar(45)
-  ordersId          Int
-  priority          shipment_priority?
-  onHold            Int                @default(0) @db.TinyInt
-  fulfilmentTat     DateTime?          @db.DateTime(0)
-  awb               String?            @db.VarChar(45)
-  dispatchedOn      DateTime?          @db.DateTime(0)
-  shipmentStatusId  Int
-  courierId         Int?
-  batchId           Int?
-  createdAt         DateTime?          @default(now()) @db.DateTime(0)
-  updatedAt         DateTime?          @default(now()) @db.DateTime(0)
-  packageDimensions Int?
-  pickupFrom        Int?
-  invoice           String?            @db.VarChar(45)
-  batch             batch?             @relation(fields: [batchId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_batch1")
-  courier           courier?           @relation(fields: [courierId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_courier1")
-  dimensions        dimensions?        @relation(fields: [packageDimensions], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_dimensions1")
-  orders            orders             @relation(fields: [ordersId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_orders1")
-  shipment_status   shipment_status    @relation(fields: [shipmentStatusId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_shipment_status1")
-  warehouse         warehouse?         @relation(fields: [pickupFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_warehouse1")
-  shipment_items    shipment_items[]
+  id                    Int                     @id @default(autoincrement())
+  shipmentNumber        String                  @unique(map: "shipmentNumber_UNIQUE") @db.VarChar(45)
+  ordersId              Int
+  priority              shipment_priority?      @default(NORMAL)
+  onHold                Int                     @default(0) @db.TinyInt
+  fulfilmentTat         DateTime?               @db.DateTime(0)
+  awb                   String?                 @db.VarChar(45)
+  dispatchedOn          DateTime?               @db.DateTime(0)
+  shipmentStatusId      Int                     @default(1)
+  courierId             Int?
+  batchId               Int?
+  createdAt             DateTime?               @default(now()) @db.DateTime(0)
+  updatedAt             DateTime?               @default(now()) @db.DateTime(0)
+  packageDimensions     Int?
+  pickupFrom            Int?
+  sales_invoice_details sales_invoice_details[]
+  batch                 batch?                  @relation(fields: [batchId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_batch1")
+  courier               courier?                @relation(fields: [courierId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_courier1")
+  dimensions            dimensions?             @relation(fields: [packageDimensions], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_dimensions1")
+  orders                orders                  @relation(fields: [ordersId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_orders1")
+  shipment_status       shipment_status         @relation(fields: [shipmentStatusId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_shipment_status1")
+  warehouse             warehouse?              @relation(fields: [pickupFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_warehouse1")
+  shipment_items        shipment_items[]
 
   @@index([batchId], map: "fk_shipment_batch1_idx")
   @@index([courierId], map: "fk_shipment_courier1_idx")
@@ -692,6 +692,16 @@ model user_roles {
 
   @@index([roleId], map: "fk_user_roles_role1_idx")
   @@index([userId], map: "fk_user_roles_user1_idx")
+}
+
+model sales_invoice_details {
+  id            Int       @id @unique(map: "id_UNIQUE") @default(autoincrement())
+  invoiceNumber String?   @db.VarChar(45)
+  createdAt     DateTime? @default(now()) @db.DateTime(0)
+  shipmentId    Int
+  shipment      shipment  @relation(fields: [shipmentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_sales_invoice_details_shipment1")
+
+  @@index([shipmentId], map: "fk_sales_invoice_details_shipment1_idx")
 }
 
 enum contact_number_type {
