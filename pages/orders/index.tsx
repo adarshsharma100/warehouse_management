@@ -12,6 +12,7 @@ import { Column } from "primereact/column";
 import { cities, dateFormat } from "app/constants";
 import createOrder from "app/orders/mutations/createOrder";
 import updateOrder from "app/orders/mutations/updateOrder";
+import CreateShipment from 'app/shipments/mutations/createShipment';
 import { OverlayPanel } from 'primereact/overlaypanel';
 import { InputText } from "primereact/inputtext";
 import { Dropdown } from "primereact/dropdown";
@@ -29,6 +30,7 @@ import { ToggleButton } from 'primereact/togglebutton';
 import { Checkbox } from "primereact/checkbox";
 import { JobStatus } from "components/JobStatus";
 import AddressComponent from "../../components/AddressComponent";
+import db from "db";
 
 
 const initialOrderDetails = {
@@ -699,31 +701,155 @@ export const OrdersList = () => {
     });
   };
 
-
+  const [createShipment] = useMutation(CreateShipment)
   const renderHeader = () => {
 
     return (
       <>
         <div className="flex justify-content-end">
           {checkVerified && (
+            // <Button
+            //   type="button"
+            //   icon="pi pi-verified"
+            //   label="verified"
+            //   className="p-button-outlined"
+
+
+            //   onClick={async () => {
+            //     const activeIDs = selectedOrder.map(ele => ele?.id);
+            //     console.log('activeIDs: ', activeIDs);
+            //     if (activeIDs.length > 0) {
+            //       activeIDs.forEach(async id => {
+            //         await updateNewOrder({
+            //           id,
+            //           verified: 1
+            //         });
+            //         await createShipment({
+            //           ordersId: id,
+            //           shipmentNumber: "ROBO123",
+            //           priority: 'LOW',
+            //           shipment_items: {
+            //             create: {
+            //               order_items: "238",
+            //             }
+            //           }
+
+            //         }, {
+            //           onSuccess: (data) => {
+            //             console.log('data:shipment ', data);
+            //             alert("Done")
+            //           },
+            //           onError: (error) => {
+            //             console.log("errorShipment", error)
+            //             alert("error")
+            //           }
+            //         }
+            //         );
+            //       });
+            //     }
+            //   }}
+            // />
+
+
+            // <Button
+            //   type="button"
+            //   icon="pi pi-verified"
+            //   label="verified"
+            //   className="p-button-outlined"
+            //   onClick={async () => {
+            //     const activeIDs = selectedOrder.map((ele) => ele?.id);
+            //     const activeOrderItem = selectedOrder.map((ele) => ele?.order_items?.map((i) => i.id))
+
+            //     if (activeIDs.length > 0) {
+            //       activeIDs.forEach(async (id) => {
+            //         await updateNewOrder({
+            //           id,
+            //           verified: 1,
+            //         });
+            //         await createShipment({
+            //           ordersId: id,
+            //           shipmentNumber: `ROB0${Math.floor(Math.random() * 100000)}`,
+            //           priority: 'LOW',
+            //           shipment_items: {
+            //             // create: [
+            //             //   {
+            //             //     orderItemsId:48
+            //             //   },{
+            //             //     orderItemsId:49
+            //             //   }
+            //             // ]
+            //             create: activeOrderItem?.map((item) => {
+            //               return {
+            //                 orderItemsId: item.id
+            //               }
+            //             })
+            //           },
+            //         },
+            //           {
+            //             onSuccess: () => {
+            //               alert("Done shipment Item")
+            //             },
+            //             onError: (error) => {
+            //               console.log('error: ', error);
+            //               alert("error")
+            //             }
+            //           }
+            //         );
+            //       });
+
+            //     }
+            //   }}
+            // />
+
+
+
             <Button
               type="button"
               icon="pi pi-verified"
               label="verified"
               className="p-button-outlined"
-              onClick={() => {
-                const activeIDs = selectedOrder.map(ele => ele?.id);
-                console.log('activeIDs: ', activeIDs);
+              onClick={async () => {
+                const activeIDs = selectedOrder.map((ele) => ele?.id);
+                const activeOrderItems = selectedOrder.map((ele) => ele?.order_items).flat();
+
                 if (activeIDs.length > 0) {
-                  activeIDs.forEach(id => {
-                    updateNewOrder({
+                  activeIDs.forEach(async (id) => {
+                    await updateNewOrder({
                       id,
-                      verified: 1
+                      verified: 1,
                     });
+                    const shipmentNumber = `ROB0${Math.floor(Math.random() * 100000)}`;
+                    const shipmentItems = activeOrderItems.map((item) => {
+                      return {
+                        order_items: {
+                          connect: {
+                            id: item.id,
+                          },
+                        },
+                      };
+                    });
+                    await createShipment({
+                      ordersId: id,
+                      shipmentNumber,
+                      priority: 'LOW',
+                      shipment_items: {
+                        create: shipmentItems,
+                      },
+                    },
+                      {
+                        onSuccess: () => {
+                          alert("Done shipment Item");
+                        },
+                        onError: (error) => {
+                          console.log('error: ', error);
+                          alert("error");
+                        },
+                      });
                   });
                 }
               }}
             />
+
           )}
         </div>
 
@@ -736,7 +862,7 @@ export const OrdersList = () => {
   const [selectedOrder, setSelectedOrder] = useState([]);
   const [checkVerified, setCheckVerified] = useState(false)
   console.log('checkVerified: ', checkVerified);
-  console.log('selectedOrder: ', selectedOrder.map((i) => i.id));
+  console.log('selectedOrder: ', selectedOrder);
 
   useEffect(() => {
     if (selectedOrder && Object.keys(selectedOrder).length >= 1) {
@@ -745,6 +871,11 @@ export const OrdersList = () => {
       setCheckVerified(false);
     }
   }, [selectedOrder]);
+
+
+  function verifyOrder(order) {
+    return order.verified ? "Verified" : "Not Verified";
+  }
 
   return (
 
@@ -1181,7 +1312,7 @@ export const OrdersList = () => {
             value={orders}
             responsiveLayout="scroll"
             showGridlines
-            header={renderHeader}
+            // header={renderHeader}
             stripedRows
             className="text-s datatable-responsive"
             selection={selectedOrder}
@@ -1194,16 +1325,8 @@ export const OrdersList = () => {
               // field={}
               header="ID"
               body={(rowData) => rowData.Id ? rowData.id : rowData.id}
-            // body={(rowData) => <pre>{JSON.stringify(rowData.shopify, null, 2)}</pre>}
-            // className="text-center"
             />
-            {/* <Column
-              // field={}
-              header="Order Number"
-              body={(rowData) => rowData.shopifyId ? rowData.shopify?.orderNumber.slice(20) : rowData.id}
-            // body={(rowData) => <pre>{JSON.stringify(rowData.shopify, null, 2)}</pre>}
-            // className="text-center"
-            /> */}
+           
             <Column
               field=""
               header="Products"
@@ -1317,6 +1440,11 @@ export const OrdersList = () => {
                   )
               }}
               className="OrderStatus"
+            />
+            <Column
+            header="Verified orders"
+            body={verifyOrder}
+            bodyClassName={(rowData) => rowData.verified ? 'verified' : 'not-verified'}
             />
           </DataTable>
 

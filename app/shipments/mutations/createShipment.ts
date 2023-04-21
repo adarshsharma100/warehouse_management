@@ -3,8 +3,14 @@ import db from "db";
 import { z } from "zod";
 
 const CreateShipment = z.object({
-  name: z.string(),
+  shipmentNumber: z.string(),
+  ordersId: z.number(),
+  onHold: z.boolean().optional(),
+  priority: z.string(),
+  // shipmentStatus:z.number(),
+  shipment_items: z.unknown(),
 });
+
 
 export default resolver.pipe(
   resolver.zod(CreateShipment),
