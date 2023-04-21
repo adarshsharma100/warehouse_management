@@ -2,7 +2,7 @@ import { Suspense, useEffect, useReducer, useState } from "react";
 import { Routes } from "@blitzjs/next";
 import Head from "next/head";
 import Link from "next/link";
-import { usePaginatedQuery, useQuery } from "@blitzjs/rpc";
+import { invoke, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
 import { useRouter } from "next/router";
 import Layout from "layouts/Layout"
 import Loading from "components/loading"
@@ -13,44 +13,66 @@ import { TabMenu } from 'primereact/tabmenu';
 import getShipment_statuses from "app/shipment_statuses/queries/getShipment_statuses";
 import { Chip } from "primereact/Chip";
 import { dateFormat } from "app/constants";
+import { Paginator } from "primereact/paginator";
 
 
-const ITEMS_PER_PAGE = 100;
 const initialState = {
   orders: [],
   filteredOrders: [],
-  isLoading: false,
-  error: null,
+  tabActiveIndex: 0,
+  page: 0,
+  statusId: undefined,
+  tableRowsCount: 10,
+  skipCount: 0,
+  first: 0,
+  rows: 10,
+  itemsPerPage: 10
 };
 
-function reducer(state, action) {
-  switch (action.type) {
+const reducer = (state, { type, payload }) => {
+  switch (type) {
     case 'GET_ORDERS':
-      return { ...state, orders: action.payload };
+      return { ...state, orders: payload };
     case 'FILTER_BY':
-      return { ...state, filteredOrders: action.payload };
+      return { ...state, filteredOrders: payload };
+    case 'UPDATE_ACTIVE_TAB':
+      return { ...state, tabActiveIndex: payload };
+    case 'UPDATE_STATUS_ID':
+      return { ...state, statusId: payload };
+    case 'UPDATE_SKIP_COUNT':
+      return { ...state, skipCount: payload };
+    case 'UPDATE_TABLE_ROWS_COUNT':
+      return { ...state, tableRowsCount: payload };
+    case 'UPDATE_PAGE':
+      return { ...state, page: payload };
     default:
-      throw new Error(`Unhandled action type: ${action.type}`);
+      throw new Error(`Unhandled action type: ${type}`);
   }
 }
 
 export const ShipmentsList = () => {
   const router = useRouter();
-  const page = Number(router.query.page) || 0;
-  const [{ shipments, hasMore }] = usePaginatedQuery(getShipments, {
+  // const page = Number(router.query.page) || 0;
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { orders, tabActiveIndex, page, statusId, skipCount, tableRowsCount } = state
+
+  const [{ shipments, hasMore, count: shipmentCount }] = usePaginatedQuery(getShipments, {
     orderBy: { id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
+    where: { shipmentStatusId: statusId },
+    skip: skipCount,
+    take: tableRowsCount,
   });
   const [{ shipment_statuses, }] = useQuery(getShipment_statuses, {
     orderBy: { id: "asc" },
+    where: {},
+    skip: 0,
+    take: undefined,
   });
 
-  const goToPreviousPage = () => router.push({ query: { page: page - 1 } });
-  const goToNextPage = () => router.push({ query: { page: page + 1 } });
+  // const goToPreviousPage = () => router.push({ query: { page: page - 1 } });
+  // const goToNextPage = () => router.push({ query: { page: page + 1 } });
 
-  const [state, dispatch] = useReducer(reducer, initialState);
-  const { orders, filteredOrders } = state
+
   const setOrders = (data) => {
     dispatch({ type: 'GET_ORDERS', payload: data });
     dispatch({ type: 'FILTER_BY', payload: data });
@@ -58,15 +80,28 @@ export const ShipmentsList = () => {
   const tabMenuItems = shipment_statuses?.map(status => (
     {
       label: `${status.name === "CREATED" ? "NEW" : status.name}`,
-      status: status.name
+      status: status.name,
+      id: status.id
     }
   ))
 
-  const [activeIndex, setActiveIndex] = useState(0);
+  const paginator = () =>
+    <Paginator first={skipCount} rows={tableRowsCount} totalRecords={shipmentCount} rowsPerPageOptions={[10, 20, 30]} onPageChange={onPageChange} />
+
+
 
   useEffect(() => {
     setOrders(shipments)
-  }, [])
+  }, [shipments])
+
+
+  const onPageChange = async (event) => {
+    console.log('event: ', event);
+    dispatch({ type: "UPDATE_SKIP_COUNT", payload: event.first })
+    dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
+    dispatch({ type: "UPDATE_PAGE", payload: event.page })
+  };
+
 
   return (
 
@@ -74,84 +109,80 @@ export const ShipmentsList = () => {
       <div className="grid">
         <TabMenu
           model={[{ label: "ALL" }, ...tabMenuItems]}
-          activeIndex={activeIndex}
+          activeIndex={tabActiveIndex}
           onTabChange={(e) => {
-            const tabStatus = e.value.status
-            const tabName = e.value.label
-            const filterOrdersByStatus = orders.filter(({ shipment_status: { name } }) => name === tabStatus)
-            dispatch({ type: 'FILTER_BY', payload: tabName === "ALL" ? orders : filterOrdersByStatus })
+            dispatch({ type: 'UPDATE_ACTIVE_TAB', payload: e.index })
+            dispatch({ type: 'UPDATE_STATUS_ID', payload: e.value.id })
+            dispatch({ type: "UPDATE_PAGE", payload: 0 })
           }} />
 
 
 
         <div className="col-12">
-          <div className="card">
-            <DataTable
-              value={filteredOrders}
-              // tableStyle={{ minWidth: '50rem' }}
-              responsiveLayout="scroll"
-              showGridlines
-              stripedRows >
-              <Column field="Shipments" header="Shipments" body={({ shipmentNumber, ordersId }) => <div>
-                <p>Code:{shipmentNumber}</p>
-                <p>Order:{ordersId}</p>
-                {/* TODO: <p>Need to tender shopify order id if it is Shopify order</p> */}
-              </div>} />
-              <Column field="giftMessage" header="Gift Message" body={({ orders }) => orders?.giftMessage} />
-              {/* <Column field="itemContains" header="Item Contains"></Column> */}
-              <Column header="Products" body={({ orders: { order_items } }) => <div>
-                {order_items?.map((product, i) => {
-                  const { quantity, products: { name, sku } } = product
-                  return (
-                    <div key={i} className="pt-2 pb-2 w-18rem border-1 border-solid border-blue-700 border-round-2xl p-3 mb-3 ">
-                      {[{ prop: "Name", value: name },
-                      { prop: "SKU", value: sku },
-                      { prop: "Quantity", value: quantity }
-                      ].map(({ prop, value }, index) => (
-                        <div key={index} className="grid">
-                          <label className="font-semibold col-4">{prop}:</label>
-                          <div className="col">
-                            {value?.toString()}
-                          </div>
+          <DataTable
+            value={orders}
+            responsiveLayout="scroll"
+            showGridlines
+            stripedRows
+            footer={paginator}
+          >
+            <Column field="Shipments" header="Shipments" body={({ shipmentNumber, ordersId }) => <div>
+              <p>Code:{shipmentNumber}</p>
+              <p>Order:{ordersId}</p>
+              {/* TODO: <p>Need to tender shopify order id if it is Shopify order</p> */}
+            </div>} />
+            <Column field="giftMessage" header="Gift Message" body={({ orders }) => orders?.giftMessage} />
+            <Column header="Products" body={({ orders: { order_items } }) => <div>
+              {order_items?.map((product, i) => {
+                const { quantity, products: { name, sku } } = product
+                return (
+                  <div key={i} className="pt-2 pb-2 w-18rem border-1 border-solid border-blue-700 border-round-2xl p-3 mb-3 ">
+                    {[{ prop: "Name", value: name },
+                    { prop: "SKU", value: sku },
+                    { prop: "Quantity", value: quantity }
+                    ].map(({ prop, value }, index) => (
+                      <div key={index} className="grid">
+                        <label className="font-semibold col-4">{prop}:</label>
+                        <div className="col">
+                          {value?.toString()}
                         </div>
-                      ))}
-                    </div>
-                  )
-                })}
-              </div>} >
-              </Column>
-              <Column header="Channel" body={({ orders: { shopifyId } }) =>
-                <Chip
-                  label={`${shopifyId ? "SH" : "IH"}`}
-                  className={`${shopifyId ? "bg-green-500" : "bg-cyan-500"}`}
-                />
-              } >
-              </Column>
-              <Column header="Status" body={({ shipment_status }) => <div>
-                <p>{shipment_status?.name}</p>
-              </div>} >
-              </Column>
-              <Column header="Priority" body={({ priority }) => <div>
-                <p>{priority}</p>
-              </div>} >
-              </Column>
-              {/* <Column field="picklist" header="Picklist"></Column> */}
-              <Column field="invoice" header="Invoice   No." className="w-max"></Column>
-              <Column
-                header="OnHold"
-                body={({ onhold }) => <p>{onhold ? "Yes" : "No"}</p>} >
-              </Column>
-              <Column
-                header="State"
-                body={({ orders: { addresses_orders_shippingAddressIdToaddresses: { state } } }) =>
-                  <p>{state}</p>} >
-              </Column>
-              <Column header="FulfillmentTAT" body={({ fulfilmentTat }) => <div>
-                <p>{dateFormat(fulfilmentTat) ?? "-"}</p>
-              </div>} >
-              </Column>
-            </DataTable>
-          </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })}
+            </div>} >
+            </Column>
+            <Column header="Channel" body={({ orders: { shopifyId } }) =>
+              <Chip
+                label={`${shopifyId ? "SH" : "IH"}`}
+                className={`${shopifyId ? "bg-green-500" : "bg-cyan-500"}`}
+              />
+            } >
+            </Column>
+            <Column header="Status" body={({ shipment_status }) => <div>
+              <p>{shipment_status?.name}</p>
+            </div>} >
+            </Column>
+            <Column header="Priority" body={({ priority }) => <div>
+              <p>{priority}</p>
+            </div>} >
+            </Column>
+            <Column field="invoiceNumber" header="Invoice   No." className="w-max"></Column>
+            <Column
+              header="OnHold"
+              body={({ onhold }) => <p>{onhold ? "Yes" : "No"}</p>} >
+            </Column>
+            <Column
+              header="State"
+              body={({ orders: { addresses_orders_shippingAddressIdToaddresses: { state } } }) =>
+                <p>{state}</p>} >
+            </Column>
+            <Column header="FulfillmentTAT" body={({ fulfilmentTat }) => <div>
+              <p>{dateFormat(fulfilmentTat) ?? "-"}</p>
+            </div>} >
+            </Column>
+          </DataTable>
         </div>
       </div>
     </div >
@@ -162,7 +193,7 @@ const ShipmentsPage = () => {
   return (
     <Layout>
       <Head>
-        <title>Shipments</title>
+        <title>Fulfillments</title>
       </Head>
 
       <div>
