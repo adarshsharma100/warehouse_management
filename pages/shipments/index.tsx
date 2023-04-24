@@ -21,8 +21,10 @@ import { Paginator } from "primereact/paginator";
 import { Button } from "primereact/button";
 import { Menu } from "primereact/menu";
 import createBatch from "app/batches/mutations/createBatch"
+import createSalesInvoice from "app/sales_invoice_details/mutations/createSales_invoice_detail"
 
 import moment from "moment";
+import { Toast } from "primereact/toast";
 
 const initialState = {
   orders: [],
@@ -313,7 +315,7 @@ export const ShipmentsList = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { orders, tabActiveIndex, statusId, skipCount, tableRowsCount, selectedShipments } = state
 
-  const [{ shipments, count: shipmentCount }] = usePaginatedQuery(getShipments, {
+  const [{ shipments, count: shipmentCount }, { refetch }] = usePaginatedQuery(getShipments, {
     orderBy: { id: "asc" },
     where: { shipmentStatusId: statusId },
     skip: skipCount,
@@ -326,6 +328,7 @@ export const ShipmentsList = () => {
     take: undefined,
   });
 
+  const toast = useRef<Toast>(null);
 
   const orderSelectionMenu = useRef(null);
 
@@ -338,14 +341,14 @@ export const ShipmentsList = () => {
           label: 'Update',
           icon: 'pi pi-refresh',
           command: () => {
-            toast.current.show({ severity: 'success', summary: 'Updated', detail: 'Data Updated', life: 3000 });
+            toast.current?.show({ severity: 'success', summary: 'Updated', detail: 'Data Updated', life: 3000 });
           }
         },
         {
           label: 'Delete',
           icon: 'pi pi-times',
           command: () => {
-            toast.current.show({ severity: 'warn', summary: 'Delete', detail: 'Data Deleted', life: 3000 });
+            toast.current?.show({ severity: 'warn', summary: 'Delete', detail: 'Data Deleted', life: 3000 });
           }
         }
       ]
@@ -370,6 +373,7 @@ export const ShipmentsList = () => {
   ])
 
   const [createBatchMutation] = useMutation(createBatch)
+  const [createSalesInvoiceMutation] = useMutation(createSalesInvoice)
 
 
 
@@ -401,8 +405,21 @@ export const ShipmentsList = () => {
                 {
                   label: 'Generate Invoice',
                   icon: 'pi pi-file-pdf',
-                  command: () => {
+                  command: async () => {
                     // GENERATE INVOICE MUTATION
+                    await createSalesInvoiceMutation(
+                      selectedShipments.map(({ id }) => id),
+                      {
+                        onSuccess: async () => {
+                          await refetch()
+                          toast.current?.show({ severity: 'success', summary: 'Invoice Generated', life: 3000 })
+                        },
+                        onError: (error) => {
+                          console.log('error: ', error);
+                          toast.current?.show({ severity: 'error', summary: 'Invoice Creation Failed', detail: `Failed to create invoice`, life: 3000 })
+                        },
+                      }
+                    )
                   }
                 },
               ]
@@ -414,15 +431,19 @@ export const ShipmentsList = () => {
                   icon: 'pi pi-box',
                   command: async () => {
                     // GENERATE BATCH MUTATION
+                    const batchNumber = "BATCH_" + moment().format('x')
                     await createBatchMutation({
-                      batchNumber: "BATCH_" + moment().format('x'),
+                      batchNumber: batchNumber,
                       shipment: {
                         connect: selectedShipments.map(({ id }) => ({ id }))
                       }
                     }, {
-                      onSuccess: () => console.log("done"),
+                      onSuccess: () => {
+                        toast.current?.show({ severity: 'success', summary: 'Batch Added', detail: `Batch #${batchNumber}`, life: 3000 })
+                      },
                       onError: (error) => {
                         console.log('error: ', error);
+                        toast.current?.show({ severity: 'error', summary: 'Batch Creation Failed', detail: `Failed to create batch`, life: 3000 })
                       },
                     })
                   }
@@ -460,6 +481,7 @@ export const ShipmentsList = () => {
 
     <div className=" card">
       <div className="grid">
+        <Toast ref={toast} />
         <TabMenu
           model={[{ label: "ALL" }, ...tabMenuItems]}
           activeIndex={tabActiveIndex}
