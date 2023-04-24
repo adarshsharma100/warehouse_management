@@ -7,8 +7,9 @@ export const email = z
 
 export const password = z
   .string()
-  .min(10)
-  .max(100)
+  .min(12)
+  .max(64)
+  .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/)
   .transform((str) => str.trim())
 
 export const Signup = z.object({
