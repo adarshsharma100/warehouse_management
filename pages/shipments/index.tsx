@@ -2,7 +2,7 @@ import { Suspense, useEffect, useReducer, useRef, useState } from "react";
 import { Routes } from "@blitzjs/next";
 import Head from "next/head";
 import Link from "next/link";
-import { invoke, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
+import { invoke, useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
 import { useRouter } from "next/router";
 import Layout from "layouts/Layout"
 import Loading from "components/loading"
@@ -20,6 +20,7 @@ import Html from 'react-pdf-html';
 import { Paginator } from "primereact/paginator";
 import { Button } from "primereact/button";
 import { Menu } from "primereact/menu";
+import createBatch from "app/batches/mutations/createBatch"
 
 import moment from "moment";
 
@@ -311,7 +312,6 @@ export const ShipmentsList = () => {
   // const page = Number(router.query.page) || 0;
   const [state, dispatch] = useReducer(reducer, initialState);
   const { orders, tabActiveIndex, statusId, skipCount, tableRowsCount, selectedShipments } = state
-  console.log('selectedShipments: ', selectedShipments);
 
   const [{ shipments, count: shipmentCount }] = usePaginatedQuery(getShipments, {
     orderBy: { id: "asc" },
@@ -326,9 +326,11 @@ export const ShipmentsList = () => {
     take: undefined,
   });
 
+
   const orderSelectionMenu = useRef(null);
 
-  const items = [
+
+  const [items, setItems] = useState([
     {
       label: 'Options',
       items: [
@@ -365,7 +367,10 @@ export const ShipmentsList = () => {
         }
       ]
     }
-  ];
+  ])
+
+  const [createBatchMutation] = useMutation(createBatch)
+
 
 
   const setOrders = (data) => {
@@ -384,12 +389,55 @@ export const ShipmentsList = () => {
     <Paginator first={skipCount} rows={tableRowsCount} totalRecords={shipmentCount} rowsPerPageOptions={[10, 20, 30]} onPageChange={onPageChange} />
 
   const renderHeader = () => {
+    const CREATE_STATE = "CREATED"
     return (
 
       <div className="flex justify-content-between">
-        <Menu model={items} popup ref={orderSelectionMenu} />
+        <Menu model={items} popup ref={orderSelectionMenu} onShow={() => {
+          if (selectedShipments[0].shipment_status.name === CREATE_STATE)
+            setItems([{
+              label: 'Invoice',
+              items: [
+                {
+                  label: 'Generate Invoice',
+                  icon: 'pi pi-file-pdf',
+                  command: () => {
+                    // GENERATE INVOICE MUTATION
+                  }
+                },
+              ]
+            }, {
+              label: 'Group',
+              items: [
+                {
+                  label: 'Batch Items',
+                  icon: 'pi pi-box',
+                  command: async () => {
+                    // GENERATE BATCH MUTATION
+                    await createBatchMutation({
+                      batchNumber: "BATCH_" + moment().format('x'),
+                      shipment: {
+                        connect: selectedShipments.map(({ id }) => ({ id }))
+                      }
+                    }, {
+                      onSuccess: () => console.log("done"),
+                      onError: (error) => {
+                        console.log('error: ', error);
+                      },
+                    })
+                  }
+                },
+                {
+                  label: 'Generate Picklist',
+                  icon: 'pi pi-list',
+                  command: () => {
+                    // GENERATE BATCH MUTATION
+                  }
+                },
+              ]
+            }])
+        }} />
         <Button label="Actions" icon="pi pi-bars" onClick={(e) => orderSelectionMenu?.current.toggle(e)} />
-
       </div>
     )
   }
@@ -437,23 +485,20 @@ export const ShipmentsList = () => {
             onContextMenu={(e) => cm.current.show(e.originalEvent)}
             contextMenuSelection={selectedShipment}
             onContextMenuSelectionChange={(e) => setSelectedShipment(e.value)}
-
             value={orders}
             responsiveLayout="scroll"
             showGridlines
             stripedRows
-            selectionMode='checkbox'
+            selectionMode='multiple'
             selection={selectedShipments}
             onSelectionChange={(e) => dispatch({ type: "SET_SELECTED_SHIPMENTS", payload: e.value })}
             header={selectedShipments.length >= 1 && renderHeader}
             footer={paginator}
-
           >
             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
             <Column field="Shipments" header="Shipments" body={({ shipmentNumber, ordersId }) => <div>
               <p>Code:{shipmentNumber}</p>
               <p>Order:{ordersId}</p>
-
             </div>} />
             <Column field="giftMessage" header="Gift Message" body={({ orders }) => orders?.giftMessage} />
             <Column header="Products" body={({ orders: { order_items } }) => <div>

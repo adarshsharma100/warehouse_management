@@ -585,20 +585,23 @@ model shopify {
 }
 
 model batch {
-  id          Int        @id
+  id          Int        @id @default(autoincrement())
   batchNumber String?    @db.VarChar(45)
   shipment    shipment[]
 }
 
 model courier {
-  id       Int           @id @default(autoincrement())
-  name     String        @db.VarChar(45)
-  type     courier_type?
-  shipment shipment[]
+  id            Int           @id @default(autoincrement())
+  name          String        @db.VarChar(45)
+  courierTypeId Int
+  courier_types courier_types @relation(fields: [courierTypeId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_courier_courier_types1")
+  shipment      shipment[]
+
+  @@index([courierTypeId], map: "fk_courier_courier_types1_idx")
 }
 
 model dimensions {
-  id       Int        @id
+  id       Int        @id @default(autoincrement())
   length   Float?     @db.Float
   width    Float?     @db.Float
   height   Float?     @db.Float
@@ -704,6 +707,12 @@ model sales_invoice_details {
   @@index([shipmentId], map: "fk_sales_invoice_details_shipment1_idx")
 }
 
+model courier_types {
+  id      Int       @id @default(autoincrement())
+  type    String?   @db.VarChar(45)
+  courier courier[]
+}
+
 enum contact_number_type {
   mobile
   landline
@@ -729,11 +738,6 @@ enum vendors_status {
 enum products_status {
   Active
   Inactive
-}
-
-enum courier_type {
-  online
-  local
 }
 
 enum shipment_priority {
