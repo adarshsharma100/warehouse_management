@@ -601,12 +601,12 @@ model courier {
 }
 
 model dimensions {
-  id       Int        @id @default(autoincrement())
-  length   Float?     @db.Float
-  width    Float?     @db.Float
-  height   Float?     @db.Float
-  weight   Float?     @db.Float
-  shipment shipment[]
+  id       Int       @id @default(autoincrement())
+  length   Float?    @db.Float
+  width    Float?    @db.Float
+  height   Float?    @db.Float
+  weight   Float?    @db.Float
+  shipment shipment?
 }
 
 model permission {
@@ -649,12 +649,12 @@ model shipment {
   batchId               Int?
   createdAt             DateTime?               @default(now()) @db.DateTime(0)
   updatedAt             DateTime?               @default(now()) @db.DateTime(0)
-  packageDimensions     Int?
   pickupFrom            Int?
+  dimensionsId          Int?                    @unique(map: "dimensions_id_UNIQUE")
   sales_invoice_details sales_invoice_details[]
   batch                 batch?                  @relation(fields: [batchId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_batch1")
   courier               courier?                @relation(fields: [courierId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_courier1")
-  dimensions            dimensions?             @relation(fields: [packageDimensions], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_dimensions1")
+  dimensions            dimensions?             @relation(fields: [dimensionsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_dimensions1")
   orders                orders                  @relation(fields: [ordersId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_orders1")
   shipment_status       shipment_status         @relation(fields: [shipmentStatusId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_shipment_status1")
   warehouse             warehouse?              @relation(fields: [pickupFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_warehouse1")
@@ -662,10 +662,10 @@ model shipment {
 
   @@index([batchId], map: "fk_shipment_batch1_idx")
   @@index([courierId], map: "fk_shipment_courier1_idx")
-  @@index([packageDimensions], map: "fk_shipment_dimensions1_idx")
   @@index([ordersId], map: "fk_shipment_orders1_idx")
   @@index([shipmentStatusId], map: "fk_shipment_shipment_status1_idx")
   @@index([pickupFrom], map: "fk_shipment_warehouse1_idx")
+  @@index([dimensionsId], map: "fk_shipment_dimensions1_idx")
 }
 
 model shipment_items {

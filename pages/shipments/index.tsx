@@ -21,8 +21,10 @@ import { Paginator } from "primereact/paginator";
 import { Button } from "primereact/button";
 import { Menu } from "primereact/menu";
 import createBatch from "app/batches/mutations/createBatch"
+import { Steps } from 'primereact/steps';
 
 import moment from "moment";
+import PackageDimensions from "components/PackageDimensions";
 
 const initialState = {
   orders: [],
@@ -34,7 +36,8 @@ const initialState = {
   rows: 10,
   itemsPerPage: 10,
   selectedShipments: [],
-  isReadyToShip: false
+  isReadyToShip: true,
+  readyToShipActiveIndex: 0,
 };
 
 
@@ -297,10 +300,21 @@ const reducer = (state, { type, payload }) => {
       return { ...state, selectedShipments: [] };
     case 'READY_TO_SHIP':
       return { ...state, isReadyToShip: payload };
+    case 'READY_TO_SHIP_ACTIVE_INDEX':
+      return { ...state, readyToShipActiveIndex: payload };
     default:
       throw new Error(`Unhandled action type: ${type}`);
   }
 }
+
+const readyToShipItems = [
+  {
+    label: ' Package Dimensions'
+  },
+  {
+    label: 'Select Courier'
+  },
+]
 
 export const ShipmentsList = () => {
   const cm = useRef<ContextMenu>(null);
@@ -313,8 +327,10 @@ export const ShipmentsList = () => {
 
   // const page = Number(router.query.page) || 0;
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { orders, statusId, skipCount, tableRowsCount, selectedShipments, isReadyToShip } = state
+  const { orders, statusId, skipCount, tableRowsCount, selectedShipments, isReadyToShip, packageDimensions, readyToShipActiveIndex } = state
   console.log('selectedShipments: ', selectedShipments);
+
+  const firstSelectedShipmentItem = selectedShipments[0]
 
   const [{ shipments, count: shipmentCount }] = usePaginatedQuery(getShipments, {
     orderBy: { id: "asc" },
@@ -439,7 +455,7 @@ export const ShipmentsList = () => {
                 },
               ]
             }])
-          } else if (selectedShipments[0].shipment_status.name === "PACKED") {
+          } else if (firstSelectedShipmentItem.shipment_status.name === "PACKED") {
             setItems([{
               label: 'Options',
               items: [
@@ -449,6 +465,10 @@ export const ShipmentsList = () => {
                   command: () => {
                     // Create 2 STEP PROCESS TO CHANGE STATE
                     dispatch({ type: "READY_TO_SHIP", payload: true })
+                    console.log("firstSelectedShipmentItem?.dimensionsId", Boolean(firstSelectedShipmentItem?.dimensionsId))
+                    if (firstSelectedShipmentItem?.dimensionsId) {
+                      dispatch({ type: "READY_TO_SHIP_ACTIVE_INDEX", payload: 1 })
+                    }
                   }
                 },
               ]
@@ -474,13 +494,21 @@ export const ShipmentsList = () => {
   };
 
 
+  const readToShipProcessHeader = <Steps model={readyToShipItems} activeIndex={readyToShipActiveIndex} />
+
+
   return (
 
     <div className=" card">
-      <Dialog header="Header" visible={isReadyToShip} style={{ width: '50vw' }}
-        onHide={() => dispatch({ type: "READY_TO_SHIP", payload: false })}>
-        <h1>Step : 1 </h1>
+      <Dialog header={readToShipProcessHeader} visible={isReadyToShip} style={{ width: '50vw' }}
 
+        onHide={() => {
+          dispatch({ type: "READY_TO_SHIP", payload: false })
+          dispatch({ type: "READY_TO_SHIP_ACTIVE_INDEX", payload: 0 })
+        }}>
+        {!readyToShipActiveIndex && <PackageDimensions shipmentId={selectedShipments[0]?.id} dispatch={dispatch} />}
+
+        {readyToShipActiveIndex === 1 && <h1>NEXT</h1>}
       </Dialog>
       <div className="grid">
         <TabMenu

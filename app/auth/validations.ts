@@ -40,6 +40,10 @@ export const ChangePassword = z.object({
   currentPassword: z.string(),
   newPassword: password,
 })
+export const Numbers = () => z.object({
+  currentPassword: z.string(),
+  newPassword: password,
+})
 
 export const description = z
   .string()
@@ -49,7 +53,7 @@ export const description = z
 
 export const Product = z.object({
   name: z.string().min(3).max(45).transform((str) => str.trim()),
-  description: z.string().optional().nullable(),
+  description: z.string(),
   kit_products: z.unknown(),
   length: z.number().optional().nullable(),
   width: z.number().optional().nullable(),
@@ -88,4 +92,14 @@ export const Product = z.object({
   if (input.type === 1) return false
 
   return true
+})
+
+const Number = z.number({
+  invalid_type_error: "Required",
+})
+export const Package = z.object({
+  length: Number,
+  width: Number,
+  height: Number,
+  weight: Number,
 })
