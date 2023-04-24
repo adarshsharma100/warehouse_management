@@ -29,7 +29,6 @@ import { Toast } from "primereact/toast";
 const initialState = {
   orders: [],
   filteredOrders: [],
-  tabActiveIndex: 0,
   statusId: undefined,
   tableRowsCount: 10,
   skipCount: 0,
@@ -37,6 +36,7 @@ const initialState = {
   rows: 10,
   itemsPerPage: 10,
   selectedShipments: [],
+  isReadyToShip: false
 };
 
 
@@ -287,8 +287,6 @@ const reducer = (state, { type, payload }) => {
       return { ...state, orders: payload };
     case 'FILTER_BY':
       return { ...state, filteredOrders: payload };
-    case 'UPDATE_ACTIVE_TAB':
-      return { ...state, tabActiveIndex: payload };
     case 'UPDATE_STATUS_ID':
       return { ...state, statusId: payload };
     case 'UPDATE_SKIP_COUNT':
@@ -297,6 +295,10 @@ const reducer = (state, { type, payload }) => {
       return { ...state, tableRowsCount: payload };
     case 'SET_SELECTED_SHIPMENTS':
       return { ...state, selectedShipments: payload };
+    case 'RESET_SELECTED_SHIPMENTS':
+      return { ...state, selectedShipments: [] };
+    case 'READY_TO_SHIP':
+      return { ...state, isReadyToShip: payload };
     default:
       throw new Error(`Unhandled action type: ${type}`);
   }
@@ -313,7 +315,8 @@ export const ShipmentsList = () => {
 
   // const page = Number(router.query.page) || 0;
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { orders, tabActiveIndex, statusId, skipCount, tableRowsCount, selectedShipments } = state
+  const { orders, statusId, skipCount, tableRowsCount, selectedShipments, isReadyToShip } = state
+  console.log('selectedShipments: ', selectedShipments);
 
   const [{ shipments, count: shipmentCount }, { refetch }] = usePaginatedQuery(getShipments, {
     orderBy: { id: "asc" },
@@ -398,7 +401,7 @@ export const ShipmentsList = () => {
 
       <div className="flex justify-content-between">
         <Menu model={items} popup ref={orderSelectionMenu} onShow={() => {
-          if (selectedShipments[0].shipment_status.name === CREATE_STATE)
+          if (selectedShipments[0].shipment_status.name === CREATE_STATE) {
             setItems([{
               label: 'Invoice',
               items: [
@@ -457,6 +460,21 @@ export const ShipmentsList = () => {
                 },
               ]
             }])
+          } else if (selectedShipments[0].shipment_status.name === "PACKED") {
+            setItems([{
+              label: 'Options',
+              items: [
+                {
+                  label: 'Ready To Ship',
+                  icon: 'pi bi-box-seam',
+                  command: () => {
+                    // Create 2 STEP PROCESS TO CHANGE STATE
+                    dispatch({ type: "READY_TO_SHIP", payload: true })
+                  }
+                },
+              ]
+            },])
+          }
         }} />
         <Button label="Actions" icon="pi pi-bars" onClick={(e) => orderSelectionMenu?.current.toggle(e)} />
       </div>
@@ -480,14 +498,20 @@ export const ShipmentsList = () => {
   return (
 
     <div className=" card">
+      <Dialog header="Header" visible={isReadyToShip} style={{ width: '50vw' }}
+        onHide={() => dispatch({ type: "READY_TO_SHIP", payload: false })}>
+        <h1>Step : 1 </h1>
+
+      </Dialog>
       <div className="grid">
         <Toast ref={toast} />
         <TabMenu
           model={[{ label: "ALL" }, ...tabMenuItems]}
-          activeIndex={tabActiveIndex}
+          activeIndex={statusId}
           onTabChange={(e) => {
-            dispatch({ type: 'UPDATE_ACTIVE_TAB', payload: e.index })
             dispatch({ type: 'UPDATE_STATUS_ID', payload: e.value.id })
+            dispatch({ type: 'RESET_SELECTED_SHIPMENTS', payload: [] })
+
           }} />
 
         <Dialog header="Header" visible={viewInvoicePdf} onHide={() => setViewInvoicePdf(false)}>
