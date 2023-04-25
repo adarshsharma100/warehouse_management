@@ -2,24 +2,18 @@ import { resolver } from "@blitzjs/rpc";
 import db from "db";
 import { z } from "zod";
 
-const UpdateShipment = z.object({
+const UpdateCourier_type = z.object({
   id: z.number(),
-  shipment_status: z.object({
-    connect: z.object({
-      id: z.number()
-    })
-  }).optional()
+  name: z.string(),
 });
 
 export default resolver.pipe(
-  resolver.zod(UpdateShipment),
+  resolver.zod(UpdateCourier_type),
   resolver.authorize(),
   async ({ id, ...data }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-    const shipment = await db.shipment.update({
-      where: { id }, data
-    });
+    const courier_type = await db.courier_type.update({ where: { id }, data });
 
-    return shipment;
+    return courier_type;
   }
 );

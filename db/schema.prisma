@@ -667,6 +667,7 @@ model shipment {
   @@index([ordersId], map: "fk_shipment_orders1_idx")
   @@index([shipmentStatusId], map: "fk_shipment_shipment_status1_idx")
   @@index([pickupFrom], map: "fk_shipment_warehouse1_idx")
+  @@index([dimensionsId], map: "fk_shipment_dimensions1_idx")
 }
 
 model shipment_items {
