@@ -31,6 +31,10 @@ import Picklist from "app/shipments/components/Picklist";
 import CourierSelection from "components/CourierSelection";
 import Invoice from "app/shipments/components/Invoice";
 
+import { ConfirmDialog } from 'primereact/confirmdialog'; // For <ConfirmDialog /> component
+import { confirmDialog } from 'primereact/confirmdialog'; // For confirmDialog method
+
+
 const initialState = {
   orders: [],
   filteredOrders: [],
@@ -209,21 +213,29 @@ export const ShipmentsList = () => {
                 {
                   label: 'Generate Invoice',
                   icon: 'pi pi-file-pdf',
-                  command: async () => {
+                  command: () => {
                     // GENERATE INVOICE MUTATION
-                    await createSalesInvoiceMutation(
-                      selectedShipments.map(({ id }) => id),
-                      {
-                        onSuccess: async () => {
-                          await refetch()
-                          toast.current?.show({ severity: 'success', summary: 'Invoice Generated', life: 3000 })
-                        },
-                        onError: (error) => {
-                          console.log('error: ', error);
-                          toast.current?.show({ severity: 'error', summary: 'Invoice Creation Failed', detail: `Failed to create invoice`, life: 3000 })
-                        },
+                    confirmDialog({
+                      message: 'This will change the order status to "PACKED" and will generate invoice. Do you want to proceed?',
+                      header: 'Confirmation',
+                      icon: 'pi pi-exclamation-triangle',
+                      accept: async () => {
+                        await createSalesInvoiceMutation(
+                          selectedShipments.map(({ id }) => id),
+                          {
+                            onSuccess: async () => {
+                              await refetch()
+                              toast.current?.show({ severity: 'success', summary: 'Invoice Generated', life: 3000 })
+                            },
+                            onError: (error) => {
+                              console.log('error: ', error);
+                              toast.current?.show({ severity: 'error', summary: 'Invoice Creation Failed', detail: `Failed to create invoice`, life: 3000 })
+                            },
+                          }
+                        )
                       }
-                    )
+                    });
+
                   }
                 },
                 {
@@ -338,6 +350,7 @@ export const ShipmentsList = () => {
         </Suspense>
       </Dialog>}
       <div className="grid">
+        <ConfirmDialog />
         <Toast ref={toast} />
         <TabMenu
           model={[{ label: "ALL" }, ...tabMenuItems]}
