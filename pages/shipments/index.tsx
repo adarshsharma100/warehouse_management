@@ -27,6 +27,7 @@ import { Steps } from 'primereact/steps';
 import moment from "moment";
 import { Toast } from "primereact/toast";
 import PackageDimensions from "components/PackageDimensions";
+import CourierSelection from "components/CourierSelection";
 
 const initialState = {
   orders: [],
@@ -529,7 +530,7 @@ export const ShipmentsList = () => {
         }}>
         {!readyToShipActiveIndex && <PackageDimensions shipmentId={selectedShipments[0]?.id} dispatch={dispatch} />}
 
-        {readyToShipActiveIndex === 1 && <h1>NEXT</h1>}
+        {readyToShipActiveIndex === 1 && <CourierSelection />}
       </Dialog>
       <div className="grid">
         <Toast ref={toast} />
