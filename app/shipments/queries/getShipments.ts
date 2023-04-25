@@ -39,7 +39,7 @@ export default resolver.pipe(
               }
             },
             shipment_status: true,
-            shipment_items:true
+            shipment_items: true
             // shipment_items: {
             //  include: {
             //   order_items:true,

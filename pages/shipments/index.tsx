@@ -29,7 +29,7 @@ import { Toast } from "primereact/toast";
 import PackageDimensions from "components/PackageDimensions";
 import Picklist from "app/shipments/components/Picklist";
 import CourierSelection from "components/CourierSelection";
-import Invoice from "app/shipments/components/Picklist";
+import Invoice from "app/shipments/components/Invoice";
 
 const initialState = {
   orders: [],
@@ -93,20 +93,29 @@ const readyToShipItems = [
   },
 ]
 
+type Shipment = {
+  id: number
+}
+
 export const ShipmentsList = () => {
   const cm = useRef<ContextMenu>(null);
-  const [selectedShipment, setSelectedShipment] = useState(null)
+  const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null)
   const [viewInvoicePdf, setViewInvoicePdf] = useState(false)
 
   const menuModel = [
-    { label: 'View Invoice', icon: 'pi pi-fw pi-search', command: () => setViewInvoicePdf(true) },
+    {
+      label: 'View Invoice', icon: 'pi pi-fw pi-search', command: (data) => {
+        // setSelectedShipment(data)
+        setViewInvoicePdf(true)
+      }
+    },
     { label: 'View Picklist', icon: 'pi pi-fw pi-list', command: () => setPickListVisible(true) },
   ];
 
   // const page = Number(router.query.page) || 0;
   const [state, dispatch] = useReducer(reducer, initialState);
   const { orders, statusId, skipCount, tableRowsCount, selectedShipments, isReadyToShip, packageDimensions, readyToShipActiveIndex } = state
-  console.log('selectedShipments: ', selectedShipments);
+  // console.log('selectedShipments: ', selectedShipments);
 
   const firstSelectedShipmentItem = selectedShipments[0]
 
@@ -323,32 +332,11 @@ export const ShipmentsList = () => {
           }))]
         }, [])} />
       </Dialog>
-      <Dialog visible={pickListVisible} header="PickList" onHide={() => setPickListVisible(false)}>
-        <Picklist invoice={selectedShipments.reduce((acc, { orders }) => {
-          const { order_items } = orders;
-          return [...acc, ...order_items.map(({ id, products, quantity }) => ({
-            id,
-            SKU: products.sku,
-            itemName: products.name,
-            brand: products.brand,
-            qty: quantity,
-            image: products.imageUrl,
-          }))]
-        }, [])} />
-      </Dialog>
-      <Dialog visible={pickListVisible} header="PickList" onHide={() => setPickListVisible(false)}>
-        <Picklist invoice={selectedShipments.reduce((acc, { orders }) => {
-          const { order_items } = orders;
-          return [...acc, ...order_items.map(({ id, products, quantity }) => ({
-            id,
-            SKU: products.sku,
-            itemName: products.name,
-            brand: products.brand,
-            qty: quantity,
-            image: products.imageUrl,
-          }))]
-        }, [])} />
-      </Dialog>
+      {selectedShipment?.id && <Dialog header="Header" visible={viewInvoicePdf} onHide={() => setViewInvoicePdf(false)}>
+        <Suspense fallback={<div>Loading...</div>}>
+          <Invoice shipmentID={selectedShipment?.id} />
+        </Suspense>
+      </Dialog>}
       <div className="grid">
         <Toast ref={toast} />
         <TabMenu
@@ -360,16 +348,14 @@ export const ShipmentsList = () => {
 
           }} />
 
-        <Dialog header="Header" visible={viewInvoicePdf} onHide={() => setViewInvoicePdf(false)}>
-          <Invoice />
-        </Dialog>
+
 
 
         <div className="col-12">
-          <ContextMenu model={menuModel} ref={cm} onHide={() => setSelectedShipment(null)} />
+          <ContextMenu model={menuModel} ref={cm} />
           <DataTable
             onContextMenu={(e) => cm.current.show(e.originalEvent)}
-            contextMenuSelection={selectedShipment}
+            // contextMenuSelection={selectedShipment}
             onContextMenuSelectionChange={(e) => setSelectedShipment(e.value)}
             value={orders}
             responsiveLayout="scroll"
