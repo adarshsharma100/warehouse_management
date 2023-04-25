@@ -28,6 +28,7 @@ import moment from "moment";
 import { Toast } from "primereact/toast";
 import PackageDimensions from "components/PackageDimensions";
 import Picklist from "app/shipments/components/Picklist";
+import CourierSelection from "components/CourierSelection";
 
 const initialState = {
   orders: [],
@@ -534,7 +535,33 @@ export const ShipmentsList = () => {
         }}>
         {!readyToShipActiveIndex && <PackageDimensions shipmentId={selectedShipments[0]?.id} dispatch={dispatch} />}
 
-        {readyToShipActiveIndex === 1 && <h1>NEXT</h1>}
+        {readyToShipActiveIndex === 1 && <CourierSelection />}
+      </Dialog>
+      <Dialog visible={pickListVisible} header="PickList" onHide={() => setPickListVisible(false)}>
+        <Picklist invoice={selectedShipments.reduce((acc, { orders }) => {
+          const { order_items } = orders;
+          return [...acc, ...order_items.map(({ id, products, quantity }) => ({
+            id,
+            SKU: products.sku,
+            itemName: products.name,
+            brand: products.brand,
+            qty: quantity,
+            image: products.imageUrl,
+          }))]
+        }, [])} />
+      </Dialog>
+      <Dialog visible={pickListVisible} header="PickList" onHide={() => setPickListVisible(false)}>
+        <Picklist invoice={selectedShipments.reduce((acc, { orders }) => {
+          const { order_items } = orders;
+          return [...acc, ...order_items.map(({ id, products, quantity }) => ({
+            id,
+            SKU: products.sku,
+            itemName: products.name,
+            brand: products.brand,
+            qty: quantity,
+            image: products.imageUrl,
+          }))]
+        }, [])} />
       </Dialog>
       <Dialog visible={pickListVisible} header="PickList" onHide={() => setPickListVisible(false)}>
         <Picklist invoice={selectedShipments.reduce((acc, { orders }) => {
