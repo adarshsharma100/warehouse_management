@@ -15,7 +15,7 @@ import { Chip } from "primereact/Chip";
 import { dateFormat } from "app/constants";
 import { Dialog } from 'primereact/dialog';
 import { ContextMenu } from 'primereact/contextmenu';
-import { Page, Document, Image, StyleSheet, View, Text, PDFViewer } from "@react-pdf/renderer";
+import { Page, Document, StyleSheet, PDFViewer } from "@react-pdf/renderer";
 import Html from 'react-pdf-html';
 import { Paginator } from "primereact/paginator";
 import { Button } from "primereact/button";
@@ -27,6 +27,7 @@ import { Steps } from 'primereact/steps';
 import moment from "moment";
 import { Toast } from "primereact/toast";
 import PackageDimensions from "components/PackageDimensions";
+import Picklist from "app/shipments/components/Picklist";
 
 const initialState = {
   orders: [],
@@ -38,7 +39,7 @@ const initialState = {
   rows: 10,
   itemsPerPage: 10,
   selectedShipments: [],
-  isReadyToShip: true,
+  isReadyToShip: false,
   readyToShipActiveIndex: 0,
 };
 
@@ -325,6 +326,7 @@ export const ShipmentsList = () => {
 
   const menuModel = [
     { label: 'View Invoice', icon: 'pi pi-fw pi-search', command: () => setViewInvoicePdf(true) },
+    { label: 'View Picklist', icon: 'pi pi-fw pi-list', command: () => setPickListVisible(true) },
   ];
 
   // const page = Number(router.query.page) || 0;
@@ -441,6 +443,11 @@ export const ShipmentsList = () => {
                     )
                   }
                 },
+                {
+                  label: 'View Picklist',
+                  icon: 'pi pi-file-pdf',
+                  command: () => { setPickListVisible(true) }
+                },
               ]
             }, {
               label: 'Group',
@@ -468,11 +475,9 @@ export const ShipmentsList = () => {
                   }
                 },
                 {
-                  label: 'Generate Picklist',
-                  icon: 'pi pi-list',
-                  command: () => {
-                    // GENERATE BATCH MUTATION
-                  }
+                  label: 'View Picklist',
+                  icon: 'pi pi-file-pdf',
+                  command: () => { setPickListVisible(true) }
                 },
               ]
             }])
@@ -516,7 +521,7 @@ export const ShipmentsList = () => {
 
 
   const readToShipProcessHeader = <Steps model={readyToShipItems} activeIndex={readyToShipActiveIndex} />
-
+  const [pickListVisible, setPickListVisible] = useState(false)
 
   return (
 
@@ -530,6 +535,19 @@ export const ShipmentsList = () => {
         {!readyToShipActiveIndex && <PackageDimensions shipmentId={selectedShipments[0]?.id} dispatch={dispatch} />}
 
         {readyToShipActiveIndex === 1 && <h1>NEXT</h1>}
+      </Dialog>
+      <Dialog visible={pickListVisible} header="PickList" onHide={() => setPickListVisible(false)}>
+        <Picklist invoice={selectedShipments.reduce((acc, { orders }) => {
+          const { order_items } = orders;
+          return [...acc, ...order_items.map(({ id, products, quantity }) => ({
+            id,
+            SKU: products.sku,
+            itemName: products.name,
+            brand: products.brand,
+            qty: quantity,
+            image: products.imageUrl,
+          }))]
+        }, [])} />
       </Dialog>
       <div className="grid">
         <Toast ref={toast} />
