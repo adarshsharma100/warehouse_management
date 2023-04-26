@@ -91,7 +91,10 @@ const PackageDimensions = ({ shipmentId, dispatch }) => {
             style={{ maxWidth: "50%" }}
             type="button"
             label="CANCEL"
-            onClick={() => { }}
+            onClick={() => {
+              dispatch({ type: "READY_TO_SHIP", payload: false })
+              dispatch({ type: "READY_TO_SHIP_ACTIVE_INDEX", payload: 0 })
+            }}
           />
           <Button type="submit" label="NEXT" />
         </div>

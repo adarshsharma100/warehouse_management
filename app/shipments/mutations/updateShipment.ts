@@ -8,7 +8,9 @@ const UpdateShipment = z.object({
     connect: z.object({
       id: z.number()
     })
-  }).optional()
+  }).optional(),
+  awb: z.string().optional(),
+  shipmentStatusId: z.number().optional(),
 });
 
 export default resolver.pipe(

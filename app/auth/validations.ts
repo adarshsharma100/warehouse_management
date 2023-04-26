@@ -98,9 +98,16 @@ export const Product = z.object({
 const Number = z.number({
   invalid_type_error: "Required",
 })
+const String = z.string({
+  invalid_type_error: "Required",
+})
 export const Package = z.object({
   length: Number,
   width: Number,
   height: Number,
   weight: Number,
+})
+export const CourierSelection = z.object({
+  courierType: String,
+  courier: String,
 })

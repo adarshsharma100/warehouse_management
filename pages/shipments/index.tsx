@@ -30,6 +30,7 @@ import PackageDimensions from "components/PackageDimensions";
 import Picklist from "app/shipments/components/Picklist";
 import CourierSelection from "components/CourierSelection";
 import Invoice from "app/shipments/components/Picklist";
+import SelectCouriers from "components/SelectCouriers";
 
 const initialState = {
   orders: [],
@@ -107,6 +108,7 @@ export const ShipmentsList = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { orders, statusId, skipCount, tableRowsCount, selectedShipments, isReadyToShip, packageDimensions, readyToShipActiveIndex } = state
   console.log('selectedShipments: ', selectedShipments);
+
 
   const firstSelectedShipmentItem = selectedShipments[0]
 
@@ -262,10 +264,9 @@ export const ShipmentsList = () => {
                 {
                   label: 'Ready To Ship',
                   icon: 'pi bi-box-seam',
-                  command: () => {
+                  command: (e) => {
                     // Create 2 STEP PROCESS TO CHANGE STATE
                     dispatch({ type: "READY_TO_SHIP", payload: true })
-                    console.log("firstSelectedShipmentItem?.dimensionsId", Boolean(firstSelectedShipmentItem?.dimensionsId))
                     if (firstSelectedShipmentItem?.dimensionsId) {
                       dispatch({ type: "READY_TO_SHIP_ACTIVE_INDEX", payload: 1 })
                     }
@@ -300,7 +301,7 @@ export const ShipmentsList = () => {
   return (
 
     <div className=" card">
-      <Dialog header={readToShipProcessHeader} visible={isReadyToShip} style={{ width: '50vw' }}
+      {/* <Dialog header={readToShipProcessHeader} visible={isReadyToShip} style={{ width: '50vw' }}
 
         onHide={() => {
           dispatch({ type: "READY_TO_SHIP", payload: false })
@@ -309,7 +310,14 @@ export const ShipmentsList = () => {
         {!readyToShipActiveIndex && <PackageDimensions shipmentId={selectedShipments[0]?.id} dispatch={dispatch} />}
 
         {readyToShipActiveIndex === 1 && <CourierSelection />}
-      </Dialog>
+      </Dialog> */}
+      {isReadyToShip && <div className="m-3"     >
+        <Steps model={readyToShipItems} activeIndex={readyToShipActiveIndex} />
+        {!readyToShipActiveIndex &&
+          <PackageDimensions shipmentId={firstSelectedShipmentItem?.id} dispatch={dispatch} />}
+
+        {readyToShipActiveIndex === 1 && <SelectCouriers dispatch={dispatch} shipmentId={firstSelectedShipmentItem?.id} refetchShipments={refetch} />}
+      </div>}
       <Dialog visible={pickListVisible} header="PickList" onHide={() => setPickListVisible(false)}>
         <Picklist invoice={selectedShipments.reduce((acc, { orders }) => {
           const { order_items } = orders;

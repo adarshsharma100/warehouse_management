@@ -3,10 +3,7 @@ import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 
 interface GetCourier_typesInput
-  extends Pick<
-    Prisma.Courier_typeFindManyArgs,
-    "where" | "orderBy" | "skip" | "take"
-  > {}
+  extends Pick<Prisma.courier_typesFindManyArgs, "where" | "orderBy" | "skip" | "take"> { }
 
 export default resolver.pipe(
   resolver.authorize(),
@@ -20,9 +17,9 @@ export default resolver.pipe(
     } = await paginate({
       skip,
       take,
-      count: () => db.courier_type.count({ where }),
+      count: () => db.courier_types.count({ where }),
       query: (paginateArgs) =>
-        db.courier_type.findMany({ ...paginateArgs, where, orderBy }),
+        db.courier_types.findMany({ ...paginateArgs, where, orderBy }),
     });
 
     return {

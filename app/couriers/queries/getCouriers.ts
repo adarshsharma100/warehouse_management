@@ -4,9 +4,7 @@ import db, { Prisma } from "db";
 
 interface GetCouriersInput
   extends Pick<
-    Prisma.CourierFindManyArgs,
-    "where" | "orderBy" | "skip" | "take"
-  > {}
+    Prisma.courierFindManyArgs, "where" | "orderBy" | "skip" | "take"> { }
 
 export default resolver.pipe(
   resolver.authorize(),
@@ -22,7 +20,12 @@ export default resolver.pipe(
       take,
       count: () => db.courier.count({ where }),
       query: (paginateArgs) =>
-        db.courier.findMany({ ...paginateArgs, where, orderBy }),
+        db.courier.findMany({
+          ...paginateArgs, where, orderBy, include: {
+            courier_types: true,
+            bulk_awb: true
+          }
+        }),
     });
 
     return {
