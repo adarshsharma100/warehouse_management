@@ -29,7 +29,11 @@ import { Toast } from "primereact/toast";
 import PackageDimensions from "components/PackageDimensions";
 import Picklist from "app/shipments/components/Picklist";
 import CourierSelection from "components/CourierSelection";
-import Invoice from "app/shipments/components/Picklist";
+import Invoice from "app/shipments/components/Invoice";
+
+import { ConfirmDialog } from 'primereact/confirmdialog'; // For <ConfirmDialog /> component
+import { confirmDialog } from 'primereact/confirmdialog'; // For confirmDialog method
+
 import SelectCouriers from "components/SelectCouriers";
 
 const initialState = {
@@ -94,21 +98,29 @@ const readyToShipItems = [
   },
 ]
 
+type Shipment = {
+  id: number
+}
+
 export const ShipmentsList = () => {
   const cm = useRef<ContextMenu>(null);
-  const [selectedShipment, setSelectedShipment] = useState(null)
+  const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null)
   const [viewInvoicePdf, setViewInvoicePdf] = useState(false)
 
   const menuModel = [
-    { label: 'View Invoice', icon: 'pi pi-fw pi-search', command: () => setViewInvoicePdf(true) },
+    {
+      label: 'View Invoice', icon: 'pi pi-fw pi-search', command: (data) => {
+        // setSelectedShipment(data)
+        setViewInvoicePdf(true)
+      }
+    },
     { label: 'View Picklist', icon: 'pi pi-fw pi-list', command: () => setPickListVisible(true) },
   ];
 
   // const page = Number(router.query.page) || 0;
   const [state, dispatch] = useReducer(reducer, initialState);
   const { orders, statusId, skipCount, tableRowsCount, selectedShipments, isReadyToShip, packageDimensions, readyToShipActiveIndex } = state
-  console.log('selectedShipments: ', selectedShipments);
-
+  // console.log('selectedShipments: ', selectedShipments);
 
   const firstSelectedShipmentItem = selectedShipments[0]
 
@@ -202,21 +214,29 @@ export const ShipmentsList = () => {
                 {
                   label: 'Generate Invoice',
                   icon: 'pi pi-file-pdf',
-                  command: async () => {
+                  command: () => {
                     // GENERATE INVOICE MUTATION
-                    await createSalesInvoiceMutation(
-                      selectedShipments.map(({ id }) => id),
-                      {
-                        onSuccess: async () => {
-                          await refetch()
-                          toast.current?.show({ severity: 'success', summary: 'Invoice Generated', life: 3000 })
-                        },
-                        onError: (error) => {
-                          console.log('error: ', error);
-                          toast.current?.show({ severity: 'error', summary: 'Invoice Creation Failed', detail: `Failed to create invoice`, life: 3000 })
-                        },
+                    confirmDialog({
+                      message: 'This will change the order status to "PACKED" and will generate invoice. Do you want to proceed?',
+                      header: 'Confirmation',
+                      icon: 'pi pi-exclamation-triangle',
+                      accept: async () => {
+                        await createSalesInvoiceMutation(
+                          selectedShipments.map(({ id }) => id),
+                          {
+                            onSuccess: async () => {
+                              await refetch()
+                              toast.current?.show({ severity: 'success', summary: 'Invoice Generated', life: 3000 })
+                            },
+                            onError: (error) => {
+                              console.log('error: ', error);
+                              toast.current?.show({ severity: 'error', summary: 'Invoice Creation Failed', detail: `Failed to create invoice`, life: 3000 })
+                            },
+                          }
+                        )
                       }
-                    )
+                    });
+
                   }
                 },
                 {
@@ -331,33 +351,13 @@ export const ShipmentsList = () => {
           }))]
         }, [])} />
       </Dialog>
-      <Dialog visible={pickListVisible} header="PickList" onHide={() => setPickListVisible(false)}>
-        <Picklist invoice={selectedShipments.reduce((acc, { orders }) => {
-          const { order_items } = orders;
-          return [...acc, ...order_items.map(({ id, products, quantity }) => ({
-            id,
-            SKU: products.sku,
-            itemName: products.name,
-            brand: products.brand,
-            qty: quantity,
-            image: products.imageUrl,
-          }))]
-        }, [])} />
-      </Dialog>
-      <Dialog visible={pickListVisible} header="PickList" onHide={() => setPickListVisible(false)}>
-        <Picklist invoice={selectedShipments.reduce((acc, { orders }) => {
-          const { order_items } = orders;
-          return [...acc, ...order_items.map(({ id, products, quantity }) => ({
-            id,
-            SKU: products.sku,
-            itemName: products.name,
-            brand: products.brand,
-            qty: quantity,
-            image: products.imageUrl,
-          }))]
-        }, [])} />
-      </Dialog>
+      {selectedShipment?.id && <Dialog header="Header" visible={viewInvoicePdf} onHide={() => setViewInvoicePdf(false)}>
+        <Suspense fallback={<div>Loading...</div>}>
+          <Invoice shipmentID={selectedShipment?.id} />
+        </Suspense>
+      </Dialog>}
       <div className="grid">
+        <ConfirmDialog />
         <Toast ref={toast} />
         <TabMenu
           model={[{ label: "ALL" }, ...tabMenuItems]}
@@ -368,16 +368,14 @@ export const ShipmentsList = () => {
 
           }} />
 
-        <Dialog header="Header" visible={viewInvoicePdf} onHide={() => setViewInvoicePdf(false)}>
-          <Invoice />
-        </Dialog>
+
 
 
         <div className="col-12">
-          <ContextMenu model={menuModel} ref={cm} onHide={() => setSelectedShipment(null)} />
+          <ContextMenu model={menuModel} ref={cm} />
           <DataTable
             onContextMenu={(e) => cm.current.show(e.originalEvent)}
-            contextMenuSelection={selectedShipment}
+            // contextMenuSelection={selectedShipment}
             onContextMenuSelectionChange={(e) => setSelectedShipment(e.value)}
             value={orders}
             responsiveLayout="scroll"

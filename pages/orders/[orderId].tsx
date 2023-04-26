@@ -1,9 +1,9 @@
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { Routes } from "@blitzjs/next";
 import ReactDOM from 'react-dom';
 import Head from "next/head";
 import { Dialog } from 'primereact/dialog';
-import { useRouter } from "next/router";
+import router, { useRouter } from "next/router";
 import { PDFDownloadLink, Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
 import { useParam } from "@blitzjs/next";
 import Layout from "layouts/Layout";
@@ -18,26 +18,32 @@ import logo from './tifLogo.png';
 import { useQuery } from "@blitzjs/rpc";
 import getOrders from "app/orders/queries/getOrders";
 import getOrder from "app/orders/queries/getOrder";
+import { getQueryClient, useMutation, usePaginatedQuery } from "@blitzjs/rpc";
 
 // import Layout from "src/core/layouts/Layout";
 // import getOrder from "src/orders/queries/getOrder";
 // import deleteOrder from "src/orders/mutations/deleteOrder";
 
 const columns = [
-  { field: "invoice", header: "Invoice" },
-  { field: "package", header: "Package" },
-  { field: "sku", header: "No. of SKUs" },
-  { field: "sellingPrice", header: "Selling Price w/o Taxes (₹)" },
-  { field: "discount", header: "Discount (₹)" },
-  { field: "subTotal", header: "Sub Total (₹)" },
-  { field: "tax", header: "Taxes (₹)" },
-  { field: "charge", header: "Charges (₹)" },
-  { field: "total", header: "Total (₹)" },
-  {
-    field: 'createdAt',
-    header: "Created On",
-    // body: (rowData) => <div>{dateFormat(rowData.createdAt)}</div>,
-  },
+
+  { header: "Invoice", field: 'sales_invoice_details.invoiceNumber' },
+  { field: "shipmentNumber", header: "Package" },
+  // { field: "sku", header: "No. of SKUs" },
+  // { field: "sellingPrice", header: "Selling Price w/o Taxes (₹)" },
+  // { field: "discount", header: "Discount (₹)" },
+  // { field: "subTotal", header: "Sub Total (₹)" },
+  // { field: "tax", header: "Taxes (₹)" },
+  // { field: "charge", header: "Charges (₹)" },
+  { field: "", header: "Total (₹)" , body: (rowdata) => {
+    // calculate from 
+
+  return <p>{"Price"}</p>
+  }},
+  // {
+  //   field: 'createdAt',
+  //   header: "Created On",
+  //   // body: (rowData) => <div>{dateFormat(rowData.createdAt)}</div>,
+  // },
 ]
 
 const columnsTwo = [
@@ -124,12 +130,26 @@ const orderDetails = {
 };
 
 export const OrderDetails = () => {
+
   const [selectedColumns] = useState(columns)
   const [selectedColumnsTwo] = useState(columnsTwo)
   const [dataSummery] = useState(summeryData)
   const [comments, setComments] = useState([]);
   const [dialogBox, setDialogBox] = useState(false);
 
+  const orderId = useParam("orderId", "number")
+  const ITEMS_PER_PAGE = 100;
+  const router = useRouter();
+  const page = Number(router.query.page) || 0;
+
+
+  const [order] = useQuery(getOrder, { id: orderId })
+  console.log('order: ', order);
+
+const [item,setItem] = useState(order.shipment)
+console.log('item: ', item);
+  // const [invoiceData] = useState(order.shipment.map((ele) => ele.sales_invoice_details))
+  // console.log('invoiceData: ', invoiceData);
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -147,6 +167,7 @@ export const OrderDetails = () => {
         key={col.field}
         field={col.field}
         header={col.header}
+        body={col?.body}
         filter
         filterPlaceholder="Search..."
       />
@@ -159,13 +180,14 @@ export const OrderDetails = () => {
         key={col.field}
         field={col.field}
         header={col.header}
+        body={col?.body}
         filter
         filterPlaceholder="Search..."
       />
     )
   })
 
-  const togglePdf =()  =>{
+  const togglePdf = () => {
     setDialogBox(!dialogBox);
   }
 
@@ -225,7 +247,7 @@ export const OrderDetails = () => {
             <div className="col-12 mt-3" >
 
               <DataTable
-                value={invoiceData}
+                value={item}
                 responsiveLayout="scroll"
                 showGridlines
                 // header={header1}
@@ -234,6 +256,7 @@ export const OrderDetails = () => {
                 filterDisplay="menu"
                 emptyMessage="No Results found."
                 rowHover={true}
+                
 
               >
                 {columnComponents}

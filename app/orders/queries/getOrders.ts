@@ -6,7 +6,7 @@ import fetchOrdersJob from "../functions/fetchOrdersJobCreation"
 import { Ctx } from "@blitzjs/next"
 
 interface GetOrdersInput
-  extends Pick<Prisma.ordersFindManyArgs, "where" | "orderBy" | "skip" | "take"> {}
+  extends Pick<Prisma.ordersFindManyArgs, "where" | "orderBy" | "skip" | "take"> { }
 
 export default resolver.pipe(
   resolver.authorize(),
@@ -36,8 +36,8 @@ export default resolver.pipe(
             },
             order_status: true,
             shopify: true,
-            shipment:true,
-           
+            shipment: true,
+
 
             addresses_orders_billingAddressIdToaddresses: true,
             addresses_orders_shippingAddressIdToaddresses: true,

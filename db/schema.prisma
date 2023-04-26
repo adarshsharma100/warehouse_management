@@ -10,7 +10,7 @@ datasource db {
 model addresses {
   id                                         Int               @id @default(autoincrement())
   buildingNumber                             String?           @db.VarChar(15)
-  areaStreet                                 String?           @db.VarChar(150)
+  areaStreet                                 String?           @db.VarChar(300)
   landmarkName                               String?           @db.VarChar(100)
   cityCountryProvince                        String            @db.VarChar(45)
   state                                      String?           @db.VarChar(45)
@@ -224,7 +224,7 @@ model product_types {
 
 model products {
   id                                             Int                  @id @default(autoincrement())
-  name                                           String               @db.VarChar(45)
+  name                                           String               @db.VarChar(100)
   sku                                            String               @unique(map: "sku_UNIQUE") @db.VarChar(15)
   description                                    String?              @db.LongText
   length                                         Int?
@@ -577,10 +577,11 @@ model jobs {
 }
 
 model shopify {
-  id             Int      @id @default(autoincrement())
-  orderId        String?  @db.VarChar(150)
-  orderNumber    String?  @db.VarChar(150)
-  orderStatusUrl String?  @db.VarChar(200)
+  id             Int       @id @default(autoincrement())
+  orderId        String?   @db.VarChar(150)
+  orderNumber    String?   @db.VarChar(150)
+  orderStatusUrl String?   @db.VarChar(200)
+  createdAt      DateTime? @default(now()) @db.DateTime(0)
   orders         orders[]
 }
 
@@ -663,6 +664,7 @@ model shipment {
 
   @@index([batchId], map: "fk_shipment_batch1_idx")
   @@index([courierId], map: "fk_shipment_courier1_idx")
+  @@index([dimensionsId], map: "fk_shipment_dimensions1_idx")
   @@index([ordersId], map: "fk_shipment_orders1_idx")
   @@index([shipmentStatusId], map: "fk_shipment_shipment_status1_idx")
   @@index([pickupFrom], map: "fk_shipment_warehouse1_idx")
@@ -698,6 +700,12 @@ model user_roles {
   @@index([userId], map: "fk_user_roles_user1_idx")
 }
 
+model courier_types {
+  id      Int       @id @default(autoincrement())
+  type    String?   @db.VarChar(45)
+  courier courier[]
+}
+
 model sales_invoice_details {
   id            Int       @id @unique(map: "id_UNIQUE") @default(autoincrement())
   invoiceNumber String?   @db.VarChar(45)
@@ -708,10 +716,14 @@ model sales_invoice_details {
   @@index([shipmentId], map: "fk_sales_invoice_details_shipment1_idx")
 }
 
-model courier_types {
-  id      Int       @id @default(autoincrement())
-  type    String?   @db.VarChar(45)
-  courier courier[]
+model bulk_awb {
+  id        Int      @id @default(autoincrement())
+  awbNumber String   @db.VarChar(45)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  courierId Int
+  courier   courier  @relation(fields: [courierId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bulk_awb_courier1")
+
+  @@index([courierId], map: "fk_bulk_awb_courier1_idx")
 }
 
 model bulk_awb {

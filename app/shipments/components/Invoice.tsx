@@ -1,8 +1,127 @@
 import React from 'react'
+import { Page, Document, Image, StyleSheet, View, Text, PDFViewer } from "@react-pdf/renderer";
+import Html from 'react-pdf-html';
+import { useQuery } from '@blitzjs/rpc';
+import getShipment from '../queries/getShipment';
+import moment from 'moment';
+import { create } from 'domain';
+import numWords from 'num-words';
 
-type Props = {}
+
+const price_in_words = (price) => {
+  var sglDigit = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"],
+    dblDigit = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"],
+    tensPlace = ["", "Ten", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"],
+    handle_tens = function (dgt, prevDgt) {
+      return 0 == dgt ? "" : " " + (1 == dgt ? dblDigit[prevDgt] : tensPlace[dgt])
+    },
+    handle_utlc = function (dgt, nxtDgt, denom) {
+      return (0 != dgt && 1 != nxtDgt ? " " + sglDigit[dgt] : "") + (0 != nxtDgt || dgt > 0 ? " " + denom : "")
+    };
+
+  var str = "",
+    digitIdx = 0,
+    digit = 0,
+    nxtDigit = 0,
+    words = [];
+  if (price += "", isNaN(parseInt(price))) str = "";
+  else if (parseInt(price) > 0 && price.length <= 10) {
+    for (digitIdx = price.length - 1; digitIdx >= 0; digitIdx--) switch (digit = price[digitIdx] - 0, nxtDigit = digitIdx > 0 ? price[digitIdx - 1] - 0 : 0, price.length - digitIdx - 1) {
+      case 0:
+        words.push(handle_utlc(digit, nxtDigit, ""));
+        break;
+      case 1:
+        words.push(handle_tens(digit, price[digitIdx + 1]));
+        break;
+      case 2:
+        words.push(0 != digit ? " " + sglDigit[digit] + " Hundred" + (0 != price[digitIdx + 1] && 0 != price[digitIdx + 2] ? " and" : "") : "");
+        break;
+      case 3:
+        words.push(handle_utlc(digit, nxtDigit, "Thousand"));
+        break;
+      case 4:
+        words.push(handle_tens(digit, price[digitIdx + 1]));
+        break;
+      case 5:
+        words.push(handle_utlc(digit, nxtDigit, "Lakh"));
+        break;
+      case 6:
+        words.push(handle_tens(digit, price[digitIdx + 1]));
+        break;
+      case 7:
+        words.push(handle_utlc(digit, nxtDigit, "Crore"));
+        break;
+      case 8:
+        words.push(handle_tens(digit, price[digitIdx + 1]));
+        break;
+      case 9:
+        words.push(0 != digit ? " " + sglDigit[digit] + " Hundred" + (0 != price[digitIdx + 1] || 0 != price[digitIdx + 2] ? " and" : " Crore") : "")
+    }
+    str = words.reverse().join("")
+  } else str = "";
+  return str
+
+}
+
+const decimalToWords = (price) => {
+  const firstHalf = price_in_words(parseInt(price.split('.')[0]))
+  const result = price.split('.')[1] ? firstHalf + " Point " + price_in_words(parseInt(price.split('.')[1])) : firstHalf
+  return result
+}
+
+type Props = {
+  invoice?: InvoiceData,
+  shipmentID: number
+}
+
+type InvoiceData = {
+  shipmentNumber: string,
+  orders: Order
+}
+
+type Order = {
+  id: number,
+  shopifyId: number
+  gateway: string
+  addresses_orders_shippingAddressIdToaddresses: Shipping
+  addresses_orders_billingAddressIdToaddresses: Shipping
+  customers: Customers
+}
+
+type Customers = {
+  id: number,
+  firstName: string,
+  lastName: string
+}
+
+type Shipping = {
+  areaStreet: string,
+  cityCountryProvince: string
+  pincode: string,
+
+}
 
 const Invoice = (props: Props) => {
+  const { shipmentID } = props
+  const [shipment] = useQuery(getShipment, { id: shipmentID });
+  const { sales_invoice_details, orders, shipment_items } = shipment
+  const { createdAt, invoiceNumber } = sales_invoice_details
+  const { shopifyId, gateway, customers, addresses_orders_billingAddressIdToaddresses, addresses_orders_shippingAddressIdToaddresses } = orders
+  const { contact_number: billingContact, areaStreet: billingStreet, buildingNumber: billingBldgNumber, cityCountryProvince: billingCityProvince, state: billingState, pincode: billingPincode } = addresses_orders_billingAddressIdToaddresses
+  const { contact_number: shippingContact, areaStreet: shippingStreet, buildingNumber: shippingBldgNumber, cityCountryProvince: shippingCityProvince, state: shippingState, pincode: shippingPincode } = addresses_orders_shippingAddressIdToaddresses
+  const { firstName, lastName } = customers
+
+  const totalObject = shipment_items.reduce(({ total, tax, totalWithTax }, { order_items }) => {
+    return {
+      total: parseFloat(order_items.quantity * order_items.price + total),
+      tax: parseFloat(order_items.quantity * order_items.price * 0.18 + tax),
+      totalWithTax: parseFloat(order_items.quantity * order_items.price * 1.18 + totalWithTax),
+    }
+  }, {
+    total: 0,
+    tax: 0,
+    totalWithTax: 0
+  })
   const html = `
 <html>
   <head>
@@ -35,7 +154,7 @@ const Invoice = (props: Props) => {
 			}
 
       h3 {
-        margin: 0px;
+        margin: 0px 0px 5px 0px;
         text-transform: uppercase;
         font-size: 14px;
       }
@@ -45,7 +164,7 @@ const Invoice = (props: Props) => {
       }
 
       h4 {
-        margin: 0px;
+        margin: 0px 0px 5px 0px;
         font-size: 12px;
         font-weight: 600;
         text-transform: uppercase;
@@ -58,7 +177,7 @@ const Invoice = (props: Props) => {
       table {
 				width: 100%;
         font-size: 10px;
-        border-collapse: collapse;
+        // border-collapse: collapse;
         border: 1px solid black;
 			}
 
@@ -94,43 +213,44 @@ const Invoice = (props: Props) => {
         <div class="border" style="display:flex; justify-content: space-between;">
           <div>
             <h4>Invoice Details</h4>
-            <p>Invoice Number: TIF/23-24/102052</p>
-            <p>Invoice Date: 18-April-2023</p>
+            <p>Invoice Number: ${invoiceNumber}</p>
+            <p>Invoice Date: ${moment(createdAt).format('DD/MM/YYYY HH:mm')}</p>
           </div>
         </div>
 
         <div class="border">
           <h4>Order Details</h4>
-          <p>Order Number: #72787</p>
-          <p>OrderDate: 18-April-2023</p>
-          <p>Channel:<b> SHOPIFY</b></p>
-          <p>Payment Mode: COD</p>
+          <p>Order Number: #${orders.id}</p>
+          <p>OrderDate: ${moment(orders.createdAt).format('DD/MM/YYYY HH:mm')}</p>
+          <p>Channel: ${shopifyId ? "Shopify" : "Manual"}</p>
+          <p>Payment Mode: ${gateway}</p>
         </div>
       </div>
       <div class="parent">
         <div class="border">
         	<h4>Bill To:</h4>
-					<p><b>Pranav Garg</b></p>
-					<p>
-						Mount International school, C/O KRISHNA ELECTRIC STORE, NEAR POLICE
-						STATION LUDHIANA-141421 Punjab (03)India
-					</p>
-					<p>T: 9417288626</p>
+					<p>${firstName} ${lastName}</p>
+					<p>Street Address: ${billingStreet}</p>
+          <p>Bulding Number: ${billingBldgNumber}</p>
+          <p>City/Province: ${billingCityProvince}</p>
+          <p>State: ${billingState}</p>
+          <p>Pincode: ${billingPincode}</p>
+					<p>T: ${billingContact?.[0]?.number}</p>
         </div>
         <div class="border">
         	<h4>Ship To:</h4>
-					<p><b>Pranav Garg</b></p>
-					<p>
-						Mount International school, C/O KRISHNA ELECTRIC STORE, NEAR POLICE
-						STATION LUDHIANA-141421 Punjab (03)India
-					</p>
-					<p>T: 9417288626</p>
+					<p>${firstName} ${lastName}</p>
+					<p>Street Address: ${shippingStreet}</p>
+          <p>Bulding Number: ${shippingBldgNumber}</p>
+          <p>City/Province: ${shippingCityProvince}</p>
+          <p>State: ${shippingState}</p>
+          <p>Pincode: ${shippingPincode}</p>
+					<p>T: ${shippingContact?.[0]?.number}</p>
         </div>
         <div class="border">
-					<h4>Dispatch Through: </h4>
-					<p><b>Maruti</b></p>
+					<h4>Dispatch Details</h4>
+					<p>Courier:</p>
 					<p>AWB No:</p>
-					<p><b>6FGDS256D6</b></p>
 				</div>
       </div>
 
@@ -148,63 +268,42 @@ const Invoice = (props: Props) => {
               <th>IGST(INR)</th>
               <th>Amount (INR)</th>
             </tr>
-            <tr>
-              <td>1</td>
-              <td><b>Raspberry pi Zero W Case</b></td>
+            ${shipment_items.map(({ order_items }, index) => {
+    const { products } = order_items
+    const { name, sku, hsnCode } = products
+    return `<tr>
+                        <td>${index + 1}</td>
+                        <td>${name}</td>
 
-              <td>
-                <p>TIFAC0078</p>
-                <p>HSN code:39231090</p>
-              </td>
+                        <td>
+                          <p>SKU: ${sku}</p>
+                          <p>HSN code: ${hsnCode ?? "-"}</p>
+                        </td>
 
-              <td>1</td>
-              <td>800.42</td>
-              <td>800.42</td>
-              <td>144.08</td>
-              <td>944.50</td>
-            </tr>
-            <tr>
-              <td>2</td>
-              <td><b>Raspberry Pi zero w-only board</b></td>
-              <td>
-                <p>TIFC00107</p>
-                <p>HSN code:84733020</p>
-              </td>
-              <td>1</td>
-              <td>800.42</td>
-              <td>800.42</td>
-              <td>144.08</td>
-              <td>944.50</td>
-            </tr>
+                        <td>${parseFloat(order_items.quantity).toFixed(2)}</td>
+                        <td>${parseFloat(order_items.price).toFixed(2)}</td>
+                        <td>${parseFloat(order_items.price * order_items.quantity).toFixed(2)}</td>
+                        <td>${parseFloat(order_items.price * order_items.quantity * 0.18).toFixed(2)}</td>
+                        <td>${parseFloat(order_items.price * order_items.quantity * 1.18).toFixed(2)}</td>
+                      </tr>`
+  }).join('')}
 
-            <tr>
-              <td></td>
-              <td><b>COD charges</b></td>
-              <td></td>
-              <td></td>
-              <td></td>
 
-              <td>42.38</td>
-              <td>7.62</td>
-              <td>50.00</td>
-            </tr>
             <tr>
               <td></td>
               <td><b>Total:</b></td>
               <td></td>
-              <td>1</td>
+              <td>${shipment_items.length}</td>
               <td></td>
-
-              <td>1643.22</td>
-              <td>295.78</td>
-              <td>1939.0</td>
+              <td>${totalObject.total?.toFixed(2)}</td>
+              <td>${totalObject.tax?.toFixed(2)}</td>
+              <td>${totalObject.totalWithTax?.toFixed(2)}</td>
             </tr>
           </tbody>
         </table>
         <div style="margin: 15px 0px;">
-        		<p>Amount Chargeable(in words)</p>
-						<p><b>INR One Thousand Nine Hundred and Thirty</b></p>
-						<p><b>Nine Rupees and Zero Paise Only</b></p>
+        		<p>Amount Chargeable (in words)</p>
+						<p><b>INR ${decimalToWords(totalObject.totalWithTax?.toFixed(2)).toUpperCase()}</b></p>
 						<p><b>Tax is payable on reverse charge basis :No</b></p>
         </div>
         <div style="display: flex; flex-direction: row;">
@@ -231,7 +330,15 @@ const Invoice = (props: Props) => {
 </html>
 `
   return (
-    <div>Invoice</div>
+    <div>
+      <PDFViewer width="1000" height="600" className="app">
+        <Document debug={true}>
+          <Page>
+            <Html>{html}</Html>
+          </Page>
+        </Document>
+      </PDFViewer>
+    </div>
   )
 }
 

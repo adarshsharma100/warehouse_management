@@ -13,7 +13,36 @@ export default resolver.pipe(
   resolver.authorize(),
   async ({ id }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-    const shipment = await db.shipment.findFirst({ where: { id } });
+    const shipment = await db.shipment.findFirst({
+      where: { id },
+      include: {
+        sales_invoice_details: true,
+        shipment_items: {
+          include: {
+            order_items: {
+              include: {
+                products: true
+              }
+            }
+          }
+        },
+        orders: {
+          include: {
+            customers: true,
+            addresses_orders_billingAddressIdToaddresses: {
+              include: {
+                contact_number: true
+              }
+            },
+            addresses_orders_shippingAddressIdToaddresses: {
+              include: {
+                contact_number: true
+              }
+            },
+          }
+        }
+      }
+    });
 
     if (!shipment) throw new NotFoundError();
 
