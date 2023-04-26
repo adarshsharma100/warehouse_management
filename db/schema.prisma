@@ -10,7 +10,7 @@ datasource db {
 model addresses {
   id                                         Int               @id @default(autoincrement())
   buildingNumber                             String?           @db.VarChar(15)
-  areaStreet                                 String?           @db.VarChar(150)
+  areaStreet                                 String?           @db.VarChar(300)
   landmarkName                               String?           @db.VarChar(100)
   cityCountryProvince                        String            @db.VarChar(45)
   state                                      String?           @db.VarChar(45)
@@ -224,7 +224,7 @@ model product_types {
 
 model products {
   id                                             Int                  @id @default(autoincrement())
-  name                                           String               @db.VarChar(45)
+  name                                           String               @db.VarChar(100)
   sku                                            String               @unique(map: "sku_UNIQUE") @db.VarChar(15)
   description                                    String?              @db.LongText
   length                                         Int?
@@ -577,10 +577,11 @@ model jobs {
 }
 
 model shopify {
-  id             Int      @id @default(autoincrement())
-  orderId        String?  @db.VarChar(150)
-  orderNumber    String?  @db.VarChar(150)
-  orderStatusUrl String?  @db.VarChar(200)
+  id             Int       @id @default(autoincrement())
+  orderId        String?   @db.VarChar(150)
+  orderNumber    String?   @db.VarChar(150)
+  orderStatusUrl String?   @db.VarChar(200)
+  createdAt      DateTime? @default(now()) @db.DateTime(0)
   orders         orders[]
 }
 

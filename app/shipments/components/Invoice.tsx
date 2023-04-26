@@ -286,7 +286,7 @@ const Invoice = (props: Props) => {
                         <td>${parseFloat(order_items.price * order_items.quantity * 0.18).toFixed(2)}</td>
                         <td>${parseFloat(order_items.price * order_items.quantity * 1.18).toFixed(2)}</td>
                       </tr>`
-  })}
+  }).join('')}
 
 
             <tr>
