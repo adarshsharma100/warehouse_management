@@ -32,7 +32,7 @@ const PackageDimensions = ({ shipmentId, dispatch }) => {
         }
       }, {
         onSuccess: (data) => {
-          alert("onSuccess")
+
           dispatch({ type: "READY_TO_SHIP_ACTIVE_INDEX", payload: 1 })
         },
         onError: (data) => { alert("onError") }

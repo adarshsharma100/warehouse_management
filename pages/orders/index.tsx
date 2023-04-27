@@ -109,7 +109,7 @@ export const OrdersList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   });
-  console.log('orders: ', orders); 
+  console.log('orders: ', orders);
 
   const [{ order_statuses, }] = useQuery(getOrder_statuses, {
     orderBy: { id: "asc" },
@@ -1312,7 +1312,7 @@ export const OrdersList = () => {
             value={orders}
             responsiveLayout="scroll"
             showGridlines
-            // header={renderHeader}
+            header={renderHeader}
             stripedRows
             className="text-s datatable-responsive"
             selection={selectedOrder}
@@ -1326,7 +1326,7 @@ export const OrdersList = () => {
               header="ID"
               body={(rowData) => rowData.Id ? rowData.id : rowData.id}
             />
-           
+
             <Column
               field=""
               header="Products"
@@ -1442,9 +1442,9 @@ export const OrdersList = () => {
               className="OrderStatus"
             />
             <Column
-            header="Verified orders"
-            body={verifyOrder}
-            bodyClassName={(rowData) => rowData.verified ? 'verified' : 'not-verified'}
+              header="Verified orders"
+              body={verifyOrder}
+              bodyClassName={(rowData) => rowData.verified ? 'verified' : 'not-verified'}
             />
           </DataTable>
 
