@@ -246,12 +246,30 @@ export const ShipmentsList = () => {
                       header: 'Confirmation',
                       icon: 'pi pi-exclamation-triangle',
                       accept: async () => {
-                        await createSalesInvoiceMutation(
-                          selectedShipments.map(({ id }) => id),
+                        const dataToReduceInventory = selectedShipments.reduce((acc, curr) => {
+                          if (curr.shipment_items.length) {
+                            // push id and quantity to acc
+                            const currItems = curr.shipment_items.map((items) => {
+                              const { order_items: { product, quantity } } = items
+                              return ({ product, quantity })
+                            })
+                            return [...acc, ...currItems]
+                          } return acc
+                        }, [])
+                        console.log('dataToReduceInventory: ', dataToReduceInventory);
+
+                        await createSalesInvoiceMutation({
+
+                          shipmentIds: selectedShipments.map(({ id }) => id),
+                          shipmentProducts: dataToReduceInventory
+                        }
+                          ,
                           {
                             onSuccess: async () => {
                               await refetch()
                               toast.current?.show({ severity: 'success', summary: 'Invoice Generated', life: 3000 })
+                              dispatch({ type: 'RESET_SELECTED_SHIPMENTS', payload: [] })
+
                             },
                             onError: (error) => {
                               console.log('error: ', error);
@@ -334,31 +352,21 @@ export const ShipmentsList = () => {
     dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
   };
 
-
-  const readToShipProcessHeader = <Steps model={readyToShipItems} activeIndex={readyToShipActiveIndex} />
   const [pickListVisible, setPickListVisible] = useState(false)
   const [manifestVisible, setManifestVisible] = useState(false)
 
   return (
 
     <div className=" card">
-      {/* <Dialog header={readToShipProcessHeader} visible={isReadyToShip} style={{ width: '50vw' }}
+      {isReadyToShip &&
+        <div className="m-3"     >
+          <Steps model={readyToShipItems} activeIndex={readyToShipActiveIndex} />
+          {!readyToShipActiveIndex &&
+            <PackageDimensions shipmentId={firstSelectedShipmentItem?.id} dispatch={dispatch} />}
 
-        onHide={() => {
-          dispatch({ type: "READY_TO_SHIP", payload: false })
-          dispatch({ type: "READY_TO_SHIP_ACTIVE_INDEX", payload: 0 })
-        }}>
-        {!readyToShipActiveIndex && <PackageDimensions shipmentId={selectedShipments[0]?.id} dispatch={dispatch} />}
-
-        {readyToShipActiveIndex === 1 && <CourierSelection />}
-      </Dialog> */}
-      {isReadyToShip && <div className="m-3"     >
-        <Steps model={readyToShipItems} activeIndex={readyToShipActiveIndex} />
-        {!readyToShipActiveIndex &&
-          <PackageDimensions shipmentId={firstSelectedShipmentItem?.id} dispatch={dispatch} />}
-
-        {readyToShipActiveIndex === 1 && <SelectCouriers dispatch={dispatch} shipmentId={firstSelectedShipmentItem?.id} refetchShipments={refetch} />}
-      </div>}
+          {readyToShipActiveIndex === 1 && <SelectCouriers dispatch={dispatch} shipmentId={firstSelectedShipmentItem?.id} refetchShipments={refetch} />}
+        </div>
+      }
       <Dialog visible={pickListVisible} header="PickList" onHide={() => setPickListVisible(false)}>
         <Picklist invoice={selectedShipments.reduce((acc, { orders }) => {
           const { order_items } = orders;
@@ -459,11 +467,10 @@ export const ShipmentsList = () => {
             dispatch({ type: 'RESET_SELECTED_SHIPMENTS', payload: [] })
 
           }} />
-
-
-
-
         <div className="col-12">
+          <div className="flex justify-content-end">
+            <i className="pi pi-info-circle"> Right click on shipment for more options</i>
+          </div>
           <ContextMenu model={menuModel} ref={cm} />
           <DataTable
             onContextMenu={(e) => cm.current.show(e.originalEvent)}
@@ -485,25 +492,28 @@ export const ShipmentsList = () => {
               <p>Order:{ordersId}</p>
             </div>} />
             <Column field="giftMessage" header="Gift Message" body={({ orders }) => orders?.giftMessage} />
-            <Column header="Products" body={({ orders: { order_items } }) => <div>
-              {order_items?.map((product, i) => {
-                const { quantity, products: { name, sku } } = product
-                return (
-                  <div key={i} className="pt-2 pb-2 w-18rem border-1 border-solid border-blue-700 border-round-2xl p-3 mb-3 ">
-                    {[{ prop: "Name", value: name },
-                    { prop: "SKU", value: sku },
-                    { prop: "Quantity", value: quantity }
-                    ].map(({ prop, value }, index) => (
-                      <div key={index} className="grid">
-                        <label className="font-semibold col-4">{prop}:</label>
-                        <div className="col">
-                          {value?.toString()}
+            <Column header="Products" body={({ orders: { order_items }, shipment_items }) => <div>
+              {
+                shipment_items.map(({ order_items: { products }, quantity }) => ({ products, quantity }))?.map((product, i) => {
+                  const { quantity, products: { name, sku } } = product
+                  return (
+                    <div key={i} className="pt-2 pb-2 w-18rem border-1 border-solid border-blue-700 border-round-2xl p-3 mb-3 ">
+                      {[{ prop: "Name", value: name },
+                      { prop: "SKU", value: sku },
+                      { prop: "Quantity", value: quantity }
+                      ].map(({ prop, value }, index) => (
+                        <div key={index} className="grid">
+                          <label className="font-semibold col-4">{prop}:</label>
+                          <div className="col">
+                            {value?.toString()}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )
-              })}
+                      ))}
+                    </div>
+                  )
+                })
+
+              }
             </div>} >
             </Column>
             <Column header="Channel" body={({ orders: { shopifyId } }) =>
