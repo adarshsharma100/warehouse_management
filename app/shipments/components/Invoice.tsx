@@ -331,6 +331,7 @@ const Invoice = (props: Props) => {
 `
   return (
     <div>
+      <h3>Manifest</h3>
       <PDFViewer width="1000" height="600" className="app">
         <Document debug={true}>
           <Page>

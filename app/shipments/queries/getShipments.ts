@@ -27,9 +27,9 @@ export default resolver.pipe(
           where,
           orderBy,
           include: {
-
             orders: {
               include: {
+                customers: true,
                 order_items: {
                   include: {
                     products: true
@@ -40,11 +40,6 @@ export default resolver.pipe(
             },
             shipment_status: true,
             shipment_items: true
-            // shipment_items: {
-            //  include: {
-            //   order_items:true,
-            //  }
-            // }
           }
         }),
     });

@@ -21,8 +21,10 @@ import { Paginator } from "primereact/paginator";
 import { Button } from "primereact/button";
 import { Menu } from "primereact/menu";
 import createBatch from "app/batches/mutations/createBatch"
+import createManifest from "src/manifests/mutations/createManifest";
 import createSalesInvoice from "app/sales_invoice_details/mutations/createSales_invoice_detail"
 import { Steps } from 'primereact/steps';
+import { MenuItem } from 'primereact/menuitem';
 
 import moment from "moment";
 import { Toast } from "primereact/toast";
@@ -30,6 +32,7 @@ import PackageDimensions from "components/PackageDimensions";
 import Picklist from "app/shipments/components/Picklist";
 import CourierSelection from "components/CourierSelection";
 import Invoice from "app/shipments/components/Invoice";
+import Manifest from "app/shipments/components/Manifest";
 
 import { ConfirmDialog } from 'primereact/confirmdialog'; // For <ConfirmDialog /> component
 import { confirmDialog } from 'primereact/confirmdialog'; // For confirmDialog method
@@ -39,6 +42,9 @@ import SelectCouriers from "components/SelectCouriers";
 const initialState = {
   orders: [],
   filteredOrders: [],
+  manifestShipments: [],
+  manifestStep: 0,
+  displayManifest: false,
   statusId: undefined,
   tableRowsCount: 10,
   skipCount: 0,
@@ -84,10 +90,16 @@ const reducer = (state, { type, payload }) => {
       return { ...state, isReadyToShip: payload };
     case 'READY_TO_SHIP_ACTIVE_INDEX':
       return { ...state, readyToShipActiveIndex: payload };
+    case 'DISPATCH_SHIPMENTS':
+      return { ...state, displayManifest: true }
+    case 'SET_SHIPMENT_STATE':
+      return { ...state, [payload.prop]: payload.value }
     default:
       throw new Error(`Unhandled action type: ${type}`);
   }
 }
+
+// const
 
 const readyToShipItems = [
   {
@@ -99,7 +111,7 @@ const readyToShipItems = [
 ]
 
 type Shipment = {
-  id: number
+  id: numberstate
 }
 
 export const ShipmentsList = () => {
@@ -144,6 +156,18 @@ export const ShipmentsList = () => {
 
   const [items, setItems] = useState([
     {
+      label: 'Manifest',
+      items: [
+        {
+          label: 'Generate Manifest',
+          icon: 'pi pi-pen',
+          command: (shipments) => {
+            dispatch({ type: 'DISPATCH_SHIPMENTS' })
+            // setManifestVisible(true)
+          }
+        }]
+    },
+    {
       label: 'Options',
       items: [
         {
@@ -182,6 +206,7 @@ export const ShipmentsList = () => {
   ])
 
   const [createBatchMutation] = useMutation(createBatch)
+  const [createManifestMutation] = useMutation(createManifest)
   const [createSalesInvoiceMutation] = useMutation(createSalesInvoice)
 
 
@@ -238,11 +263,6 @@ export const ShipmentsList = () => {
                     });
 
                   }
-                },
-                {
-                  label: 'View Picklist',
-                  icon: 'pi pi-file-pdf',
-                  command: () => { setPickListVisible(true) }
                 },
               ]
             }, {
@@ -317,6 +337,7 @@ export const ShipmentsList = () => {
 
   const readToShipProcessHeader = <Steps model={readyToShipItems} activeIndex={readyToShipActiveIndex} />
   const [pickListVisible, setPickListVisible] = useState(false)
+  const [manifestVisible, setManifestVisible] = useState(false)
 
   return (
 
@@ -350,6 +371,77 @@ export const ShipmentsList = () => {
             image: products.imageUrl,
           }))]
         }, [])} />
+      </Dialog>
+      <Dialog style={{ minWidth: "75vw" }} visible={state.displayManifest} header="Manifest" onHide={() => dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "displayManifest", value: false } })}>
+        {/* <pre>{JSON.stringify(orders.slice(0, 3), null, 2)}</pre> */}
+        <Steps
+          className="p-2"
+          model={[
+            {
+              label: 'Print Manifest',
+              command: (event) => {
+                dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: 0 } })
+              }
+            },
+            {
+              label: 'Upload Manifest',
+              command: (event) => {
+                dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: 1 } })
+              }
+            },
+            {
+              label: 'View Manifest',
+              command: (event) => {
+                dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: 2 } })
+              }
+            }
+          ]}
+          activeIndex={state.manifestStep}
+          readOnly={false}
+        />
+        <div className="p-4">
+          {state.manifestStep === 0 && <Manifest
+            manifestData={selectedShipments.map(({ awb, id, shipmentNumber, orders, customer, shipment_items }) => {
+              const { addresses_orders_shippingAddressIdToaddresses, customers, order_items, gateway } = orders
+              const { areaStreet, cityCountryProvince, buildingNumber, pincode, state } = addresses_orders_shippingAddressIdToaddresses
+              const totalObject = shipment_items.reduce(({ total, tax, totalWithTax, quantity }, { order_items }) => {
+                return {
+                  total: parseFloat(order_items.quantity * order_items.price + total),
+                  tax: parseFloat(order_items.quantity * order_items.price * 0.18 + tax),
+                  totalWithTax: parseFloat(order_items.quantity * order_items.price * 1.18 + totalWithTax),
+                  quantity: order_items.quantity + quantity
+                }
+              }, {
+                total: 0,
+                tax: 0,
+                totalWithTax: 0,
+                quantity: 0
+              })
+              return {
+                awb,
+                orderId: id,
+                refNum: shipmentNumber,
+                attention: "name goes here",
+                address1: areaStreet,
+                address2: [buildingNumber, cityCountryProvince, state].filter(data => data).join(', '),
+                pincode,
+                contactNum: customers.contact_number,
+                contents: order_items.map(({ products }) => `${products.name} (${products.sku})`),
+                weight: "weight",
+                declaredValue: totalObject?.totalWithTax,
+                collectable: gateway === "COD" ? totalObject?.totalWithTax : 0,
+                qty: totalObject?.quantity,
+                mode: gateway,
+              }
+            })}
+          />}
+          {state.manifestStep === 1 && (
+            <div className="flex align-items-center justify-content-center">
+              <Button label="Upload Manifest" />
+            </div>
+          )}
+          {state.manifestStep === 2 && <div>view generated manifest</div>}
+        </div>
       </Dialog>
       {selectedShipment?.id && <Dialog header="Header" visible={viewInvoicePdf} onHide={() => setViewInvoicePdf(false)}>
         <Suspense fallback={<div>Loading...</div>}>

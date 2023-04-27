@@ -28,6 +28,33 @@ model addresses {
   @@index([country], map: "fk_addresses_country1_idx")
 }
 
+model areas {
+  id                                   Int       @id @default(autoincrement())
+  name                                 String    @db.VarChar(45)
+  description                          String?   @db.VarChar(150)
+  warehouse                            Int
+  warehouse_areas_warehouseTowarehouse warehouse @relation("areas_warehouseTowarehouse", fields: [warehouse], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_areas_warehouse1")
+  shelves                              shelves[]
+
+  @@index([warehouse], map: "fk_areas_warehouse1_idx")
+}
+
+model batch {
+  id          Int        @id @default(autoincrement())
+  batchNumber String?    @db.VarChar(45)
+  shipment    shipment[]
+}
+
+model bulk_awb {
+  id        Int      @id @default(autoincrement())
+  awbNumber String   @db.VarChar(45)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+  courierId Int
+  courier   courier  @relation(fields: [courierId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bulk_awb_courier1")
+
+  @@index([courierId], map: "fk_bulk_awb_courier1_idx")
+}
+
 model contact_number {
   id        Int                 @id @default(autoincrement())
   type      contact_number_type
@@ -44,6 +71,44 @@ model country {
   addresses_addresses_countryTocountry addresses[] @relation("addresses_countryTocountry")
 }
 
+model courier {
+  id            Int           @id @default(autoincrement())
+  name          String        @db.VarChar(45)
+  courierTypeId Int
+  bulk_awb      bulk_awb[]
+  courier_types courier_types @relation(fields: [courierTypeId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_courier_courier_types1")
+  shipment      shipment[]
+
+  @@index([courierTypeId], map: "fk_courier_courier_types1_idx")
+}
+
+model courier_types {
+  id      Int       @id @default(autoincrement())
+  type    String?   @db.VarChar(45)
+  courier courier[]
+}
+
+model customers {
+  id          Int       @id @default(autoincrement())
+  firstName   String?   @db.VarChar(45)
+  lastName    String?   @db.VarChar(45)
+  addressesId Int
+  shopifyId   String?   @db.VarChar(45)
+  addresses   addresses @relation(fields: [addressesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_customers_addresses1")
+  orders      orders[]
+
+  @@index([addressesId], map: "fk_customers_addresses1_idx")
+}
+
+model dimensions {
+  id       Int       @id @default(autoincrement())
+  length   Float?    @db.Float
+  width    Float?    @db.Float
+  height   Float?    @db.Float
+  weight   Float?    @db.Float
+  shipment shipment?
+}
+
 model emails {
   id                                    Int          @id @default(autoincrement())
   email                                 String       @db.VarChar(45)
@@ -56,21 +121,21 @@ model emails {
 }
 
 model grn {
-  id              Int             @id @default(autoincrement())
-  grnNumber       String          @unique(map: "grnNumber_UNIQUE") @db.VarChar(45)
-  invoiceNo       String          @unique(map: "invoiceNo_UNIQUE") @db.VarChar(45)
-  invoiceDate     DateTime        @db.DateTime(0)
-  trackingId      String?         @db.VarChar(200)
-  eta             DateTime?       @db.DateTime(0)
-  createdAt       DateTime        @default(now()) @db.DateTime(0)
-  updatedAt       DateTime        @default(now()) @db.DateTime(0)
-  status          Int
-  createdBy       Int
-  purchaseOrder   Int
-  grn_status      grn_status      @relation(fields: [status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_grn_status1")
-  purchase_orders purchase_orders @relation(fields: [purchaseOrder], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_purchase_orders1")
-  user            user            @relation(fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_user1")
-  grn_products    grn_products[]  @relation("grn_products_grnTogrn")
+  id                                 Int             @id @default(autoincrement())
+  grnNumber                          String          @unique(map: "grnNumber_UNIQUE") @db.VarChar(45)
+  invoiceNo                          String          @unique(map: "invoiceNo_UNIQUE") @db.VarChar(45)
+  invoiceDate                        DateTime        @db.DateTime(0)
+  trackingId                         String?         @db.VarChar(200)
+  eta                                DateTime?       @db.DateTime(0)
+  createdAt                          DateTime        @default(now()) @db.DateTime(0)
+  updatedAt                          DateTime        @default(now()) @db.DateTime(0)
+  status                             Int
+  createdBy                          Int
+  purchaseOrder                      Int
+  grn_status                         grn_status      @relation(fields: [status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_grn_status1")
+  purchase_orders                    purchase_orders @relation(fields: [purchaseOrder], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_purchase_orders1")
+  user                               user            @relation(fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_user1")
+  grn_products_grn_products_grnTogrn grn_products[]  @relation("grn_products_grnTogrn")
 
   @@index([status], map: "fk_grn_grn_status1_idx")
   @@index([purchaseOrder], map: "fk_grn_purchase_orders1_idx")
@@ -142,6 +207,27 @@ model inventory_products {
   @@index([shelf], map: "fk_inventory_products_shelfs1_idx")
 }
 
+model job_types {
+  id   Int     @id @default(autoincrement())
+  name String? @db.VarChar(45)
+  jobs jobs[]
+}
+
+model jobs {
+  id          Int       @id @default(autoincrement())
+  data        Bytes?    @db.MediumBlob
+  isCompleted Boolean?  @default(false)
+  isRunning   Boolean?  @default(false)
+  createdAt   DateTime? @default(now()) @db.DateTime(0)
+  jobTypesId  Int
+  userId      Int
+  job_types   job_types @relation(fields: [jobTypesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_jobs_job_types1")
+  user        user      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_jobs_user1")
+
+  @@index([jobTypesId], map: "fk_jobs_job_types1_idx")
+  @@index([userId], map: "fk_jobs_user1_idx")
+}
+
 model kit_products {
   id                                           Int      @id @default(autoincrement())
   productsId                                   Int
@@ -152,6 +238,71 @@ model kit_products {
 
   @@index([productsId], map: "fk_kit_products_products1_idx")
   @@index([kitProductID], map: "fk_kit_products_products2_idx")
+}
+
+model manifest {
+  id             Int        @id @default(autoincrement())
+  manifestNumber String     @unique(map: "manifestNumber_UNIQUE") @db.VarChar(50)
+  shipment       shipment[]
+}
+
+model order_items {
+  id             Int              @id @default(autoincrement())
+  order          Int
+  product        Int
+  quantity       Int
+  price          Int
+  orders         orders           @relation(fields: [order], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_items_orders1")
+  products       products         @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_items_products1")
+  shipment_items shipment_items[]
+
+  @@index([order], map: "fk_order_items_orders1_idx")
+  @@index([product], map: "fk_order_items_products1_idx")
+}
+
+model order_status {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(45)
+  description String?  @db.VarChar(45)
+  orders      orders[]
+}
+
+model orders {
+  id                                            Int           @id @default(autoincrement())
+  orderStatus                                   Int
+  shippingAddressId                             Int
+  billingAddressId                              Int
+  createdAt                                     DateTime      @default(now()) @db.DateTime(0)
+  shopifyId                                     Int?
+  customerId                                    Int
+  paymentStatus                                 String        @db.VarChar(45)
+  totalPrice                                    Int
+  gateway                                       String        @db.VarChar(45)
+  channelCreatedAt                              DateTime      @default(now()) @db.DateTime(0)
+  cursor                                        String?       @db.VarChar(100)
+  paymentReferenceId                            String?       @db.VarChar(100)
+  verified                                      Int?          @db.TinyInt
+  giftMessage                                   String?       @db.VarChar(250)
+  order_items                                   order_items[]
+  addresses_orders_shippingAddressIdToaddresses addresses     @relation("orders_shippingAddressIdToaddresses", fields: [shippingAddressId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_addresses1")
+  addresses_orders_billingAddressIdToaddresses  addresses     @relation("orders_billingAddressIdToaddresses", fields: [billingAddressId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_addresses2")
+  customers                                     customers     @relation(fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_customers1")
+  order_status                                  order_status  @relation(fields: [orderStatus], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_order_status1")
+  shopify                                       shopify?      @relation(fields: [shopifyId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_shopify1")
+  shipment                                      shipment[]
+
+  @@index([shippingAddressId], map: "fk_orders_addresses1_idx")
+  @@index([billingAddressId], map: "fk_orders_addresses2_idx")
+  @@index([customerId], map: "fk_orders_customers1_idx")
+  @@index([orderStatus], map: "fk_orders_order_status1_idx")
+  @@index([shopifyId], map: "fk_orders_shopify1_idx")
+}
+
+model permission {
+  id              Int               @id @default(autoincrement())
+  name            String            @db.VarChar(45)
+  description     String?           @db.VarChar(45)
+  role_permission role_permission[]
 }
 
 model po_products {
@@ -223,38 +374,38 @@ model product_types {
 }
 
 model products {
-  id                                             Int                  @id @default(autoincrement())
-  name                                           String               @db.VarChar(100)
-  sku                                            String               @unique(map: "sku_UNIQUE") @db.VarChar(15)
-  description                                    String?              @db.LongText
-  length                                         Int?
-  width                                          Int?
-  height                                         Int?
-  weight                                         Int?
-  color                                          String?              @db.VarChar(7)
-  hsnCode                                        String?              @db.VarChar(15)
-  imageUrl                                       String?              @db.VarChar(300)
-  createdAT                                      DateTime?            @default(now()) @db.DateTime(0)
-  updatedAT                                      DateTime?            @default(now()) @db.DateTime(0)
-  customDuty                                     String?              @db.VarChar(45)
-  gstTaxTypeCode                                 String?              @db.VarChar(45)
-  taxCalcType                                    String?              @db.VarChar(45)
-  status                                         products_status      @default(Active)
-  category                                       Int?
-  brand                                          Int?
-  costPrice                                      Int
-  type                                           Int
-  inventory_products                             inventory_products[]
-  kit_products_kit_products_productsIdToproducts kit_products[]       @relation("kit_products_productsIdToproducts")
-  kit_products                                   kit_products[]       @relation("kit_products_kitProductIDToproducts")
-  order_items                                    order_items[]
-  product_tags                                   product_tags[]
-  product_brand                                  product_brand?       @relation(fields: [brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_brands2")
-  product_categories                             product_categories?  @relation(fields: [category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_category")
-  product_types                                  product_types        @relation(fields: [type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_product_types1")
-  quality_ckeck_quality_ckeck_productsToproducts quality_ckeck[]      @relation("quality_ckeck_productsToproducts")
-  rfq_products                                   rfq_products[]
-  vendor_products                                vendor_products[]
+  id                                               Int                  @id @default(autoincrement())
+  name                                             String               @db.VarChar(100)
+  sku                                              String               @unique(map: "sku_UNIQUE") @db.VarChar(15)
+  description                                      String?              @db.LongText
+  length                                           Int?
+  width                                            Int?
+  height                                           Int?
+  weight                                           Int?
+  color                                            String?              @db.VarChar(7)
+  hsnCode                                          String?              @db.VarChar(15)
+  imageUrl                                         String?              @db.VarChar(300)
+  createdAT                                        DateTime?            @default(now()) @db.DateTime(0)
+  updatedAT                                        DateTime?            @default(now()) @db.DateTime(0)
+  customDuty                                       String?              @db.VarChar(45)
+  gstTaxTypeCode                                   String?              @db.VarChar(45)
+  taxCalcType                                      String?              @db.VarChar(45)
+  status                                           products_status      @default(Active)
+  category                                         Int?
+  brand                                            Int?
+  costPrice                                        Int
+  type                                             Int
+  inventory_products                               inventory_products[]
+  kit_products_kit_products_productsIdToproducts   kit_products[]       @relation("kit_products_productsIdToproducts")
+  kit_products_kit_products_kitProductIDToproducts kit_products[]       @relation("kit_products_kitProductIDToproducts")
+  order_items                                      order_items[]
+  product_tags                                     product_tags[]
+  product_brand                                    product_brand?       @relation(fields: [brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_brands2")
+  product_categories                               product_categories?  @relation(fields: [category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_category")
+  product_types                                    product_types        @relation(fields: [type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_product_types1")
+  quality_ckeck_quality_ckeck_productsToproducts   quality_ckeck[]      @relation("quality_ckeck_productsToproducts")
+  rfq_products                                     rfq_products[]
+  vendor_products                                  vendor_products[]
 
   @@index([brand], map: "fk_products_brands2_idx")
   @@index([category], map: "fk_products_category_idx")
@@ -320,8 +471,8 @@ model rfq {
   purchase_orders_purchase_orders_rfqTorfq purchase_orders[] @relation("purchase_orders_rfqTorfq")
   rfq                                      rfq?              @relation("rfqTorfq", fields: [ammendedFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_rfq1")
   other_rfq                                rfq[]             @relation("rfqTorfq")
-  rfq_products                             rfq_products[]    @relation("rfq_products_rfqTorfq")
-  rfq_sentto                               rfq_sentto[]      @relation("rfq_sentto_rfqTorfq")
+  rfq_products_rfq_products_rfqTorfq       rfq_products[]    @relation("rfq_products_rfqTorfq")
+  rfq_sentto_rfq_sentto_rfqTorfq           rfq_sentto[]      @relation("rfq_sentto_rfqTorfq")
 
   @@index([ammendedFrom], map: "fk_rfq_rfq1_idx")
 }
@@ -352,6 +503,35 @@ model rfq_sentto {
   @@index([rfq], map: "fk_rfq_sentto_rfq1_idx")
 }
 
+model role {
+  id              Int               @id @default(autoincrement())
+  name            String            @db.VarChar(45)
+  description     String?           @db.VarChar(45)
+  role_permission role_permission[]
+  user_roles      user_roles[]
+}
+
+model role_permission {
+  id           Int        @id @default(autoincrement())
+  roleId       Int
+  permissionId Int
+  permission   permission @relation(fields: [permissionId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_role_permission_permission1")
+  role         role       @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_role_permission_role1")
+
+  @@index([permissionId], map: "fk_role_permission_permission1_idx")
+  @@index([roleId], map: "fk_role_permission_role1_idx")
+}
+
+model sales_invoice_details {
+  id            Int       @id @unique(map: "id_UNIQUE") @default(autoincrement())
+  invoiceNumber String?   @db.VarChar(45)
+  createdAt     DateTime? @default(now()) @db.DateTime(0)
+  shipmentId    Int       @unique(map: "shipmentId_UNIQUE")
+  shipment      shipment  @relation(fields: [shipmentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_sales_invoice_details_shipment1")
+
+  @@index([shipmentId], map: "fk_sales_invoice_details_shipment1_idx")
+}
+
 model session {
   id                 Int       @id @default(autoincrement())
   createdAt          DateTime  @default(now()) @db.DateTime(0)
@@ -366,6 +546,94 @@ model session {
   user               user?     @relation(fields: [userId], references: [id], map: "Session_userId_fkey")
 
   @@index([userId], map: "Session_userId_fkey")
+}
+
+model shelf_type {
+  id          Int       @id @default(autoincrement())
+  name        String?   @db.VarChar(45)
+  description String?   @db.VarChar(150)
+  shelves     shelves[]
+}
+
+model shelves {
+  id                 Int                  @id @default(autoincrement())
+  sellable           Boolean
+  number             String               @unique(map: "number_UNIQUE") @db.VarChar(45)
+  length             Int?
+  width              Int?
+  loadingStrength    Int?
+  reach              String?              @db.VarChar(45)
+  area               Int
+  shelfType          Int
+  inventory_products inventory_products[]
+  areas              areas                @relation(fields: [area], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_areas1")
+  shelf_type         shelf_type           @relation(fields: [shelfType], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_shelf_type1")
+
+  @@index([area], map: "fk_shelfs_areas1_idx")
+  @@index([shelfType], map: "fk_shelfs_shelf_type1_idx")
+}
+
+model shipment {
+  id                    Int                    @id @default(autoincrement())
+  shipmentNumber        String                 @unique(map: "shipmentNumber_UNIQUE") @db.VarChar(45)
+  ordersId              Int
+  priority              shipment_priority?     @default(NORMAL)
+  onHold                Int                    @default(0) @db.TinyInt
+  fulfilmentTat         DateTime?              @db.DateTime(0)
+  dispatchedOn          DateTime?              @db.DateTime(0)
+  shipmentStatusId      Int                    @default(1)
+  courierId             Int?
+  batchId               Int?
+  createdAt             DateTime?              @default(now()) @db.DateTime(0)
+  updatedAt             DateTime?              @default(now()) @db.DateTime(0)
+  pickupFrom            Int?
+  dimensionsId          Int?                   @unique(map: "dimensions_id_UNIQUE")
+  awb                   String?                @db.VarChar(45)
+  manifestId            Int?
+  sales_invoice_details sales_invoice_details?
+  batch                 batch?                 @relation(fields: [batchId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_batch1")
+  courier               courier?               @relation(fields: [courierId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_courier1")
+  dimensions            dimensions?            @relation(fields: [dimensionsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_dimensions1")
+  manifest              manifest?              @relation(fields: [manifestId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_manifest1")
+  orders                orders                 @relation(fields: [ordersId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_orders1")
+  shipment_status       shipment_status        @relation(fields: [shipmentStatusId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_shipment_status1")
+  warehouse             warehouse?             @relation(fields: [pickupFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_warehouse1")
+  shipment_items        shipment_items[]
+
+  @@index([batchId], map: "fk_shipment_batch1_idx")
+  @@index([courierId], map: "fk_shipment_courier1_idx")
+  @@index([dimensionsId], map: "fk_shipment_dimensions1_idx")
+  @@index([manifestId], map: "fk_shipment_manifest1_idx")
+  @@index([ordersId], map: "fk_shipment_orders1_idx")
+  @@index([shipmentStatusId], map: "fk_shipment_shipment_status1_idx")
+  @@index([pickupFrom], map: "fk_shipment_warehouse1_idx")
+}
+
+model shipment_items {
+  id           Int         @id @default(autoincrement())
+  orderItemsId Int
+  shipmentId   Int
+  order_items  order_items @relation(fields: [orderItemsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_items_order_items1")
+  shipment     shipment    @relation(fields: [shipmentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_items_shipment1")
+
+  @@index([orderItemsId], map: "fk_shipment_items_order_items1_idx")
+  @@index([shipmentId], map: "fk_shipment_items_shipment1_idx")
+}
+
+model shipment_status {
+  id          Int        @id @default(autoincrement())
+  name        String     @db.VarChar(45)
+  description String?    @db.VarChar(150)
+  shipment    shipment[]
+}
+
+model shopify {
+  id             Int       @id @default(autoincrement())
+  orderId        String?   @db.VarChar(150)
+  orderNumber    String?   @db.VarChar(150)
+  orderStatusUrl String?   @db.VarChar(200)
+  createdAt      DateTime? @default(now()) @db.DateTime(0)
+  orders         orders[]
 }
 
 model token {
@@ -400,6 +668,17 @@ model user {
   user_roles        user_roles[]
 }
 
+model user_roles {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  roleId Int
+  role   role @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_roles_role1")
+  user   user @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_roles_user1")
+
+  @@index([roleId], map: "fk_user_roles_role1_idx")
+  @@index([userId], map: "fk_user_roles_user1_idx")
+}
+
 model vendor_branches {
   id         Int       @id @default(autoincrement())
   branchCode String?   @unique(map: "branch_code_UNIQUE") @db.VarChar(45)
@@ -410,36 +689,6 @@ model vendor_branches {
 
   @@index([address], map: "fk_vendor_branches_addresses1_idx")
   @@index([vendor], map: "fk_vendor_branches_vendors1_idx")
-}
-
-model areas {
-  id                                   Int       @id @default(autoincrement())
-  name                                 String    @db.VarChar(45)
-  description                          String?   @db.VarChar(150)
-  warehouse                            Int
-  warehouse_areas_warehouseTowarehouse warehouse @relation("areas_warehouseTowarehouse", fields: [warehouse], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_areas_warehouse1")
-  shelves                              shelves[]
-
-  @@index([warehouse], map: "fk_areas_warehouse1_idx")
-}
-
-model shelf_type {
-  id          Int       @id @default(autoincrement())
-  name        String?   @db.VarChar(45)
-  description String?   @db.VarChar(150)
-  shelves     shelves[]
-}
-
-model warehouse {
-  id                               Int        @id @default(autoincrement())
-  name                             String     @db.VarChar(45)
-  description                      String?    @db.VarChar(150)
-  addressesId                      Int?
-  areas_areas_warehouseTowarehouse areas[]    @relation("areas_warehouseTowarehouse")
-  shipment                         shipment[]
-  addresses                        addresses? @relation(fields: [addressesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_warehouse_addresses1")
-
-  @@index([addressesId], map: "fk_warehouse_addresses1_idx")
 }
 
 model vendor_products {
@@ -473,267 +722,16 @@ model vendors {
   vendor_products vendor_products[]
 }
 
-model shelves {
-  id                 Int                  @id @default(autoincrement())
-  sellable           Boolean
-  number             String               @unique(map: "number_UNIQUE") @db.VarChar(45)
-  length             Int?
-  width              Int?
-  loadingStrength    Int?
-  reach              String?              @db.VarChar(45)
-  area               Int
-  shelfType          Int
-  inventory_products inventory_products[]
-  areas              areas                @relation(fields: [area], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_areas1")
-  shelf_type         shelf_type           @relation(fields: [shelfType], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_shelf_type1")
+model warehouse {
+  id                               Int        @id @default(autoincrement())
+  name                             String     @db.VarChar(45)
+  description                      String?    @db.VarChar(150)
+  addressesId                      Int?
+  areas_areas_warehouseTowarehouse areas[]    @relation("areas_warehouseTowarehouse")
+  shipment                         shipment[]
+  addresses                        addresses? @relation(fields: [addressesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_warehouse_addresses1")
 
-  @@index([area], map: "fk_shelfs_areas1_idx")
-  @@index([shelfType], map: "fk_shelfs_shelf_type1_idx")
-}
-
-model order_items {
-  id             Int              @id @default(autoincrement())
-  order          Int
-  product        Int
-  quantity       Int
-  price          Int
-  orders         orders           @relation(fields: [order], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_items_orders1")
-  products       products         @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_items_products1")
-  shipment_items shipment_items[]
-
-  @@index([order], map: "fk_order_items_orders1_idx")
-  @@index([product], map: "fk_order_items_products1_idx")
-}
-
-model order_status {
-  id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(45)
-  description String?  @db.VarChar(45)
-  orders      orders[]
-}
-
-model orders {
-  id                                            Int           @id @default(autoincrement())
-  orderStatus                                   Int
-  shippingAddressId                             Int
-  billingAddressId                              Int
-  createdAt                                     DateTime      @default(now()) @db.DateTime(0)
-  shopifyId                                     Int?
-  customerId                                    Int
-  paymentStatus                                 String        @db.VarChar(45)
-  totalPrice                                    Int
-  gateway                                       String        @db.VarChar(45)
-  channelCreatedAt                              DateTime      @default(now()) @db.DateTime(0)
-  cursor                                        String?       @db.VarChar(100)
-  paymentReferenceId                            String?       @db.VarChar(100)
-  verified                                      Int?          @db.TinyInt
-  giftMessage                                   String?       @db.VarChar(250)
-  order_items                                   order_items[]
-  addresses_orders_shippingAddressIdToaddresses addresses     @relation("orders_shippingAddressIdToaddresses", fields: [shippingAddressId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_addresses1")
-  addresses_orders_billingAddressIdToaddresses  addresses     @relation("orders_billingAddressIdToaddresses", fields: [billingAddressId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_addresses2")
-  customers                                     customers     @relation(fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_customers1")
-  order_status                                  order_status  @relation(fields: [orderStatus], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_order_status1")
-  shopify                                       shopify?      @relation(fields: [shopifyId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_shopify1")
-  shipment                                      shipment[]
-
-  @@index([orderStatus], map: "fk_orders_order_status1_idx")
-  @@index([shippingAddressId], map: "fk_orders_addresses1_idx")
-  @@index([billingAddressId], map: "fk_orders_addresses2_idx")
-  @@index([customerId], map: "fk_orders_customers1_idx")
-  @@index([shopifyId], map: "fk_orders_shopify1_idx")
-}
-
-model customers {
-  id          Int       @id @default(autoincrement())
-  firstName   String?   @db.VarChar(45)
-  lastName    String?   @db.VarChar(45)
-  addressesId Int
-  shopifyId   String?   @db.VarChar(45)
-  addresses   addresses @relation(fields: [addressesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_customers_addresses1")
-  orders      orders[]
-
-  @@index([addressesId], map: "fk_customers_addresses1_idx")
-}
-
-model job_types {
-  id   Int     @id @default(autoincrement())
-  name String? @db.VarChar(45)
-  jobs jobs[]
-}
-
-model jobs {
-  id          Int       @id @default(autoincrement())
-  data        Bytes?    @db.MediumBlob
-  isCompleted Boolean?  @default(false)
-  isRunning   Boolean?  @default(false)
-  createdAt   DateTime? @default(now()) @db.DateTime(0)
-  jobTypesId  Int
-  userId      Int
-  job_types   job_types @relation(fields: [jobTypesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_jobs_job_types1")
-  user        user      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_jobs_user1")
-
-  @@index([jobTypesId], map: "fk_jobs_job_types1_idx")
-  @@index([userId], map: "fk_jobs_user1_idx")
-}
-
-model shopify {
-  id             Int       @id @default(autoincrement())
-  orderId        String?   @db.VarChar(150)
-  orderNumber    String?   @db.VarChar(150)
-  orderStatusUrl String?   @db.VarChar(200)
-  createdAt      DateTime? @default(now()) @db.DateTime(0)
-  orders         orders[]
-}
-
-model batch {
-  id          Int        @id @default(autoincrement())
-  batchNumber String?    @db.VarChar(45)
-  shipment    shipment[]
-}
-
-model courier {
-  id            Int           @id @default(autoincrement())
-  name          String        @db.VarChar(45)
-  courierTypeId Int
-  bulk_awb      bulk_awb[]
-  courier_types courier_types @relation(fields: [courierTypeId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_courier_courier_types1")
-  shipment      shipment[]
-
-  @@index([courierTypeId], map: "fk_courier_courier_types1_idx")
-}
-
-model dimensions {
-  id       Int       @id @default(autoincrement())
-  length   Float?    @db.Float
-  width    Float?    @db.Float
-  height   Float?    @db.Float
-  weight   Float?    @db.Float
-  shipment shipment?
-}
-
-model permission {
-  id              Int               @id @default(autoincrement())
-  name            String            @db.VarChar(45)
-  description     String?           @db.VarChar(45)
-  role_permission role_permission[]
-}
-
-model role {
-  id              Int               @id @default(autoincrement())
-  name            String            @db.VarChar(45)
-  description     String?           @db.VarChar(45)
-  role_permission role_permission[]
-  user_roles      user_roles[]
-}
-
-model role_permission {
-  id           Int        @id @default(autoincrement())
-  roleId       Int
-  permissionId Int
-  permission   permission @relation(fields: [permissionId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_role_permission_permission1")
-  role         role       @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_role_permission_role1")
-
-  @@index([permissionId], map: "fk_role_permission_permission1_idx")
-  @@index([roleId], map: "fk_role_permission_role1_idx")
-}
-
-model shipment {
-  id                    Int                    @id @default(autoincrement())
-  shipmentNumber        String                 @unique(map: "shipmentNumber_UNIQUE") @db.VarChar(45)
-  ordersId              Int
-  priority              shipment_priority?     @default(NORMAL)
-  onHold                Int                    @default(0) @db.TinyInt
-  fulfilmentTat         DateTime?              @db.DateTime(0)
-  dispatchedOn          DateTime?              @db.DateTime(0)
-  shipmentStatusId      Int                    @default(1)
-  courierId             Int?
-  batchId               Int?
-  createdAt             DateTime?              @default(now()) @db.DateTime(0)
-  updatedAt             DateTime?              @default(now()) @db.DateTime(0)
-  pickupFrom            Int?
-  dimensionsId          Int?                   @unique(map: "dimensions_id_UNIQUE")
-  awb                   String?                @db.VarChar(45)
-  sales_invoice_details sales_invoice_details?
-  batch                 batch?                 @relation(fields: [batchId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_batch1")
-  courier               courier?               @relation(fields: [courierId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_courier1")
-  dimensions            dimensions?            @relation(fields: [dimensionsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_dimensions1")
-  orders                orders                 @relation(fields: [ordersId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_orders1")
-  shipment_status       shipment_status        @relation(fields: [shipmentStatusId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_shipment_status1")
-  warehouse             warehouse?             @relation(fields: [pickupFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_warehouse1")
-  shipment_items        shipment_items[]
-
-  @@index([batchId], map: "fk_shipment_batch1_idx")
-  @@index([courierId], map: "fk_shipment_courier1_idx")
-  @@index([dimensionsId], map: "fk_shipment_dimensions1_idx")
-  @@index([ordersId], map: "fk_shipment_orders1_idx")
-  @@index([shipmentStatusId], map: "fk_shipment_shipment_status1_idx")
-  @@index([pickupFrom], map: "fk_shipment_warehouse1_idx")
-  @@index([dimensionsId], map: "fk_shipment_dimensions1_idx")
-}
-
-model shipment_items {
-  id           Int         @id @default(autoincrement())
-  orderItemsId Int
-  shipmentId   Int
-  order_items  order_items @relation(fields: [orderItemsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_items_order_items1")
-  shipment     shipment    @relation(fields: [shipmentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_items_shipment1")
-
-  @@index([orderItemsId], map: "fk_shipment_items_order_items1_idx")
-  @@index([shipmentId], map: "fk_shipment_items_shipment1_idx")
-}
-
-model shipment_status {
-  id          Int        @id @default(autoincrement())
-  name        String     @db.VarChar(45)
-  description String?    @db.VarChar(150)
-  shipment    shipment[]
-}
-
-model user_roles {
-  id     Int  @id @default(autoincrement())
-  userId Int
-  roleId Int
-  role   role @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_roles_role1")
-  user   user @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_roles_user1")
-
-  @@index([roleId], map: "fk_user_roles_role1_idx")
-  @@index([userId], map: "fk_user_roles_user1_idx")
-}
-
-model courier_types {
-  id      Int       @id @default(autoincrement())
-  type    String?   @db.VarChar(45)
-  courier courier[]
-}
-
-model sales_invoice_details {
-  id            Int       @id @unique(map: "id_UNIQUE") @default(autoincrement())
-  invoiceNumber String?   @db.VarChar(45)
-  createdAt     DateTime? @default(now()) @db.DateTime(0)
-  shipmentId    Int       @unique(map: "shipmentId_UNIQUE")
-  shipment      shipment  @relation(fields: [shipmentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_sales_invoice_details_shipment1")
-
-  @@index([shipmentId], map: "fk_sales_invoice_details_shipment1_idx")
-}
-
-model bulk_awb {
-  id        Int      @id @default(autoincrement())
-  awbNumber String   @db.VarChar(45)
-  createdAt DateTime @default(now()) @db.DateTime(0)
-  courierId Int
-  courier   courier  @relation(fields: [courierId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bulk_awb_courier1")
-
-  @@index([courierId], map: "fk_bulk_awb_courier1_idx")
-}
-
-model bulk_awb {
-  id        Int      @id @default(autoincrement())
-  awbNumber String   @db.VarChar(45)
-  createdAt DateTime @default(now()) @db.DateTime(0)
-  courierId Int
-  courier   courier  @relation(fields: [courierId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bulk_awb_courier1")
-
-  @@index([courierId], map: "fk_bulk_awb_courier1_idx")
+  @@index([addressesId], map: "fk_warehouse_addresses1_idx")
 }
 
 enum contact_number_type {
@@ -746,6 +744,14 @@ enum rfq_status {
   Completed
   Created
   Processing
+}
+
+enum shipment_priority {
+  LOW
+  NORMAL
+  MEDIUM
+  HIGH
+  URGENT
 }
 
 enum vendor_products_status {
@@ -761,12 +767,4 @@ enum vendors_status {
 enum products_status {
   Active
   Inactive
-}
-
-enum shipment_priority {
-  LOW
-  NORMAL
-  MEDIUM
-  HIGH
-  URGENT
 }

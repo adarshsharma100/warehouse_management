@@ -11,6 +11,7 @@ const SideBarMenu = () => {
   const items = [
     {
       label: "Vendor",
+      seperator: true,
       // icon: "pi pi-fw pi-file",
       items: [
         {
