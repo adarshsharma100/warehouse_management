@@ -2,6 +2,8 @@ import { resolver } from "@blitzjs/rpc";
 import db from "db";
 import { z } from "zod";
 
+import updateManyShipments from "app/shipments/mutations/updateManyShipments";
+
 const CreateManifest = z.object({
   manifestNumber: z.string(),
   shipment: z.array(z.object({ id: z.number() }))
@@ -20,6 +22,17 @@ export default resolver.pipe(
         }
       }
     });
+
+    await db.shipment.updateMany({
+      where: {
+        id: {
+          in: shipment.map(({ id }) => id)
+        }
+      },
+      data: {
+        shipmentStatusId: 4
+      }
+    })
 
     return manifest;
   }

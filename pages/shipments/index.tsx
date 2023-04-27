@@ -38,6 +38,8 @@ import { ConfirmDialog } from 'primereact/confirmdialog'; // For <ConfirmDialog 
 import { confirmDialog } from 'primereact/confirmdialog'; // For confirmDialog method
 
 import SelectCouriers from "components/SelectCouriers";
+import { classNames } from "primereact/utils";
+import { v4 as uuidv4 } from 'uuid';
 
 const initialState = {
   orders: [],
@@ -380,7 +382,10 @@ export const ShipmentsList = () => {
           }))]
         }, [])} />
       </Dialog>
-      <Dialog style={{ minWidth: "75vw" }} visible={state.displayManifest} header="Manifest" onHide={() => dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "displayManifest", value: false } })}>
+      <Dialog style={{ minWidth: "75vw" }} visible={state.displayManifest} header="Manifest" onHide={() => {
+        dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "displayManifest", value: false } })
+        dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: 0 } })
+      }}>
         {/* <pre>{JSON.stringify(orders.slice(0, 3), null, 2)}</pre> */}
         <Steps
           className="p-2"
@@ -408,7 +413,7 @@ export const ShipmentsList = () => {
           readOnly={false}
         />
         <div className="p-4">
-          {state.manifestStep === 0 && <Manifest
+          {(state.manifestStep === 0 || state.manifestStep === 2) && <Manifest
             manifestData={selectedShipments.map(({ awb, id, shipmentNumber, orders, customer, shipment_items }) => {
               const { addresses_orders_shippingAddressIdToaddresses, customers, order_items, gateway } = orders
               const { areaStreet, cityCountryProvince, buildingNumber, pincode, state } = addresses_orders_shippingAddressIdToaddresses
@@ -445,11 +450,33 @@ export const ShipmentsList = () => {
           />}
           {state.manifestStep === 1 && (
             <div className="flex align-items-center justify-content-center">
-              <Button label="Upload Manifest" />
+              <Button label="Upload Manifest"
+                onClick={async () => {
+                  console.log("manifest", selectedShipments.map(({ id }) => ({ id })))
+                  await createManifestMutation({
+                    manifestNumber: uuidv4(),
+                    shipment: selectedShipments.map(({ id }) => ({ id }))
+                  }, {
+                    onSuccess: () => {
+                      dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: 2 } })
+                    },
+                    onError: (error) => { console.log(error) }
+                  })
+                }}
+              />
             </div>
           )}
           {state.manifestStep === 2 && <div>view generated manifest</div>}
         </div>
+        <Button
+          label="NEXT"
+          className="manifest__next_Btn"
+          onClick={() => {
+            dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: state.manifestStep + 1 } })
+
+          }}
+        />
+
       </Dialog>
       {selectedShipment?.id && <Dialog header="Header" visible={viewInvoicePdf} onHide={() => setViewInvoicePdf(false)}>
         <Suspense fallback={<div>Loading...</div>}>
