@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useReducer, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { Routes } from "@blitzjs/next";
 import Head from "next/head";
 import Link from "next/link";
@@ -40,6 +40,11 @@ import { confirmDialog } from 'primereact/confirmdialog'; // For confirmDialog m
 import SelectCouriers from "components/SelectCouriers";
 import { classNames } from "primereact/utils";
 import { v4 as uuidv4 } from 'uuid';
+import { FileUpload } from "primereact/fileupload";
+import { BlobServiceClient, ContainerClient } from '@azure/storage-blob';
+import updateShipment from "app/shipments/mutations/updateShipment";
+import updateManyShipments from "app/shipments/mutations/updateManyShipments";
+
 
 const initialState = {
   orders: [],
@@ -56,6 +61,10 @@ const initialState = {
   selectedShipments: [],
   isReadyToShip: false,
   readyToShipActiveIndex: 0,
+  containerName: 'manifests',
+  sasToken: process.env.NEXT_PUBLIC_STORAGESASTOKEN,
+  storageAccountName: process.env.NEXT_PUBLIC_STORAGERESOURCENAME,
+  manifestImageURL: ""
 };
 
 
@@ -120,6 +129,7 @@ export const ShipmentsList = () => {
   const cm = useRef<ContextMenu>(null);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null)
   const [viewInvoicePdf, setViewInvoicePdf] = useState(false)
+  const [files, setFiles] = useState([]);
 
   const menuModel = [
     {
@@ -133,7 +143,7 @@ export const ShipmentsList = () => {
 
   // const page = Number(router.query.page) || 0;
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { orders, statusId, skipCount, tableRowsCount, selectedShipments, isReadyToShip, packageDimensions, readyToShipActiveIndex } = state
+  const { orders, statusId, skipCount, tableRowsCount, selectedShipments, isReadyToShip, packageDimensions, readyToShipActiveIndex, containerName, sasToken, storageAccountName, manifestImageURL } = state
   // console.log('selectedShipments: ', selectedShipments);
 
   const firstSelectedShipmentItem = selectedShipments[0]
@@ -210,6 +220,7 @@ export const ShipmentsList = () => {
   const [createBatchMutation] = useMutation(createBatch)
   const [createManifestMutation] = useMutation(createManifest)
   const [createSalesInvoiceMutation] = useMutation(createSalesInvoice)
+  const [updateManyShipmentMutation] = useMutation(updateManyShipments)
 
 
 
@@ -334,12 +345,90 @@ export const ShipmentsList = () => {
                 },
               ]
             },])
+          } else if (statusId === 4) {
+            setItems([{
+              label: 'Options',
+              items: [
+                {
+                  label: 'Mark as Delivered',
+                  icon: 'pi  bi-geo-fill',
+                  command: async (e) => {
+                    // Create 2 STEP PROCESS TO CHANGE STATE
+                    await updateManyShipmentMutation({
+                      where: {
+                        id: {
+                          in: selectedShipments.map(({ id }) => id)
+                        }
+                      },
+                      shipmentStatusId: 5
+                    }, {
+                      onSuccess: async () => {
+                        console.log("success")
+                        await refetch()
+                      },
+                      onError: (error) => { console.log(error) }
+                    })
+
+                  }
+                },
+              ]
+            },])
+
           }
         }} />
         <Button label="Actions" icon="pi pi-bars" onClick={(e) => orderSelectionMenu?.current.toggle(e)} />
       </div>
     )
   }
+
+  const onUpload = (event) => {
+    console.log('event: ', event);
+    setFiles(event.files);
+  };
+
+  const uploadFileToBlob = useCallback(
+    async (file: File | null, newFileName: string) => {
+      if (!file) {
+        console.log('No FILE');
+      } else {
+        const blobService = new BlobServiceClient(
+          `https://${storageAccountName}.blob.core.windows.net/?${sasToken}`
+        );
+
+        const containerClient: ContainerClient =
+          blobService.getContainerClient(containerName);
+        const blockBlobClient = containerClient.getBlockBlobClient(newFileName);
+        console.log('file: ', file);
+        const uploadResponse = await blockBlobClient.uploadBrowserData(file)
+        return { uploadResponse, blockBlobClient }
+      }
+      console.log("done");
+    },
+    []
+  );
+  const uploadHandler = async (event: FileUploadHandlerEvent,) => {
+    const filename = uuidv4()
+    if (event.files[0]) {
+      // const newFileName = event.files[0].name.split('.').pop();
+      const response = await uploadFileToBlob(event.files[0], filename);
+      console.log('response: ', response);
+
+      await createManifestMutation({
+        manifestNumber: filename,
+        shipment: selectedShipments.map(({ id }) => ({ id }))
+      }, {
+        onSuccess: () => {
+          dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: 2 } })
+          dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestImageURL", value: filename } })
+
+        },
+        onError: (error) => { console.log(error) }
+      })
+
+
+    }
+
+  };
 
 
 
@@ -385,6 +474,7 @@ export const ShipmentsList = () => {
       <Dialog style={{ minWidth: "75vw" }} visible={state.displayManifest} header="Manifest" onHide={() => {
         dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "displayManifest", value: false } })
         dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: 0 } })
+        dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestImageURL", value: "" } })
       }}>
         {/* <pre>{JSON.stringify(orders.slice(0, 3), null, 2)}</pre> */}
         <Steps
@@ -413,7 +503,7 @@ export const ShipmentsList = () => {
           readOnly={false}
         />
         <div className="p-4">
-          {(state.manifestStep === 0 || state.manifestStep === 2) && <Manifest
+          {(state.manifestStep === 0) && <Manifest
             manifestData={selectedShipments.map(({ awb, id, shipmentNumber, orders, customer, shipment_items }) => {
               const { addresses_orders_shippingAddressIdToaddresses, customers, order_items, gateway } = orders
               const { areaStreet, cityCountryProvince, buildingNumber, pincode, state } = addresses_orders_shippingAddressIdToaddresses
@@ -450,9 +540,21 @@ export const ShipmentsList = () => {
           />}
           {state.manifestStep === 1 && (
             <div className="flex align-items-center justify-content-center">
-              <Button label="Upload Manifest"
+              {/* <Button label="Upload Manifest"
                 onClick={async () => {
-                  console.log("manifest", selectedShipments.map(({ id }) => ({ id })))
+                  const test = uuidv4()
+                  console.log('test1: ', test);
+                  console.log('test2: ', test);
+                  console.log('test3: ', test);
+                  console.log('test4: ', {
+                    t1: test,
+                    t2: test,
+                    t3: test,
+                    t4: test,
+                  });
+
+
+                  return
                   await createManifestMutation({
                     manifestNumber: uuidv4(),
                     shipment: selectedShipments.map(({ id }) => ({ id }))
@@ -463,15 +565,33 @@ export const ShipmentsList = () => {
                     onError: (error) => { console.log(error) }
                   })
                 }}
+              /> */}
+              <FileUpload
+                name="demo[]"
+                url="./upload.php"
+                onUpload={onUpload}
+                customUpload
+                uploadHandler={uploadHandler}
+                multiple
+                accept="image/*"
+                maxFileSize={1000000}
               />
             </div>
           )}
-          {state.manifestStep === 2 && <div>view generated manifest</div>}
+          {state.manifestStep === 2 && <div>
+            <img src={`https://warehouse100.blob.core.windows.net/manifests/${manifestImageURL}`} alt="manifest-image" />
+          </div>}
         </div>
         <Button
-          label="NEXT"
+          label={state.manifestStep === 2 ? "CLOSE" : "NEXT"}
           className="manifest__next_Btn"
           onClick={() => {
+            if (state.manifestStep === 2) {
+              dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "displayManifest", value: false } })
+              dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: 0 } })
+              dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestImageURL", value: "" } })
+              return
+            }
             dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: state.manifestStep + 1 } })
 
           }}
