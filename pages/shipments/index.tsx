@@ -53,6 +53,7 @@ const initialState = {
   manifestStep: 0,
   displayManifest: false,
   statusId: undefined,
+  statusName: "ALL",
   tableRowsCount: 10,
   skipCount: 0,
   first: 0,
@@ -89,6 +90,8 @@ const reducer = (state, { type, payload }) => {
       return { ...state, filteredOrders: payload };
     case 'UPDATE_STATUS_ID':
       return { ...state, statusId: payload };
+    case 'UPDATE_STATUS_NAME':
+      return { ...state, statusName: payload };
     case 'UPDATE_SKIP_COUNT':
       return { ...state, skipCount: payload };
     case 'UPDATE_TABLE_ROWS_COUNT':
@@ -143,8 +146,8 @@ export const ShipmentsList = () => {
 
   // const page = Number(router.query.page) || 0;
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { orders, statusId, skipCount, tableRowsCount, selectedShipments, isReadyToShip, packageDimensions, readyToShipActiveIndex, containerName, sasToken, storageAccountName, manifestImageURL } = state
-  // console.log('selectedShipments: ', selectedShipments);
+  const { orders, statusId, skipCount, tableRowsCount, selectedShipments, isReadyToShip, packageDimensions, readyToShipActiveIndex, containerName, sasToken, storageAccountName, manifestImageURL, statusName } = state
+  console.log('statusName ', statusName);
 
   const firstSelectedShipmentItem = selectedShipments[0]
 
@@ -165,62 +168,154 @@ export const ShipmentsList = () => {
 
   const orderSelectionMenu = useRef(null);
 
+  const actionMenuItems = [
+    {
+      label: 'Batch Items',
+      icon: 'pi pi-box',
+      command: async () => {
+        // GENERATE BATCH MUTATION
+        const batchNumber = "BATCH_" + moment().format('x')
+        await createBatchMutation({
+          batchNumber: batchNumber,
+          shipment: {
+            connect: selectedShipments.map(({ id }) => ({ id }))
+          }
+        }, {
+          onSuccess: () => {
+            toast.current?.show({ severity: 'success', summary: 'Batch Added', detail: `Batch #${batchNumber}`, life: 3000 })
+          },
+          onError: (error) => {
+            console.log('error: ', error);
+            toast.current?.show({ severity: 'error', summary: 'Batch Creation Failed', detail: `Failed to create batch`, life: 3000 })
+          },
+        })
+      }
+    },
+    {
+      label: 'View Picklist',
+      icon: 'pi pi-file-pdf',
+      command: () => { setPickListVisible(true) }
+    },
+    {
+      label: 'Generate Invoice',
+      icon: 'pi pi-file-pdf',
+      command: () => {
+        // GENERATE INVOICE MUTATION
+        confirmDialog({
+          message: 'This will change the order status to "PACKED" and will generate invoice. Do you want to proceed?',
+          header: 'Confirmation',
+          icon: 'pi pi-exclamation-triangle',
+          accept: async () => {
+            const dataToReduceInventory = selectedShipments.reduce((acc, curr) => {
+              if (curr.shipment_items.length) {
+                // push id and quantity to acc
+                const currItems = curr.shipment_items.map((items) => {
+                  const { order_items: { product, quantity } } = items
+                  return ({ product, quantity })
+                })
+                return [...acc, ...currItems]
+              } return acc
+            }, [])
+            console.log('dataToReduceInventory: ', dataToReduceInventory);
 
-  const [items, setItems] = useState([
-    {
-      label: 'Manifest',
-      items: [
-        {
-          label: 'Generate Manifest',
-          icon: 'pi pi-pen',
-          command: (shipments) => {
-            dispatch({ type: 'DISPATCH_SHIPMENTS' })
-            // setManifestVisible(true)
+            await createSalesInvoiceMutation({
+
+              shipmentIds: selectedShipments.map(({ id }) => id),
+              shipmentProducts: dataToReduceInventory
+            }
+              ,
+              {
+                onSuccess: async () => {
+                  await refetch()
+                  toast.current?.show({ severity: 'success', summary: 'Invoice Generated', life: 3000 })
+                  dispatch({ type: 'RESET_SELECTED_SHIPMENTS', payload: [] })
+
+                },
+                onError: (error) => {
+                  console.log('error: ', error);
+                  toast.current?.show({ severity: 'error', summary: 'Invoice Creation Failed', detail: `Failed to create invoice`, life: 3000 })
+                },
+              }
+            )
           }
-        }]
+        });
+
+      }
     },
     {
-      label: 'Options',
-      items: [
-        {
-          label: 'Update',
-          icon: 'pi pi-refresh',
-          command: () => {
-            toast.current?.show({ severity: 'success', summary: 'Updated', detail: 'Data Updated', life: 3000 });
-          }
-        },
-        {
-          label: 'Delete',
-          icon: 'pi pi-times',
-          command: () => {
-            toast.current?.show({ severity: 'warn', summary: 'Delete', detail: 'Data Deleted', life: 3000 });
-          }
+      label: 'Ready To Ship',
+      icon: 'pi bi-box-seam',
+      command: (e) => {
+        // Create 2 STEP PROCESS TO CHANGE STATE
+        dispatch({ type: "READY_TO_SHIP", payload: true })
+        if (firstSelectedShipmentItem?.dimensionsId) {
+          dispatch({ type: "READY_TO_SHIP_ACTIVE_INDEX", payload: 1 })
         }
-      ]
+      }
     },
     {
-      label: 'Navigate',
-      items: [
-        {
-          label: 'React Website',
-          icon: 'pi pi-external-link',
-          url: 'https://reactjs.org/'
-        },
-        {
-          label: 'Router',
-          icon: 'pi pi-upload',
-          command: (e) => {
-            //router.push('/fileupload');
-          }
-        }
-      ]
-    }
-  ])
+      label: 'Generate Manifest',
+      icon: 'pi bi-clipboard2-data',
+      command: (shipments) => {
+        dispatch({ type: 'DISPATCH_SHIPMENTS' })
+        // setManifestVisible(true)
+      }
+    },
+    {
+      label: 'Mark as Delivered',
+      icon: 'pi  bi-geo-fill',
+      command: async (e) => {
+        // Create 2 STEP PROCESS TO CHANGE STATE
+        await updateManyShipmentMutation({
+          where: {
+            id: {
+              in: selectedShipments.map(({ id }) => id)
+            }
+          },
+          shipmentStatusId: 5
+        }, {
+          onSuccess: async () => {
+            console.log("success")
+            await refetch()
+          },
+          onError: (error) => { console.log(error) }
+        })
+
+      }
+    },
+
+  ]
+  const [items, setItems] = useState(actionMenuItems)
 
   const [createBatchMutation] = useMutation(createBatch)
   const [createManifestMutation] = useMutation(createManifest)
   const [createSalesInvoiceMutation] = useMutation(createSalesInvoice)
   const [updateManyShipmentMutation] = useMutation(updateManyShipments)
+
+  const actionItemsOnFilter = () => {
+    const FilterRules = {
+      "PACKED": ["Batch Items", "View Picklist", "Ready To Ship"],
+      "CREATED": ["Batch Items", "View Picklist", "Generate Invoice"],
+      "READY TO SHIP": ["Batch Items", "View Picklist", "Generate Manifest"],
+      "DISPATCHED": ["Batch Items", "View Picklist", "Mark as Delivered"],
+      "DELIVERED": ["Batch Items", "View Picklist"],
+      // "PUTAWAY PENDING": [],
+      // "CUSTOMER RETURN": [],
+      // "COURIER RETURN": [],
+      // "SHIPMENT ERRORS": [],
+    }
+    const newItems = [...actionMenuItems]
+    console.log('newItems: ',);
+    console.log('newItems: ', {
+      filter: FilterRules[statusName],
+
+      new: newItems[0]
+    });
+
+    const filteredOptions = newItems.filter(({ label }) => FilterRules[statusName]?.includes(label))
+    setItems(filteredOptions)
+
+  }
 
 
 
@@ -244,139 +339,11 @@ export const ShipmentsList = () => {
     return (
 
       <div className="flex justify-content-between">
-        <Menu model={items} popup ref={orderSelectionMenu} onShow={() => {
-          if (selectedShipments[0].shipment_status.name === CREATE_STATE) {
-            setItems([{
-              label: 'Invoice',
-              items: [
-                {
-                  label: 'Generate Invoice',
-                  icon: 'pi pi-file-pdf',
-                  command: () => {
-                    // GENERATE INVOICE MUTATION
-                    confirmDialog({
-                      message: 'This will change the order status to "PACKED" and will generate invoice. Do you want to proceed?',
-                      header: 'Confirmation',
-                      icon: 'pi pi-exclamation-triangle',
-                      accept: async () => {
-                        const dataToReduceInventory = selectedShipments.reduce((acc, curr) => {
-                          if (curr.shipment_items.length) {
-                            // push id and quantity to acc
-                            const currItems = curr.shipment_items.map((items) => {
-                              const { order_items: { product, quantity } } = items
-                              return ({ product, quantity })
-                            })
-                            return [...acc, ...currItems]
-                          } return acc
-                        }, [])
-                        console.log('dataToReduceInventory: ', dataToReduceInventory);
-
-                        await createSalesInvoiceMutation({
-
-                          shipmentIds: selectedShipments.map(({ id }) => id),
-                          shipmentProducts: dataToReduceInventory
-                        }
-                          ,
-                          {
-                            onSuccess: async () => {
-                              await refetch()
-                              toast.current?.show({ severity: 'success', summary: 'Invoice Generated', life: 3000 })
-                              dispatch({ type: 'RESET_SELECTED_SHIPMENTS', payload: [] })
-
-                            },
-                            onError: (error) => {
-                              console.log('error: ', error);
-                              toast.current?.show({ severity: 'error', summary: 'Invoice Creation Failed', detail: `Failed to create invoice`, life: 3000 })
-                            },
-                          }
-                        )
-                      }
-                    });
-
-                  }
-                },
-              ]
-            }, {
-              label: 'Group',
-              items: [
-                {
-                  label: 'Batch Items',
-                  icon: 'pi pi-box',
-                  command: async () => {
-                    // GENERATE BATCH MUTATION
-                    const batchNumber = "BATCH_" + moment().format('x')
-                    await createBatchMutation({
-                      batchNumber: batchNumber,
-                      shipment: {
-                        connect: selectedShipments.map(({ id }) => ({ id }))
-                      }
-                    }, {
-                      onSuccess: () => {
-                        toast.current?.show({ severity: 'success', summary: 'Batch Added', detail: `Batch #${batchNumber}`, life: 3000 })
-                      },
-                      onError: (error) => {
-                        console.log('error: ', error);
-                        toast.current?.show({ severity: 'error', summary: 'Batch Creation Failed', detail: `Failed to create batch`, life: 3000 })
-                      },
-                    })
-                  }
-                },
-                {
-                  label: 'View Picklist',
-                  icon: 'pi pi-file-pdf',
-                  command: () => { setPickListVisible(true) }
-                },
-              ]
-            }])
-          } else if (firstSelectedShipmentItem.shipment_status.name === "PACKED") {
-            setItems([{
-              label: 'Options',
-              items: [
-                {
-                  label: 'Ready To Ship',
-                  icon: 'pi bi-box-seam',
-                  command: (e) => {
-                    // Create 2 STEP PROCESS TO CHANGE STATE
-                    dispatch({ type: "READY_TO_SHIP", payload: true })
-                    if (firstSelectedShipmentItem?.dimensionsId) {
-                      dispatch({ type: "READY_TO_SHIP_ACTIVE_INDEX", payload: 1 })
-                    }
-                  }
-                },
-              ]
-            },])
-          } else if (statusId === 4) {
-            setItems([{
-              label: 'Options',
-              items: [
-                {
-                  label: 'Mark as Delivered',
-                  icon: 'pi  bi-geo-fill',
-                  command: async (e) => {
-                    // Create 2 STEP PROCESS TO CHANGE STATE
-                    await updateManyShipmentMutation({
-                      where: {
-                        id: {
-                          in: selectedShipments.map(({ id }) => id)
-                        }
-                      },
-                      shipmentStatusId: 5
-                    }, {
-                      onSuccess: async () => {
-                        console.log("success")
-                        await refetch()
-                      },
-                      onError: (error) => { console.log(error) }
-                    })
-
-                  }
-                },
-              ]
-            },])
-
-          }
-        }} />
-        <Button label="Actions" icon="pi pi-bars" onClick={(e) => orderSelectionMenu?.current.toggle(e)} />
+        <Menu model={items} popup ref={orderSelectionMenu}
+          onShow={actionItemsOnFilter}
+        />
+        {statusName !== "ALL" &&
+          < Button label="Actions" icon="pi pi-bars" onClick={(e) => orderSelectionMenu?.current.toggle(e)} />}
       </div>
     )
   }
@@ -540,32 +507,6 @@ export const ShipmentsList = () => {
           />}
           {state.manifestStep === 1 && (
             <div className="flex align-items-center justify-content-center">
-              {/* <Button label="Upload Manifest"
-                onClick={async () => {
-                  const test = uuidv4()
-                  console.log('test1: ', test);
-                  console.log('test2: ', test);
-                  console.log('test3: ', test);
-                  console.log('test4: ', {
-                    t1: test,
-                    t2: test,
-                    t3: test,
-                    t4: test,
-                  });
-
-
-                  return
-                  await createManifestMutation({
-                    manifestNumber: uuidv4(),
-                    shipment: selectedShipments.map(({ id }) => ({ id }))
-                  }, {
-                    onSuccess: () => {
-                      dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: 2 } })
-                    },
-                    onError: (error) => { console.log(error) }
-                  })
-                }}
-              /> */}
               <FileUpload
                 name="demo[]"
                 url="./upload.php"
@@ -611,6 +552,7 @@ export const ShipmentsList = () => {
           activeIndex={statusId}
           onTabChange={(e) => {
             dispatch({ type: 'UPDATE_STATUS_ID', payload: e.value.id })
+            dispatch({ type: 'UPDATE_STATUS_NAME', payload: e.value.status ?? e.value.label })
             dispatch({ type: 'RESET_SELECTED_SHIPMENTS', payload: [] })
 
           }} />
