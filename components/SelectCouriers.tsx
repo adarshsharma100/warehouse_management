@@ -11,7 +11,7 @@ import { useMutation, useQuery } from "@blitzjs/rpc"
 import { Dropdown } from "primereact/dropdown"
 import getCourier_types from "app/courier_types/queries/getCourier_types"
 import getCouriers from "app/couriers/queries/getCouriers"
-import { Chip } from "primereact/Chip"
+// import { Chip } from "primereact/Chip"
 import updateShipment from "app/shipments/mutations/updateShipment"
 import deleteBulk_awb from "app/bulk_awbs/mutations/deleteBulk_awb"
 
@@ -94,9 +94,9 @@ const SelectCouriers = ({ dispatch, shipmentId, refetchShipments }) => {
     return (
         <>
             <div className="flex flex-column" >
-                <span className="ml-auto">
+                {/* <span className="ml-auto">
                     {selectedCourier.id && <Chip className="pl-0 pr-3" template={localAwbCount} />}
-                </span>
+                </span> */}
 
                 <form className="p-fluid mt-5" onSubmit={formik.handleSubmit}>
                     <div className="formgrid grid">

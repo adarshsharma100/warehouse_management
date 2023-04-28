@@ -11,7 +11,7 @@ import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { TabMenu } from 'primereact/tabmenu';
 import getShipment_statuses from "app/shipment_statuses/queries/getShipment_statuses";
-import { Chip } from "primereact/Chip";
+// import { Chip } from "primereact/Chip";
 import { dateFormat } from "app/constants";
 import { Dialog } from 'primereact/dialog';
 import { ContextMenu } from 'primereact/contextmenu';
@@ -107,19 +107,62 @@ export const ShipmentsList = () => {
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null)
   const [viewInvoicePdf, setViewInvoicePdf] = useState(false)
 
-  const menuModel = [
+  // const menuModel = [
+  //   {
+  //     label: 'View Invoice', icon: 'pi pi-fw pi-search', command: (data) => {
+  //       // setSelectedShipment(data)
+  //       setViewInvoicePdf(true)
+  //     }
+  //   },
+  //   { label: 'View Picklist', icon: 'pi pi-fw pi-list', command: () => setPickListVisible(true) },
+  //   { label: 'View Picklist', icon: 'pi pi-fw pi-list', command: () => setPickListVisible(true) },
+  // ];
+
+
+
+  const menuModel = (activeTab) => [
     {
-      label: 'View Invoice', icon: 'pi pi-fw pi-search', command: (data) => {
+      label: 'View Invoice',
+      icon: 'pi pi-fw pi-search',
+      command: (data) => {
         // setSelectedShipment(data)
         setViewInvoicePdf(true)
       }
     },
-    { label: 'View Picklist', icon: 'pi pi-fw pi-list', command: () => setPickListVisible(true) },
-  ];
+    {
+      label: 'View Picklist',
+      icon: 'pi pi-fw pi-list',
+      command: () => setPickListVisible(true)
+    },
+    activeTab === 4 && {
+      label: 'viewmanifest',
+      icon: 'pi pi-fw pi-check',
+      // command: () => markAsShipped()
+    },
+    activeTab === 5 && {
+      label: 'viewmanifest',
+      icon: 'pi pi-fw pi-check',
+      // command: () => markAsShipped()
+    },
+    activeTab === 2 && {
+      label: 'Mark as Ready to ship',
+      icon: 'pi pi-fw pi-plus',
+      // command: () => addToInventory()
+    }
+  ].filter(Boolean);
+
+
+
+
+
+
+
 
   // const page = Number(router.query.page) || 0;
   const [state, dispatch] = useReducer(reducer, initialState);
   const { orders, statusId, skipCount, tableRowsCount, selectedShipments, isReadyToShip, packageDimensions, readyToShipActiveIndex } = state
+  console.log('statusId: ', statusId);
+  console.log('selectedShipments: ', selectedShipments);
   // console.log('selectedShipments: ', selectedShipments);
 
   const firstSelectedShipmentItem = selectedShipments[0]
@@ -137,6 +180,7 @@ export const ShipmentsList = () => {
     take: undefined,
   });
 
+  console.log('shipment_statuses: ', shipment_statuses);
   const toast = useRef<Toast>(null);
 
   const orderSelectionMenu = useRef(null);
@@ -181,6 +225,9 @@ export const ShipmentsList = () => {
     }
   ])
 
+
+
+
   const [createBatchMutation] = useMutation(createBatch)
   const [createSalesInvoiceMutation] = useMutation(createSalesInvoice)
 
@@ -197,6 +244,7 @@ export const ShipmentsList = () => {
       id: status.id
     }
   ))
+  console.log('tabMenuItems: ', tabMenuItems);
 
   const paginator = () =>
     <Paginator first={skipCount} rows={tableRowsCount} totalRecords={shipmentCount} rowsPerPageOptions={[10, 20, 30]} onPageChange={onPageChange} />
@@ -207,6 +255,44 @@ export const ShipmentsList = () => {
 
       <div className="flex justify-content-between">
         <Menu model={items} popup ref={orderSelectionMenu} onShow={() => {
+
+          // if (!firstSelectedShipmentItem || !firstSelectedShipmentItem.shipment_status) {
+
+          //   setItems([{
+          //     label: 'Invoice',
+          //     items: [
+          //       {
+          //         label: 'View Picklist',
+          //         icon: 'pi pi-file-pdf',
+          //         command: () => { setPickListVisible(true) }
+          //       },
+          //       {
+          //         label: 'Batch Items',
+          //         icon: 'pi pi-box',
+          //         command: async () => {
+          //           const batchNumber = "BATCH_" + moment().format('x')
+          //           await createBatchMutation({
+          //             batchNumber: batchNumber,
+          //             shipment: {
+          //               connect: selectedShipments.map(({ id }) => ({ id }))
+          //             }
+          //           }, {
+          //             onSuccess: () => {
+          //               toast.current?.show({ severity: 'success', summary: 'Batch Added', detail: `Batch #${batchNumber}`, life: 3000 })
+          //             },
+          //             onError: (error) => {
+          //               console.log('error: ', error);
+          //               toast.current?.show({ severity: 'error', summary: 'Batch Creation Failed', detail: `Failed to create batch`, life: 3000 })
+          //             },
+          //           })
+          //         }
+          //       },
+
+          //     ]
+          //   },
+
+          //   ])
+          // }
           if (selectedShipments[0].shipment_status.name === CREATE_STATE) {
             setItems([{
               label: 'Invoice',
@@ -244,15 +330,130 @@ export const ShipmentsList = () => {
                   icon: 'pi pi-file-pdf',
                   command: () => { setPickListVisible(true) }
                 },
-              ]
-            }, {
-              label: 'Group',
-              items: [
+
                 {
                   label: 'Batch Items',
                   icon: 'pi pi-box',
                   command: async () => {
-                    // GENERATE BATCH MUTATION
+                    const batchNumber = "BATCH_" + moment().format('x')
+                    await createBatchMutation({
+                      batchNumber: batchNumber,
+                      shipment: {
+                        connect: selectedShipments.map(({ id }) => ({ id }))
+                      }
+                    }, {
+                      onSuccess: () => {
+                        toast.current?.show({ severity: 'success', summary: 'Batch Added', detail: `Batch #${batchNumber}`, life: 3000 })
+                      },
+                      onError: (error) => {
+                        console.log('error: ', error);
+                        toast.current?.show({ severity: 'error', summary: 'Batch Creation Failed', detail: `Failed to create batch`, life: 3000 })
+                      },
+                    })
+                  }
+                },
+              ]
+            },
+
+              // {
+              //   label: 'Group',
+              //   items: [
+              //     {
+              //       label: 'Batch Items',
+              //       icon: 'pi pi-box',
+              //       command: async () => {
+              //         // GENERATE BATCH MUTATION
+              //         const batchNumber = "BATCH_" + moment().format('x')
+              //         await createBatchMutation({
+              //           batchNumber: batchNumber,
+              //           shipment: {
+              //             connect: selectedShipments.map(({ id }) => ({ id }))
+              //           }
+              //         }, {
+              //           onSuccess: () => {
+              //             toast.current?.show({ severity: 'success', summary: 'Batch Added', detail: `Batch #${batchNumber}`, life: 3000 })
+              //           },
+              //           onError: (error) => {
+              //             console.log('error: ', error);
+              //             toast.current?.show({ severity: 'error', summary: 'Batch Creation Failed', detail: `Failed to create batch`, life: 3000 })
+              //           },
+              //         })
+              //       }
+              //     },
+              //     {
+              //       label: 'View Picklist',
+              //       icon: 'pi pi-file-pdf',
+              //       command: () => { setPickListVisible(true) }
+              //     },
+              //   ]
+              // }
+
+            ])
+          } else if (firstSelectedShipmentItem.shipment_status.name === "PACKED") {
+            // setItems([{
+            //   label: 'Options',
+            //   items: [
+            //     {
+            //       label: 'Ready To Ship',
+            //       icon: 'pi bi-box-seam',
+            //       command: (e) => {
+            //         // Create 2 STEP PROCESS TO CHANGE STATE
+            //         dispatch({ type: "READY_TO_SHIP", payload: true })
+            //         if (firstSelectedShipmentItem?.dimensionsId) {
+            //           dispatch({ type: "READY_TO_SHIP_ACTIVE_INDEX", payload: 1 })
+            //         }
+            //       }
+            //     },
+            //   ]
+            // },])
+
+
+            setItems([{
+              label: 'Invoice',
+              items: [
+                {
+                  label: 'View Picklist',
+                  icon: 'pi pi-file-pdf',
+                  command: () => { setPickListVisible(true) }
+                },
+                {
+                  label: 'Batch Items',
+                  icon: 'pi pi-box',
+                  command: async () => {
+                    const batchNumber = "BATCH_" + moment().format('x')
+                    await createBatchMutation({
+                      batchNumber: batchNumber,
+                      shipment: {
+                        connect: selectedShipments.map(({ id }) => ({ id }))
+                      }
+                    }, {
+                      onSuccess: () => {
+                        toast.current?.show({ severity: 'success', summary: 'Batch Added', detail: `Batch #${batchNumber}`, life: 3000 })
+                      },
+                      onError: (error) => {
+                        console.log('error: ', error);
+                        toast.current?.show({ severity: 'error', summary: 'Batch Creation Failed', detail: `Failed to create batch`, life: 3000 })
+                      },
+                    })
+                  }
+                },
+              ]
+            },
+
+            ])
+          } else if (firstSelectedShipmentItem.shipment_status.name === "READY TO SHIP") {
+            setItems([{
+              label: 'Invoice',
+              items: [
+                {
+                  label: 'View Picklist',
+                  icon: 'pi pi-file-pdf',
+                  command: () => { setPickListVisible(true) }
+                },
+                {
+                  label: 'Batch Items',
+                  icon: 'pi pi-box',
+                  command: async () => {
                     const batchNumber = "BATCH_" + moment().format('x')
                     await createBatchMutation({
                       batchNumber: batchNumber,
@@ -271,29 +472,53 @@ export const ShipmentsList = () => {
                   }
                 },
                 {
-                  label: 'View Picklist',
+                  label: 'Generate Manifest',
                   icon: 'pi pi-file-pdf',
                   command: () => { setPickListVisible(true) }
                 },
               ]
-            }])
-          } else if (firstSelectedShipmentItem.shipment_status.name === "PACKED") {
+            },
+
+            ])
+          } else if (firstSelectedShipmentItem.shipment_status.name === "DISPATCHED") {
             setItems([{
-              label: 'Options',
+              label: 'Invoice',
               items: [
                 {
-                  label: 'Ready To Ship',
-                  icon: 'pi bi-box-seam',
-                  command: (e) => {
-                    // Create 2 STEP PROCESS TO CHANGE STATE
-                    dispatch({ type: "READY_TO_SHIP", payload: true })
-                    if (firstSelectedShipmentItem?.dimensionsId) {
-                      dispatch({ type: "READY_TO_SHIP_ACTIVE_INDEX", payload: 1 })
-                    }
+                  label: 'View Picklist',
+                  icon: 'pi pi-file-pdf',
+                  command: () => { setPickListVisible(true) }
+                },
+                {
+                  label: 'Batch Items',
+                  icon: 'pi pi-box',
+                  command: async () => {
+                    const batchNumber = "BATCH_" + moment().format('x')
+                    await createBatchMutation({
+                      batchNumber: batchNumber,
+                      shipment: {
+                        connect: selectedShipments.map(({ id }) => ({ id }))
+                      }
+                    }, {
+                      onSuccess: () => {
+                        toast.current?.show({ severity: 'success', summary: 'Batch Added', detail: `Batch #${batchNumber}`, life: 3000 })
+                      },
+                      onError: (error) => {
+                        console.log('error: ', error);
+                        toast.current?.show({ severity: 'error', summary: 'Batch Creation Failed', detail: `Failed to create batch`, life: 3000 })
+                      },
+                    })
                   }
                 },
+                {
+                  label: 'Mark as Delivered',
+                  icon: 'pi pi-check',
+                  command: () => { setPickListVisible(true) }
+                },
               ]
-            },])
+            },
+
+            ])
           }
         }} />
         <Button label="Actions" icon="pi pi-bars" onClick={(e) => orderSelectionMenu?.current.toggle(e)} />
@@ -314,7 +539,6 @@ export const ShipmentsList = () => {
     dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
   };
 
-
   const readToShipProcessHeader = <Steps model={readyToShipItems} activeIndex={readyToShipActiveIndex} />
   const [pickListVisible, setPickListVisible] = useState(false)
 
@@ -331,13 +555,14 @@ export const ShipmentsList = () => {
 
         {readyToShipActiveIndex === 1 && <CourierSelection />}
       </Dialog> */}
-      {isReadyToShip && <div className="m-3"     >
+      {isReadyToShip && <div className="m-3">
         <Steps model={readyToShipItems} activeIndex={readyToShipActiveIndex} />
         {!readyToShipActiveIndex &&
           <PackageDimensions shipmentId={firstSelectedShipmentItem?.id} dispatch={dispatch} />}
 
         {readyToShipActiveIndex === 1 && <SelectCouriers dispatch={dispatch} shipmentId={firstSelectedShipmentItem?.id} refetchShipments={refetch} />}
       </div>}
+
       <Dialog visible={pickListVisible} header="PickList" onHide={() => setPickListVisible(false)}>
         <Picklist invoice={selectedShipments.reduce((acc, { orders }) => {
           const { order_items } = orders;
@@ -351,6 +576,7 @@ export const ShipmentsList = () => {
           }))]
         }, [])} />
       </Dialog>
+
       {selectedShipment?.id && <Dialog header="Header" visible={viewInvoicePdf} onHide={() => setViewInvoicePdf(false)}>
         <Suspense fallback={<div>Loading...</div>}>
           <Invoice shipmentID={selectedShipment?.id} />
@@ -363,16 +589,15 @@ export const ShipmentsList = () => {
           model={[{ label: "ALL" }, ...tabMenuItems]}
           activeIndex={statusId}
           onTabChange={(e) => {
+            console.log('lop')
             dispatch({ type: 'UPDATE_STATUS_ID', payload: e.value.id })
             dispatch({ type: 'RESET_SELECTED_SHIPMENTS', payload: [] })
-
           }} />
 
-
-
-
         <div className="col-12">
-          <ContextMenu model={menuModel} ref={cm} />
+          {/* <ContextMenu model={menuModel (statusId)} ref={cm} /> */}
+          <ContextMenu model={menuModel(statusId)} ref={cm} />
+         
           <DataTable
             onContextMenu={(e) => cm.current.show(e.originalEvent)}
             // contextMenuSelection={selectedShipment}
@@ -386,13 +611,22 @@ export const ShipmentsList = () => {
             onSelectionChange={(e) => dispatch({ type: "SET_SELECTED_SHIPMENTS", payload: e.value })}
             header={selectedShipments.length >= 1 && renderHeader}
             footer={paginator}
+            
+
+
           >
-            <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
+         
+            <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}>
+
+            </Column>
+
             <Column field="Shipments" header="Shipments" body={({ shipmentNumber, ordersId }) => <div>
               <p>Code:{shipmentNumber}</p>
               <p>Order:{ordersId}</p>
             </div>} />
+
             <Column field="giftMessage" header="Gift Message" body={({ orders }) => orders?.giftMessage} />
+
             <Column header="Products" body={({ orders: { order_items } }) => <div>
               {order_items?.map((product, i) => {
                 const { quantity, products: { name, sku } } = product
@@ -414,13 +648,15 @@ export const ShipmentsList = () => {
               })}
             </div>} >
             </Column>
-            <Column header="Channel" body={({ orders: { shopifyId } }) =>
+
+            {/* <Column header="Channel" body={({ orders: { shopifyId } }) =>
               <Chip
                 label={`${shopifyId ? "SH" : "IH"}`}
                 className={`${shopifyId ? "bg-green-500" : "bg-cyan-500"}`}
               />
             } >
-            </Column>
+            </Column> */}
+
             <Column header="Status" body={({ shipment_status }) => <div>
               <p>{shipment_status?.name}</p>
             </div>} >
