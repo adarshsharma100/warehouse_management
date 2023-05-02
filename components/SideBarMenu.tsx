@@ -78,6 +78,11 @@ const SideBarMenu = () => {
       icon: " pi pi-fw pi-file",
       command: () => (window.location.href = "/orders"),
     },
+    {
+      label: "Fulfillments",
+      icon: " pi bi-patch-check",
+      command: () => (window.location.href = "/shipments"),
+    },
 
   ]
 
