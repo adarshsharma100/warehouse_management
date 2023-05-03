@@ -806,7 +806,7 @@ export const OrdersList = () => {
             <Button
               type="button"
               icon="pi pi-verified"
-              label="verified"
+              label="Verify"
               className="p-button-outlined"
               onClick={async () => {
                 const activeIDs = selectedOrder.map((ele) => ele?.id);
@@ -1379,11 +1379,11 @@ export const OrdersList = () => {
               header="Customer Details"
 
             />
-            <Column
+            {/* <Column
               field="quantity"
               header="Status"
             // className="text-center"
-            />
+            /> */}
             <Column
               field="gateway"
               header="Payment Gateway"
