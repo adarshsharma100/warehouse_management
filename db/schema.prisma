@@ -471,8 +471,8 @@ model rfq {
   purchase_orders_purchase_orders_rfqTorfq purchase_orders[] @relation("purchase_orders_rfqTorfq")
   rfq                                      rfq?              @relation("rfqTorfq", fields: [ammendedFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_rfq1")
   other_rfq                                rfq[]             @relation("rfqTorfq")
-  rfq_products_rfq_products_rfqTorfq       rfq_products[]    @relation("rfq_products_rfqTorfq")
-  rfq_sentto_rfq_sentto_rfqTorfq           rfq_sentto[]      @relation("rfq_sentto_rfqTorfq")
+  rfq_products                             rfq_products[]    @relation("rfq_products_rfqTorfq")
+  rfq_sentto                               rfq_sentto[]      @relation("rfq_sentto_rfqTorfq")
 
   @@index([ammendedFrom], map: "fk_rfq_rfq1_idx")
 }
