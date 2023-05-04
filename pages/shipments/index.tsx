@@ -11,7 +11,7 @@ import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { TabMenu } from 'primereact/tabmenu';
 import getShipment_statuses from "app/shipment_statuses/queries/getShipment_statuses";
-import { Chip } from "primereact/Chip";
+import { Chip } from "primereact/chip";
 import { dateFormat } from "app/constants";
 import { Dialog } from 'primereact/dialog';
 import { ContextMenu } from 'primereact/contextmenu';
