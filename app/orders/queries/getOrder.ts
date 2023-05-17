@@ -21,7 +21,6 @@ export default resolver.pipe(resolver.zod(GetOrder), resolver.authorize(), async
       }
     }
 
-
     // include: {
     //   order_items: {
     //     include: {

@@ -34,6 +34,10 @@ import Invoice from "app/shipments/components/Invoice";
 import { ConfirmDialog } from 'primereact/confirmdialog'; // For <ConfirmDialog /> component
 import { confirmDialog } from 'primereact/confirmdialog'; // For confirmDialog method
 
+
+import { Tag } from 'primereact/tag';
+
+
 import SelectCouriers from "components/SelectCouriers";
 
 const initialState = {
@@ -162,7 +166,7 @@ export const ShipmentsList = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { orders, statusId, skipCount, tableRowsCount, selectedShipments, isReadyToShip, packageDimensions, readyToShipActiveIndex } = state
   console.log('statusId: ', statusId);
-  console.log('selectedShipments: ', selectedShipments);
+  console.log('orders ', orders);
   // console.log('selectedShipments: ', selectedShipments);
 
   const firstSelectedShipmentItem = selectedShipments[0]
@@ -251,9 +255,11 @@ export const ShipmentsList = () => {
 
   const renderHeader = () => {
     const CREATE_STATE = "CREATED"
-    return (
 
+    return (
       <div className="flex justify-content-between">
+
+
         <Menu model={items} popup ref={orderSelectionMenu} onShow={() => {
 
           // if (!firstSelectedShipmentItem || !firstSelectedShipmentItem.shipment_status) {
@@ -542,19 +548,106 @@ export const ShipmentsList = () => {
   const readToShipProcessHeader = <Steps model={readyToShipItems} activeIndex={readyToShipActiveIndex} />
   const [pickListVisible, setPickListVisible] = useState(false)
 
+  // ROW EXPANSION
+  const [products, setProducts] = useState([]);
+  const [expandedRows, setExpandedRows] = useState(null);
+  console.log('expandedRows: ', expandedRows);
+
+
+
+  const onRowExpand = (event) => {
+    toast.current.show({ severity: 'info', summary: 'Product Expanded', detail: event.data.name, life: 3000 });
+  };
+
+  const onRowCollapse = (event) => {
+    toast.current.show({ severity: 'success', summary: 'Product Collapsed', detail: event.data.name, life: 3000 });
+  };
+
+  const formatCurrency = (value) => {
+    return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+  };
+
+  const amountBodyTemplate = (rowData) => {
+    return formatCurrency(rowData.amount);
+  };
+
+  const searchBodyTemplate = () => {
+    return <Button icon="pi pi-search" />;
+  };
+
+  const allowExpansion = (rowData) => {
+    return rowData.orders.length > 0;
+  };
+
+  // const rowExpansionTemplate = (data) => {
+  //   console.log('data: ', data.orders);
+
+  //   const ordersArray = data.orders.map(order => ({
+  //     id: order.id,
+  //     orderStatus: order.orderStatus
+  //   }));
+  //   console.log('ordersArray: ', ordersArray);
+
+  //   return (
+  //     <div className="p-3">
+
+  //       <pre>
+  //         {JSON.stringify(data, null, 2)}
+  //       </pre>
+  //       <h5>Orders Details </h5>
+  //       {/* <DataTable value={ordersArray}>
+  //         <Column field="id" header="ID" />
+  //         <Column field="orderStatus" header="Status" />
+  //       </DataTable> */}
+  //     </div>
+  //   );
+  // };
+
+
+
+  const rowExpansionTemplate = (data) => {
+    let orders = [];
+    if (Array.isArray(data.orders)) {
+      orders = data.orders;
+    } else if (typeof data.orders === 'object' && data.orders !== null) {
+      orders = [data.orders];
+    }
+
+    console.log('orders: ', orders);
+
+    const columns = [
+      { field: 'id', header: 'ID' },
+      { field: 'orderStatus', header: 'Status' },
+      { field: 'totalPrice', header: 'Total Price' },
+
+      // add more columns here
+    ];
+    return (
+      <div className="p-3">
+        {/* <pre>{JSON.stringify(data, null, 2)}</pre> */}
+        <h5>Orders Details </h5>
+        <DataTable value={orders}>
+          {columns.map((column) => (
+            <Column key={column.field} field={column.field} header={column.header} />
+          ))}
+        </DataTable>
+      </div>
+    );
+  };
+
+
+
+
+
+
+
+
+
+
   return (
 
     <div className=" card">
-      {/* <Dialog header={readToShipProcessHeader} visible={isReadyToShip} style={{ width: '50vw' }}
 
-        onHide={() => {
-          dispatch({ type: "READY_TO_SHIP", payload: false })
-          dispatch({ type: "READY_TO_SHIP_ACTIVE_INDEX", payload: 0 })
-        }}>
-        {!readyToShipActiveIndex && <PackageDimensions shipmentId={selectedShipments[0]?.id} dispatch={dispatch} />}
-
-        {readyToShipActiveIndex === 1 && <CourierSelection />}
-      </Dialog> */}
       {isReadyToShip && <div className="m-3">
         <Steps model={readyToShipItems} activeIndex={readyToShipActiveIndex} />
         {!readyToShipActiveIndex &&
@@ -597,7 +690,7 @@ export const ShipmentsList = () => {
         <div className="col-12">
           {/* <ContextMenu model={menuModel (statusId)} ref={cm} /> */}
           <ContextMenu model={menuModel(statusId)} ref={cm} />
-         
+
           <DataTable
             onContextMenu={(e) => cm.current.show(e.originalEvent)}
             // contextMenuSelection={selectedShipment}
@@ -611,11 +704,18 @@ export const ShipmentsList = () => {
             onSelectionChange={(e) => dispatch({ type: "SET_SELECTED_SHIPMENTS", payload: e.value })}
             header={selectedShipments.length >= 1 && renderHeader}
             footer={paginator}
-            
+           
+            expandedRows={expandedRows}
+            onRowToggle={(e) => setExpandedRows(e.data)}
+            onRowExpand={onRowExpand}
+            onRowCollapse={onRowCollapse}
+            rowExpansionTemplate={rowExpansionTemplate}
 
+            dataKey="id"
 
           >
-         
+
+            <Column expander={true} style={{ width: '5rem' }} />
             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}>
 
             </Column>
@@ -682,7 +782,7 @@ export const ShipmentsList = () => {
           </DataTable>
         </div>
       </div>
-    </div >
+    </div>
   );
 }
 
@@ -692,7 +792,6 @@ const ShipmentsPage = () => {
       <Head>
         <title>Fulfillments</title>
       </Head>
-
       <div>
         <Suspense fallback={<Loading />}>
           <ShipmentsList />

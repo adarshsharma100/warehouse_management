@@ -240,7 +240,6 @@ console.log('item: ', item);
             <div>
               <Dialog header="Invoice Details" visible={dialogBox} style={{ width: '50vw' }} onHide={() => setDialogBox(false)}>
                 pdf data
-
               </Dialog>
             </div>
 
@@ -256,11 +255,9 @@ console.log('item: ', item);
                 filterDisplay="menu"
                 emptyMessage="No Results found."
                 rowHover={true}
-                
-
               >
                 {columnComponents}
-
+                
               </DataTable>
 
             </div >

@@ -234,7 +234,7 @@ export const WarehousesList = () => {
           stripedRows
           className="text-s datatable-responsive"
           responsiveLayout="scroll"
-          filterDisplay="menu"
+          // filterDisplay="menu"
           onRowClick={handleRowClick}
         >
 
