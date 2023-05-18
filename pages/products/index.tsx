@@ -571,98 +571,99 @@ export const ProductsList = () => {
   const onTemplateRemove = (file, callback) => {
     setTotalSize(totalSize - file.size);
     callback();
+  }
 
-    return (
-      <div className="grid w-full">
-        <Toast ref={toast} />
-        {creatingProduct && <LoaderFullScreen />}
-        {updatingProduct && <LoaderFullScreen />}
-        <div ref={scrolToTop} className="col-12">
-          <div className="card">
-            <div className="flex flex justify-content-between align-items-center">
-              <h2>Products</h2>
-              <div className="flex">
-                <Button
-                  icon="pi pi-plus"
-                  label="Add Products"
-                  className="ml-1"
-                  onClick={() => {
-                    setInputs([{ product: null, quantity: null }])
-                    formik.resetForm()
-                    setSelectedStatus(null)
-                    setProductEditState(true)
-                    setActiveProduct(false)
-                    setProductDialog(true)
-                  }}
-                />
-              </div>
+  return (
+    <div className="grid w-full">
+      <Toast ref={toast} />
+      {creatingProduct && <LoaderFullScreen />}
+      {updatingProduct && <LoaderFullScreen />}
+      <div ref={scrolToTop} className="col-12">
+        <div className="card">
+          <div className="flex flex justify-content-between align-items-center">
+            <h2>Products</h2>
+            <div className="flex">
+              <Button
+                icon="pi pi-plus"
+                label="Add Products"
+                className="ml-1"
+                onClick={() => {
+                  setInputs([{ product: null, quantity: null }])
+                  formik.resetForm()
+                  setSelectedStatus(null)
+                  setProductEditState(true)
+                  setActiveProduct(false)
+                  setProductDialog(true)
+                }}
+              />
             </div>
           </div>
-          {!errorProducts.length &&
-            ErrorMsgs.map((ele, i) => (
-              <ErrorCard ErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
-            ))}
         </div>
+        {!errorProducts.length &&
+          ErrorMsgs.map((ele, i) => (
+            <ErrorCard ErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
+          ))}
+      </div>
 
-        <div
-          className={`col-12 ${errorProducts.length
-            ? "visible scalein animation-duration-200"
-            : "hidden scaleout animation-duration-200"
-            }`}
-        >
-          <div className="card border-primary border-2 bg-primary-reverse">
-            <h6>Following are a list of failed entries: </h6>
-            <ul>
-              {errorProducts.map(({ rowNum, message }, index) => {
-                if (rowNum)
-                  return (
-                    <li key={"error-" + index}>
-                      Row Number {rowNum}:{" "}
-                      <ul>
-                        <li>{message}</li>
-                      </ul>
-                    </li>
-                  )
+      <div
+        className={`col-12 ${errorProducts.length
+          ? "visible scalein animation-duration-200"
+          : "hidden scaleout animation-duration-200"
+          }`}
+      >
+        <div className="card border-primary border-2 bg-primary-reverse">
+          <h6>Following are a list of failed entries: </h6>
+          <ul>
+            {errorProducts.map(({ rowNum, message }, index) => {
+              if (rowNum)
                 return (
                   <li key={"error-" + index}>
-                    <li>{message}</li>
+                    Row Number {rowNum}:{" "}
+                    <ul>
+                      <li>{message}</li>
+                    </ul>
                   </li>
                 )
-              })}
-            </ul>
-          </div>
-
+              return (
+                <li key={"error-" + index}>
+                  <li>{message}</li>
+                </li>
+              )
+            })}
+          </ul>
         </div>
 
-        <div
-          className={`col-12 ${productDialog
-            ? "visible scalein animation-duration-200"
-            : "hidden scaleout animation-duration-200"
-            }`}
-        >
+      </div>
+
+      <div
+        className={`col-12 ${productDialog
+          ? "visible scalein animation-duration-200"
+          : "hidden scaleout animation-duration-200"
+          }`}
+      >
 
 
-          <div className="card">
+        <div className="card">
 
-            <div>
-              <div className="flex justify-content-between">
-                <h4>{activeProduct ? "Update" : "Create"} Product</h4>
-                <h4>{activeProduct &&
-                  <Button
-                    icon="pi pi-pencil"
-                    className="m-1"
-                    onClick={() => { setProductEditState(!productEditState) }}
-                  />}</h4>
-              </div>
+          <div>
+            <div className="flex justify-content-between">
+              <h4>{activeProduct ? "Update" : "Create"} Product</h4>
+              <h4>{activeProduct &&
+                <Button
+                  icon="pi pi-pencil"
+                  className="m-1"
+                  onClick={() => { setProductEditState(!productEditState) }}
+                />}</h4>
+            </div>
 
-              <form
-                onSubmit={formik.handleSubmit}
-                className="p-fluid"
-              >
-                <div className="formgrid grid">
-                  <div className="field col-12">
-                    {/* //TODO: @Varun: the below code will have to be adjusted for file upload */}
-                    {/* <FileUpload
+            <form
+              onSubmit={formik.handleSubmit}
+              className="p-fluid"
+            >
+              <div className="formgrid grid">
+                <div className="field col-12">
+                  {/* //TODO: @Varun: the below code will have to be adjusted for file upload */}
+                  {/* <FileUpload
                   cancelOptions={true}
                   name="product_image"
                   url="/api/upload"
@@ -676,344 +677,345 @@ export const ProductsList = () => {
                     setImageUploadObject(e.files[0])
                   }}
                 /> */}
-                  </div>
-                  {
-                    [
-                      { type: 'text', label: "Name*", field: "name", header: "Name" },
-                      { type: 'number', label: "Length", field: "length", header: "Length" },
-                      { type: 'number', label: "Width", field: "width", header: "Width" },
-                      { type: 'number', label: "Height", field: "height", header: "Height" },
-                      { type: 'number', label: "Weight", field: "weight", header: "Weight" },
-                      { type: 'text', label: "Color", field: "color", header: "Color" },
-                      // { type: 'text', label: "Brand", field: "brand", header: "Brand" },
-                      { type: 'text', label: "Custom duty", field: "customDuty", header: "Tax code" },
-                      { type: 'text', label: "Gst Tax type code", field: "gstcode", header: "Gst Code" },
-                      { type: 'text', label: "HSN code", field: "hsnCode", header: "HSN Code" },
-                      { type: 'number', label: "Cost Price", field: "costPrice", header: "Cost Price" },
-                      { type: 'text', label: "Tax Calculation Type", field: "taxCalcuation", header: "Tax Calcuation" },
-                      { type: 'textArea', label: "Description", field: "description", header: "Name" },
-                    ].map(({ field, type, label }, i) => {
-                      return (
-                        <div key={`${field}${i}`} className={`field col-12 lg:${type === "textArea" ? "col-12" : "col-2"} md:col-6 mt-4`}>
-                          <span className="p-float-label">
-                            {
-                              type === "text" ? (<InputText
-                                disabled={!productEditState}
-                                id={field}
-                                name={field}
-                                value={formik.values[field] ?? ""}
-                                onChange={formik.handleChange}
-                                className={classNames({ "p-invalid": isFormFieldValid(field) })}
-                              />) : type === "number" ? (<InputNumber
-                                disabled={!productEditState}
-                                id={field}
-                                name={field}
-                                value={formik.values[field] ?? undefined}
-                                onChange={async (e) => {
-                                  await formik.setFieldValue(field, e.value)
-                                }}
-                                autoFocus
-                                className={classNames({ "p-invalid": isFormFieldValid(field) })}
-                              />) : (<InputTextarea
-                                disabled={!productEditState}
-                                id={field}
-                                name={field}
-                                value={formik.values[field] ?? ""}
-                                onChange={async (e) => {
-                                  await formik.setFieldValue(field, e.target.value)
-                                }}
-                                autoFocus
-                                className={classNames({ "p-invalid": isFormFieldValid(field) })}
-                              />)
-                            }
-                            <label
-                              htmlFor={field}
-                              className={classNames({ "p-error": isFormFieldValid(field) })}
-                            >
-                              {label}
-                            </label>
-                          </span>
-                          {getFormErrorMessage(field)}
-                        </div>
-                      )
-                    })
-                  }
-                  <div key={`category`} className="field col-12 lg:col-4 mt-4">
-                    <span className="p-float-label">
-                      <AutoComplete
-                        id="category"
-                        disabled={!productEditState || activeProduct}
-                        value={formik.values.category}
-                        dropdown
-                        forceSelection
-                        suggestions={categorySuggestions}
-                        completeMethod={searchCategory}
-                        field="name"
-                        onChange={async (e) => {
-                          await formik.setFieldValue("category", e.value)
-                        }}
-                        aria-label="Product Category"
-                        dropdownAriaLabel="Product Category"
-                        className={classNames({ "p-invalid": isFormFieldValid("category") })}
-                      />
-                      <label
-                        htmlFor={"category"}
-                        className={classNames({ "p-error": isFormFieldValid("category") })}
-                      >
-                        Category
-                      </label>
-                    </span>
-                    {getFormErrorMessage("category")}
-                  </div>
-                  <div key={`brand`} className="field col-12 lg:col-4 mt-4">
-                    <span className="p-float-label">
-                      <AutoComplete
-                        id="brand"
-                        disabled={!productEditState || activeProduct}
-                        value={formik.values.brand}
-                        dropdown
-                        forceSelection
-                        suggestions={brandSuggestions}
-                        completeMethod={searchBrand}
-                        field="name"
-                        onChange={async (e) => {
-                          await formik.setFieldValue("brand", e.value)
-                        }}
-                        aria-label="Product brand"
-                        dropdownAriaLabel="Product brand"
-                        className={classNames({ "p-invalid": isFormFieldValid("brand") })}
-                      />
-                      <label
-                        htmlFor={"brand"}
-                        className={classNames({ "p-error": isFormFieldValid("brand") })}
-                      >
-                        Brand
-                      </label>
-                    </span>
-                    {getFormErrorMessage("brand")}
-                  </div>
-
-                  <div key="type" className="field col-12 lg:col-4 mt-4">
-                    <span className="p-float-label">
-                      <Dropdown
-                        id="type"
-                        disabled={!productEditState || activeProduct}
-                        value={formik.values.type}
-                        onChange={async (e) => {
-                          if (e.value === 2) {
-                            //Handle BUNDLE type
-                            await formik.setValues({
-                              ...formik.values,
-                              type: e.value,
-                              kitProducts: [{
-                                product: undefined,
-                                quantity: 1
-                              }]
-                            })
+                </div>
+                {
+                  [
+                    { type: 'text', label: "Name*", field: "name", header: "Name" },
+                    { type: 'number', label: "Length", field: "length", header: "Length" },
+                    { type: 'number', label: "Width", field: "width", header: "Width" },
+                    { type: 'number', label: "Height", field: "height", header: "Height" },
+                    { type: 'number', label: "Weight", field: "weight", header: "Weight" },
+                    { type: 'text', label: "Color", field: "color", header: "Color" },
+                    // { type: 'text', label: "Brand", field: "brand", header: "Brand" },
+                    { type: 'text', label: "Custom duty", field: "customDuty", header: "Tax code" },
+                    { type: 'text', label: "Gst Tax type code", field: "gstcode", header: "Gst Code" },
+                    { type: 'text', label: "HSN code", field: "hsnCode", header: "HSN Code" },
+                    { type: 'number', label: "Cost Price", field: "costPrice", header: "Cost Price" },
+                    { type: 'text', label: "Tax Calculation Type", field: "taxCalcuation", header: "Tax Calcuation" },
+                    { type: 'textArea', label: "Description", field: "description", header: "Name" },
+                  ].map(({ field, type, label }, i) => {
+                    return (
+                      <div key={`${field}${i}`} className={`field col-12 lg:${type === "textArea" ? "col-12" : "col-2"} md:col-6 mt-4`}>
+                        <span className="p-float-label">
+                          {
+                            type === "text" ? (<InputText
+                              disabled={!productEditState}
+                              id={field}
+                              name={field}
+                              value={formik.values[field] ?? ""}
+                              onChange={formik.handleChange}
+                              className={classNames({ "p-invalid": isFormFieldValid(field) })}
+                            />) : type === "number" ? (<InputNumber
+                              disabled={!productEditState}
+                              id={field}
+                              name={field}
+                              value={formik.values[field] ?? undefined}
+                              onChange={async (e) => {
+                                await formik.setFieldValue(field, e.value)
+                              }}
+                              autoFocus
+                              className={classNames({ "p-invalid": isFormFieldValid(field) })}
+                            />) : (<InputTextarea
+                              disabled={!productEditState}
+                              id={field}
+                              name={field}
+                              value={formik.values[field] ?? ""}
+                              onChange={async (e) => {
+                                await formik.setFieldValue(field, e.target.value)
+                              }}
+                              autoFocus
+                              className={classNames({ "p-invalid": isFormFieldValid(field) })}
+                            />)
                           }
-                          await formik.setFieldValue("type", e.value);
-                        }}
-                        options={productTypes}
-                        optionLabel="type"
-                        optionValue="id"
-                        placeholder="Product Type"
-                        className="w-full"
-
-                      />
-                      <label
-                        htmlFor={"type"}
-                        className={classNames({ "p-error": isFormFieldValid("type") })}
-                      >
-                        Product Type
-                      </label>
-                    </span>
-                    {getFormErrorMessage("type")}
-                  </div>
-                  {formik.values.type === 2 && <div key="kit_products" className="field col-12">
-                    <div className="card surface-ground">
-                      <div className="grid">
-                        <div className="col-12">
-                          <span className="text-lg">Kit Products</span>
-                        </div>
-                        {formik.values.kitProducts.map(({ product, quantity }, index) => (
-                          <>
-                            <div key={`kit-product-${index}`} className="field col-12 lg:col-9 mt-5">
-                              <span className="p-float-label">
-                                <AutoComplete
-                                  id={`kitProducts[${index}]?.product`}
-                                  name={`kitProducts[${index}]?.product`}
-                                  suggestions={kitSuggestions}
-                                  completeMethod={kitSearchCategory}
-                                  disabled={!productEditState}
-                                  dropdown
-                                  forceSelection
-                                  field="name"
-                                  value={product}
-                                  onChange={async (e) => {
-                                    await formik.setFieldValue("kitProducts", formik.values.kitProducts.map((kitProduct, i) => {
-                                      if (i !== index)
-                                        return kitProduct
-                                      return {
-                                        ...kitProduct,
-                                        product: e.value,
-                                      }
-                                    }))
-                                  }}
-                                />
-                                <label
-                                  htmlFor={`kitProducts[${index}].product.`}
-                                  className={classNames({ "p-error": isFormFieldValid(`kitProducts.0.product.name`) })}
-                                >
-                                  Kit Product
-                                </label>
-                              </span>
-                              {
-                                formik.errors.kitProducts?.[index]?.product &&
-                                <small className="p-error">{formik.errors.kitProducts?.[index]?.product}</small>
-                              }
-                            </div>
-                            <div key={`kit-product-quantity-${index}`} className="field col-12 lg:col-2 mt-5">
-                              <span className="p-float-label">
-                                <InputNumber
-                                  id={`kitProducts[${index}]?.quantity`}
-                                  name={`kitProducts[${index}]?.quantity`}
-                                  step={1}
-                                  showButtons
-                                  value={quantity}
-                                  disabled={!productEditState}
-                                  onChange={async (e) => {
-                                    await formik.setFieldValue("kitProducts", formik.values.kitProducts.map((kitProduct, i) => {
-                                      if (i !== index)
-                                        return kitProduct
-                                      return {
-                                        ...kitProduct,
-                                        quantity: e.value,
-                                      }
-                                    }))
-                                  }}
-                                />
-                                <label
-                                  htmlFor={"type"}
-                                  className={classNames({ "p-error": isFormFieldValid("type") })}
-                                >
-                                  Quantity
-                                </label>
-                              </span>
-                              {
-                                formik.errors.kitProducts?.[index]?.quantity &&
-                                <small className="p-error">{formik.errors.kitProducts?.[index]?.quantity}</small>
-                              }
-                            </div>
-                            {productEditState && <div className="field col-1 p-buttonset mt-5" style={{ height: "fit-content" }}>
-                              {index !== formik.values.kitProducts.length - 1 && <Button
-                                className="p-button-secondary"
-                                icon="pi pi-trash"
-                                onClick={async (e) => {
-                                  e.preventDefault()
-                                  await formik.setFieldValue("kitProducts", formik.values.kitProducts.filter((data, i) => index !== i))
-                                }}
-                              />}
-                              <Button icon="pi pi-plus-circle" onClick={async (e) => {
-                                e.preventDefault()
-                                await formik.setFieldValue("kitProducts", formik.values.kitProducts.reduce((acc, curr, i) => {
-                                  if (index !== i)
-                                    return [...acc, curr]
-                                  return [...acc, curr, { product: undefined, quantity: 1 }]
-                                }, []))
-                              }} />
-                            </div>}
-                          </>
-                        ))}
+                          <label
+                            htmlFor={field}
+                            className={classNames({ "p-error": isFormFieldValid(field) })}
+                          >
+                            {label}
+                          </label>
+                        </span>
+                        {getFormErrorMessage(field)}
                       </div>
+                    )
+                  })
+                }
+                <div key={`category`} className="field col-12 lg:col-4 mt-4">
+                  <span className="p-float-label">
+                    <AutoComplete
+                      id="category"
+                      disabled={!productEditState || activeProduct}
+                      value={formik.values.category}
+                      dropdown
+                      forceSelection
+                      suggestions={categorySuggestions}
+                      completeMethod={searchCategory}
+                      field="name"
+                      onChange={async (e) => {
+                        await formik.setFieldValue("category", e.value)
+                      }}
+                      aria-label="Product Category"
+                      dropdownAriaLabel="Product Category"
+                      className={classNames({ "p-invalid": isFormFieldValid("category") })}
+                    />
+                    <label
+                      htmlFor={"category"}
+                      className={classNames({ "p-error": isFormFieldValid("category") })}
+                    >
+                      Category
+                    </label>
+                  </span>
+                  {getFormErrorMessage("category")}
+                </div>
+                <div key={`brand`} className="field col-12 lg:col-4 mt-4">
+                  <span className="p-float-label">
+                    <AutoComplete
+                      id="brand"
+                      disabled={!productEditState || activeProduct}
+                      value={formik.values.brand}
+                      dropdown
+                      forceSelection
+                      suggestions={brandSuggestions}
+                      completeMethod={searchBrand}
+                      field="name"
+                      onChange={async (e) => {
+                        await formik.setFieldValue("brand", e.value)
+                      }}
+                      aria-label="Product brand"
+                      dropdownAriaLabel="Product brand"
+                      className={classNames({ "p-invalid": isFormFieldValid("brand") })}
+                    />
+                    <label
+                      htmlFor={"brand"}
+                      className={classNames({ "p-error": isFormFieldValid("brand") })}
+                    >
+                      Brand
+                    </label>
+                  </span>
+                  {getFormErrorMessage("brand")}
+                </div>
+
+                <div key="type" className="field col-12 lg:col-4 mt-4">
+                  <span className="p-float-label">
+                    <Dropdown
+                      id="type"
+                      disabled={!productEditState || activeProduct}
+                      value={formik.values.type}
+                      onChange={async (e) => {
+                        if (e.value === 2) {
+                          //Handle BUNDLE type
+                          await formik.setValues({
+                            ...formik.values,
+                            type: e.value,
+                            kitProducts: [{
+                              product: undefined,
+                              quantity: 1
+                            }]
+                          })
+                        }
+                        await formik.setFieldValue("type", e.value);
+                      }}
+                      options={productTypes}
+                      optionLabel="type"
+                      optionValue="id"
+                      placeholder="Product Type"
+                      className="w-full"
+
+                    />
+                    <label
+                      htmlFor={"type"}
+                      className={classNames({ "p-error": isFormFieldValid("type") })}
+                    >
+                      Product Type
+                    </label>
+                  </span>
+                  {getFormErrorMessage("type")}
+                </div>
+                {formik.values.type === 2 && <div key="kit_products" className="field col-12">
+                  <div className="card surface-ground">
+                    <div className="grid">
+                      <div className="col-12">
+                        <span className="text-lg">Kit Products</span>
+                      </div>
+                      {formik.values.kitProducts.map(({ product, quantity }, index) => (
+                        <>
+                          <div key={`kit-product-${index}`} className="field col-12 lg:col-9 mt-5">
+                            <span className="p-float-label">
+                              <AutoComplete
+                                id={`kitProducts[${index}]?.product`}
+                                name={`kitProducts[${index}]?.product`}
+                                suggestions={kitSuggestions}
+                                completeMethod={kitSearchCategory}
+                                disabled={!productEditState}
+                                dropdown
+                                forceSelection
+                                field="name"
+                                value={product}
+                                onChange={async (e) => {
+                                  await formik.setFieldValue("kitProducts", formik.values.kitProducts.map((kitProduct, i) => {
+                                    if (i !== index)
+                                      return kitProduct
+                                    return {
+                                      ...kitProduct,
+                                      product: e.value,
+                                    }
+                                  }))
+                                }}
+                              />
+                              <label
+                                htmlFor={`kitProducts[${index}].product.`}
+                                className={classNames({ "p-error": isFormFieldValid(`kitProducts.0.product.name`) })}
+                              >
+                                Kit Product
+                              </label>
+                            </span>
+                            {
+                              formik.errors.kitProducts?.[index]?.product &&
+                              <small className="p-error">{formik.errors.kitProducts?.[index]?.product}</small>
+                            }
+                          </div>
+                          <div key={`kit-product-quantity-${index}`} className="field col-12 lg:col-2 mt-5">
+                            <span className="p-float-label">
+                              <InputNumber
+                                id={`kitProducts[${index}]?.quantity`}
+                                name={`kitProducts[${index}]?.quantity`}
+                                step={1}
+                                showButtons
+                                value={quantity}
+                                disabled={!productEditState}
+                                onChange={async (e) => {
+                                  await formik.setFieldValue("kitProducts", formik.values.kitProducts.map((kitProduct, i) => {
+                                    if (i !== index)
+                                      return kitProduct
+                                    return {
+                                      ...kitProduct,
+                                      quantity: e.value,
+                                    }
+                                  }))
+                                }}
+                              />
+                              <label
+                                htmlFor={"type"}
+                                className={classNames({ "p-error": isFormFieldValid("type") })}
+                              >
+                                Quantity
+                              </label>
+                            </span>
+                            {
+                              formik.errors.kitProducts?.[index]?.quantity &&
+                              <small className="p-error">{formik.errors.kitProducts?.[index]?.quantity}</small>
+                            }
+                          </div>
+                          {productEditState && <div className="field col-1 p-buttonset mt-5" style={{ height: "fit-content" }}>
+                            {index !== formik.values.kitProducts.length - 1 && <Button
+                              className="p-button-secondary"
+                              icon="pi pi-trash"
+                              onClick={async (e) => {
+                                e.preventDefault()
+                                await formik.setFieldValue("kitProducts", formik.values.kitProducts.filter((data, i) => index !== i))
+                              }}
+                            />}
+                            <Button icon="pi pi-plus-circle" onClick={async (e) => {
+                              e.preventDefault()
+                              await formik.setFieldValue("kitProducts", formik.values.kitProducts.reduce((acc, curr, i) => {
+                                if (index !== i)
+                                  return [...acc, curr]
+                                return [...acc, curr, { product: undefined, quantity: 1 }]
+                              }, []))
+                            }} />
+                          </div>}
+                        </>
+                      ))}
                     </div>
-                  </div>}
-                </div>
+                  </div>
+                </div>}
+              </div>
 
-                <div className="flex mt-4 justify-content-end">
-                  {productEditState && <Button
-                    type="submit"
-                    className="mr-2 "
-                    label={activeProduct ? 'UPDATE' : 'SUBMIT'}
-                  />}
-                  <Button
-                    className="p-button-secondary flex-grow-0"
-                    style={{ maxWidth: "50%" }}
-                    type="button"
-                    label="CANCEL"
-                    onClick={async () => {
-                      formik.resetForm()
-                      setProductDialog(false)
-                      setProductEditState(false)
-                      setActiveProduct(false)
-                    }}
-                  />
-                </div>
+              <div className="flex mt-4 justify-content-end">
+                {productEditState && <Button
+                  type="submit"
+                  className="mr-2 "
+                  label={activeProduct ? 'UPDATE' : 'SUBMIT'}
+                />}
+                <Button
+                  className="p-button-secondary flex-grow-0"
+                  style={{ maxWidth: "50%" }}
+                  type="button"
+                  label="CANCEL"
+                  onClick={async () => {
+                    formik.resetForm()
+                    setProductDialog(false)
+                    setProductEditState(false)
+                    setActiveProduct(false)
+                  }}
+                />
+              </div>
 
-              </form>
-            </div>
+            </form>
           </div>
         </div>
-        <div className="col-12" >
-          <div className="card">
-            <DataTable
-              value={products}
-              responsiveLayout="scroll"
-              showGridlines
-              header={productsTableHeader}
-              filters={filters}
-              className="text-s datatable-responsive"
-              filterDisplay="menu"
-              emptyMessage="No Results found."
-              rowHover={true}
-              onRowClick={async (e) => {
-                setActiveRowData({ ...e.data })
-                setActiveProduct(true)
-                setProductDialog(true)
+      </div>
+      <div className="col-12" >
+        <div className="card">
+          <DataTable
+            value={products}
+            responsiveLayout="scroll"
+            showGridlines
+            header={productsTableHeader}
+            filters={filters}
+            className="text-s datatable-responsive"
+            filterDisplay="menu"
+            emptyMessage="No Results found."
+            rowHover={true}
+            onRowClick={async (e) => {
+              setActiveRowData({ ...e.data })
+              setActiveProduct(true)
+              setProductDialog(true)
 
-                setSelectedStatus(e.data.product_types)
+              setSelectedStatus(e.data.product_types)
 
 
-                const _kitData = e.data.kit_products.map((prod) => {
-                  const { products_kit_products_productsIdToproducts: product, quantity, id: kitId } = prod
-                  return ({
-                    product: { name: `${product.sku}-${product.name}`, id: product?.id, },
-                    quantity,
-                    kitId,
-                  })
-                });
-                setInputs(_kitData)
-
-                await formik.setValues({
-                  ...e.data,
-                  type: e?.data?.type,
-                  category: e.data.product_categories,
-                  gstcode: e?.data?.gstTaxTypeCode,
-                  taxCalcuation: e?.data?.taxCalcType,
-                  kitProducts: _kitData,
-                  brand: e?.data.product_brand,
-
+              const _kitData = e.data.kit_products.map((prod) => {
+                const { products_kit_products_productsIdToproducts: product, quantity, id: kitId } = prod
+                return ({
+                  product: { name: `${product.sku}-${product.name}`, id: product?.id, },
+                  quantity,
+                  kitId,
                 })
-                scrolToTop?.current && scrolToTop?.current.scrollIntoView()
-              }}
-            >
-              {columnComponents}
-            </DataTable>
+              });
+              setInputs(_kitData)
 
-          </div>
-        </div >
+              await formik.setValues({
+                ...e.data,
+                type: e?.data?.type,
+                category: e.data.product_categories,
+                gstcode: e?.data?.gstTaxTypeCode,
+                taxCalcuation: e?.data?.taxCalcType,
+                kitProducts: _kitData,
+                brand: e?.data.product_brand,
+
+              })
+              scrolToTop?.current && scrolToTop?.current.scrollIntoView()
+            }}
+          >
+            {columnComponents}
+          </DataTable>
+
+        </div>
       </div >
+    </div >
 
-    )
-  }
+  )
+}
 
-  const ProductsPage = () => {
-    return (
-      <Suspense fallback={<Loading />}>
-        <Layout>
-          <ProductsList />
-        </Layout>
-      </Suspense>
-    )
-  }
-  ProductsPage.authenticate = true
-  export default ProductsPage
+
+const ProductsPage = () => {
+  return (
+    <Suspense fallback={<Loading />}>
+      <Layout>
+        <ProductsList />
+      </Layout>
+    </Suspense>
+  )
+}
+ProductsPage.authenticate = true
+export default ProductsPage

@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useReducer, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { Routes } from "@blitzjs/next";
 import Head from "next/head";
 import Link from "next/link";
@@ -11,7 +11,7 @@ import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { TabMenu } from 'primereact/tabmenu';
 import getShipment_statuses from "app/shipment_statuses/queries/getShipment_statuses";
-// import { Chip } from "primereact/Chip";
+import { Chip } from "primereact/chip";
 import { dateFormat } from "app/constants";
 import { Dialog } from 'primereact/dialog';
 import { ContextMenu } from 'primereact/contextmenu';
@@ -21,8 +21,10 @@ import { Paginator } from "primereact/paginator";
 import { Button } from "primereact/button";
 import { Menu } from "primereact/menu";
 import createBatch from "app/batches/mutations/createBatch"
+import createManifest from "src/manifests/mutations/createManifest";
 import createSalesInvoice from "app/sales_invoice_details/mutations/createSales_invoice_detail"
 import { Steps } from 'primereact/steps';
+import { MenuItem } from 'primereact/menuitem';
 
 import moment from "moment";
 import { Toast } from "primereact/toast";
@@ -30,6 +32,7 @@ import PackageDimensions from "components/PackageDimensions";
 import Picklist from "app/shipments/components/Picklist";
 import CourierSelection from "components/CourierSelection";
 import Invoice from "app/shipments/components/Invoice";
+import Manifest from "app/shipments/components/Manifest";
 
 import { ConfirmDialog } from 'primereact/confirmdialog'; // For <ConfirmDialog /> component
 import { confirmDialog } from 'primereact/confirmdialog'; // For confirmDialog method
@@ -39,11 +42,22 @@ import { Tag } from 'primereact/tag';
 
 
 import SelectCouriers from "components/SelectCouriers";
+import { classNames } from "primereact/utils";
+import { v4 as uuidv4 } from 'uuid';
+import { FileUpload } from "primereact/fileupload";
+import { BlobServiceClient, ContainerClient } from '@azure/storage-blob';
+import updateShipment from "app/shipments/mutations/updateShipment";
+import updateManyShipments from "app/shipments/mutations/updateManyShipments";
+
 
 const initialState = {
   orders: [],
   filteredOrders: [],
+  manifestShipments: [],
+  manifestStep: 0,
+  displayManifest: false,
   statusId: undefined,
+  statusName: "ALL",
   tableRowsCount: 10,
   skipCount: 0,
   first: 0,
@@ -52,6 +66,10 @@ const initialState = {
   selectedShipments: [],
   isReadyToShip: false,
   readyToShipActiveIndex: 0,
+  containerName: 'manifests',
+  sasToken: process.env.NEXT_PUBLIC_STORAGESASTOKEN,
+  storageAccountName: process.env.NEXT_PUBLIC_STORAGERESOURCENAME,
+  manifestImageURL: ""
 };
 
 
@@ -76,6 +94,8 @@ const reducer = (state, { type, payload }) => {
       return { ...state, filteredOrders: payload };
     case 'UPDATE_STATUS_ID':
       return { ...state, statusId: payload };
+    case 'UPDATE_STATUS_NAME':
+      return { ...state, statusName: payload };
     case 'UPDATE_SKIP_COUNT':
       return { ...state, skipCount: payload };
     case 'UPDATE_TABLE_ROWS_COUNT':
@@ -88,10 +108,16 @@ const reducer = (state, { type, payload }) => {
       return { ...state, isReadyToShip: payload };
     case 'READY_TO_SHIP_ACTIVE_INDEX':
       return { ...state, readyToShipActiveIndex: payload };
+    case 'DISPATCH_SHIPMENTS':
+      return { ...state, displayManifest: true }
+    case 'SET_SHIPMENT_STATE':
+      return { ...state, [payload.prop]: payload.value }
     default:
       throw new Error(`Unhandled action type: ${type}`);
   }
 }
+
+// const
 
 const readyToShipItems = [
   {
@@ -103,13 +129,14 @@ const readyToShipItems = [
 ]
 
 type Shipment = {
-  id: number
+  id: numberstate
 }
 
 export const ShipmentsList = () => {
   const cm = useRef<ContextMenu>(null);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null)
   const [viewInvoicePdf, setViewInvoicePdf] = useState(false)
+  const [files, setFiles] = useState([]);
 
   // const menuModel = [
   //   {
@@ -165,8 +192,6 @@ export const ShipmentsList = () => {
   // const page = Number(router.query.page) || 0;
   const [state, dispatch] = useReducer(reducer, initialState);
   const { orders, statusId, skipCount, tableRowsCount, selectedShipments, isReadyToShip, packageDimensions, readyToShipActiveIndex } = state
-  console.log('statusId: ', statusId);
-  console.log('orders ', orders);
   // console.log('selectedShipments: ', selectedShipments);
 
   const firstSelectedShipmentItem = selectedShipments[0]
@@ -229,9 +254,6 @@ export const ShipmentsList = () => {
     }
   ])
 
-
-
-
   const [createBatchMutation] = useMutation(createBatch)
   const [createSalesInvoiceMutation] = useMutation(createSalesInvoice)
 
@@ -248,57 +270,16 @@ export const ShipmentsList = () => {
       id: status.id
     }
   ))
-  console.log('tabMenuItems: ', tabMenuItems);
 
   const paginator = () =>
     <Paginator first={skipCount} rows={tableRowsCount} totalRecords={shipmentCount} rowsPerPageOptions={[10, 20, 30]} onPageChange={onPageChange} />
 
   const renderHeader = () => {
     const CREATE_STATE = "CREATED"
-
     return (
+
       <div className="flex justify-content-between">
-
-
         <Menu model={items} popup ref={orderSelectionMenu} onShow={() => {
-
-          // if (!firstSelectedShipmentItem || !firstSelectedShipmentItem.shipment_status) {
-
-          //   setItems([{
-          //     label: 'Invoice',
-          //     items: [
-          //       {
-          //         label: 'View Picklist',
-          //         icon: 'pi pi-file-pdf',
-          //         command: () => { setPickListVisible(true) }
-          //       },
-          //       {
-          //         label: 'Batch Items',
-          //         icon: 'pi pi-box',
-          //         command: async () => {
-          //           const batchNumber = "BATCH_" + moment().format('x')
-          //           await createBatchMutation({
-          //             batchNumber: batchNumber,
-          //             shipment: {
-          //               connect: selectedShipments.map(({ id }) => ({ id }))
-          //             }
-          //           }, {
-          //             onSuccess: () => {
-          //               toast.current?.show({ severity: 'success', summary: 'Batch Added', detail: `Batch #${batchNumber}`, life: 3000 })
-          //             },
-          //             onError: (error) => {
-          //               console.log('error: ', error);
-          //               toast.current?.show({ severity: 'error', summary: 'Batch Creation Failed', detail: `Failed to create batch`, life: 3000 })
-          //             },
-          //           })
-          //         }
-          //       },
-
-          //     ]
-          //   },
-
-          //   ])
-          // }
           if (selectedShipments[0].shipment_status.name === CREATE_STATE) {
             setItems([{
               label: 'Invoice',
@@ -336,11 +317,15 @@ export const ShipmentsList = () => {
                   icon: 'pi pi-file-pdf',
                   command: () => { setPickListVisible(true) }
                 },
-
+              ]
+            }, {
+              label: 'Group',
+              items: [
                 {
                   label: 'Batch Items',
                   icon: 'pi pi-box',
                   command: async () => {
+                    // GENERATE BATCH MUTATION
                     const batchNumber = "BATCH_" + moment().format('x')
                     await createBatchMutation({
                       batchNumber: batchNumber,
@@ -358,179 +343,85 @@ export const ShipmentsList = () => {
                     })
                   }
                 },
+                {
+                  label: 'View Picklist',
+                  icon: 'pi pi-file-pdf',
+                  command: () => { setPickListVisible(true) }
+                },
               ]
-            },
-
-              // {
-              //   label: 'Group',
-              //   items: [
-              //     {
-              //       label: 'Batch Items',
-              //       icon: 'pi pi-box',
-              //       command: async () => {
-              //         // GENERATE BATCH MUTATION
-              //         const batchNumber = "BATCH_" + moment().format('x')
-              //         await createBatchMutation({
-              //           batchNumber: batchNumber,
-              //           shipment: {
-              //             connect: selectedShipments.map(({ id }) => ({ id }))
-              //           }
-              //         }, {
-              //           onSuccess: () => {
-              //             toast.current?.show({ severity: 'success', summary: 'Batch Added', detail: `Batch #${batchNumber}`, life: 3000 })
-              //           },
-              //           onError: (error) => {
-              //             console.log('error: ', error);
-              //             toast.current?.show({ severity: 'error', summary: 'Batch Creation Failed', detail: `Failed to create batch`, life: 3000 })
-              //           },
-              //         })
-              //       }
-              //     },
-              //     {
-              //       label: 'View Picklist',
-              //       icon: 'pi pi-file-pdf',
-              //       command: () => { setPickListVisible(true) }
-              //     },
-              //   ]
-              // }
-
-            ])
+            }])
           } else if (firstSelectedShipmentItem.shipment_status.name === "PACKED") {
-            // setItems([{
-            //   label: 'Options',
-            //   items: [
-            //     {
-            //       label: 'Ready To Ship',
-            //       icon: 'pi bi-box-seam',
-            //       command: (e) => {
-            //         // Create 2 STEP PROCESS TO CHANGE STATE
-            //         dispatch({ type: "READY_TO_SHIP", payload: true })
-            //         if (firstSelectedShipmentItem?.dimensionsId) {
-            //           dispatch({ type: "READY_TO_SHIP_ACTIVE_INDEX", payload: 1 })
-            //         }
-            //       }
-            //     },
-            //   ]
-            // },])
-
-
             setItems([{
-              label: 'Invoice',
+              label: 'Options',
               items: [
                 {
-                  label: 'View Picklist',
-                  icon: 'pi pi-file-pdf',
-                  command: () => { setPickListVisible(true) }
-                },
-                {
-                  label: 'Batch Items',
-                  icon: 'pi pi-box',
-                  command: async () => {
-                    const batchNumber = "BATCH_" + moment().format('x')
-                    await createBatchMutation({
-                      batchNumber: batchNumber,
-                      shipment: {
-                        connect: selectedShipments.map(({ id }) => ({ id }))
-                      }
-                    }, {
-                      onSuccess: () => {
-                        toast.current?.show({ severity: 'success', summary: 'Batch Added', detail: `Batch #${batchNumber}`, life: 3000 })
-                      },
-                      onError: (error) => {
-                        console.log('error: ', error);
-                        toast.current?.show({ severity: 'error', summary: 'Batch Creation Failed', detail: `Failed to create batch`, life: 3000 })
-                      },
-                    })
+                  label: 'Ready To Ship',
+                  icon: 'pi bi-box-seam',
+                  command: (e) => {
+                    // Create 2 STEP PROCESS TO CHANGE STATE
+                    dispatch({ type: "READY_TO_SHIP", payload: true })
+                    if (firstSelectedShipmentItem?.dimensionsId) {
+                      dispatch({ type: "READY_TO_SHIP_ACTIVE_INDEX", payload: 1 })
+                    }
                   }
                 },
               ]
-            },
-
-            ])
-          } else if (firstSelectedShipmentItem.shipment_status.name === "READY TO SHIP") {
-            setItems([{
-              label: 'Invoice',
-              items: [
-                {
-                  label: 'View Picklist',
-                  icon: 'pi pi-file-pdf',
-                  command: () => { setPickListVisible(true) }
-                },
-                {
-                  label: 'Batch Items',
-                  icon: 'pi pi-box',
-                  command: async () => {
-                    const batchNumber = "BATCH_" + moment().format('x')
-                    await createBatchMutation({
-                      batchNumber: batchNumber,
-                      shipment: {
-                        connect: selectedShipments.map(({ id }) => ({ id }))
-                      }
-                    }, {
-                      onSuccess: () => {
-                        toast.current?.show({ severity: 'success', summary: 'Batch Added', detail: `Batch #${batchNumber}`, life: 3000 })
-                      },
-                      onError: (error) => {
-                        console.log('error: ', error);
-                        toast.current?.show({ severity: 'error', summary: 'Batch Creation Failed', detail: `Failed to create batch`, life: 3000 })
-                      },
-                    })
-                  }
-                },
-                {
-                  label: 'Generate Manifest',
-                  icon: 'pi pi-file-pdf',
-                  command: () => { setPickListVisible(true) }
-                },
-              ]
-            },
-
-            ])
-          } else if (firstSelectedShipmentItem.shipment_status.name === "DISPATCHED") {
-            setItems([{
-              label: 'Invoice',
-              items: [
-                {
-                  label: 'View Picklist',
-                  icon: 'pi pi-file-pdf',
-                  command: () => { setPickListVisible(true) }
-                },
-                {
-                  label: 'Batch Items',
-                  icon: 'pi pi-box',
-                  command: async () => {
-                    const batchNumber = "BATCH_" + moment().format('x')
-                    await createBatchMutation({
-                      batchNumber: batchNumber,
-                      shipment: {
-                        connect: selectedShipments.map(({ id }) => ({ id }))
-                      }
-                    }, {
-                      onSuccess: () => {
-                        toast.current?.show({ severity: 'success', summary: 'Batch Added', detail: `Batch #${batchNumber}`, life: 3000 })
-                      },
-                      onError: (error) => {
-                        console.log('error: ', error);
-                        toast.current?.show({ severity: 'error', summary: 'Batch Creation Failed', detail: `Failed to create batch`, life: 3000 })
-                      },
-                    })
-                  }
-                },
-                {
-                  label: 'Mark as Delivered',
-                  icon: 'pi pi-check',
-                  command: () => { setPickListVisible(true) }
-                },
-              ]
-            },
-
-            ])
+            },])
           }
         }} />
         <Button label="Actions" icon="pi pi-bars" onClick={(e) => orderSelectionMenu?.current.toggle(e)} />
       </div>
     )
   }
+
+  const onUpload = (event) => {
+    console.log('event: ', event);
+    setFiles(event.files);
+  };
+
+  const uploadFileToBlob = useCallback(
+    async (file: File | null, newFileName: string) => {
+      if (!file) {
+        console.log('No FILE');
+      } else {
+        const blobService = new BlobServiceClient(
+          `https://${storageAccountName}.blob.core.windows.net/?${sasToken}`
+        );
+
+        const containerClient: ContainerClient =
+          blobService.getContainerClient(containerName);
+        const blockBlobClient = containerClient.getBlockBlobClient(newFileName);
+        console.log('file: ', file);
+        const uploadResponse = await blockBlobClient.uploadBrowserData(file)
+        return { uploadResponse, blockBlobClient }
+      }
+      console.log("done");
+    },
+    []
+  );
+  const uploadHandler = async (event: FileUploadHandlerEvent,) => {
+    const filename = uuidv4()
+    if (event.files[0]) {
+      // const newFileName = event.files[0].name.split('.').pop();
+      const response = await uploadFileToBlob(event.files[0], filename);
+      console.log('response: ', response);
+
+      await createManifestMutation({
+        manifestNumber: filename,
+        shipment: selectedShipments.map(({ id }) => ({ id }))
+      }, {
+        onSuccess: () => {
+          dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: 2 } })
+          dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestImageURL", value: filename } })
+
+        },
+        onError: (error) => { console.log(error) }
+      })
+
+
+    }
+
+  };
 
 
 
@@ -545,8 +436,10 @@ export const ShipmentsList = () => {
     dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
   };
 
+
   const readToShipProcessHeader = <Steps model={readyToShipItems} activeIndex={readyToShipActiveIndex} />
   const [pickListVisible, setPickListVisible] = useState(false)
+  const [manifestVisible, setManifestVisible] = useState(false)
 
   // ROW EXPANSION
   const [products, setProducts] = useState([]);
@@ -647,15 +540,23 @@ export const ShipmentsList = () => {
   return (
 
     <div className=" card">
+      {/* <Dialog header={readToShipProcessHeader} visible={isReadyToShip} style={{ width: '50vw' }}
 
-      {isReadyToShip && <div className="m-3">
+        onHide={() => {
+          dispatch({ type: "READY_TO_SHIP", payload: false })
+          dispatch({ type: "READY_TO_SHIP_ACTIVE_INDEX", payload: 0 })
+        }}>
+        {!readyToShipActiveIndex && <PackageDimensions shipmentId={selectedShipments[0]?.id} dispatch={dispatch} />}
+
+        {readyToShipActiveIndex === 1 && <CourierSelection />}
+      </Dialog> */}
+      {isReadyToShip && <div className="m-3"     >
         <Steps model={readyToShipItems} activeIndex={readyToShipActiveIndex} />
         {!readyToShipActiveIndex &&
           <PackageDimensions shipmentId={firstSelectedShipmentItem?.id} dispatch={dispatch} />}
 
         {readyToShipActiveIndex === 1 && <SelectCouriers dispatch={dispatch} shipmentId={firstSelectedShipmentItem?.id} refetchShipments={refetch} />}
       </div>}
-
       <Dialog visible={pickListVisible} header="PickList" onHide={() => setPickListVisible(false)}>
         <Picklist invoice={selectedShipments.reduce((acc, { orders }) => {
           const { order_items } = orders;
@@ -668,6 +569,107 @@ export const ShipmentsList = () => {
             image: products.imageUrl,
           }))]
         }, [])} />
+      </Dialog>
+      <Dialog style={{ minWidth: "75vw" }} visible={state.displayManifest} header="Manifest" onHide={() => {
+        dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "displayManifest", value: false } })
+        dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: 0 } })
+        dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestImageURL", value: "" } })
+      }}>
+        {/* <pre>{JSON.stringify(orders.slice(0, 3), null, 2)}</pre> */}
+        <Steps
+          className="p-2"
+          model={[
+            {
+              label: 'Print Manifest',
+              command: (event) => {
+                dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: 0 } })
+              }
+            },
+            {
+              label: 'Upload Manifest',
+              command: (event) => {
+                dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: 1 } })
+              }
+            },
+            {
+              label: 'View Manifest',
+              command: (event) => {
+                dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: 2 } })
+              }
+            }
+          ]}
+          activeIndex={state.manifestStep}
+          readOnly={false}
+        />
+        <div className="p-4">
+          {(state.manifestStep === 0) && <Manifest
+            manifestData={selectedShipments.map(({ awb, id, shipmentNumber, orders, customer, shipment_items }) => {
+              const { addresses_orders_shippingAddressIdToaddresses, customers, order_items, gateway } = orders
+              const { areaStreet, cityCountryProvince, buildingNumber, pincode, state } = addresses_orders_shippingAddressIdToaddresses
+              const totalObject = shipment_items.reduce(({ total, tax, totalWithTax, quantity }, { order_items }) => {
+                return {
+                  total: parseFloat(order_items.quantity * order_items.price + total),
+                  tax: parseFloat(order_items.quantity * order_items.price * 0.18 + tax),
+                  totalWithTax: parseFloat(order_items.quantity * order_items.price * 1.18 + totalWithTax),
+                  quantity: order_items.quantity + quantity
+                }
+              }, {
+                total: 0,
+                tax: 0,
+                totalWithTax: 0,
+                quantity: 0
+              })
+              return {
+                awb,
+                orderId: id,
+                refNum: shipmentNumber,
+                attention: "name goes here",
+                address1: areaStreet,
+                address2: [buildingNumber, cityCountryProvince, state].filter(data => data).join(', '),
+                pincode,
+                contactNum: customers.contact_number,
+                contents: order_items.map(({ products }) => `${products.name} (${products.sku})`),
+                weight: "weight",
+                declaredValue: totalObject?.totalWithTax,
+                collectable: gateway === "COD" ? totalObject?.totalWithTax : 0,
+                qty: totalObject?.quantity,
+                mode: gateway,
+              }
+            })}
+          />}
+          {state.manifestStep === 1 && (
+            <div className="flex align-items-center justify-content-center">
+              <FileUpload
+                name="demo[]"
+                url="./upload.php"
+                onUpload={onUpload}
+                customUpload
+                uploadHandler={uploadHandler}
+                multiple
+                accept="image/*"
+                maxFileSize={1000000}
+              />
+            </div>
+          )}
+          {state.manifestStep === 2 && <div>
+            <img src={`https://warehouse100.blob.core.windows.net/manifests/${manifestImageURL}`} alt="manifest-image" />
+          </div>}
+        </div>
+        <Button
+          label={state.manifestStep === 2 ? "CLOSE" : "NEXT"}
+          className="manifest__next_Btn"
+          onClick={() => {
+            if (state.manifestStep === 2) {
+              dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "displayManifest", value: false } })
+              dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: 0 } })
+              dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestImageURL", value: "" } })
+              return
+            }
+            dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: state.manifestStep + 1 } })
+
+          }}
+        />
+
       </Dialog>
 
       {selectedShipment?.id && <Dialog header="Header" visible={viewInvoicePdf} onHide={() => setViewInvoicePdf(false)}>
@@ -684,13 +686,15 @@ export const ShipmentsList = () => {
           onTabChange={(e) => {
             console.log('lop')
             dispatch({ type: 'UPDATE_STATUS_ID', payload: e.value.id })
+            dispatch({ type: 'UPDATE_STATUS_NAME', payload: e.value.status ?? e.value.label })
             dispatch({ type: 'RESET_SELECTED_SHIPMENTS', payload: [] })
           }} />
 
-        <div className="col-12">
-          {/* <ContextMenu model={menuModel (statusId)} ref={cm} /> */}
-          <ContextMenu model={menuModel(statusId)} ref={cm} />
 
+
+
+        <div className="col-12">
+          <ContextMenu model={menuModel} ref={cm} />
           <DataTable
             onContextMenu={(e) => cm.current.show(e.originalEvent)}
             // contextMenuSelection={selectedShipment}
@@ -726,7 +730,6 @@ export const ShipmentsList = () => {
             </div>} />
 
             <Column field="giftMessage" header="Gift Message" body={({ orders }) => orders?.giftMessage} />
-
             <Column header="Products" body={({ orders: { order_items } }) => <div>
               {order_items?.map((product, i) => {
                 const { quantity, products: { name, sku } } = product

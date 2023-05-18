@@ -11,6 +11,7 @@ const SideBarMenu = () => {
   const items = [
     {
       label: "Vendor",
+      seperator: true,
       // icon: "pi pi-fw pi-file",
       items: [
         {
@@ -76,6 +77,11 @@ const SideBarMenu = () => {
       label: "Orders",
       icon: " pi pi-fw pi-file",
       command: () => (window.location.href = "/orders"),
+    },
+    {
+      label: "Fulfillments",
+      icon: " pi bi-patch-check",
+      command: () => (window.location.href = "/shipments"),
     },
 
   ]
