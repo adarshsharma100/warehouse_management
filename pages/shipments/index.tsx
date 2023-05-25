@@ -37,10 +37,6 @@ import Manifest from "app/shipments/components/Manifest";
 import { ConfirmDialog } from 'primereact/confirmdialog'; // For <ConfirmDialog /> component
 import { confirmDialog } from 'primereact/confirmdialog'; // For confirmDialog method
 
-
-import { Tag } from 'primereact/tag';
-
-
 import SelectCouriers from "components/SelectCouriers";
 import { classNames } from "primereact/utils";
 import { v4 as uuidv4 } from 'uuid';
@@ -136,63 +132,22 @@ export const ShipmentsList = () => {
   const cm = useRef<ContextMenu>(null);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null)
   const [viewInvoicePdf, setViewInvoicePdf] = useState(false)
-  const [files, setFiles] = useState([]);
+  const [files, setFiles] = useState([]); 
 
-  // const menuModel = [
-  //   {
-  //     label: 'View Invoice', icon: 'pi pi-fw pi-search', command: (data) => {
-  //       // setSelectedShipment(data)
-  //       setViewInvoicePdf(true)
-  //     }
-  //   },
-  //   { label: 'View Picklist', icon: 'pi pi-fw pi-list', command: () => setPickListVisible(true) },
-  //   { label: 'View Picklist', icon: 'pi pi-fw pi-list', command: () => setPickListVisible(true) },
-  // ];
-
-
-
-  const menuModel = (activeTab) => [
+  const menuModel = [
     {
-      label: 'View Invoice',
-      icon: 'pi pi-fw pi-search',
-      command: (data) => {
+      label: 'View Invoice', icon: 'pi pi-fw pi-search', command: (data) => {
         // setSelectedShipment(data)
         setViewInvoicePdf(true)
       }
     },
-    {
-      label: 'View Picklist',
-      icon: 'pi pi-fw pi-list',
-      command: () => setPickListVisible(true)
-    },
-    activeTab === 4 && {
-      label: 'viewmanifest',
-      icon: 'pi pi-fw pi-check',
-      // command: () => markAsShipped()
-    },
-    activeTab === 5 && {
-      label: 'viewmanifest',
-      icon: 'pi pi-fw pi-check',
-      // command: () => markAsShipped()
-    },
-    activeTab === 2 && {
-      label: 'Mark as Ready to ship',
-      icon: 'pi pi-fw pi-plus',
-      // command: () => addToInventory()
-    }
-  ].filter(Boolean);
-
-
-
-
-
-
-
+    { label: 'View Picklist', icon: 'pi pi-fw pi-list', command: () => setPickListVisible(true) },
+  ];
 
   // const page = Number(router.query.page) || 0;
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { orders, statusId, skipCount, tableRowsCount, selectedShipments, isReadyToShip, packageDimensions, readyToShipActiveIndex } = state
-  // console.log('selectedShipments: ', selectedShipments);
+  const { orders, statusId, skipCount, tableRowsCount, selectedShipments, isReadyToShip, packageDimensions, readyToShipActiveIndex, containerName, sasToken, storageAccountName, manifestImageURL, statusName } = state
+  console.log('selectedShipments ', selectedShipments);
 
   const firstSelectedShipmentItem = selectedShipments[0]
 
@@ -209,53 +164,158 @@ export const ShipmentsList = () => {
     take: undefined,
   });
 
-  console.log('shipment_statuses: ', shipment_statuses);
   const toast = useRef<Toast>(null);
 
   const orderSelectionMenu = useRef(null);
 
-
-  const [items, setItems] = useState([
+  const actionMenuItems = [
     {
-      label: 'Options',
-      items: [
-        {
-          label: 'Update',
-          icon: 'pi pi-refresh',
-          command: () => {
-            toast.current?.show({ severity: 'success', summary: 'Updated', detail: 'Data Updated', life: 3000 });
+      label: 'Batch Items',
+      icon: 'pi pi-box',
+      command: async () => {
+        // GENERATE BATCH MUTATION
+        const batchNumber = "BATCH_" + moment().format('x')
+        await createBatchMutation({
+          batchNumber: batchNumber,
+          shipment: {
+            connect: selectedShipments.map(({ id }) => ({ id }))
           }
-        },
-        {
-          label: 'Delete',
-          icon: 'pi pi-times',
-          command: () => {
-            toast.current?.show({ severity: 'warn', summary: 'Delete', detail: 'Data Deleted', life: 3000 });
-          }
-        }
-      ]
+        }, {
+          onSuccess: () => {
+            toast.current?.show({ severity: 'success', summary: 'Batch Added', detail: `Batch #${batchNumber}`, life: 3000 })
+          },
+          onError: (error) => {
+            console.log('error: ', error);
+            toast.current?.show({ severity: 'error', summary: 'Batch Creation Failed', detail: `Failed to create batch`, life: 3000 })
+          },
+        })
+      }
     },
     {
-      label: 'Navigate',
-      items: [
-        {
-          label: 'React Website',
-          icon: 'pi pi-external-link',
-          url: 'https://reactjs.org/'
-        },
-        {
-          label: 'Router',
-          icon: 'pi pi-upload',
-          command: (e) => {
-            //router.push('/fileupload');
+      label: 'View Picklist',
+      icon: 'pi pi-file-pdf',
+      command: () => { setPickListVisible(true) }
+    },
+    {
+      label: 'Generate Invoice',
+      icon: 'pi pi-file-pdf',
+      command: () => {
+        // GENERATE INVOICE MUTATION
+        confirmDialog({
+          message: 'This will change the order status to "PACKED" and will generate invoice. Do you want to proceed?',
+          header: 'Confirmation',
+          icon: 'pi pi-exclamation-triangle',
+          accept: async () => {
+            const dataToReduceInventory = selectedShipments.reduce((acc, curr) => {
+              if (curr.shipment_items.length) {
+                // push id and quantity to acc
+                const currItems = curr.shipment_items.map((items) => {
+                  const { order_items: { product, quantity } } = items
+                  return ({ product, quantity })
+                })
+                return [...acc, ...currItems]
+              } return acc
+            }, [])
+            console.log('dataToReduceInventory: ', dataToReduceInventory);
+
+            await createSalesInvoiceMutation({
+
+              shipmentIds: selectedShipments.map(({ id }) => id),
+              shipmentProducts: dataToReduceInventory
+            }
+              ,
+              {
+                onSuccess: async () => {
+                  await refetch()
+                  toast.current?.show({ severity: 'success', summary: 'Invoice Generated', life: 3000 })
+                  dispatch({ type: 'RESET_SELECTED_SHIPMENTS', payload: [] })
+
+                },
+                onError: (error) => {
+                  console.log('error: ', error);
+                  toast.current?.show({ severity: 'error', summary: 'Invoice Creation Failed', detail: `Failed to create invoice`, life: 3000 })
+                },
+              }
+            )
           }
+        });
+
+      }
+    },
+    {
+      label: 'Ready To Ship',
+      icon: 'pi bi-box-seam',
+      command: (e) => {
+        // Create 2 STEP PROCESS TO CHANGE STATE
+        dispatch({ type: "READY_TO_SHIP", payload: true })
+        if (firstSelectedShipmentItem?.dimensionsId) {
+          dispatch({ type: "READY_TO_SHIP_ACTIVE_INDEX", payload: 1 })
         }
-      ]
-    }
-  ])
+      }
+    },
+    {
+      label: 'Generate Manifest',
+      icon: 'pi bi-clipboard2-data',
+      command: (shipments) => {
+        dispatch({ type: 'DISPATCH_SHIPMENTS' })
+        // setManifestVisible(true)
+      }
+    },
+    {
+      label: 'Mark as Delivered',
+      icon: 'pi  bi-geo-fill',
+      command: async (e) => {
+        // Create 2 STEP PROCESS TO CHANGE STATE
+        await updateManyShipmentMutation({
+          where: {
+            id: {
+              in: selectedShipments.map(({ id }) => id)
+            }
+          },
+          shipmentStatusId: 5
+        }, {
+          onSuccess: async () => {
+            console.log("success")
+            await refetch()
+          },
+          onError: (error) => { console.log(error) }
+        })
+
+      }
+    },
+
+  ]
+  const [items, setItems] = useState(actionMenuItems)
 
   const [createBatchMutation] = useMutation(createBatch)
+  const [createManifestMutation] = useMutation(createManifest)
   const [createSalesInvoiceMutation] = useMutation(createSalesInvoice)
+  const [updateManyShipmentMutation] = useMutation(updateManyShipments)
+
+  const actionItemsOnFilter = () => {
+    const FilterRules = {
+      "PACKED": ["Batch Items", "View Picklist", "Ready To Ship"],
+      "CREATED": ["Batch Items", "View Picklist", "Generate Invoice"],
+      "READY TO SHIP": ["Batch Items", "View Picklist", "Generate Manifest"],
+      "DISPATCHED": ["Batch Items", "View Picklist", "Mark as Delivered"],
+      "DELIVERED": ["Batch Items", "View Picklist"],
+      // "PUTAWAY PENDING": [],
+      // "CUSTOMER RETURN": [],
+      // "COURIER RETURN": [],
+      // "SHIPMENT ERRORS": [],
+    }
+    const newItems = [...actionMenuItems]
+    console.log('newItems: ',);
+    console.log('newItems: ', {
+      filter: FilterRules[statusName],
+
+      new: newItems[0]
+    });
+
+    const filteredOptions = newItems.filter(({ label }) => FilterRules[statusName]?.includes(label))
+    setItems(filteredOptions)
+
+  }
 
 
 
@@ -279,97 +339,11 @@ export const ShipmentsList = () => {
     return (
 
       <div className="flex justify-content-between">
-        <Menu model={items} popup ref={orderSelectionMenu} onShow={() => {
-          if (selectedShipments[0].shipment_status.name === CREATE_STATE) {
-            setItems([{
-              label: 'Invoice',
-              items: [
-                {
-                  label: 'Generate Invoice',
-                  icon: 'pi pi-file-pdf',
-                  command: () => {
-                    // GENERATE INVOICE MUTATION
-                    confirmDialog({
-                      message: 'This will change the order status to "PACKED" and will generate invoice. Do you want to proceed?',
-                      header: 'Confirmation',
-                      icon: 'pi pi-exclamation-triangle',
-                      accept: async () => {
-                        await createSalesInvoiceMutation(
-                          selectedShipments.map(({ id }) => id),
-                          {
-                            onSuccess: async () => {
-                              await refetch()
-                              toast.current?.show({ severity: 'success', summary: 'Invoice Generated', life: 3000 })
-                            },
-                            onError: (error) => {
-                              console.log('error: ', error);
-                              toast.current?.show({ severity: 'error', summary: 'Invoice Creation Failed', detail: `Failed to create invoice`, life: 3000 })
-                            },
-                          }
-                        )
-                      }
-                    });
-
-                  }
-                },
-                {
-                  label: 'View Picklist',
-                  icon: 'pi pi-file-pdf',
-                  command: () => { setPickListVisible(true) }
-                },
-              ]
-            }, {
-              label: 'Group',
-              items: [
-                {
-                  label: 'Batch Items',
-                  icon: 'pi pi-box',
-                  command: async () => {
-                    // GENERATE BATCH MUTATION
-                    const batchNumber = "BATCH_" + moment().format('x')
-                    await createBatchMutation({
-                      batchNumber: batchNumber,
-                      shipment: {
-                        connect: selectedShipments.map(({ id }) => ({ id }))
-                      }
-                    }, {
-                      onSuccess: () => {
-                        toast.current?.show({ severity: 'success', summary: 'Batch Added', detail: `Batch #${batchNumber}`, life: 3000 })
-                      },
-                      onError: (error) => {
-                        console.log('error: ', error);
-                        toast.current?.show({ severity: 'error', summary: 'Batch Creation Failed', detail: `Failed to create batch`, life: 3000 })
-                      },
-                    })
-                  }
-                },
-                {
-                  label: 'View Picklist',
-                  icon: 'pi pi-file-pdf',
-                  command: () => { setPickListVisible(true) }
-                },
-              ]
-            }])
-          } else if (firstSelectedShipmentItem.shipment_status.name === "PACKED") {
-            setItems([{
-              label: 'Options',
-              items: [
-                {
-                  label: 'Ready To Ship',
-                  icon: 'pi bi-box-seam',
-                  command: (e) => {
-                    // Create 2 STEP PROCESS TO CHANGE STATE
-                    dispatch({ type: "READY_TO_SHIP", payload: true })
-                    if (firstSelectedShipmentItem?.dimensionsId) {
-                      dispatch({ type: "READY_TO_SHIP_ACTIVE_INDEX", payload: 1 })
-                    }
-                  }
-                },
-              ]
-            },])
-          }
-        }} />
-        <Button label="Actions" icon="pi pi-bars" onClick={(e) => orderSelectionMenu?.current.toggle(e)} />
+        <Menu model={items} popup ref={orderSelectionMenu}
+          onShow={actionItemsOnFilter}
+        />
+        {statusName !== "ALL" &&
+          < Button label="Actions" icon="pi pi-bars" onClick={(e) => orderSelectionMenu?.current.toggle(e)} />}
       </div>
     )
   }
@@ -399,6 +373,7 @@ export const ShipmentsList = () => {
     },
     []
   );
+
   const uploadHandler = async (event: FileUploadHandlerEvent,) => {
     const filename = uuidv4()
     if (event.files[0]) {
@@ -436,127 +411,22 @@ export const ShipmentsList = () => {
     dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
   };
 
-
-  const readToShipProcessHeader = <Steps model={readyToShipItems} activeIndex={readyToShipActiveIndex} />
   const [pickListVisible, setPickListVisible] = useState(false)
   const [manifestVisible, setManifestVisible] = useState(false)
-
-  // ROW EXPANSION
-  const [products, setProducts] = useState([]);
-  const [expandedRows, setExpandedRows] = useState(null);
-  console.log('expandedRows: ', expandedRows);
-
-
-
-  const onRowExpand = (event) => {
-    toast.current.show({ severity: 'info', summary: 'Product Expanded', detail: event.data.name, life: 3000 });
-  };
-
-  const onRowCollapse = (event) => {
-    toast.current.show({ severity: 'success', summary: 'Product Collapsed', detail: event.data.name, life: 3000 });
-  };
-
-  const formatCurrency = (value) => {
-    return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-  };
-
-  const amountBodyTemplate = (rowData) => {
-    return formatCurrency(rowData.amount);
-  };
-
-  const searchBodyTemplate = () => {
-    return <Button icon="pi pi-search" />;
-  };
-
-  const allowExpansion = (rowData) => {
-    return rowData.orders.length > 0;
-  };
-
-  // const rowExpansionTemplate = (data) => {
-  //   console.log('data: ', data.orders);
-
-  //   const ordersArray = data.orders.map(order => ({
-  //     id: order.id,
-  //     orderStatus: order.orderStatus
-  //   }));
-  //   console.log('ordersArray: ', ordersArray);
-
-  //   return (
-  //     <div className="p-3">
-
-  //       <pre>
-  //         {JSON.stringify(data, null, 2)}
-  //       </pre>
-  //       <h5>Orders Details </h5>
-  //       {/* <DataTable value={ordersArray}>
-  //         <Column field="id" header="ID" />
-  //         <Column field="orderStatus" header="Status" />
-  //       </DataTable> */}
-  //     </div>
-  //   );
-  // };
-
-
-
-  const rowExpansionTemplate = (data) => {
-    let orders = [];
-    if (Array.isArray(data.orders)) {
-      orders = data.orders;
-    } else if (typeof data.orders === 'object' && data.orders !== null) {
-      orders = [data.orders];
-    }
-
-    console.log('orders: ', orders);
-
-    const columns = [
-      { field: 'id', header: 'ID' },
-      { field: 'orderStatus', header: 'Status' },
-      { field: 'totalPrice', header: 'Total Price' },
-
-      // add more columns here
-    ];
-    return (
-      <div className="p-3">
-        {/* <pre>{JSON.stringify(data, null, 2)}</pre> */}
-        <h5>Orders Details </h5>
-        <DataTable value={orders}>
-          {columns.map((column) => (
-            <Column key={column.field} field={column.field} header={column.header} />
-          ))}
-        </DataTable>
-      </div>
-    );
-  };
-
-
-
-
-
-
-
-
 
 
   return (
 
     <div className=" card">
-      {/* <Dialog header={readToShipProcessHeader} visible={isReadyToShip} style={{ width: '50vw' }}
+      {isReadyToShip &&
+        <div className="m-3 ">
+          <Steps model={readyToShipItems} activeIndex={readyToShipActiveIndex} />
+          {!readyToShipActiveIndex &&
+            <PackageDimensions shipmentId={firstSelectedShipmentItem?.id} dispatch={dispatch} />}
 
-        onHide={() => {
-          dispatch({ type: "READY_TO_SHIP", payload: false })
-          dispatch({ type: "READY_TO_SHIP_ACTIVE_INDEX", payload: 0 })
-        }}>
-        {!readyToShipActiveIndex && <PackageDimensions shipmentId={selectedShipments[0]?.id} dispatch={dispatch} />}
-
-        {readyToShipActiveIndex === 1 && <CourierSelection />}
-      </Dialog> */}
-      {isReadyToShip && <div className="m-3"     >
-        <Steps model={readyToShipItems} activeIndex={readyToShipActiveIndex} />
-        {!readyToShipActiveIndex &&
-          <PackageDimensions shipmentId={firstSelectedShipmentItem?.id} dispatch={dispatch} />}
-
-        {readyToShipActiveIndex === 1 && <SelectCouriers dispatch={dispatch} shipmentId={firstSelectedShipmentItem?.id} refetchShipments={refetch} />}
-      </div>}
+          {readyToShipActiveIndex === 1 && <SelectCouriers dispatch={dispatch} shipmentId={firstSelectedShipmentItem?.id} refetchShipments={refetch} />}
+        </div>
+      }
       <Dialog visible={pickListVisible} header="PickList" onHide={() => setPickListVisible(false)}>
         <Picklist invoice={selectedShipments.reduce((acc, { orders }) => {
           const { order_items } = orders;
@@ -570,11 +440,13 @@ export const ShipmentsList = () => {
           }))]
         }, [])} />
       </Dialog>
+      
       <Dialog style={{ minWidth: "75vw" }} visible={state.displayManifest} header="Manifest" onHide={() => {
         dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "displayManifest", value: false } })
         dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: 0 } })
         dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestImageURL", value: "" } })
       }}>
+        
         {/* <pre>{JSON.stringify(orders.slice(0, 3), null, 2)}</pre> */}
         <Steps
           className="p-2"
@@ -671,29 +543,67 @@ export const ShipmentsList = () => {
         />
 
       </Dialog>
+      {/* {selectedShipment?.id &&
+        <Dialog header="Header" visible={viewInvoicePdf} onHide={() => setViewInvoicePdf(false)}>
+          <Suspense fallback={<div>Loading...</div>}>
+            <Invoice shipmentID={selectedShipment?.id} />
+          </Suspense>
+        </Dialog>
+      } */}
 
-      {selectedShipment?.id && <Dialog header="Header" visible={viewInvoicePdf} onHide={() => setViewInvoicePdf(false)}>
-        <Suspense fallback={<div>Loading...</div>}>
-          <Invoice shipmentID={selectedShipment?.id} />
-        </Suspense>
-      </Dialog>}
+
+      {/* {selectedShipments.length > 0 && (
+        <Dialog header="Header" visible={viewInvoicePdf} onHide={() => setViewInvoicePdf(false)}>
+          <Suspense fallback={<div>Loading...</div>}>
+            {selectedShipments.map((shipment) => (
+              <Invoice key={shipment.id} shipmentID={shipment.id} />
+            ))}
+          </Suspense>
+        </Dialog>
+      )} */}
+
+
+      {selectedShipment && selectedShipment.length > 0 && (
+        <Dialog
+          header="Header"
+          visible={viewInvoicePdf}
+          onHide={() => setViewInvoicePdf(false)}
+        >
+          <Suspense fallback={<div>Loading...</div>}>
+            <PDFViewer>
+              {selectedShipment.map((shipment) => (
+                <InvoicePage key={shipment.id} shipmentID={shipment.id} />
+              ))}
+            </PDFViewer>
+          </Suspense>
+        </Dialog>
+      )}
+
+
+
+
+
       <div className="grid">
         <ConfirmDialog />
         <Toast ref={toast} />
+
+        
         <TabMenu
           model={[{ label: "ALL" }, ...tabMenuItems]}
           activeIndex={statusId}
           onTabChange={(e) => {
-            console.log('lop')
             dispatch({ type: 'UPDATE_STATUS_ID', payload: e.value.id })
             dispatch({ type: 'UPDATE_STATUS_NAME', payload: e.value.status ?? e.value.label })
             dispatch({ type: 'RESET_SELECTED_SHIPMENTS', payload: [] })
+
           }} />
 
 
 
-
         <div className="col-12">
+          <div className="flex justify-content-end">
+            <i className="pi pi-info-circle"> Right click on shipment for more options</i>
+          </div>
           <ContextMenu model={menuModel} ref={cm} />
           <DataTable
             onContextMenu={(e) => cm.current.show(e.originalEvent)}
@@ -708,58 +618,44 @@ export const ShipmentsList = () => {
             onSelectionChange={(e) => dispatch({ type: "SET_SELECTED_SHIPMENTS", payload: e.value })}
             header={selectedShipments.length >= 1 && renderHeader}
             footer={paginator}
-           
-            expandedRows={expandedRows}
-            onRowToggle={(e) => setExpandedRows(e.data)}
-            onRowExpand={onRowExpand}
-            onRowCollapse={onRowCollapse}
-            rowExpansionTemplate={rowExpansionTemplate}
-
-            dataKey="id"
-
           >
-
-            <Column expander={true} style={{ width: '5rem' }} />
-            <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}>
-
-            </Column>
-
+            <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
             <Column field="Shipments" header="Shipments" body={({ shipmentNumber, ordersId }) => <div>
               <p>Code:{shipmentNumber}</p>
               <p>Order:{ordersId}</p>
             </div>} />
-
             <Column field="giftMessage" header="Gift Message" body={({ orders }) => orders?.giftMessage} />
-            <Column header="Products" body={({ orders: { order_items } }) => <div>
-              {order_items?.map((product, i) => {
-                const { quantity, products: { name, sku } } = product
-                return (
-                  <div key={i} className="pt-2 pb-2 w-18rem border-1 border-solid border-blue-700 border-round-2xl p-3 mb-3 ">
-                    {[{ prop: "Name", value: name },
-                    { prop: "SKU", value: sku },
-                    { prop: "Quantity", value: quantity }
-                    ].map(({ prop, value }, index) => (
-                      <div key={index} className="grid">
-                        <label className="font-semibold col-4">{prop}:</label>
-                        <div className="col">
-                          {value?.toString()}
+            <Column header="Products" body={({ orders: { order_items }, shipment_items }) => <div>
+              {
+                shipment_items.map(({ order_items: { products }, quantity }) => ({ products, quantity }))?.map((product, i) => {
+                  const { quantity, products: { name, sku } } = product
+                  return (
+                    <div key={i} className="pt-2 pb-2 w-18rem border-1 border-solid border-blue-700 border-round-2xl p-3 mb-3 ">
+                      {[{ prop: "Name", value: name },
+                      { prop: "SKU", value: sku },
+                      { prop: "Quantity", value: quantity }
+                      ].map(({ prop, value }, index) => (
+                        <div key={index} className="grid">
+                          <label className="font-semibold col-4">{prop}:</label>
+                          <div className="col">
+                            {value?.toString()}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )
-              })}
+                      ))}
+                    </div>
+                  )
+                })
+
+              }
             </div>} >
             </Column>
-
-            {/* <Column header="Channel" body={({ orders: { shopifyId } }) =>
+            <Column header="Channel" body={({ orders: { shopifyId } }) =>
               <Chip
                 label={`${shopifyId ? "SH" : "IH"}`}
                 className={`${shopifyId ? "bg-green-500" : "bg-cyan-500"}`}
               />
             } >
-            </Column> */}
-
+            </Column>
             <Column header="Status" body={({ shipment_status }) => <div>
               <p>{shipment_status?.name}</p>
             </div>} >
@@ -785,7 +681,7 @@ export const ShipmentsList = () => {
           </DataTable>
         </div>
       </div>
-    </div>
+    </div >
   );
 }
 
@@ -795,6 +691,7 @@ const ShipmentsPage = () => {
       <Head>
         <title>Fulfillments</title>
       </Head>
+
       <div>
         <Suspense fallback={<Loading />}>
           <ShipmentsList />

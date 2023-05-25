@@ -105,7 +105,7 @@ const Invoice = (props: Props) => {
   const { shipmentID } = props
   const [shipment] = useQuery(getShipment, { id: shipmentID });
   const { sales_invoice_details, orders, shipment_items } = shipment
-  const { createdAt, invoiceNumber } = sales_invoice_details
+  const { createdAt, invoiceNumber } = sales_invoice_details ?? {}
   const { shopifyId, gateway, customers, addresses_orders_billingAddressIdToaddresses, addresses_orders_shippingAddressIdToaddresses } = orders
   const { contact_number: billingContact, areaStreet: billingStreet, buildingNumber: billingBldgNumber, cityCountryProvince: billingCityProvince, state: billingState, pincode: billingPincode } = addresses_orders_billingAddressIdToaddresses
   const { contact_number: shippingContact, areaStreet: shippingStreet, buildingNumber: shippingBldgNumber, cityCountryProvince: shippingCityProvince, state: shippingState, pincode: shippingPincode } = addresses_orders_shippingAddressIdToaddresses
@@ -329,6 +329,7 @@ const Invoice = (props: Props) => {
   </body>
 </html>
 `
+
   return (
     <div>
       <h3>Manifest</h3>
@@ -339,6 +340,9 @@ const Invoice = (props: Props) => {
           </Page>
         </Document>
       </PDFViewer>
+
+
+     
     </div>
   )
 }
