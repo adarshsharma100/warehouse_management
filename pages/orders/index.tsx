@@ -35,7 +35,8 @@ import db from "db";
 import { Toast } from "primereact/toast";
 import { tsuccess } from "app/constants";
 import { tError } from "app/constants";
-import { TabMenu } from "primereact/tabmenu";
+import { TabMenu } from "primereact/tabmenu"
+import getInventory_products from "app/inventory_products/queries/getInventory_products";
 
 
 const initialOrderDetails = {
@@ -119,13 +120,14 @@ export const OrdersList = () => {
   });
   console.log('orders: ', orders);
 
+
   const [{ order_statuses, }] = useQuery(getOrder_statuses, {
     orderBy: { id: "asc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
     where: undefined
   })
-  console.log('order_statuses: ', order_statuses);
+
 
   // const [{ customers }] = useQuery(getCustomers, {
   //   skip: undefined,
@@ -133,15 +135,24 @@ export const OrdersList = () => {
   //   orderBy: undefined,
   //   take: undefined
   // })
-  // console.log('customers: ', customers);
 
   const [{ products }] = useQuery(getProducts, {
     orderBy: { id: "asc" },
   })
 
+  const [{ inventory_products }] = useQuery(getInventory_products, {
+    orderBy: { id: "asc" },
+    skip: ITEMS_PER_PAGE * page,
+    take: ITEMS_PER_PAGE,
+    where: undefined
+  })
+  console.log('inventory_products: ', inventory_products);
+
   // Todo : UsePaginatedQueries
   // const goToPreviousPage = () => router.push({ query: { page: page - 1 } });
   // const goToNextPage = () => router.push({ query: { page: page + 1 } });
+
+
 
   const [createNewOrder] = useMutation(createOrder)
   const [updateNewOrder, { isLoading }] = useMutation(updateOrder)
@@ -160,7 +171,8 @@ export const OrdersList = () => {
 
   const [orderItemsSuggestions, setOderItemsSuggestions] = useState<any>(null)
 
-  const [customerOptions] = useState(customers_)
+  const [customerOptions] = useState(orders.map((k) => k.customers))
+  // console.log('customerOptions: ', customerOptions);
   const [customerOptionsSuggestions, setCustomerOptionsSuggestions] = useState<any>(null)
 
   const [gatewayOptions] = useState(gateway_)
@@ -177,7 +189,7 @@ export const OrdersList = () => {
 
   const searchOrderStatus = createSearchFunction(orderStatusOption, setOderStatusSuggestions)
   const searchOrderItems = createSearchFunction(orderItemsOptions, setOderItemsSuggestions)
-  const searchCustomers = createSearchFunction(customerOptions, setCustomerOptionsSuggestions)
+  // const searchCustomers = createSearchFunction(customerOptions, setCustomerOptionsSuggestions)
   const searchGateway = createSearchFunction(gatewayOptions, setGatewayOptionsSuggestions)
   const searchPayment = createSearchFunction(paymentOptions, setPaymentOptionsSuggestions)
   const scrollToTop = useRef<HTMLDivElement>(null)
@@ -188,15 +200,33 @@ export const OrdersList = () => {
       let _filteredSuggestions
       if (!event.query.trim().length) {
         _filteredSuggestions = [...cities]
-        console.log("searchCity -", _filteredSuggestions)
+        // console.log("searchCity -", _filteredSuggestions)
       } else {
         _filteredSuggestions = cities.filter((element) => {
-          console.log("searchCity +", _filteredSuggestions)
+          // console.log("searchCity +", _filteredSuggestions)
           return element.city.toLowerCase().startsWith(event.query.toLowerCase())
         })
       }
 
       setAddressSuggestion(_filteredSuggestions)
+    }, 50)
+  }
+
+  const searchCustomers = (event: { query: string }) => {
+    setTimeout(() => {
+      let _filteredSuggestions
+
+      if (!event.query.trim().length) {
+        _filteredSuggestions = [...customerOptions]
+        // console.log("SearchNameBy...", _filteredSuggestions)
+      } else {
+        _filteredSuggestions = customerOptions.filter((element) => {
+          // console.log("SearchNameBy... ++", _filteredSuggestions)
+          return element.firstName?.toLowerCase().startsWith(event.query.toLowerCase())
+        })
+
+      }
+      setCustomerOptionsSuggestions(_filteredSuggestions)
     }, 50)
   }
 
@@ -299,7 +329,7 @@ export const OrdersList = () => {
 
 
     // const _quantity = e.data.order_items.quantity
-    console.log('_billingAddress: ', _billingAddress);
+    // console.log('_billingAddress: ', _billingAddress);
 
     await formik.setValues({
       ...e.data,
@@ -575,7 +605,6 @@ export const OrdersList = () => {
     }
   })
 
-
   console.log('formik', formik.errors)
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
@@ -617,6 +646,17 @@ export const OrdersList = () => {
     });
   };
 
+  const [verificationStatus, setVerificationStatus] = useState(false);
+  const inventory_productName = inventory_products.map((val) => val.products.name)
+  console.log('inventory_productName: ', inventory_productName);
+
+
+
+  const checkVerifyOrder = () => {
+    const inventoryProduct = inventory_products.find(product => product.products.name === selectOrder.name);
+  }
+  console.log('inventoryProduct: ', inventory_products);
+
   const [createShipment] = useMutation(CreateShipment)
   const renderHeader = () => {
 
@@ -632,54 +672,76 @@ export const OrdersList = () => {
               icon="pi pi-verified"
               label="Verify"
               className="p-button-outlined"
+
               onClick={async () => {
                 const activeIDs = selectedOrder.map((ele) => ele?.id);
                 const activeOrderItems = selectedOrder.map((ele) => ele?.order_items).flat();
+                const activeOrderName = activeOrderItems.map((i) => i.products.name)
+                const activeOrderQuantity = activeOrderItems.map((i) => i.quantity)
+
+                // inventory_products.forEach((product) => {
+                //   const productName = product.products.name;
+                //   const productQuantity = product.quantity;
+                //   console.log(`check : ++ Product: ${productName}, Quantity: ${productQuantity}`);
+
+                //   if (productName === activeOrderName[0] && productQuantity > activeOrderQuantity[0]) {
+                //     console.log('yes :++ true:')
+                //   } else {
+                //     console.log('yes :++ false')
+                //   }
+                // });
+
 
                 if (activeIDs.length > 0) {
                   activeIDs.forEach(async (id) => {
-                    await updateNewOrder({
-                      id,
-                      verified: 1,
-                    });
-                    const shipmentNumber = `ROB0${Math.floor(Math.random() * 100000)}`;
-                    const shipmentItems = activeOrderItems.map((item) => {
-                      return {
-                        order_items: {
-                          connect: {
-                            id: item.id,
+                    const selectedProduct = inventory_products.find((product) => product.products.name === activeOrderName[0]);
+                    
+                    if (selectedProduct && selectedProduct.quantity > activeOrderQuantity[0]) {
+
+                      await updateNewOrder({
+                        id,
+                        verified: 1,
+                      });
+                      const shipmentNumber = `ROB0${Math.floor(Math.random() * 100000)}`;
+                      const shipmentItems = activeOrderItems.map((item) => {
+                        return {
+                          order_items: {
+                            connect: {
+                              id: item.id,
+                            },
+                          },
+                        };
+                      });
+
+                      await createShipment(
+                        {
+                          ordersId: id,
+                          shipmentNumber,
+                          priority: 'LOW',
+                          shipment_items: {
+                            create: shipmentItems,
                           },
                         },
-                      };
-                    });
-                    await createShipment({
-                      ordersId: id,
-                      shipmentNumber,
-                      priority: 'LOW',
-                      shipment_items: {
-                        create: shipmentItems,
-                      },
-                    },
-                      {
-                        onSuccess: () => {
-                          // alert("Done shipment Item");
-                          toast?.current.show(tsuccess("Verified",))
+                        {
+                          onSuccess: () => {
+                            toast?.current.show(tsuccess('Verified'));
+                          },
+                          onError: (error) => {
+                            console.log('error: ', error);
+                            toast?.current.show(terror('Error'));
+                          },
+                        }
+                      );
+                    } 
+                    else {
+                      alert('You should reduce your quantity')
+                    }
 
-
-
-                        },
-                        onError: (error) => {
-                          console.log('error: ', error);
-                          // alert("error");
-                          toast?.current.show(terror("error",))
-
-                        },
-                      });
                   });
                 }
+
               }}
             />
-
           )}
         </div>
 
@@ -691,8 +753,8 @@ export const OrdersList = () => {
 
   const [selectedOrder, setSelectedOrder] = useState([]);
   const [checkVerified, setCheckVerified] = useState(false)
-  console.log('checkVerified: ', checkVerified);
-  console.log('selectedOrder: ', selectedOrder);
+  // console.log('checkVerified: ', checkVerified);
+  // console.log('selectedOrder: ', selectedOrder);
 
   useEffect(() => {
     if (selectedOrder && Object.keys(selectedOrder).length >= 1) {
@@ -707,10 +769,12 @@ export const OrdersList = () => {
     return order.verified ? "Verified" : "Not Verified";
   }
 
-  const showOrderDetails = (e) => {
-    router.push(`orders/${e.data.id}`)
-  }
 
+
+
+  const handleViewClick = async (id) => {
+    router.push(`orders/${id}`);
+  };
   const [isChecked, setIsChecked] = useState(false);
 
   const handleCheckboxChange = () => {
@@ -793,12 +857,10 @@ export const OrdersList = () => {
   ))
 
 
+
   return (
 
     <div className="grid w-full" >
-
-
-
 
       <div className="col-12">
         <div className="card flex justify-content-between align-items-center m-0">
@@ -828,6 +890,51 @@ export const OrdersList = () => {
             <form onSubmit={formik.handleSubmit}
               className="p-fluid">
               <div className=" grid">
+
+                <div className="field col-12 md:col-3 lg:col-2 mt-4">
+
+                  <span className="p-float-label">
+
+                    <AutoComplete
+                      value={formik.values.customer}
+                      dropdown
+                      field="firstName"
+                      suggestions={customerOptionsSuggestions}
+                      completeMethod={searchCustomers}
+                      forceSelection
+                      onChange={(e) => {
+                        // const selectedOrderItem = customerOptions.find(option_ => option_.firstName === e.value.firstName);
+                        // formik.setFieldValue('customer', selectedOrderItem);
+                        const selectedCustomer = e.value;
+
+                        formik.setFieldValue('customer', selectedCustomer);
+                        formik.setFieldValue('firstName', selectedCustomer.firstName);
+                        formik.setFieldValue('lastName', selectedCustomer.lastName);
+                        console.log("selectedCustomer", selectedCustomer.addresses)
+
+                        if (selectedCustomer.addresses && selectedCustomer.addresses.contact_number.length > 0) {
+                          const contactNumber = selectedCustomer.addresses.contact_number[0]?.number || '';
+                          formik.setFieldValue('contactNumber', contactNumber);
+                        } else {
+                          formik.setFieldValue('contactNumber', '');
+                        }
+
+                      }}
+                      aria-label="customer"
+                      dropdownAriaLabel="Select customer"
+                      className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                    />
+
+                    <label
+                      htmlFor={"type"}
+                      className={classNames({ "p-error": isFormFieldValid("type") })}
+                    >
+                      Select Customer
+                    </label>
+                  </span>
+                </div>
+
+
                 {[
                   { field: "firstName", label: "First Name" },
                   { field: "lastName", label: "Last Name" },
@@ -862,6 +969,7 @@ export const OrdersList = () => {
 
                 })
                 }
+
 
                 <div className="field col-12 md:col-3 lg:col-2 mt-4">
                   <div className="p-float-label">
@@ -1085,6 +1193,7 @@ export const OrdersList = () => {
                             Products
                           </label>
                         </span>
+
                       </div>
                       <div className="field col-12 lg:col-3 md:col-6 mt-2">
                         <span className="p-float-label">
@@ -1228,6 +1337,7 @@ export const OrdersList = () => {
 
         <div className="card">
 
+
           <TabMenu
             model={[...tabMenuItems]}
             activeIndex={statusId}
@@ -1264,7 +1374,7 @@ export const OrdersList = () => {
             selection={selectedOrder}
             onSelectionChange={(e) => setSelectedOrder(e.value)}
             tableStyle={{ minWidth: '50rem' }}
-            onRowClick={showOrderDetails}
+          // onRowClick={showOrderDetails}
           // onRowClick={handleRowClick}
           >
             <Column
@@ -1466,9 +1576,9 @@ export const OrdersList = () => {
             <Column
               header="Action"
               body={(rowData) => {
-                console.log('rowDataOrder: ', rowData);
+
                 return (
-                  <div>
+                  <div className="flex gap-4">
                     <Button
                       id="edit"
                       label="Edit"
@@ -1527,6 +1637,12 @@ export const OrdersList = () => {
                       tooltip="Update Order"
                       tooltipOptions={{ position: "left" }}
                     />
+
+                    {/* <Button
+                      id="view"
+                      label="View"
+                      onClick={(e) => handleViewClick(rowData.id)} 
+                    /> */}
                   </div>
                 )
               }}

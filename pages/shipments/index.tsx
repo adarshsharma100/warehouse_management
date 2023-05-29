@@ -509,6 +509,7 @@ export const ShipmentsList = () => {
               }
             })}
           />}
+
           {state.manifestStep === 1 && (
             <div className="flex align-items-center justify-content-center">
               <FileUpload
@@ -523,9 +524,11 @@ export const ShipmentsList = () => {
               />
             </div>
           )}
+
           {state.manifestStep === 2 && <div>
             <img src={`https://warehouse100.blob.core.windows.net/manifests/${manifestImageURL}`} alt="manifest-image" />
           </div>}
+
         </div>
         <Button
           label={state.manifestStep === 2 ? "CLOSE" : "NEXT"}
@@ -538,7 +541,6 @@ export const ShipmentsList = () => {
               return
             }
             dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: state.manifestStep + 1 } })
-
           }}
         />
 

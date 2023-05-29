@@ -1568,7 +1568,7 @@ export const tWarn = (summary, detail) => {
 export const createSearchFunction = (Options, setFilteredSuggestions) => {
   return function search(event) {
     setTimeout(() => {
-      let _filteredSuggestions
+      let _filteredSuggestions 
       if (!event.query.trim().length) {
         _filteredSuggestions = [...Options]
       } else {

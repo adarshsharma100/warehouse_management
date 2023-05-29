@@ -38,7 +38,6 @@ export default resolver.pipe(
             shopify: true,
             shipment: true,
 
-
             addresses_orders_billingAddressIdToaddresses: true,
             addresses_orders_shippingAddressIdToaddresses: true,
             customers: {
@@ -47,6 +46,9 @@ export default resolver.pipe(
                   select: {
                     contact_number: true,
                     emails_emails_addressesToaddresses: true,
+                    country_addresses_countryTocountry:true,
+                    // orders_orders_billingAddressIdToaddresses:true,
+                    // orders_orders_shippingAddressIdToaddresses:true
                   },
                 },
               },
