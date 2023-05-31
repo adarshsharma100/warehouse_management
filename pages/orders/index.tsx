@@ -37,13 +37,15 @@ import { tsuccess } from "app/constants";
 import { tError } from "app/constants";
 import { TabMenu } from "primereact/tabmenu"
 import getInventory_products from "app/inventory_products/queries/getInventory_products";
+import updateInventory_product from "app/inventory_products/mutations/updateInventory_product"
 
 
 const initialOrderDetails = {
   firstName: '',
   lastName: '',
   email: '',
-  customer: '',
+  companyName: "",
+  customer: { firstName: '', companyName: '' },
   contactNumber: '',
   checkedAddress: '',
   orderStatus: '',
@@ -113,7 +115,7 @@ export const OrdersList = () => {
 
   const router = useRouter();
   const page = Number(router.query.page) || 0;
-  const [{ orders, jobId }, { refetch: refetchOrders }] = usePaginatedQuery(getOrders, {
+  const [{ orders }, { refetch: refetchOrders }] = usePaginatedQuery(getOrders, {
     orderBy: { id: "desc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
@@ -147,6 +149,8 @@ export const OrdersList = () => {
     where: undefined
   })
   console.log('inventory_products: ', inventory_products);
+  const [updateInventory_productMutation, { error: updateInventoryError, isLoading: updatingInventory },] = useMutation(updateInventory_product)
+
 
   // Todo : UsePaginatedQueries
   // const goToPreviousPage = () => router.push({ query: { page: page - 1 } });
@@ -172,7 +176,7 @@ export const OrdersList = () => {
   const [orderItemsSuggestions, setOderItemsSuggestions] = useState<any>(null)
 
   const [customerOptions] = useState(orders.map((k) => k.customers))
-  // console.log('customerOptions: ', customerOptions);
+  console.log('customerOptions: ', customerOptions);
   const [customerOptionsSuggestions, setCustomerOptionsSuggestions] = useState<any>(null)
 
   const [gatewayOptions] = useState(gateway_)
@@ -212,23 +216,54 @@ export const OrdersList = () => {
     }, 50)
   }
 
-  const searchCustomers = (event: { query: string }) => {
+
+  const searchCustomers = (event) => {
     setTimeout(() => {
-      let _filteredSuggestions
+      let _filteredSuggestions;
 
       if (!event.query.trim().length) {
-        _filteredSuggestions = [...customerOptions]
-        // console.log("SearchNameBy...", _filteredSuggestions)
+        _filteredSuggestions = [...customerOptions];
       } else {
+        const query = event.query.toLowerCase();
         _filteredSuggestions = customerOptions.filter((element) => {
-          // console.log("SearchNameBy... ++", _filteredSuggestions)
-          return element.firstName?.toLowerCase().startsWith(event.query.toLowerCase())
-        })
-
+          const firstName = element.firstName?.toLowerCase();
+          return firstName?.startsWith(query);
+        });
       }
-      setCustomerOptionsSuggestions(_filteredSuggestions)
-    }, 50)
-  }
+
+      setCustomerOptionsSuggestions(_filteredSuggestions);
+    }, 50);
+  };
+
+
+
+  // const searchCustomers = (event) => {
+  //   setTimeout(() => {
+  //     let _filteredSuggestions;
+
+  //     if (!event.query.trim().length) {
+  //       _filteredSuggestions = [...customerOptions];
+  //     } else {
+  //       const query = event.query.toLowerCase();
+  //       _filteredSuggestions = customerOptions.filter((element) => {
+  //         const firstName = element.firstName?.toLowerCase();
+  //         const companyName = element.companyName?.toLowerCase();
+  //         const fullName = `${firstName} - ${companyName}`;
+
+  //         return (
+  //           firstName?.startsWith(query) ||
+  //           companyName?.startsWith(query) ||
+  //           fullName?.startsWith(query)
+  //         );
+  //       });
+  //     }
+
+  //     setCustomerOptionsSuggestions(_filteredSuggestions);
+  //   }, 50);
+  // };
+
+
+
 
 
 
@@ -320,13 +355,13 @@ export const OrdersList = () => {
     const _shippingAddress = e.data.addresses_orders_shippingAddressIdToaddresses
     const _billingAddress = e.data.addresses_orders_billingAddressIdToaddresses
 
+
     const _orderItems = e.data.order_items.map(({ quantity, price, products: { id, name, sku } }) => ({
       id,
       name: `${sku} - ${name}`,
       quantity: quantity.toString(),
       price: price.toString()
     }));
-
 
     // const _quantity = e.data.order_items.quantity
     // console.log('_billingAddress: ', _billingAddress);
@@ -337,6 +372,7 @@ export const OrdersList = () => {
       lastName: name.lastName,
       email: _email,
       contactNumber: _contactNumber,
+
       // order_status: _orderStatus,
       shippingAddress: {
         address: _shippingAddress.areaStreet,
@@ -658,6 +694,7 @@ export const OrdersList = () => {
   console.log('inventoryProduct: ', inventory_products);
 
   const [createShipment] = useMutation(CreateShipment)
+
   const renderHeader = () => {
 
     return (
@@ -666,6 +703,87 @@ export const OrdersList = () => {
 
         <div className="flex justify-content-end">
           {checkVerified && (
+
+            // <Button
+            //   type="button"
+            //   icon="pi pi-verified"
+            //   label="Verify"
+            //   className="p-button-outlined"
+
+            //   onClick={async () => {
+            //     const activeIDs = selectedOrder.map((ele) => ele?.id);
+            //     const activeOrderItems = selectedOrder.map((ele) => ele?.order_items).flat();
+            //     const activeOrderName = activeOrderItems.map((i) => i.products.name)
+            //     const activeOrderQuantity = activeOrderItems.map((i) => i.quantity)
+
+            //     if (activeIDs.length > 0) {
+            //       activeIDs.forEach(async (id) => {
+
+            //         const selectedProduct = inventory_products.find((product) => product.products.name === activeOrderName[0]);
+            //         console.log('selectedProduct: ', selectedProduct);
+
+            //         if (selectedProduct && selectedProduct.quantity > activeOrderQuantity[0]) {
+            //           const updatedQuantity = Number(selectedProduct.quantity) - Number(activeOrderQuantity[0]);
+
+            //           await updateInventory_productMutation(
+            //             {
+            //               id: selectedProduct.id,
+            //               quantity: updatedQuantity,
+            //             },
+            //             {
+            //               onSuccess: () => {
+            //                 toast?.current?.show(
+            //                   tsuccess("Inventory  updated successfully.")
+            //                 )
+            //               },
+            //             }
+            //           )
+
+            //           await updateNewOrder({
+            //             id,
+            //             verified: 1,
+            //           });
+            //           const shipmentNumber = `ROB0${Math.floor(Math.random() * 100000)}`;
+            //           const shipmentItems = activeOrderItems.map((item) => {
+            //             return {
+            //               order_items: {
+            //                 connect: {
+            //                   id: item.id,
+            //                 },
+            //               },
+            //             };
+            //           });
+
+            //           await createShipment(
+            //             {
+            //               ordersId: id,
+            //               shipmentNumber,
+            //               priority: 'LOW',
+            //               shipment_items: {
+            //                 create: shipmentItems,
+            //               },
+            //             },
+            //             {
+            //               onSuccess: () => {
+            //                 toast?.current.show(tsuccess('Verified'));
+            //               },
+            //               onError: (error) => {
+            //                 console.log('error: ', error);
+            //                 toast?.current.show(terror('Not Verified'));
+            //               },
+            //             }
+            //           );
+            //         } 
+            //         else {
+            //           alert('You should reduce your quantity')
+            //         }
+
+            //       });
+            //     }
+
+            //   }}
+            // />
+
 
             <Button
               type="button"
@@ -676,28 +794,68 @@ export const OrdersList = () => {
               onClick={async () => {
                 const activeIDs = selectedOrder.map((ele) => ele?.id);
                 const activeOrderItems = selectedOrder.map((ele) => ele?.order_items).flat();
-                const activeOrderName = activeOrderItems.map((i) => i.products.name)
-                const activeOrderQuantity = activeOrderItems.map((i) => i.quantity)
 
-                // inventory_products.forEach((product) => {
-                //   const productName = product.products.name;
-                //   const productQuantity = product.quantity;
-                //   console.log(`check : ++ Product: ${productName}, Quantity: ${productQuantity}`);
+                const productQuantityArray = activeOrderItems.map((item) => ({
+                  productName: item.products.name,
+                  quantity: item.quantity,
+                }));
 
-                //   if (productName === activeOrderName[0] && productQuantity > activeOrderQuantity[0]) {
-                //     console.log('yes :++ true:')
-                //   } else {
-                //     console.log('yes :++ false')
-                //   }
-                // });
+                console.log('productQuantityArray: ', productQuantityArray);
+
+                const newArrayOfObjects = productQuantityArray.map((item) => {
+                  const inventoryProduct = inventory_products.find((product) => product.products.name === item.productName);
+                  console.log('inventoryProduct00: ', inventoryProduct.quantity > item.quantity ? inventoryProduct.quantity - item.quantity : 0);
+                  const updatedQuantity = inventoryProduct.quantity > item.quantity ? inventoryProduct.quantity - item.quantity : 0;
+                  
+                  if (inventoryProduct) {
+                    return {
+                      productName: item.productName,
+                      quantity: updatedQuantity,
+                    };
+                  } else {
+                    return {
+                      productName: item.productName,
+                      quantity: 0,
+                    };
+                  }
+                });
+
+                console.log('newArrayOfObjects: ', newArrayOfObjects);
+
+                const isQuantityLess = productQuantityArray.every((item, index) => item.quantity < newArrayOfObjects[index].quantity);
 
 
-                if (activeIDs.length > 0) {
-                  activeIDs.forEach(async (id) => {
-                    const selectedProduct = inventory_products.find((product) => product.products.name === activeOrderName[0]);
-                    
-                    if (selectedProduct && selectedProduct.quantity > activeOrderQuantity[0]) {
+                if (isQuantityLess) {
+                  toast.current.show(tsuccess('quantity is less in order'));
 
+                  if (activeIDs.length > 0) {
+
+                    newArrayOfObjects.forEach(async (obj) => {
+                      const inventoryProduct = inventory_products.find((product) => product.products.name === obj.productName);
+
+                      if (inventoryProduct && obj.quantity > 0) {
+                        await updateInventory_productMutation(
+                          {
+                            id: inventoryProduct.id,
+                            quantity: obj.quantity,
+                          },
+                          {
+                            onSuccess: () => {
+                              toast.current.show(tsuccess('update Inventory'));
+                            },
+                            onError: (error) => {
+                              console.log('Error:', error);
+                              toast.current.show(terror('update Inventory error'));
+
+                              // Handle the error, show an error message, etc.
+                            },
+                          }
+                        );
+                      }
+                    });
+
+
+                    activeIDs.forEach(async (id) => {
                       await updateNewOrder({
                         id,
                         verified: 1,
@@ -728,20 +886,156 @@ export const OrdersList = () => {
                           },
                           onError: (error) => {
                             console.log('error: ', error);
-                            toast?.current.show(terror('Error'));
+                            toast?.current.show(terror('Not Verified'));
                           },
                         }
                       );
-                    } 
-                    else {
-                      alert('You should reduce your quantity')
                     }
-
-                  });
+                    )
+                  }
                 }
+
+                else {
+                  toast.current.show(tError('Not done'));
+                }
+
+
+                // if (activeIDs.length > 0) {
+                //   activeIDs.forEach(async (id) => {
+                //     await updateNewOrder({
+                //       id,
+                //       verified: 1,
+                //     });
+                //     const shipmentNumber = `ROB0${Math.floor(Math.random() * 100000)}`;
+                //     const shipmentItems = activeOrderItems.map((item) => {
+                //       return {
+                //         order_items: {
+                //           connect: {
+                //             id: item.id,
+                //           },
+                //         },
+                //       };
+                //     });
+
+                //     await createShipment(
+                //       {
+                //         ordersId: id,
+                //         shipmentNumber,
+                //         priority: 'LOW',
+                //         shipment_items: {
+                //           create: shipmentItems,
+                //         },
+                //       },
+                //       {
+                //         onSuccess: () => {
+                //           toast?.current.show(tsuccess('Verified'));
+                //         },
+                //         onError: (error) => {
+                //           console.log('error: ', error);
+                //           toast?.current.show(terror('Not Verified'));
+                //         },
+                //       }
+                //     );
+                //   }
+                //   )
+                // }
 
               }}
             />
+
+
+            // <Button
+            //   type="button"
+            //   icon="pi pi-verified"
+            //   label="Verify"
+            //   className="p-button-outlined"
+            //   onClick={async () => {
+            //     const activeIDs = selectedOrder.map((ele) => ele?.id);
+            //     const activeOrderItems = selectedOrder.map((ele) => ele?.order_items).flat();
+            //     const activeOrderNames = activeOrderItems.map((i) => i.products.name);
+            //     const activeOrderQuantities = activeOrderItems.map((i) => i.quantity);
+
+            //     if (activeIDs.length > 0) {
+            //       let verificationPassed = true; // Flag to track if all products pass verification
+
+            //       for (let i = 0; i < activeOrderItems.length; i++) {
+            //         const activeOrderItem = activeOrderItems[i];
+            //         const activeOrderName = activeOrderNames[i];
+            //         const activeOrderQuantity = activeOrderQuantities[i];
+
+            //         const selectedProduct = inventory_products.find((product) => product.products.name === activeOrderName);
+
+            //         if (!selectedProduct || selectedProduct.quantity < activeOrderQuantity) {
+            //           verificationPassed = false;
+            //           break;
+            //         }
+            //       }
+
+            //       if (verificationPassed) {
+            //         for (let i = 0; i < activeIDs.length; i++) {
+            //           const id = activeIDs[i];
+            //           const activeOrderItem = activeOrderItems[i];
+            //           const activeOrderName = activeOrderNames[i];
+            //           const activeOrderQuantity = activeOrderQuantities[i];
+
+            //           const selectedProduct = inventory_products.find((product) => product.products.name === activeOrderName);
+            //           const updatedQuantity = selectedProduct.quantity - activeOrderQuantity;
+
+            //           await updateInventory_productMutation(
+            //             {
+            //               id: selectedProduct.id,
+            //               quantity: updatedQuantity,
+            //             },
+            //             {
+            //               onSuccess: () => {
+            //                 toast?.current?.show(tsuccess("Inventory updated successfully."));
+            //               },
+            //             }
+            //           );
+
+            //           await updateNewOrder({
+            //             id,
+            //             verified: 1,
+            //           });
+
+            //           const shipmentNumber = `ROB0${Math.floor(Math.random() * 100000)}`;
+            //           const shipmentItems = {
+            //             order_items: {
+            //               connect: {
+            //                 id: activeOrderItem.id,
+            //               },
+            //             },
+            //           };
+
+            //           await createShipment(
+            //             {
+            //               ordersId: id,
+            //               shipmentNumber,
+            //               priority: 'LOW',
+            //               shipment_items: {
+            //                 create: shipmentItems,
+            //               },
+            //             },
+            //             {
+            //               onSuccess: () => {
+            //                 toast?.current.show(tsuccess('Verified'));
+            //               },
+            //               onError: (error) => {
+            //                 console.log('error: ', error);
+            //                 toast?.current.show(terror('Not Verified'));
+            //               },
+            //             }
+            //           );
+            //         }
+            //       } else {
+            //         alert('Product quantity is insufficient or product not found in inventory');
+            //       }
+            //     }
+            //   }}
+            // />
+
+
+
           )}
         </div>
 
@@ -889,10 +1183,10 @@ export const OrdersList = () => {
             </div>
             <form onSubmit={formik.handleSubmit}
               className="p-fluid">
+
               <div className=" grid">
 
-                <div className="field col-12 md:col-3 lg:col-2 mt-4">
-
+                {/* <div className="field col-12 md:col-3 lg:col-2 mt-4">
                   <span className="p-float-label">
 
                     <AutoComplete
@@ -903,28 +1197,34 @@ export const OrdersList = () => {
                       completeMethod={searchCustomers}
                       forceSelection
                       onChange={(e) => {
-                        // const selectedOrderItem = customerOptions.find(option_ => option_.firstName === e.value.firstName);
-                        // formik.setFieldValue('customer', selectedOrderItem);
                         const selectedCustomer = e.value;
+                        console.log('selectedCustomer: ', selectedCustomer);
 
                         formik.setFieldValue('customer', selectedCustomer);
-                        formik.setFieldValue('firstName', selectedCustomer.firstName);
-                        formik.setFieldValue('lastName', selectedCustomer.lastName);
-                        console.log("selectedCustomer", selectedCustomer.addresses)
+                        formik.setFieldValue('firstName', selectedCustomer?.firstName);
+                        formik.setFieldValue('lastName', selectedCustomer?.lastName);
+                        formik.setFieldValue('address', selectedCustomer?.addresses?.areaStreet);
+                        formik.setFieldValue('email', selectedCustomer?.addresses?.emails_emails_addressesToaddresses?.map((ele) => ele.email));
+                        formik.setFieldValue('pincode', selectedCustomer?.addresses?.pincode);
+                        formik.setFieldValue('state', selectedCustomer?.addresses?.state);
+                        formik.setFieldValue('landmarkName', selectedCustomer?.addresses?.landmarkName);
+                        formik.setFieldValue('city', selectedCustomer?.addresses?.cityCountryProvince);
+                        formik.setFieldValue('country', selectedCustomer?.addresses?.country_addresses_countryTocountry?.name);
 
-                        if (selectedCustomer.addresses && selectedCustomer.addresses.contact_number.length > 0) {
-                          const contactNumber = selectedCustomer.addresses.contact_number[0]?.number || '';
+
+                        if (selectedCustomer?.addresses && selectedCustomer?.addresses?.contact_number.length > 0) {
+                          const contactNumber = selectedCustomer?.addresses?.contact_number[0]?.number || '';
                           formik.setFieldValue('contactNumber', contactNumber);
                         } else {
                           formik.setFieldValue('contactNumber', '');
                         }
 
                       }}
+
                       aria-label="customer"
                       dropdownAriaLabel="Select customer"
                       className={classNames({ "p-invalid": isFormFieldValid("name") })}
                     />
-
                     <label
                       htmlFor={"type"}
                       className={classNames({ "p-error": isFormFieldValid("type") })}
@@ -932,8 +1232,54 @@ export const OrdersList = () => {
                       Select Customer
                     </label>
                   </span>
-                </div>
+                </div> */}
 
+
+                <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                  <span className="p-float-label">
+                    <AutoComplete
+                      value={formik.values.customer ? `${formik.values.customer.firstName || ''}  ${formik.values.customer.companyName || ''}` : ''}
+                      dropdown
+                      field="firstName"
+                      suggestions={customerOptionsSuggestions}
+                      completeMethod={searchCustomers}
+                      forceSelection
+                      onChange={(e) => {
+                        const selectedCustomer = e.value;
+                        console.log('selectedCustomer: ', selectedCustomer);
+
+                        formik.setFieldValue('customer', selectedCustomer);
+                        formik.setFieldValue('firstName', selectedCustomer?.firstName);
+                        formik.setFieldValue('lastName', selectedCustomer?.lastName);
+                        formik.setFieldValue('address', selectedCustomer?.addresses?.areaStreet);
+                        formik.setFieldValue('email', selectedCustomer?.addresses?.emails_emails_addressesToaddresses?.map((ele) => ele.email));
+                        formik.setFieldValue('pincode', selectedCustomer?.addresses?.pincode);
+                        formik.setFieldValue('state', selectedCustomer?.addresses?.state);
+                        formik.setFieldValue('landmarkName', selectedCustomer?.addresses?.landmarkName);
+                        formik.setFieldValue('city', selectedCustomer?.addresses?.cityCountryProvince);
+                        formik.setFieldValue('country', selectedCustomer?.addresses?.country_addresses_countryTocountry?.name);
+
+                        if (selectedCustomer?.addresses && selectedCustomer?.addresses?.contact_number.length > 0) {
+                          const contactNumber = selectedCustomer?.addresses?.contact_number[0]?.number || '';
+                          formik.setFieldValue('contactNumber', contactNumber);
+                        } else {
+                          formik.setFieldValue('contactNumber', '');
+                        }
+                      }}
+                      itemTemplate={(option) => (
+                        <div>
+                          <span>{option.firstName} </span> - <span>{option.companyName || ""} </span>
+                        </div>
+                      )}
+                      aria-label="customer"
+                      dropdownAriaLabel="Select customer"
+                      className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                    />
+                    <label htmlFor="type" className={classNames({ "p-error": isFormFieldValid("type") })}>
+                      Select Customer
+                    </label>
+                  </span>
+                </div>
 
                 {[
                   { field: "firstName", label: "First Name" },
@@ -969,7 +1315,6 @@ export const OrdersList = () => {
 
                 })
                 }
-
 
                 <div className="field col-12 md:col-3 lg:col-2 mt-4">
                   <div className="p-float-label">
@@ -1041,36 +1386,6 @@ export const OrdersList = () => {
                   {getFormErrorMessage("country")}
                 </div>
 
-
-
-                {/* <div key={`Customer`} className="field col-12 lg:col-5 md:col-6 mt-4">
-                <span className="p-float-label">
-                  <AutoComplete
-                    id="Customer"
-                    value={formik.values.customer}
-                    dropdown
-                    forceSelection
-                    suggestions={customerOptionsSuggestions}
-                    completeMethod={searchCustomers}
-                    field="name"
-                    onChange={(e) => {
-                      const selectedOrderItem = customerOptions.find(option_ => option_.name === e.value.name);
-                      // const selectedItemsOptionName = selectedOrderItem ? selectedOrderItem.name : null;
-                      formik.setFieldValue('customer', selectedOrderItem);
-                    }}
-                    aria-label="Customer"
-                    dropdownAriaLabel="Customer"
-                    className={classNames({ "p-invalid": isFormFieldValid("category") })}
-                  />
-                  <label
-
-                    className={classNames({ "p-error": isFormFieldValid("category") })}
-                  >
-                    Customer
-                  </label>
-                </span>
-                {getFormErrorMessage("category")}
-              </div> */}
                 <div className="grid col-12">
                   <div key={`Order Status`} className="field col-12 lg:col-4 md:col-6 mt-2">
                     <span className="p-float-label">
@@ -1365,7 +1680,6 @@ export const OrdersList = () => {
 
           <DataTable
             value={orders}
-            // onContextMenu={(e) => cm.current.show(e.originalEvent)}
             responsiveLayout="scroll"
             showGridlines
             header={renderHeader}
@@ -1374,8 +1688,7 @@ export const OrdersList = () => {
             selection={selectedOrder}
             onSelectionChange={(e) => setSelectedOrder(e.value)}
             tableStyle={{ minWidth: '50rem' }}
-          // onRowClick={showOrderDetails}
-          // onRowClick={handleRowClick}
+
           >
             <Column
               selectionMode="multiple"
@@ -1386,6 +1699,7 @@ export const OrdersList = () => {
                 onChange={handleCheckboxChange}
               />
             </Column>
+
             <Column
               // field={}
               header="ID"
@@ -1491,9 +1805,7 @@ export const OrdersList = () => {
               field=""
               header="Customer Contact Number"
               body={({ customers }) => {
-                const orderItemOverlayRef = useRef(null);
                 const contactNumbers = customers?.addresses?.contact_number || [];
-                const { firstName, lastName } = customers || {};
                 return (
                   <div className="">
                     {contactNumbers.map((contact, i) => {
@@ -1514,6 +1826,20 @@ export const OrdersList = () => {
                   </div>
                 )
               }}
+            />
+
+            <Column
+              field=""
+              header='Customer Address'
+              body={({ customers }) => {
+                const customerAddress = customers?.addresses?.cityCountryProvince
+                return (
+                  <div className="">
+                    {customerAddress}
+                  </div>
+                )
+              }}
+
             />
             <Column
               field="gateway"
@@ -1638,11 +1964,11 @@ export const OrdersList = () => {
                       tooltipOptions={{ position: "left" }}
                     />
 
-                    {/* <Button
+                    <Button
                       id="view"
                       label="View"
-                      onClick={(e) => handleViewClick(rowData.id)} 
-                    /> */}
+                      onClick={(e) => handleViewClick(rowData.id)}
+                    />
                   </div>
                 )
               }}

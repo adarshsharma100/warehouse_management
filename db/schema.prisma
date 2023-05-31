@@ -94,6 +94,7 @@ model customers {
   lastName    String?   @db.VarChar(45)
   addressesId Int
   shopifyId   String?   @db.VarChar(45)
+  companyName String?   @db.VarChar(50)
   addresses   addresses @relation(fields: [addressesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_customers_addresses1")
   orders      orders[]
 
