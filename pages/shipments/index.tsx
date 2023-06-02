@@ -131,20 +131,53 @@ type Shipment = {
 export const ShipmentsList = () => {
   const cm = useRef<ContextMenu>(null);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null)
+  console.log('selectedShipment: +++ ', selectedShipment);
+
   const [viewInvoicePdf, setViewInvoicePdf] = useState(false)
-  const [files, setFiles] = useState([]); 
+
+  const [files, setFiles] = useState([]);
+
+
+  const hasViewInvoiceData = (rowData) => {
+    console.log('rowData++: ', rowData);
+
+    return rowData.sales_invoice_details && rowData.sales_invoice_details.length > 0;
+
+  };
+
+  // const menuModel = [
+  //   {
+  //     label: 'View Invoice', icon: 'pi pi-fw pi-search', command: (data) => {
+  //       // setSelectedShipment(data)
+  //       setViewInvoicePdf(true)
+  //     }
+
+  //   },
+  //   { label: 'View Picklist', icon: 'pi pi-fw pi-list', command: () => setPickListVisible(true) },
+  // ];
+
+  // const page = Number(router.query.page) || 0;
 
   const menuModel = [
     {
-      label: 'View Invoice', icon: 'pi pi-fw pi-search', command: (data) => {
-        // setSelectedShipment(data)
-        setViewInvoicePdf(true)
-      }
+      label: 'View Invoice',
+      icon: 'pi pi-fw pi-search',
+      command: () => {
+        if (selectedShipment && selectedShipment.sales_invoice_details) {
+          // Enable the option only if sales_invoice_details exists
+          setViewInvoicePdf(true);
+        }
+      },
+      disabled: !selectedShipment || !selectedShipment.sales_invoice_details,
     },
-    { label: 'View Picklist', icon: 'pi pi-fw pi-list', command: () => setPickListVisible(true) },
+    {
+      label: 'View Picklist',
+      icon: 'pi pi-fw pi-list',
+      command: () => setPickListVisible(true),
+    },
   ];
 
-  // const page = Number(router.query.page) || 0;
+
   const [state, dispatch] = useReducer(reducer, initialState);
   const { orders, statusId, skipCount, tableRowsCount, selectedShipments, isReadyToShip, packageDimensions, readyToShipActiveIndex, containerName, sasToken, storageAccountName, manifestImageURL, statusName } = state
   console.log('selectedShipments ', selectedShipments);
@@ -157,6 +190,7 @@ export const ShipmentsList = () => {
     skip: skipCount,
     take: tableRowsCount,
   });
+  console.log('shipments: ', shipments.map((k) => k.sales_invoice_details));
   const [{ shipment_statuses, }] = useQuery(getShipment_statuses, {
     orderBy: { id: "asc" },
     where: {},
@@ -285,8 +319,8 @@ export const ShipmentsList = () => {
     },
 
   ]
-  const [items, setItems] = useState(actionMenuItems)
 
+  const [items, setItems] = useState(actionMenuItems)
   const [createBatchMutation] = useMutation(createBatch)
   const [createManifestMutation] = useMutation(createManifest)
   const [createSalesInvoiceMutation] = useMutation(createSalesInvoice)
@@ -427,7 +461,10 @@ export const ShipmentsList = () => {
           {readyToShipActiveIndex === 1 && <SelectCouriers dispatch={dispatch} shipmentId={firstSelectedShipmentItem?.id} refetchShipments={refetch} />}
         </div>
       }
-      <Dialog visible={pickListVisible} header="PickList" onHide={() => setPickListVisible(false)}>
+      <Dialog
+        visible={pickListVisible}
+        header="PickList"
+        onHide={() => setPickListVisible(false)}>
         <Picklist invoice={selectedShipments.reduce((acc, { orders }) => {
           const { order_items } = orders;
           return [...acc, ...order_items.map(({ id, products, quantity }) => ({
@@ -440,13 +477,13 @@ export const ShipmentsList = () => {
           }))]
         }, [])} />
       </Dialog>
-      
+
       <Dialog style={{ minWidth: "75vw" }} visible={state.displayManifest} header="Manifest" onHide={() => {
         dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "displayManifest", value: false } })
         dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestStep", value: 0 } })
         dispatch({ type: "SET_SHIPMENT_STATE", payload: { prop: "manifestImageURL", value: "" } })
       }}>
-        
+
         {/* <pre>{JSON.stringify(orders.slice(0, 3), null, 2)}</pre> */}
         <Steps
           className="p-2"
@@ -574,12 +611,53 @@ export const ShipmentsList = () => {
           <Suspense fallback={<div>Loading...</div>}>
             <PDFViewer>
               {selectedShipment.map((shipment) => (
-                <InvoicePage key={shipment.id} shipmentID={shipment.id} />
+                <Invoice key={shipment.id} shipmentID={shipment.id} />
               ))}
             </PDFViewer>
           </Suspense>
         </Dialog>
       )}
+
+
+      {/* {selectedShipment && selectedShipment.sales_invoice_details && (
+        <Dialog
+          header="Header"
+          visible={viewInvoicePdf}
+          onHide={() => setViewInvoicePdf(false)}
+        >
+          <Suspense fallback={<div>Loading...</div>}>
+            <PDFViewer>
+              {selectedShipment?.map((shipment) => (
+                <InvoicePage key={shipment.id} shipmentID={shipment.id} />
+              ))}
+            </PDFViewer>
+          </Suspense>
+        </Dialog>
+      )} */}
+
+
+
+
+
+      {/* {selectedShipment && selectedShipment.sales_invoice_details && (
+
+
+        <Dialog
+          header="Invoice"
+          visible={viewInvoicePdf}
+          onHide={() => setViewInvoicePdf(false)}
+        >
+          <Suspense fallback={<div>Loading...</div>}>
+            <PDFViewer>
+              <Invoice key={selectedShipment.id} shipmentID={selectedShipment.id} />
+            </PDFViewer>
+          </Suspense>
+        </Dialog>
+
+
+      )} */}
+
+
 
 
 
@@ -589,7 +667,7 @@ export const ShipmentsList = () => {
         <ConfirmDialog />
         <Toast ref={toast} />
 
-        
+
         <TabMenu
           model={[{ label: "ALL" }, ...tabMenuItems]}
           activeIndex={statusId}
@@ -651,6 +729,7 @@ export const ShipmentsList = () => {
               }
             </div>} >
             </Column>
+
             <Column header="Channel" body={({ orders: { shopifyId } }) =>
               <Chip
                 label={`${shopifyId ? "SH" : "IH"}`}

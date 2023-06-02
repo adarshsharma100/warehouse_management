@@ -38,6 +38,7 @@ export default resolver.pipe(
                 addresses_orders_shippingAddressIdToaddresses: true
               }
             },
+            sales_invoice_details:true,
             shipment_status: true,
             shipment_items: {
               include: {
