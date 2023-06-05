@@ -41,6 +41,7 @@ import updateInventory_product from "app/inventory_products/mutations/updateInve
 
 
 const initialOrderDetails = {
+  name: "",
   firstName: '',
   lastName: '',
   email: '',
@@ -175,7 +176,10 @@ export const OrdersList = () => {
 
   const [orderItemsSuggestions, setOderItemsSuggestions] = useState<any>(null)
 
-  const [customerOptions] = useState(orders.map((k) => k.customers))
+  const customerOptions = orders.map(({ customers }) => ({
+    ...customers,
+    name: `${customers?.firstName} - ${customers?.companyName}`
+  }))
   console.log('customerOptions: ', customerOptions);
   const [customerOptionsSuggestions, setCustomerOptionsSuggestions] = useState<any>(null)
 
@@ -806,7 +810,7 @@ export const OrdersList = () => {
                   const inventoryProduct = inventory_products.find((product) => product.products.name === item.productName);
                   console.log('inventoryProduct00: ', inventoryProduct.quantity > item.quantity ? inventoryProduct.quantity - item.quantity : 0);
                   const updatedQuantity = inventoryProduct.quantity > item.quantity ? inventoryProduct.quantity - item.quantity : 0;
-                  
+
                   if (inventoryProduct) {
                     return {
                       productName: item.productName,
@@ -1063,7 +1067,7 @@ export const OrdersList = () => {
     return order.verified ? "Verified" : "Not Verified";
   }
 
-
+  const searchCustomer = createSearchFunction(customerOptions, setCustomerOptionsSuggestions)
 
 
   const handleViewClick = async (id) => {
@@ -1186,30 +1190,35 @@ export const OrdersList = () => {
 
               <div className=" grid">
 
-                {/* <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                <div className="field col-12 md:col-3 lg:col-2 mt-4">
                   <span className="p-float-label">
 
                     <AutoComplete
-                      value={formik.values.customer}
+                      value={formik.values?.name}
                       dropdown
-                      field="firstName"
+                      field="name"
                       suggestions={customerOptionsSuggestions}
-                      completeMethod={searchCustomers}
+                      completeMethod={searchCustomer}
                       forceSelection
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const selectedCustomer = e.value;
                         console.log('selectedCustomer: ', selectedCustomer);
+                        let name = typeof e.value === "string" ? e.value : e.value?.name
 
-                        formik.setFieldValue('customer', selectedCustomer);
-                        formik.setFieldValue('firstName', selectedCustomer?.firstName);
-                        formik.setFieldValue('lastName', selectedCustomer?.lastName);
-                        formik.setFieldValue('address', selectedCustomer?.addresses?.areaStreet);
-                        formik.setFieldValue('email', selectedCustomer?.addresses?.emails_emails_addressesToaddresses?.map((ele) => ele.email));
-                        formik.setFieldValue('pincode', selectedCustomer?.addresses?.pincode);
-                        formik.setFieldValue('state', selectedCustomer?.addresses?.state);
-                        formik.setFieldValue('landmarkName', selectedCustomer?.addresses?.landmarkName);
-                        formik.setFieldValue('city', selectedCustomer?.addresses?.cityCountryProvince);
-                        formik.setFieldValue('country', selectedCustomer?.addresses?.country_addresses_countryTocountry?.name);
+                        await formik.setValues({
+                          ...formik.values,
+                          name,
+                          firstName: selectedCustomer?.firstName,
+                          lastName: selectedCustomer?.lastName,
+                          address: selectedCustomer?.addresses?.areaStreet,
+                          email: selectedCustomer?.addresses?.emails_emails_addressesToaddresses?.map((ele) => ele.email),
+                          pincode: selectedCustomer?.addresses?.pincode,
+                          state: selectedCustomer?.addresses?.state,
+                          landmarkName: selectedCustomer?.addresses?.landmarkName,
+                          city: selectedCustomer?.addresses?.cityCountryProvince,
+                          country: selectedCustomer?.addresses?.country_addresses_countryTocountry?.name,
+
+                        });
 
 
                         if (selectedCustomer?.addresses && selectedCustomer?.addresses?.contact_number.length > 0) {
@@ -1232,10 +1241,10 @@ export const OrdersList = () => {
                       Select Customer
                     </label>
                   </span>
-                </div> */}
+                </div>
 
 
-                <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                {/* <div className="field col-12 md:col-3 lg:col-2 mt-4">
                   <span className="p-float-label">
                     <AutoComplete
                       value={formik.values.customer ? `${formik.values.customer.firstName || ''}  ${formik.values.customer.companyName || ''}` : ''}
@@ -1246,7 +1255,6 @@ export const OrdersList = () => {
                       forceSelection
                       onChange={(e) => {
                         const selectedCustomer = e.value;
-                        console.log('selectedCustomer: ', selectedCustomer);
 
                         formik.setFieldValue('customer', selectedCustomer);
                         formik.setFieldValue('firstName', selectedCustomer?.firstName);
@@ -1279,7 +1287,7 @@ export const OrdersList = () => {
                       Select Customer
                     </label>
                   </span>
-                </div>
+                </div> */}
 
                 {[
                   { field: "firstName", label: "First Name" },
