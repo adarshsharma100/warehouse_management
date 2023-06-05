@@ -582,85 +582,16 @@ export const ShipmentsList = () => {
         />
 
       </Dialog>
-      {/* {selectedShipment?.id &&
-        <Dialog header="Header" visible={viewInvoicePdf} onHide={() => setViewInvoicePdf(false)}>
-          <Suspense fallback={<div>Loading...</div>}>
-            <Invoice shipmentID={selectedShipment?.id} />
-          </Suspense>
-        </Dialog>
-      } */}
-
-
-      {/* {selectedShipments.length > 0 && (
-        <Dialog header="Header" visible={viewInvoicePdf} onHide={() => setViewInvoicePdf(false)}>
+    
+      {selectedShipments.length > 0 && (
+        <Dialog header="Invoice Details" visible={viewInvoicePdf} onHide={() => setViewInvoicePdf(false)}>
           <Suspense fallback={<div>Loading...</div>}>
             {selectedShipments.map((shipment) => (
               <Invoice key={shipment.id} shipmentID={shipment.id} />
             ))}
           </Suspense>
         </Dialog>
-      )} */}
-
-
-      {selectedShipment && selectedShipment.length > 0 && (
-        <Dialog
-          header="Header"
-          visible={viewInvoicePdf}
-          onHide={() => setViewInvoicePdf(false)}
-        >
-          <Suspense fallback={<div>Loading...</div>}>
-            <PDFViewer>
-              {selectedShipment.map((shipment) => (
-                <Invoice key={shipment.id} shipmentID={shipment.id} />
-              ))}
-            </PDFViewer>
-          </Suspense>
-        </Dialog>
       )}
-
-
-      {/* {selectedShipment && selectedShipment.sales_invoice_details && (
-        <Dialog
-          header="Header"
-          visible={viewInvoicePdf}
-          onHide={() => setViewInvoicePdf(false)}
-        >
-          <Suspense fallback={<div>Loading...</div>}>
-            <PDFViewer>
-              {selectedShipment?.map((shipment) => (
-                <InvoicePage key={shipment.id} shipmentID={shipment.id} />
-              ))}
-            </PDFViewer>
-          </Suspense>
-        </Dialog>
-      )} */}
-
-
-
-
-
-      {/* {selectedShipment && selectedShipment.sales_invoice_details && (
-
-
-        <Dialog
-          header="Invoice"
-          visible={viewInvoicePdf}
-          onHide={() => setViewInvoicePdf(false)}
-        >
-          <Suspense fallback={<div>Loading...</div>}>
-            <PDFViewer>
-              <Invoice key={selectedShipment.id} shipmentID={selectedShipment.id} />
-            </PDFViewer>
-          </Suspense>
-        </Dialog>
-
-
-      )} */}
-
-
-
-
-
 
 
       <div className="grid">
