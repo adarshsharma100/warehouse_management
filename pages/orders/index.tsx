@@ -1,43 +1,33 @@
-import { Suspense, useEffect, useRef, useState, useReducer } from "react";
-import { getQueryClient, useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
-import { useRouter } from "next/router";
-import Layout from "layouts/Layout"
-import getOrders from "app/orders/queries/getOrders";
-import getOrderStatuses from "app/order_statuses/queries/getOrder_statuses"
-import Loading from "components/loading";
-import { Button } from "primereact/button";
-import * as Yup from "yup"
-import { DataTable } from "primereact/datatable";
-import { Column } from "primereact/column";
-import { cities, dateFormat } from "app/constants";
+import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
+import { cities, createSearchFunction, dateFormat } from "app/constants";
+import getOrder_statuses from "app/order_statuses/queries/getOrder_statuses";
 import createOrder from "app/orders/mutations/createOrder";
 import updateOrder from "app/orders/mutations/updateOrder";
+import getOrders from "app/orders/queries/getOrders";
+import getProducts from "app/products/queries/getProducts";
 import CreateShipment from 'app/shipments/mutations/createShipment';
-import { OverlayPanel } from 'primereact/overlaypanel';
-import { InputText } from "primereact/inputtext";
-import { Dropdown } from "primereact/dropdown";
 import classNames from "classnames";
-import { createCSVFormat, createSearchFunction, filterExistingValues, } from "app/constants"
-import { AutoComplete } from "primereact/autocomplete";
-import getOrder_statuses from "app/order_statuses/queries/getOrder_statuses";
-import getOrder_items from "app/order_items/queries/getOrder_items";
-import getProducts from "app/products/queries/getProducts"
+import Loading from "components/loading";
 import { useFormik } from "formik";
-import CreateOrder from 'app/orders/mutations/createOrder'
-import getCustomers from "app/customers/queries/getCustomers";
-import { TriStateCheckbox } from 'primereact/tristatecheckbox';
-import { ToggleButton } from 'primereact/togglebutton';
+import Layout from "layouts/Layout";
+import { useRouter } from "next/router";
+import { AutoComplete } from "primereact/autocomplete";
+import { Button } from "primereact/button";
 import { Checkbox } from "primereact/checkbox";
-import { JobStatus } from "components/JobStatus";
+import { Column } from "primereact/column";
+import { DataTable } from "primereact/datatable";
+import { Dropdown } from "primereact/dropdown";
+import { InputText } from "primereact/inputtext";
+import { OverlayPanel } from 'primereact/overlaypanel';
+import { Suspense, useEffect, useReducer, useRef, useState } from "react";
+import * as Yup from "yup";
 import AddressComponent from "../../components/AddressComponent";
-import db from "db";
 
-import { Toast } from "primereact/toast";
-import { tsuccess } from "app/constants";
-import { tError } from "app/constants";
-import { TabMenu } from "primereact/tabmenu"
+import { tError, tsuccess } from "app/constants";
+import updateInventory_product from "app/inventory_products/mutations/updateInventory_product";
 import getInventory_products from "app/inventory_products/queries/getInventory_products";
-import updateInventory_product from "app/inventory_products/mutations/updateInventory_product"
+import { TabMenu } from "primereact/tabmenu";
+import { Toast } from "primereact/toast";
 
 
 const initialOrderDetails = {
@@ -107,13 +97,10 @@ const paymentStatus_ = [
   { id: 2, name: 'Paid' },
 ]
 
-const ITEMS_PER_PAGE = 100;
+const ITEMS_PER_PAGE = 250;
 
 export const OrdersList = () => {
-
   const toast = useRef(null)
-
-
   const router = useRouter();
   const page = Number(router.query.page) || 0;
   const [{ orders }, { refetch: refetchOrders }] = usePaginatedQuery(getOrders, {
@@ -121,16 +108,13 @@ export const OrdersList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   });
-  console.log('orders: ', orders);
-
-
+  
   const [{ order_statuses, }] = useQuery(getOrder_statuses, {
     orderBy: { id: "asc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
     where: undefined
   })
-
 
   // const [{ customers }] = useQuery(getCustomers, {
   //   skip: undefined,
@@ -149,7 +133,7 @@ export const OrdersList = () => {
     take: ITEMS_PER_PAGE,
     where: undefined
   })
-  console.log('inventory_products: ', inventory_products);
+  
   const [updateInventory_productMutation, { error: updateInventoryError, isLoading: updatingInventory },] = useMutation(updateInventory_product)
 
 
@@ -180,7 +164,7 @@ export const OrdersList = () => {
     ...customers,
     name: `${customers?.firstName}${customers?.companyName ? `- ${customers?.companyName}` : ""}`
   }))
-  console.log('customerOptions: ', customerOptions);
+  
   const [customerOptionsSuggestions, setCustomerOptionsSuggestions] = useState<any>(null)
 
   const [gatewayOptions] = useState(gateway_)
@@ -208,10 +192,10 @@ export const OrdersList = () => {
       let _filteredSuggestions
       if (!event.query.trim().length) {
         _filteredSuggestions = [...cities]
-        // console.log("searchCity -", _filteredSuggestions)
+        // 
       } else {
         _filteredSuggestions = cities.filter((element) => {
-          // console.log("searchCity +", _filteredSuggestions)
+          // 
           return element.city.toLowerCase().startsWith(event.query.toLowerCase())
         })
       }
@@ -337,7 +321,7 @@ export const OrdersList = () => {
 
 
   const handleRowClick = async (e) => {
-    // console.log('e.data: ', e.originalEvent.target.classList[0]);
+    // 
     // const onclickClass = e.originalEvent.target.classList[0]
 
     const onclickClass = e.target.classList[0]
@@ -368,7 +352,7 @@ export const OrdersList = () => {
     }));
 
     // const _quantity = e.data.order_items.quantity
-    // console.log('_billingAddress: ', _billingAddress);
+    // 
 
     await formik.setValues({
       ...e.data,
@@ -472,7 +456,7 @@ export const OrdersList = () => {
 
     }),
     onSubmit: async (data) => {
-      console.log('formdata: ', data);
+      
 
       const {
         firstName, lastName, email, contactNumber, orderStatus,
@@ -521,7 +505,7 @@ export const OrdersList = () => {
           })
 
         } catch (error) {
-          console.log('error: ', error);
+          
         }
       } else {
         try {
@@ -637,15 +621,15 @@ export const OrdersList = () => {
               },
             })
         } catch (error) {
-          console.log('OrderCreation error: ', error);
+          
         }
       }
 
-      console.log('Order mutation Error')
+      
     }
   })
 
-  console.log('formik', formik.errors)
+  
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
@@ -688,14 +672,14 @@ export const OrdersList = () => {
 
   const [verificationStatus, setVerificationStatus] = useState(false);
   const inventory_productName = inventory_products.map((val) => val.products.name)
-  console.log('inventory_productName: ', inventory_productName);
+  
 
 
 
   const checkVerifyOrder = () => {
     const inventoryProduct = inventory_products.find(product => product.products.name === selectOrder.name);
   }
-  console.log('inventoryProduct: ', inventory_products);
+  
 
   const [createShipment] = useMutation(CreateShipment)
 
@@ -724,7 +708,7 @@ export const OrdersList = () => {
             //       activeIDs.forEach(async (id) => {
 
             //         const selectedProduct = inventory_products.find((product) => product.products.name === activeOrderName[0]);
-            //         console.log('selectedProduct: ', selectedProduct);
+            //         
 
             //         if (selectedProduct && selectedProduct.quantity > activeOrderQuantity[0]) {
             //           const updatedQuantity = Number(selectedProduct.quantity) - Number(activeOrderQuantity[0]);
@@ -772,7 +756,7 @@ export const OrdersList = () => {
             //                 toast?.current.show(tsuccess('Verified'));
             //               },
             //               onError: (error) => {
-            //                 console.log('error: ', error);
+            //                 
             //                 toast?.current.show(terror('Not Verified'));
             //               },
             //             }
@@ -804,11 +788,11 @@ export const OrdersList = () => {
                   quantity: item.quantity,
                 }));
 
-                console.log('productQuantityArray: ', productQuantityArray);
+                
 
                 const newArrayOfObjects = productQuantityArray.map((item) => {
                   const inventoryProduct = inventory_products.find((product) => product.products.name === item.productName);
-                  console.log('inventoryProduct00: ', inventoryProduct.quantity > item.quantity ? inventoryProduct.quantity - item.quantity : 0);
+                  
                   const updatedQuantity = inventoryProduct.quantity > item.quantity ? inventoryProduct.quantity - item.quantity : 0;
 
                   if (inventoryProduct) {
@@ -824,7 +808,7 @@ export const OrdersList = () => {
                   }
                 });
 
-                console.log('newArrayOfObjects: ', newArrayOfObjects);
+                
 
                 const isQuantityLess = productQuantityArray.every((item, index) => item.quantity < newArrayOfObjects[index].quantity);
 
@@ -848,7 +832,7 @@ export const OrdersList = () => {
                               toast.current.show(tsuccess('update Inventory'));
                             },
                             onError: (error) => {
-                              console.log('Error:', error);
+                              
                               toast.current.show(terror('update Inventory error'));
 
                               // Handle the error, show an error message, etc.
@@ -889,7 +873,7 @@ export const OrdersList = () => {
                             toast?.current.show(tsuccess('Verified'));
                           },
                           onError: (error) => {
-                            console.log('error: ', error);
+                            
                             toast?.current.show(terror('Not Verified'));
                           },
                         }
@@ -935,7 +919,7 @@ export const OrdersList = () => {
                 //           toast?.current.show(tsuccess('Verified'));
                 //         },
                 //         onError: (error) => {
-                //           console.log('error: ', error);
+                //           
                 //           toast?.current.show(terror('Not Verified'));
                 //         },
                 //       }
@@ -1025,7 +1009,7 @@ export const OrdersList = () => {
             //                 toast?.current.show(tsuccess('Verified'));
             //               },
             //               onError: (error) => {
-            //                 console.log('error: ', error);
+            //                 
             //                 toast?.current.show(terror('Not Verified'));
             //               },
             //             }
@@ -1051,8 +1035,8 @@ export const OrdersList = () => {
 
   const [selectedOrder, setSelectedOrder] = useState([]);
   const [checkVerified, setCheckVerified] = useState(false)
-  // console.log('checkVerified: ', checkVerified);
-  // console.log('selectedOrder: ', selectedOrder);
+  // 
+  // 
 
   useEffect(() => {
     if (selectedOrder && Object.keys(selectedOrder).length >= 1) {
@@ -1143,7 +1127,7 @@ export const OrdersList = () => {
 
   const [state, dispatch] = useReducer(reducer, initialState);
   const { statusId } = state
-  console.log('statusId: ', statusId);
+  
 
 
   const tabMenuItems = order_statuses?.map(status => (
@@ -1202,7 +1186,7 @@ export const OrdersList = () => {
                       forceSelection
                       onChange={async (e) => {
                         const selectedCustomer = e.value;
-                        console.log('selectedCustomer: ', selectedCustomer);
+                        
                         let name = typeof e.value === "string" ? e.value : e.value?.name
 
                         await formik.setValues({
@@ -1333,7 +1317,7 @@ export const OrdersList = () => {
                       completeMethod={searchCities}
                       field="city"
                       onChange={async (e) => {
-                        console.log('e.value + ', e.value);
+                        
                         let city = typeof e.value === "string" ? e.value : e.value.city
                         let state = typeof e.value === "string" ? " " : e.value.state
                         let country = typeof e.value === "string" ? "" : "India"
@@ -1408,7 +1392,7 @@ export const OrdersList = () => {
                         onChange={(e) => {
                           const selectedOption = orderStatusOption.find(option => option.name === e.target.value.name);
                           const selectedOptionName = selectedOption ? selectedOption.name : null;
-                          console.log('selectedOptionName: ', selectedOption);
+                          
                           formik.setFieldValue('orderStatus', selectedOption);
                         }}
 
@@ -1498,7 +1482,7 @@ export const OrdersList = () => {
                             completeMethod={searchOrderItems}
                             field="name"
                             onChange={async (e) => {
-                              console.log(e.value, 'itemevent')
+                              
                               handleInputChange(e, index)
                               const test = [...orderItemInput]
                               test[index] = { ...e.value }
@@ -1883,7 +1867,7 @@ export const OrdersList = () => {
                         optionLabel="name"
                         optionValue="id"
                         onChange={async (e) => {
-                          console.log('e: ', e.target.value);
+                          
                           await updateNewOrder({
                             id: rowData.id,
                             orderStatus: e.target.value
@@ -2127,7 +2111,7 @@ onClick={async () => {
         },
       })
   } catch (error) {
-    console.log('error123: ', error);
+    
 
   }
 
