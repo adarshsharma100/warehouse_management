@@ -178,7 +178,7 @@ export const OrdersList = () => {
 
   const customerOptions = orders.map(({ customers }) => ({
     ...customers,
-    name: `${customers?.firstName} - ${customers?.companyName}`
+    name: `${customers?.firstName}${customers?.companyName ? `- ${customers?.companyName}` : ""}`
   }))
   console.log('customerOptions: ', customerOptions);
   const [customerOptionsSuggestions, setCustomerOptionsSuggestions] = useState<any>(null)
