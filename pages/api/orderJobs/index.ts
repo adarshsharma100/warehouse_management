@@ -13,7 +13,7 @@ export default Queue("api/orderJobs", async (uploadId: number) => {
   })
 
   // TODO: uncomment handler on server
-  // await handler()
+  await handler()
   await sleep(360000)
 
   await db.jobs.update({

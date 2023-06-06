@@ -23,7 +23,7 @@ import { classNames } from "primereact/utils"
 import * as Yup from "yup"
 import LoaderFullScreen from "./LoaderFullScreen"
 import db from "db"
-import { Chip } from "primereact/Chip"
+import { Chip } from "primereact/chip"
 
 const RFQPO = (props) => {
   const {
@@ -405,11 +405,10 @@ const RFQPO = (props) => {
 
   return (
     <div
-      className={`col-12 ${
-        purchaseDialog
+      className={`col-12 ${purchaseDialog
           ? "visible scalein animation-duration-200"
           : "hidden scaleout animation-duration-200"
-      }`}
+        }`}
     >
       <div className={`card`}>
         <form onSubmit={formik.handleSubmit} className="p-fluid ">
@@ -749,12 +748,12 @@ const RFQPO = (props) => {
                       }}
                       aria-label="products"
                       dropdownAriaLabel="Select Product"
-                      //   className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                    //   className={classNames({ "p-invalid": isFormFieldValid("name") })}
                     />
 
                     <label
                       htmlFor="name"
-                      //   className={classNames({ "p-error": isFormFieldValid("name") })}
+                    //   className={classNames({ "p-error": isFormFieldValid("name") })}
                     >
                       Select Product
                     </label>

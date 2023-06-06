@@ -18,6 +18,7 @@ import { InputText } from "primereact/inputtext"
 export const Product = () => {
   const router = useRouter()
   const productId = useParam("productId", "number")
+  
   const [deleteProductMutation] = useMutation(deleteProduct)
   // const [product] = useQuery(getProduct, { id: productId })
 

@@ -1,6 +1,7 @@
 import db from "db"
 import { GraphQLClient, gql } from "graphql-request"
 import { createOrderFunction } from "../mutations/createOrder"
+import moment from "moment"
 
 const store = "robocraze-com"
 const hostName = store + ".myshopify.com"
@@ -100,10 +101,9 @@ const getAllOrders = async (orders = [], after = null, timeout = 100) => {
   try {
     await sleep(timeout)
     const latestOrder = await db.shopify.findMany({
-      orderBy: { id: "desc" },
-      take: 1,
+      orderBy: { createdAt: "desc" },
+      take: 1
     })
-    // console.log("latestOrder: ", latestOrder)
 
     const data = await graphQLClient.request(ordersQuery, after ? { after } : {})
     const foundIndex = data.orders.nodes.findIndex((data) => data.id === latestOrder[0]?.orderId)
@@ -114,12 +114,23 @@ const getAllOrders = async (orders = [], after = null, timeout = 100) => {
     if (foundIndex >= 0) {
       console.log("foundIndex: ", foundIndex)
       return [...orders, ...data.orders.nodes.slice(0, foundIndex)]
-    } else
-      return await getAllOrders(
-        [...orders, ...data.orders.nodes],
-        data.orders.edges.cursor,
-        timeout
-      )
+    }
+    const latestOrderTime = latestOrder?.[0]?.["createdAt"] ? moment(latestOrder?.[0]?.["createdAt"]) : moment().subtract(5, 'days')
+
+    const hasOlderOrder = data.orders.nodes.find((data) => moment(data.createdAt).isBefore(latestOrderTime))
+    console.log('hasOlderOrder: ', hasOlderOrder);
+    if (hasOlderOrder) {
+      console.log('latestOrderTime: ', latestOrderTime);
+      return [...orders, ...data.orders.nodes]
+    }
+
+    // console.log('data.orders.edges: ', data.orders.edges);
+
+    return await getAllOrders(
+      [...orders, ...data.orders.nodes],
+      data.orders.edges[data.orders.edges.length - 1].cursor,
+      timeout
+    )
   } catch (error) {
     console.log("error! ", error)
     console.log("timeout: ", timeout)
@@ -130,6 +141,7 @@ const getAllOrders = async (orders = [], after = null, timeout = 100) => {
 
 export const handler = async () => {
   const orders = await getAllOrders()
+  console.log('orders: ', orders.length);
   await Promise.all(
     orders.map(async (order) => {
       const { customer, shippingAddress, billingAddress, lineItems } = order
@@ -139,7 +151,6 @@ export const handler = async () => {
           orderId: order.id,
         },
       })
-      console.log("latestOrder: ", latestOrder)
       if (latestOrder) return
 
       let productList = []
@@ -156,21 +167,21 @@ export const handler = async () => {
 
         if (product) productList = [...productList, { ...currentProduct, productId: product.id }]
         else {
-          console.log("currentProduct: ", currentProduct)
+          console.log('currentProduct.product?.title: ', currentProduct.product?.title);
           const newProduct = await db.products.create({
             data: {
               sku: currentProduct.sku,
               name: currentProduct.product?.title,
               description: currentProduct.product?.description,
               type: 1,
-              costPrice: currentProduct.product?.priceRange?.maxVariantPrice?.amount,
+              costPrice: currentProduct.product?.priceRange?.maxVariantPrice?.amount ? parseInt(currentProduct.product?.priceRange?.maxVariantPrice?.amount) : 0,
               imageUrl: currentProduct.product?.featuredImage?.url,
             },
           })
-          console.log("newProduct: ", newProduct)
           productList = [...productList, { ...lineItems, productId: newProduct.id }]
         }
       }
+
 
       const newOrderObject = {
         customer: {
@@ -236,11 +247,17 @@ export const handler = async () => {
           totalPrice: parseInt(order.totalPrice),
           gateway: order.paymentGatewayNames?.join(","),
           order_items: {
-            create: productList.map((lineItem) => ({
-              product: lineItem.productId,
-              quantity: lineItem.quantity,
-              price: parseInt(lineItem.discountedTotalSet.shopMoney.amount),
-            })),
+            create: productList.map((lineItem) => {
+              const product = lineItem?.nodes?.[0] ?? lineItem
+              if (!product.productId)
+                console.log('product:-> ', product);
+
+              return {
+                product: product.productId,
+                quantity: product.quantity,
+                price: parseInt(product.discountedTotalSet?.shopMoney.amount),
+              }
+            }),
           },
         },
       }

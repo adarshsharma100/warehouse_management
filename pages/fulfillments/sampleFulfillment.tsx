@@ -182,7 +182,7 @@ export default function sampleFulfillment() {
                         </div>} >
                         </Column>
 
-                       
+
                         <Column header="Channel" body={({ channel }) => <div>
                             <p>{channel.name}</p>
                         </div>} >

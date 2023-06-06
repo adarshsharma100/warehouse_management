@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState, useReducer } from "react";
 import { getQueryClient, useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
 import { useRouter } from "next/router";
 import Layout from "layouts/Layout"
@@ -12,6 +12,7 @@ import { Column } from "primereact/column";
 import { cities, dateFormat } from "app/constants";
 import createOrder from "app/orders/mutations/createOrder";
 import updateOrder from "app/orders/mutations/updateOrder";
+import CreateShipment from 'app/shipments/mutations/createShipment';
 import { OverlayPanel } from 'primereact/overlaypanel';
 import { InputText } from "primereact/inputtext";
 import { Dropdown } from "primereact/dropdown";
@@ -29,13 +30,23 @@ import { ToggleButton } from 'primereact/togglebutton';
 import { Checkbox } from "primereact/checkbox";
 import { JobStatus } from "components/JobStatus";
 import AddressComponent from "../../components/AddressComponent";
+import db from "db";
+
+import { Toast } from "primereact/toast";
+import { tsuccess } from "app/constants";
+import { tError } from "app/constants";
+import { TabMenu } from "primereact/tabmenu"
+import getInventory_products from "app/inventory_products/queries/getInventory_products";
+import updateInventory_product from "app/inventory_products/mutations/updateInventory_product"
 
 
 const initialOrderDetails = {
+  name: "",
   firstName: '',
   lastName: '',
   email: '',
-  customer: '',
+  companyName: "",
+  customer: { firstName: '', companyName: '' },
   contactNumber: '',
   checkedAddress: '',
   orderStatus: '',
@@ -100,14 +111,18 @@ const ITEMS_PER_PAGE = 100;
 
 export const OrdersList = () => {
 
+  const toast = useRef(null)
+
+
   const router = useRouter();
   const page = Number(router.query.page) || 0;
-  const [{ orders, jobId }, { refetch: refetchOrders }] = usePaginatedQuery(getOrders, {
+  const [{ orders }, { refetch: refetchOrders }] = usePaginatedQuery(getOrders, {
     orderBy: { id: "desc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   });
   console.log('orders: ', orders);
+
 
   const [{ order_statuses, }] = useQuery(getOrder_statuses, {
     orderBy: { id: "asc" },
@@ -115,7 +130,7 @@ export const OrdersList = () => {
     take: ITEMS_PER_PAGE,
     where: undefined
   })
-  console.log('order_statuses: ', order_statuses);
+
 
   // const [{ customers }] = useQuery(getCustomers, {
   //   skip: undefined,
@@ -123,15 +138,26 @@ export const OrdersList = () => {
   //   orderBy: undefined,
   //   take: undefined
   // })
-  // console.log('customers: ', customers);
 
   const [{ products }] = useQuery(getProducts, {
     orderBy: { id: "asc" },
   })
 
+  const [{ inventory_products }] = useQuery(getInventory_products, {
+    orderBy: { id: "asc" },
+    skip: ITEMS_PER_PAGE * page,
+    take: ITEMS_PER_PAGE,
+    where: undefined
+  })
+  console.log('inventory_products: ', inventory_products);
+  const [updateInventory_productMutation, { error: updateInventoryError, isLoading: updatingInventory },] = useMutation(updateInventory_product)
+
+
   // Todo : UsePaginatedQueries
   // const goToPreviousPage = () => router.push({ query: { page: page - 1 } });
   // const goToNextPage = () => router.push({ query: { page: page + 1 } });
+
+
 
   const [createNewOrder] = useMutation(createOrder)
   const [updateNewOrder, { isLoading }] = useMutation(updateOrder)
@@ -150,7 +176,11 @@ export const OrdersList = () => {
 
   const [orderItemsSuggestions, setOderItemsSuggestions] = useState<any>(null)
 
-  const [customerOptions] = useState(customers_)
+  const customerOptions = orders.map(({ customers }) => ({
+    ...customers,
+    name: `${customers?.firstName}${customers?.companyName ? `- ${customers?.companyName}` : ""}`
+  }))
+  console.log('customerOptions: ', customerOptions);
   const [customerOptionsSuggestions, setCustomerOptionsSuggestions] = useState<any>(null)
 
   const [gatewayOptions] = useState(gateway_)
@@ -167,7 +197,7 @@ export const OrdersList = () => {
 
   const searchOrderStatus = createSearchFunction(orderStatusOption, setOderStatusSuggestions)
   const searchOrderItems = createSearchFunction(orderItemsOptions, setOderItemsSuggestions)
-  const searchCustomers = createSearchFunction(customerOptions, setCustomerOptionsSuggestions)
+  // const searchCustomers = createSearchFunction(customerOptions, setCustomerOptionsSuggestions)
   const searchGateway = createSearchFunction(gatewayOptions, setGatewayOptionsSuggestions)
   const searchPayment = createSearchFunction(paymentOptions, setPaymentOptionsSuggestions)
   const scrollToTop = useRef<HTMLDivElement>(null)
@@ -178,10 +208,10 @@ export const OrdersList = () => {
       let _filteredSuggestions
       if (!event.query.trim().length) {
         _filteredSuggestions = [...cities]
-        console.log("searchCity -", _filteredSuggestions)
+        // console.log("searchCity -", _filteredSuggestions)
       } else {
         _filteredSuggestions = cities.filter((element) => {
-          console.log("searchCity +", _filteredSuggestions)
+          // console.log("searchCity +", _filteredSuggestions)
           return element.city.toLowerCase().startsWith(event.query.toLowerCase())
         })
       }
@@ -189,6 +219,55 @@ export const OrdersList = () => {
       setAddressSuggestion(_filteredSuggestions)
     }, 50)
   }
+
+
+  const searchCustomers = (event) => {
+    setTimeout(() => {
+      let _filteredSuggestions;
+
+      if (!event.query.trim().length) {
+        _filteredSuggestions = [...customerOptions];
+      } else {
+        const query = event.query.toLowerCase();
+        _filteredSuggestions = customerOptions.filter((element) => {
+          const firstName = element.firstName?.toLowerCase();
+          return firstName?.startsWith(query);
+        });
+      }
+
+      setCustomerOptionsSuggestions(_filteredSuggestions);
+    }, 50);
+  };
+
+
+
+  // const searchCustomers = (event) => {
+  //   setTimeout(() => {
+  //     let _filteredSuggestions;
+
+  //     if (!event.query.trim().length) {
+  //       _filteredSuggestions = [...customerOptions];
+  //     } else {
+  //       const query = event.query.toLowerCase();
+  //       _filteredSuggestions = customerOptions.filter((element) => {
+  //         const firstName = element.firstName?.toLowerCase();
+  //         const companyName = element.companyName?.toLowerCase();
+  //         const fullName = `${firstName} - ${companyName}`;
+
+  //         return (
+  //           firstName?.startsWith(query) ||
+  //           companyName?.startsWith(query) ||
+  //           fullName?.startsWith(query)
+  //         );
+  //       });
+  //     }
+
+  //     setCustomerOptionsSuggestions(_filteredSuggestions);
+  //   }, 50);
+  // };
+
+
+
 
 
 
@@ -257,17 +336,19 @@ export const OrdersList = () => {
   });
 
 
-
-
-
   const handleRowClick = async (e) => {
-    console.log('e.data: ', e.originalEvent.target.classList[0]);
-    const onclickClass = e.originalEvent.target.classList[0]
+    // console.log('e.data: ', e.originalEvent.target.classList[0]);
+    // const onclickClass = e.originalEvent.target.classList[0]
+
+    const onclickClass = e.target.classList[0]
+
     // e.preventDefault()
     // e.stopPropagation()
     if (["p-dropdown-trigger", "OrderStatus", "p-dropdown-trigger-icon", "p-dropdown-label"].includes(onclickClass)) {
       return
     }
+
+
     setActiveRowData({ ...e.data })
     setNewOrderUpdate(true)
     setOrderDialog(true)
@@ -278,6 +359,7 @@ export const OrdersList = () => {
     const _shippingAddress = e.data.addresses_orders_shippingAddressIdToaddresses
     const _billingAddress = e.data.addresses_orders_billingAddressIdToaddresses
 
+
     const _orderItems = e.data.order_items.map(({ quantity, price, products: { id, name, sku } }) => ({
       id,
       name: `${sku} - ${name}`,
@@ -286,7 +368,7 @@ export const OrdersList = () => {
     }));
 
     // const _quantity = e.data.order_items.quantity
-    console.log('name: ', _billingAddress);
+    // console.log('_billingAddress: ', _billingAddress);
 
     await formik.setValues({
       ...e.data,
@@ -294,6 +376,7 @@ export const OrdersList = () => {
       lastName: name.lastName,
       email: _email,
       contactNumber: _contactNumber,
+
       // order_status: _orderStatus,
       shippingAddress: {
         address: _shippingAddress.areaStreet,
@@ -320,102 +403,6 @@ export const OrdersList = () => {
     })
 
     scrollToTop?.current && scrollToTop?.current.scrollIntoView()
-
-    // const test = {
-    //   "id": 131,
-    //   "orderStatus": 2,
-    //   "shippingAddressId": 604,
-    //   "billingAddressId": 605,
-    //   "createdAt": null,
-    //   "shopifyId": null,
-    //   "customerId": 147,
-    //   "paymentStatus": "Paid",
-    //   "totalPrice": 27000,
-    //   "gateway": "Paypal",
-    //   "channelCreatedAt": "2023-03-23T12:15:20.000Z",
-    //   "cursor": null,
-    //   "order_items": [
-    //     {
-    //       "id": 67,
-    //       "order": 131,
-    //       "product": 3,
-    //       "quantity": 2,
-    //       "price": 13500,
-    //       "products": {
-    //         "id": 3,
-    //         "name": "Machine Tools",
-    //         "sku": "TIFEC0045",
-    //         "description": "Machine Tools update::",
-    //         "length": null,
-    //         "width": null,
-    //         "height": null,
-    //         "weight": null,
-    //         "color": null,
-    //         "hsnCode": null,
-    //         "imageUrl": "https://loremflickr.com/320/240/device?random=1",
-    //         "createdAT": null,
-    //         "updatedAT": null,
-    //         "customDuty": null,
-    //         "gstTaxTypeCode": null,
-    //         "taxCalcType": null,
-    //         "status": "Active",
-    //         "category": null,
-    //         "brand": null,
-    //         "costPrice": 10,
-    //         "type": 1
-    //       }
-    //     }
-    //   ],
-    //   "order_status": {
-    //     "id": 2,
-    //     "name": "Unfulfilled",
-    //     "description": "Order has not been fulfilled yet"
-    //   },
-    //   "addresses_orders_billingAddressIdToaddresses": {
-    //     "id": 605,
-    //     "buildingNumber": null,
-    //     "areaStreet": "dfghjkl",
-    //     "landmarkName": "67ytutgyg",
-    //     "cityCountryProvince": "Adoni",
-    //     "state": "Andhra Pradesh",
-    //     "pincode": "09876543",
-    //     "country": 1
-    //   },
-    //   "addresses_orders_shippingAddressIdToaddresses": {
-    //     "id": 604,
-    //     "buildingNumber": null,
-    //     "areaStreet": "dfghjkl",
-    //     "landmarkName": "67ytutgyg",
-    //     "cityCountryProvince": "Adoni",
-    //     "state": "Andhra Pradesh",
-    //     "pincode": "09876543",
-    //     "country": 1
-    //   },
-    //   "customers": {
-    //     "id": 147,
-    //     "firstName": "Akshara",
-    //     "lastName": "Mishra",
-    //     "addressesId": 603,
-    //     "shopifyId": null,
-    //     "addresses": {
-    //       "contact_number": [
-    //         {
-    //           "id": 395,
-    //           "type": "mobile",
-    //           "number": "1234567890",
-    //           "address": 603
-    //         }
-    //       ],
-    //       "emails_emails_addressesToaddresses": [
-    //         {
-    //           "id": 127,
-    //           "email": "scd@fds.af",
-    //           "addresses": 603
-    //         }
-    //       ]
-    //     }
-    //   }
-    // }
   }
 
 
@@ -633,7 +620,8 @@ export const OrdersList = () => {
                   price: Number(ele.price),
                 }))
               },
-            }
+            },
+
 
           },
             {
@@ -657,8 +645,8 @@ export const OrdersList = () => {
     }
   })
 
-
   console.log('formik', formik.errors)
+
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
@@ -698,10 +686,480 @@ export const OrdersList = () => {
     });
   };
 
+  const [verificationStatus, setVerificationStatus] = useState(false);
+  const inventory_productName = inventory_products.map((val) => val.products.name)
+  console.log('inventory_productName: ', inventory_productName);
+
+
+
+  const checkVerifyOrder = () => {
+    const inventoryProduct = inventory_products.find(product => product.products.name === selectOrder.name);
+  }
+  console.log('inventoryProduct: ', inventory_products);
+
+  const [createShipment] = useMutation(CreateShipment)
+
+  const renderHeader = () => {
+
+    return (
+      <>
+        <Toast ref={toast} />
+
+        <div className="flex justify-content-end">
+          {checkVerified && (
+
+            // <Button
+            //   type="button"
+            //   icon="pi pi-verified"
+            //   label="Verify"
+            //   className="p-button-outlined"
+
+            //   onClick={async () => {
+            //     const activeIDs = selectedOrder.map((ele) => ele?.id);
+            //     const activeOrderItems = selectedOrder.map((ele) => ele?.order_items).flat();
+            //     const activeOrderName = activeOrderItems.map((i) => i.products.name)
+            //     const activeOrderQuantity = activeOrderItems.map((i) => i.quantity)
+
+            //     if (activeIDs.length > 0) {
+            //       activeIDs.forEach(async (id) => {
+
+            //         const selectedProduct = inventory_products.find((product) => product.products.name === activeOrderName[0]);
+            //         console.log('selectedProduct: ', selectedProduct);
+
+            //         if (selectedProduct && selectedProduct.quantity > activeOrderQuantity[0]) {
+            //           const updatedQuantity = Number(selectedProduct.quantity) - Number(activeOrderQuantity[0]);
+
+            //           await updateInventory_productMutation(
+            //             {
+            //               id: selectedProduct.id,
+            //               quantity: updatedQuantity,
+            //             },
+            //             {
+            //               onSuccess: () => {
+            //                 toast?.current?.show(
+            //                   tsuccess("Inventory  updated successfully.")
+            //                 )
+            //               },
+            //             }
+            //           )
+
+            //           await updateNewOrder({
+            //             id,
+            //             verified: 1,
+            //           });
+            //           const shipmentNumber = `ROB0${Math.floor(Math.random() * 100000)}`;
+            //           const shipmentItems = activeOrderItems.map((item) => {
+            //             return {
+            //               order_items: {
+            //                 connect: {
+            //                   id: item.id,
+            //                 },
+            //               },
+            //             };
+            //           });
+
+            //           await createShipment(
+            //             {
+            //               ordersId: id,
+            //               shipmentNumber,
+            //               priority: 'LOW',
+            //               shipment_items: {
+            //                 create: shipmentItems,
+            //               },
+            //             },
+            //             {
+            //               onSuccess: () => {
+            //                 toast?.current.show(tsuccess('Verified'));
+            //               },
+            //               onError: (error) => {
+            //                 console.log('error: ', error);
+            //                 toast?.current.show(terror('Not Verified'));
+            //               },
+            //             }
+            //           );
+            //         } 
+            //         else {
+            //           alert('You should reduce your quantity')
+            //         }
+
+            //       });
+            //     }
+
+            //   }}
+            // />
+
+
+            <Button
+              type="button"
+              icon="pi pi-verified"
+              label="Verify"
+              className="p-button-outlined"
+
+              onClick={async () => {
+                const activeIDs = selectedOrder.map((ele) => ele?.id);
+                const activeOrderItems = selectedOrder.map((ele) => ele?.order_items).flat();
+
+                const productQuantityArray = activeOrderItems.map((item) => ({
+                  productName: item.products.name,
+                  quantity: item.quantity,
+                }));
+
+                console.log('productQuantityArray: ', productQuantityArray);
+
+                const newArrayOfObjects = productQuantityArray.map((item) => {
+                  const inventoryProduct = inventory_products.find((product) => product.products.name === item.productName);
+                  console.log('inventoryProduct00: ', inventoryProduct.quantity > item.quantity ? inventoryProduct.quantity - item.quantity : 0);
+                  const updatedQuantity = inventoryProduct.quantity > item.quantity ? inventoryProduct.quantity - item.quantity : 0;
+
+                  if (inventoryProduct) {
+                    return {
+                      productName: item.productName,
+                      quantity: updatedQuantity,
+                    };
+                  } else {
+                    return {
+                      productName: item.productName,
+                      quantity: 0,
+                    };
+                  }
+                });
+
+                console.log('newArrayOfObjects: ', newArrayOfObjects);
+
+                const isQuantityLess = productQuantityArray.every((item, index) => item.quantity < newArrayOfObjects[index].quantity);
+
+
+                if (isQuantityLess) {
+                  toast.current.show(tsuccess('quantity is less in order'));
+
+                  if (activeIDs.length > 0) {
+
+                    newArrayOfObjects.forEach(async (obj) => {
+                      const inventoryProduct = inventory_products.find((product) => product.products.name === obj.productName);
+
+                      if (inventoryProduct && obj.quantity > 0) {
+                        await updateInventory_productMutation(
+                          {
+                            id: inventoryProduct.id,
+                            quantity: obj.quantity,
+                          },
+                          {
+                            onSuccess: () => {
+                              toast.current.show(tsuccess('update Inventory'));
+                            },
+                            onError: (error) => {
+                              console.log('Error:', error);
+                              toast.current.show(terror('update Inventory error'));
+
+                              // Handle the error, show an error message, etc.
+                            },
+                          }
+                        );
+                      }
+                    });
+
+
+                    activeIDs.forEach(async (id) => {
+                      await updateNewOrder({
+                        id,
+                        verified: 1,
+                      });
+                      const shipmentNumber = `ROB0${Math.floor(Math.random() * 100000)}`;
+                      const shipmentItems = activeOrderItems.map((item) => {
+                        return {
+                          order_items: {
+                            connect: {
+                              id: item.id,
+                            },
+                          },
+                        };
+                      });
+
+                      await createShipment(
+                        {
+                          ordersId: id,
+                          shipmentNumber,
+                          priority: 'LOW',
+                          shipment_items: {
+                            create: shipmentItems,
+                          },
+                        },
+                        {
+                          onSuccess: () => {
+                            toast?.current.show(tsuccess('Verified'));
+                          },
+                          onError: (error) => {
+                            console.log('error: ', error);
+                            toast?.current.show(terror('Not Verified'));
+                          },
+                        }
+                      );
+                    }
+                    )
+                  }
+                }
+
+                else {
+                  toast.current.show(tError('Not done'));
+                }
+
+
+                // if (activeIDs.length > 0) {
+                //   activeIDs.forEach(async (id) => {
+                //     await updateNewOrder({
+                //       id,
+                //       verified: 1,
+                //     });
+                //     const shipmentNumber = `ROB0${Math.floor(Math.random() * 100000)}`;
+                //     const shipmentItems = activeOrderItems.map((item) => {
+                //       return {
+                //         order_items: {
+                //           connect: {
+                //             id: item.id,
+                //           },
+                //         },
+                //       };
+                //     });
+
+                //     await createShipment(
+                //       {
+                //         ordersId: id,
+                //         shipmentNumber,
+                //         priority: 'LOW',
+                //         shipment_items: {
+                //           create: shipmentItems,
+                //         },
+                //       },
+                //       {
+                //         onSuccess: () => {
+                //           toast?.current.show(tsuccess('Verified'));
+                //         },
+                //         onError: (error) => {
+                //           console.log('error: ', error);
+                //           toast?.current.show(terror('Not Verified'));
+                //         },
+                //       }
+                //     );
+                //   }
+                //   )
+                // }
+
+              }}
+            />
+
+
+            // <Button
+            //   type="button"
+            //   icon="pi pi-verified"
+            //   label="Verify"
+            //   className="p-button-outlined"
+            //   onClick={async () => {
+            //     const activeIDs = selectedOrder.map((ele) => ele?.id);
+            //     const activeOrderItems = selectedOrder.map((ele) => ele?.order_items).flat();
+            //     const activeOrderNames = activeOrderItems.map((i) => i.products.name);
+            //     const activeOrderQuantities = activeOrderItems.map((i) => i.quantity);
+
+            //     if (activeIDs.length > 0) {
+            //       let verificationPassed = true; // Flag to track if all products pass verification
+
+            //       for (let i = 0; i < activeOrderItems.length; i++) {
+            //         const activeOrderItem = activeOrderItems[i];
+            //         const activeOrderName = activeOrderNames[i];
+            //         const activeOrderQuantity = activeOrderQuantities[i];
+
+            //         const selectedProduct = inventory_products.find((product) => product.products.name === activeOrderName);
+
+            //         if (!selectedProduct || selectedProduct.quantity < activeOrderQuantity) {
+            //           verificationPassed = false;
+            //           break;
+            //         }
+            //       }
+
+            //       if (verificationPassed) {
+            //         for (let i = 0; i < activeIDs.length; i++) {
+            //           const id = activeIDs[i];
+            //           const activeOrderItem = activeOrderItems[i];
+            //           const activeOrderName = activeOrderNames[i];
+            //           const activeOrderQuantity = activeOrderQuantities[i];
+
+            //           const selectedProduct = inventory_products.find((product) => product.products.name === activeOrderName);
+            //           const updatedQuantity = selectedProduct.quantity - activeOrderQuantity;
+
+            //           await updateInventory_productMutation(
+            //             {
+            //               id: selectedProduct.id,
+            //               quantity: updatedQuantity,
+            //             },
+            //             {
+            //               onSuccess: () => {
+            //                 toast?.current?.show(tsuccess("Inventory updated successfully."));
+            //               },
+            //             }
+            //           );
+
+            //           await updateNewOrder({
+            //             id,
+            //             verified: 1,
+            //           });
+
+            //           const shipmentNumber = `ROB0${Math.floor(Math.random() * 100000)}`;
+            //           const shipmentItems = {
+            //             order_items: {
+            //               connect: {
+            //                 id: activeOrderItem.id,
+            //               },
+            //             },
+            //           };
+
+            //           await createShipment(
+            //             {
+            //               ordersId: id,
+            //               shipmentNumber,
+            //               priority: 'LOW',
+            //               shipment_items: {
+            //                 create: shipmentItems,
+            //               },
+            //             },
+            //             {
+            //               onSuccess: () => {
+            //                 toast?.current.show(tsuccess('Verified'));
+            //               },
+            //               onError: (error) => {
+            //                 console.log('error: ', error);
+            //                 toast?.current.show(terror('Not Verified'));
+            //               },
+            //             }
+            //           );
+            //         }
+            //       } else {
+            //         alert('Product quantity is insufficient or product not found in inventory');
+            //       }
+            //     }
+            //   }}
+            // />
+
+
+
+          )}
+        </div>
+
+      </>
+
+    )
+  }
+
+
+  const [selectedOrder, setSelectedOrder] = useState([]);
+  const [checkVerified, setCheckVerified] = useState(false)
+  // console.log('checkVerified: ', checkVerified);
+  // console.log('selectedOrder: ', selectedOrder);
+
+  useEffect(() => {
+    if (selectedOrder && Object.keys(selectedOrder).length >= 1) {
+      setCheckVerified(true);
+    } else {
+      setCheckVerified(false);
+    }
+  }, [selectedOrder]);
+
+
+  function verifyOrder(order) {
+    return order.verified ? "Verified" : "Not Verified";
+  }
+
+  const searchCustomer = createSearchFunction(customerOptions, setCustomerOptionsSuggestions)
+
+
+  const handleViewClick = async (id) => {
+    router.push(`orders/${id}`);
+  };
+  const [isChecked, setIsChecked] = useState(false);
+
+  const handleCheckboxChange = () => {
+    setIsChecked(!isChecked);
+  };
+
+  //     tab_view 
+
+
+
+  const reducer = (state, { type, payload }) => {
+    switch (type) {
+      case 'GET_ORDERS':
+        return { ...state, orders: payload };
+      case 'FILTER_BY':
+        return { ...state, filteredOrders: payload };
+      case 'UPDATE_STATUS_ID':
+        return { ...state, statusId: payload };
+      case 'UPDATE_STATUS_NAME':
+        return { ...state, statusName: payload };
+      case 'UPDATE_SKIP_COUNT':
+        return { ...state, skipCount: payload };
+      case 'UPDATE_TABLE_ROWS_COUNT':
+        return { ...state, tableRowsCount: payload };
+      case 'SET_SELECTED_SHIPMENTS':
+        return { ...state, selectedShipments: payload };
+      case 'RESET_SELECTED_SHIPMENTS':
+        return { ...state, selectedShipments: [] };
+      case 'READY_TO_SHIP':
+        return { ...state, isReadyToShip: payload };
+      case 'READY_TO_SHIP_ACTIVE_INDEX':
+        return { ...state, readyToShipActiveIndex: payload };
+      case 'DISPATCH_SHIPMENTS':
+        return { ...state, displayManifest: true }
+      case 'SET_SHIPMENT_STATE':
+        return { ...state, [payload.prop]: payload.value }
+
+      case 'FILTER_BY_STATUS': // Add this case
+        const filteredOrders = state.orders.filter(order => order.status === 'unfulfilled');
+        return { ...state, filteredOrders };
+      default:
+        throw new Error(`Unhandled action type: ${type}`);
+    }
+  }
+  const initialState = {
+    orders: [],
+    filteredOrders: [],
+    manifestShipments: [],
+    manifestStep: 0,
+    displayManifest: false,
+    statusId: undefined,
+    statusName: "ALL",
+    tableRowsCount: 10,
+    skipCount: 0,
+    first: 0,
+    rows: 10,
+    itemsPerPage: 10,
+    selectedShipments: [],
+    isReadyToShip: false,
+    readyToShipActiveIndex: 0,
+    containerName: 'manifests',
+    sasToken: process.env.NEXT_PUBLIC_STORAGESASTOKEN,
+    storageAccountName: process.env.NEXT_PUBLIC_STORAGERESOURCENAME,
+    manifestImageURL: ""
+  };
+
+
+
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { statusId } = state
+  console.log('statusId: ', statusId);
+
+
+  const tabMenuItems = order_statuses?.map(status => (
+    {
+      label: `${status.name === "CREATED" ? "NEW" : status.name}`,
+      status: status.name,
+      id: status.id
+    }
+  ))
+
 
 
   return (
+
     <div className="grid w-full" >
+
       <div className="col-12">
         <div className="card flex justify-content-between align-items-center m-0">
           <h2>Orders</h2>
@@ -713,14 +1171,12 @@ export const OrdersList = () => {
               onClick={() => {
                 setOrderDialog(!orderDialog)
               }}
+
             />
             <div>
             </div>
           </div>
         </div>
-
-
-
       </div>
 
       {orderDialog &&
@@ -731,7 +1187,108 @@ export const OrdersList = () => {
             </div>
             <form onSubmit={formik.handleSubmit}
               className="p-fluid">
+
               <div className=" grid">
+
+                <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                  <span className="p-float-label">
+
+                    <AutoComplete
+                      value={formik.values?.name}
+                      dropdown
+                      field="name"
+                      suggestions={customerOptionsSuggestions}
+                      completeMethod={searchCustomer}
+                      forceSelection
+                      onChange={async (e) => {
+                        const selectedCustomer = e.value;
+                        console.log('selectedCustomer: ', selectedCustomer);
+                        let name = typeof e.value === "string" ? e.value : e.value?.name
+
+                        await formik.setValues({
+                          ...formik.values,
+                          name,
+                          firstName: selectedCustomer?.firstName,
+                          lastName: selectedCustomer?.lastName,
+                          address: selectedCustomer?.addresses?.areaStreet,
+                          email: selectedCustomer?.addresses?.emails_emails_addressesToaddresses?.map((ele) => ele.email),
+                          pincode: selectedCustomer?.addresses?.pincode,
+                          state: selectedCustomer?.addresses?.state,
+                          landmarkName: selectedCustomer?.addresses?.landmarkName,
+                          city: selectedCustomer?.addresses?.cityCountryProvince,
+                          country: selectedCustomer?.addresses?.country_addresses_countryTocountry?.name,
+
+                        });
+
+
+                        if (selectedCustomer?.addresses && selectedCustomer?.addresses?.contact_number.length > 0) {
+                          const contactNumber = selectedCustomer?.addresses?.contact_number[0]?.number || '';
+                          formik.setFieldValue('contactNumber', contactNumber);
+                        } else {
+                          formik.setFieldValue('contactNumber', '');
+                        }
+
+                      }}
+
+                      aria-label="customer"
+                      dropdownAriaLabel="Select customer"
+                      className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                    />
+                    <label
+                      htmlFor={"type"}
+                      className={classNames({ "p-error": isFormFieldValid("type") })}
+                    >
+                      Select Customer
+                    </label>
+                  </span>
+                </div>
+
+
+                {/* <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                  <span className="p-float-label">
+                    <AutoComplete
+                      value={formik.values.customer ? `${formik.values.customer.firstName || ''}  ${formik.values.customer.companyName || ''}` : ''}
+                      dropdown
+                      field="firstName"
+                      suggestions={customerOptionsSuggestions}
+                      completeMethod={searchCustomers}
+                      forceSelection
+                      onChange={(e) => {
+                        const selectedCustomer = e.value;
+
+                        formik.setFieldValue('customer', selectedCustomer);
+                        formik.setFieldValue('firstName', selectedCustomer?.firstName);
+                        formik.setFieldValue('lastName', selectedCustomer?.lastName);
+                        formik.setFieldValue('address', selectedCustomer?.addresses?.areaStreet);
+                        formik.setFieldValue('email', selectedCustomer?.addresses?.emails_emails_addressesToaddresses?.map((ele) => ele.email));
+                        formik.setFieldValue('pincode', selectedCustomer?.addresses?.pincode);
+                        formik.setFieldValue('state', selectedCustomer?.addresses?.state);
+                        formik.setFieldValue('landmarkName', selectedCustomer?.addresses?.landmarkName);
+                        formik.setFieldValue('city', selectedCustomer?.addresses?.cityCountryProvince);
+                        formik.setFieldValue('country', selectedCustomer?.addresses?.country_addresses_countryTocountry?.name);
+
+                        if (selectedCustomer?.addresses && selectedCustomer?.addresses?.contact_number.length > 0) {
+                          const contactNumber = selectedCustomer?.addresses?.contact_number[0]?.number || '';
+                          formik.setFieldValue('contactNumber', contactNumber);
+                        } else {
+                          formik.setFieldValue('contactNumber', '');
+                        }
+                      }}
+                      itemTemplate={(option) => (
+                        <div>
+                          <span>{option.firstName} </span> - <span>{option.companyName || ""} </span>
+                        </div>
+                      )}
+                      aria-label="customer"
+                      dropdownAriaLabel="Select customer"
+                      className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                    />
+                    <label htmlFor="type" className={classNames({ "p-error": isFormFieldValid("type") })}>
+                      Select Customer
+                    </label>
+                  </span>
+                </div> */}
+
                 {[
                   { field: "firstName", label: "First Name" },
                   { field: "lastName", label: "Last Name" },
@@ -837,36 +1394,6 @@ export const OrdersList = () => {
                   {getFormErrorMessage("country")}
                 </div>
 
-
-
-                {/* <div key={`Customer`} className="field col-12 lg:col-5 md:col-6 mt-4">
-                <span className="p-float-label">
-                  <AutoComplete
-                    id="Customer"
-                    value={formik.values.customer}
-                    dropdown
-                    forceSelection
-                    suggestions={customerOptionsSuggestions}
-                    completeMethod={searchCustomers}
-                    field="name"
-                    onChange={(e) => {
-                      const selectedOrderItem = customerOptions.find(option_ => option_.name === e.value.name);
-                      // const selectedItemsOptionName = selectedOrderItem ? selectedOrderItem.name : null;
-                      formik.setFieldValue('customer', selectedOrderItem);
-                    }}
-                    aria-label="Customer"
-                    dropdownAriaLabel="Customer"
-                    className={classNames({ "p-invalid": isFormFieldValid("category") })}
-                  />
-                  <label
-
-                    className={classNames({ "p-error": isFormFieldValid("category") })}
-                  >
-                    Customer
-                  </label>
-                </span>
-                {getFormErrorMessage("category")}
-              </div> */}
                 <div className="grid col-12">
                   <div key={`Order Status`} className="field col-12 lg:col-4 md:col-6 mt-2">
                     <span className="p-float-label">
@@ -989,6 +1516,7 @@ export const OrdersList = () => {
                             Products
                           </label>
                         </span>
+
                       </div>
                       <div className="field col-12 lg:col-3 md:col-6 mt-2">
                         <span className="p-float-label">
@@ -1122,7 +1650,6 @@ export const OrdersList = () => {
             </form>
           </div>
         </div>
-
       }
       {/* <div className="col-12">
         <JobStatus id={jobId} title={"Order Fetching Job"} />
@@ -1130,174 +1657,63 @@ export const OrdersList = () => {
 
 
       <div className="col-12">
+
         <div className="card">
+
+
+          <TabMenu
+            model={[...tabMenuItems]}
+            activeIndex={statusId}
+            onTabChange={(e) => {
+              // dispatch({ type: 'UPDATE_STATUS_ID', payload: e.value.id })
+              // dispatch({ type: 'UPDATE_STATUS_NAME', payload: e.value.status ?? e.value.label })
+              // dispatch({ type: 'RESET_SELECTED_SHIPMENTS', payload: [] })
+              // if (e.value.status === 'unfulfilled') {
+              //   dispatch({ type: 'FILTER_BY_STATUS' });
+              // } else {
+              //   dispatch({ type: 'GET_ORDERS', payload: [] });
+              // }
+              if (statusId === 2) {
+                <DataTable
+                  value={orders}
+
+
+                >
+
+                </DataTable>
+
+              }
+            }}
+          />
+
           <DataTable
             value={orders}
             responsiveLayout="scroll"
             showGridlines
-            // header={renderHeader}
+            header={renderHeader}
             stripedRows
             className="text-s datatable-responsive"
-            onRowClick={handleRowClick}
-          // onRowClick={async (e) => {
-          //   console.log('e.data: ', e.data);
-          //   setActiveRowData({ ...e.data })
-          //   setNewOrderUpdate(true)
-          //   setOrderDialog(true)
-          //   const name = e.data.customers
-          //   const _email = e.data.customers?.addresses?.emails_emails_addressesToaddresses.map((ele) => ele.email)
-          //   const _contactNumber = e.data.customers?.addresses?.contact_number.map((ele) => ele.number)
-          //   const _orderStatus = e.data.order_status.name
-          //   const _shippingAddress = e.data.addresses_orders_shippingAddressIdToaddresses
-          //   const _billingAddress = e.data.addresses_orders_billingAddressIdToaddresses
+            selection={selectedOrder}
+            onSelectionChange={(e) => setSelectedOrder(e.value)}
+            tableStyle={{ minWidth: '50rem' }}
 
-          //   const _orderItems = e.data.order_items.map(({ quantity, price, products: { id, name, sku } }) => ({
-          //     id,
-          //     name: `${sku} - ${name}`,
-          //     quantity: quantity.toString(),
-          //     price: price.toString()
-          //   }));
-
-          //   // const _quantity = e.data.order_items.quantity
-          //   console.log('name: ', _billingAddress);
-
-          //   await formik.setValues({
-          //     ...e.data,
-          //     firstName: name.firstName,
-          //     lastName: name.lastName,
-          //     email: _email,
-          //     contactNumber: _contactNumber,
-          //     // order_status: _orderStatus,
-          //     shippingAddress: {
-          //       address: _shippingAddress.areaStreet,
-          //       landmarkName: _shippingAddress.landmarkName,
-          //       pincode: _shippingAddress.pincode,
-          //       city: _shippingAddress.cityCountryProvince,
-          //       state: _shippingAddress.state,
-          //       country: 'India'
-
-
-          //     },
-          //     billingAddress: {
-          //       address: _billingAddress.areaStreet,
-          //       landmarkName: _billingAddress.landmarkName,
-          //       pincode: _billingAddress.pincode,
-          //       city: _billingAddress.cityCountryProvince,
-          //       state: _billingAddress.state,
-          //       country: "India"
-
-
-          //     },
-          //     // orderItems: _orderItems,
-
-          //   })
-
-          //   scrollToTop?.current && scrollToTop?.current.scrollIntoView()
-
-          //   const test = {
-          //     "id": 131,
-          //     "orderStatus": 2,
-          //     "shippingAddressId": 604,
-          //     "billingAddressId": 605,
-          //     "createdAt": null,
-          //     "shopifyId": null,
-          //     "customerId": 147,
-          //     "paymentStatus": "Paid",
-          //     "totalPrice": 27000,
-          //     "gateway": "Paypal",
-          //     "channelCreatedAt": "2023-03-23T12:15:20.000Z",
-          //     "cursor": null,
-          //     "order_items": [
-          //       {
-          //         "id": 67,
-          //         "order": 131,
-          //         "product": 3,
-          //         "quantity": 2,
-          //         "price": 13500,
-          //         "products": {
-          //           "id": 3,
-          //           "name": "Machine Tools",
-          //           "sku": "TIFEC0045",
-          //           "description": "Machine Tools update::",
-          //           "length": null,
-          //           "width": null,
-          //           "height": null,
-          //           "weight": null,
-          //           "color": null,
-          //           "hsnCode": null,
-          //           "imageUrl": "https://loremflickr.com/320/240/device?random=1",
-          //           "createdAT": null,
-          //           "updatedAT": null,
-          //           "customDuty": null,
-          //           "gstTaxTypeCode": null,
-          //           "taxCalcType": null,
-          //           "status": "Active",
-          //           "category": null,
-          //           "brand": null,
-          //           "costPrice": 10,
-          //           "type": 1
-          //         }
-          //       }
-          //     ],
-          //     "order_status": {
-          //       "id": 2,
-          //       "name": "Unfulfilled",
-          //       "description": "Order has not been fulfilled yet"
-          //     },
-          //     "addresses_orders_billingAddressIdToaddresses": {
-          //       "id": 605,
-          //       "buildingNumber": null,
-          //       "areaStreet": "dfghjkl",
-          //       "landmarkName": "67ytutgyg",
-          //       "cityCountryProvince": "Adoni",
-          //       "state": "Andhra Pradesh",
-          //       "pincode": "09876543",
-          //       "country": 1
-          //     },
-          //     "addresses_orders_shippingAddressIdToaddresses": {
-          //       "id": 604,
-          //       "buildingNumber": null,
-          //       "areaStreet": "dfghjkl",
-          //       "landmarkName": "67ytutgyg",
-          //       "cityCountryProvince": "Adoni",
-          //       "state": "Andhra Pradesh",
-          //       "pincode": "09876543",
-          //       "country": 1
-          //     },
-          //     "customers": {
-          //       "id": 147,
-          //       "firstName": "Akshara",
-          //       "lastName": "Mishra",
-          //       "addressesId": 603,
-          //       "shopifyId": null,
-          //       "addresses": {
-          //         "contact_number": [
-          //           {
-          //             "id": 395,
-          //             "type": "mobile",
-          //             "number": "1234567890",
-          //             "address": 603
-          //           }
-          //         ],
-          //         "emails_emails_addressesToaddresses": [
-          //           {
-          //             "id": 127,
-          //             "email": "scd@fds.af",
-          //             "addresses": 603
-          //           }
-          //         ]
-          //       }
-          //     }
-          //   }
-          // }}
           >
             <Column
+              selectionMode="multiple"
+              headerStyle={{ width: '3rem' }}>
+              <input
+                type="checkbox"
+                checked={isChecked}
+                onChange={handleCheckboxChange}
+              />
+            </Column>
+
+            <Column
               // field={}
-              header="Order Number"
-              body={(rowData) => rowData.shopifyId ? rowData.shopify?.orderNumber.slice(20) : rowData.id}
-            // body={(rowData) => <pre>{JSON.stringify(rowData.shopify, null, 2)}</pre>}
-            // className="text-center"
+              header="ID"
+              body={(rowData) => rowData.Id ? rowData.id : rowData.id}
             />
+
             <Column
               field=""
               header="Products"
@@ -1335,22 +1751,6 @@ export const OrdersList = () => {
                   </div>
                 )
               }}
-            // body={(rowData) => {
-            //   return <ol>{rowData.order_items.map((product, i) => {
-            //     const { quantity, products: { name, sku } } = product
-            //     return (
-            //       <li key={`i${product}`}>
-            //         <p>Name:{name}</p>
-            //         <p>SKU:{sku}</p>
-            //         <p>Quantity:{quantity}</p>
-            //       </li>
-            //     )
-            //   }
-            //   )}</ol>
-
-            // }}
-
-            // className="text-center"
             />
 
             <Column
@@ -1360,55 +1760,94 @@ export const OrdersList = () => {
               body={(rowdata) => rowdata.shopifyId ? "SH" : "IH"}
 
             />
-            <Column
-              // todo add customer details
-              field="customers.firstName"
-              header="Customer Details"
-            // className="text-center"
 
-            // body={({ customers }) => {
-            //   const customerOverlayRef = useRef(null);
-            //   const { firstName, lastName, addresses } = customers
-            //   return (
-            //     <div>
-            //       <Button
-            //         label={firstName + " " + lastName}
-            //         onClick={(e) => customerOverlayRef?.current?.toggle(e)}
-            //         className="p-button-link"
-            //       />
-            //       <OverlayPanel ref={customerOverlayRef}>
-            //         <div className="w-20rem">
-            //           {[{
-            //             prop: "First Name",
-            //             value: firstName
-            //           }, {
-            //             prop: "Last Name",
-            //             value: lastName
-            //           }, {
-            //             prop: "Email",
-            //             value: addresses?.emails_emails_addressesToaddresses?.[0]?.email
-            //           }, {
-            //             prop: "Contact Number",
-            //             value: addresses?.contact_number?.[0]?.number
-            //             // contact number should be varchar
-            //           },].map(({ prop, value }, index) => (
-            //             <div key={index} className="field grid">
-            //               <label className="font-semibold col-4">{prop}:</label>
-            //               <div className="col">
-            //                 {value?.toString()}
-            //               </div>
-            //             </div>
-            //           ))}
-            //         </div>
-            //       </OverlayPanel>
-            //     </div>
-            //   )
-            // }}
-            />
             <Column
-              field="quantity"
-              header="Status"
-            // className="text-center"
+              field=""
+              header="Customer Details"
+              body={({ customers }) => {
+                const orderItemOverlayRef = useRef(null);
+                const contactNumbers = customers?.addresses?.contact_number || [];
+                const { firstName, lastName } = customers || {};
+                return (
+                  <div>
+                    <Button
+                      label={`Customer Details`}
+                      onClick={(e) => orderItemOverlayRef?.current?.toggle(e)}
+                      className="p-button-link"
+                    />
+                    <OverlayPanel ref={orderItemOverlayRef}>
+                      <div className="w-20rem">
+                        <div className="pt-2 pb-2">
+                          <div className="grid">
+                            <label className="font-semibold col-4">Name:</label>
+                            <div className="col">
+                              {`${firstName} ${lastName}`}
+                            </div>
+                          </div>
+                        </div>
+                        {contactNumbers.map((contact, i) => {
+                          const { type, number } = contact;
+                          return (
+                            <div key={i} className="pt-2 pb-2">
+                              {[{ prop: "Type", value: type },
+                              { prop: "Number", value: number }
+                              ].map(({ prop, value }, index) => (
+                                <div key={index} className="grid">
+                                  <label className="font-semibold col-4">{prop}:</label>
+                                  <div className="col">
+                                    {value?.toString()}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </OverlayPanel>
+                  </div>
+                )
+              }}
+            />
+
+            <Column
+              field=""
+              header="Customer Contact Number"
+              body={({ customers }) => {
+                const contactNumbers = customers?.addresses?.contact_number || [];
+                return (
+                  <div className="">
+                    {contactNumbers.map((contact, i) => {
+                      const { type, number } = contact;
+                      return (
+                        <div key={i} className="">
+                          {[{ value: number }
+                          ].map(({ value }, index) => (
+                            <div key={index} className="">
+                              <div className="">
+                                {value?.toString()}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              }}
+            />
+
+            <Column
+              field=""
+              header='Customer Address'
+              body={({ customers }) => {
+                const customerAddress = customers?.addresses?.cityCountryProvince
+                return (
+                  <div className="">
+                    {customerAddress}
+                  </div>
+                )
+              }}
+
             />
             <Column
               field="gateway"
@@ -1427,11 +1866,7 @@ export const OrdersList = () => {
               // className="text-center"
               body={(rowData) => dateFormat(rowData.createdAt)}
             />
-            <Column
-              field="channelCreatedAt"
-              header="Channel Created At"
-              body={(rowData) => dateFormat(rowData.channelCreatedAt)}
-            />
+
             <Column
               // field="channelCreatedAt"
               header="Order Status"
@@ -1467,8 +1902,93 @@ export const OrdersList = () => {
               }}
               className="OrderStatus"
             />
+            <Column
+              header="Verified orders"
+              body={verifyOrder}
+              bodyClassName={(rowData) => rowData.verified ? 'verified' : 'not-verified'}
+            />
+            <Column
+              header="Action"
+              body={(rowData) => {
+
+                return (
+                  <div className="flex gap-4">
+                    <Button
+                      id="edit"
+                      label="Edit"
+                      icon='pi pi-pencil'
+                      // onClick={()=> handleRowClick(rowData)}
+                      onClick={async (e) => {
+                        setActiveRowData(rowData)
+                        setNewOrderUpdate(true)
+                        setOrderDialog(true)
+                        window.scrollTo()
+
+                        const name = rowData.customers
+                        const _email = rowData.customers?.addresses?.emails_emails_addressesToaddresses.map((ele) => ele.email)
+                        const _contactNumber = rowData.customers?.addresses?.contact_number.map((ele) => ele.number)
+                        const _orderStatus = rowData.order_status.name
+                        const _shippingAddress = rowData.addresses_orders_shippingAddressIdToaddresses
+                        const _billingAddress = rowData.addresses_orders_billingAddressIdToaddresses
+                        const _orderItems = rowData.order_items.map(({ quantity, price, products: { id, name, sku } }) => ({
+                          id,
+                          name: `${sku} - ${name}`,
+                          quantity: quantity.toString(),
+                          price: price.toString()
+                        }));
+
+                        await formik.setValues({
+                          ...rowData,
+                          firstName: name.firstName,
+                          lastName: name.lastName,
+                          email: _email,
+                          contactNumber: _contactNumber,
+                          // order_status: _orderStatus,
+                          shippingAddress: {
+                            address: _shippingAddress.areaStreet,
+                            landmarkName: _shippingAddress.landmarkName,
+                            pincode: _shippingAddress.pincode,
+                            city: _shippingAddress.cityCountryProvince,
+                            state: _shippingAddress.state,
+                            country: 'India'
+
+
+                          },
+                          billingAddress: {
+                            address: _billingAddress.areaStreet,
+                            landmarkName: _billingAddress.landmarkName,
+                            pincode: _billingAddress.pincode,
+                            city: _billingAddress.cityCountryProvince,
+                            state: _billingAddress.state,
+                            country: "India"
+
+
+                          },
+                          // orderItems: _orderItems,
+
+                        })
+                      }}
+                      tooltip="Update Order"
+                      tooltipOptions={{ position: "left" }}
+                    />
+
+                    <Button
+                      id="view"
+                      label="View"
+                      onClick={(e) => handleViewClick(rowData.id)}
+                    />
+                  </div>
+                )
+              }}
+
+            />
+
+
+
           </DataTable>
+
         </div>
+
       </div>
     </div >
   )
