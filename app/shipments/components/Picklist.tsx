@@ -16,6 +16,7 @@ type Invoice = {
 
 
 const Picklist = ({ invoice }: PicklistData) => {
+  console.log('invoice{}: ', invoice);
   if (!invoice)
     return <div></div>
   const html = `
@@ -78,6 +79,7 @@ const Picklist = ({ invoice }: PicklistData) => {
   </body>
 
   </html>`
+  
   return (
     <PDFViewer width="1000" height="600" className="app">
       <Document>

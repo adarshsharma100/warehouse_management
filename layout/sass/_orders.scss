@@ -91,3 +91,30 @@
     color: red;
     font-weight: 700;
   }
+
+
+  .product-column {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .product-header {
+    cursor: pointer;
+  }
+  
+  .overlay-panel {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 999;
+    background-color: var(--surface-card);
+    
+   
+    padding: 10px;
+  }
+  
+  .product-header:hover + .overlay-panel,
+  .overlay-panel:hover {
+    display: block;
+  }

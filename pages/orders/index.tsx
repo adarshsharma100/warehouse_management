@@ -806,7 +806,7 @@ export const OrdersList = () => {
                   const inventoryProduct = inventory_products.find((product) => product.products.name === item.productName);
                   console.log('inventoryProduct00: ', inventoryProduct.quantity > item.quantity ? inventoryProduct.quantity - item.quantity : 0);
                   const updatedQuantity = inventoryProduct.quantity > item.quantity ? inventoryProduct.quantity - item.quantity : 0;
-                  
+
                   if (inventoryProduct) {
                     return {
                       productName: item.productName,
@@ -1706,7 +1706,7 @@ export const OrdersList = () => {
               body={(rowData) => rowData.Id ? rowData.id : rowData.id}
             />
 
-            <Column
+            {/* <Column
               field=""
               header="Products"
               body={({ order_items }) => {
@@ -1743,7 +1743,69 @@ export const OrdersList = () => {
                   </div>
                 )
               }}
+            /> */}
+
+           
+            {/* Add Hover thing in product  */}
+
+            <Column
+              field=""
+              header="Products"
+              body={({ order_items }) => {
+                const [showOverlay, setShowOverlay] = useState(false);
+
+                const handleMouseEnter = () => {
+                  setShowOverlay(true);
+                };
+
+                const handleMouseLeave = () => {
+                  setShowOverlay(false);
+                };
+
+                return (
+                  <div className="product-column">
+                    <div
+                      className="product-header"
+                      onMouseEnter={handleMouseEnter}
+                      onMouseLeave={handleMouseLeave}
+                    >
+                      <Button
+                        label={`Products(${order_items.length})`}
+                        className="p-button-link"
+                      />
+                    </div>
+                    {showOverlay && (
+                      <div className="overlay-panel">
+                        <div className="w-20rem">
+                          {order_items.map((product, i) => {
+                            const { quantity, products: { name, sku } } = product;
+                            return (
+                              <div key={i} className="pt-2 pb-2">
+                                {[{ prop: "Name", value: name },
+                                { prop: "SKU", value: sku },
+                                { prop: "Quantity", value: quantity }
+                                ].map(({ prop, value }, index) => (
+                                  <div key={index} className="grid">
+                                    <label className="font-semibold col-4">{prop}:</label>
+                                    <div className="col">
+                                      {value?.toString()}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              }}
             />
+
+
+
+
 
             <Column
               field="products.name"
