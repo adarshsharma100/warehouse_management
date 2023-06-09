@@ -32,6 +32,8 @@ import PackageDimensions from "components/PackageDimensions";
 import Picklist from "app/shipments/components/Picklist";
 import CourierSelection from "components/CourierSelection";
 import Invoice from "app/shipments/components/Invoice";
+import CheckInvoice from "app/shipments/components/checkInvoice";
+
 import Manifest from "app/shipments/components/Manifest";
 
 import { ConfirmDialog } from 'primereact/confirmdialog'; // For <ConfirmDialog /> component
@@ -44,6 +46,7 @@ import { FileUpload } from "primereact/fileupload";
 import { BlobServiceClient, ContainerClient } from '@azure/storage-blob';
 import updateShipment from "app/shipments/mutations/updateShipment";
 import updateManyShipments from "app/shipments/mutations/updateManyShipments";
+import Barcode from "react-barcode";
 
 
 const initialState = {
@@ -190,7 +193,7 @@ export const ShipmentsList = () => {
     skip: skipCount,
     take: tableRowsCount,
   });
-  console.log('shipments: ', shipments.map((k) => k.sales_invoice_details));
+  console.log('shipments: ', shipments);
   const [{ shipment_statuses, }] = useQuery(getShipment_statuses, {
     orderBy: { id: "asc" },
     where: {},
@@ -440,7 +443,7 @@ export const ShipmentsList = () => {
 
 
   const onPageChange = async (event) => {
-    console.log('event: ', event);
+
     dispatch({ type: "UPDATE_SKIP_COUNT", payload: event.first })
     dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
   };
@@ -582,22 +585,31 @@ export const ShipmentsList = () => {
         />
 
       </Dialog>
-    
+
       {selectedShipments.length > 0 && (
-        <Dialog header="Invoice Details" visible={viewInvoicePdf} onHide={() => setViewInvoicePdf(false)}>
+        <Dialog header="Invoice" visible={viewInvoicePdf} onHide={() => setViewInvoicePdf(false)}>
           <Suspense fallback={<div>Loading...</div>}>
             {selectedShipments.map((shipment) => (
-              <Invoice key={shipment.id} shipmentID={shipment.id} />
+              <Invoice key={shipment.id} shipmentID={shipment.id} invoice={selectedShipments} />
             ))}
           </Suspense>
         </Dialog>
       )}
 
+      {/* {selectedShipments.length > 0 && (
+        <Dialog header="Invoice" visible={viewInvoicePdf} onHide={() => setViewInvoicePdf(false)}>
+          <Suspense fallback={<div>Loading...</div>}>
+            {selectedShipments.map((shipment) => (
+              <CheckInvoice key={shipment.id} shipmentID={shipment.id} invoice={selectedShipments} />
+            ))}
+          </Suspense>
+        </Dialog>
+      )} */}
+
 
       <div className="grid">
         <ConfirmDialog />
         <Toast ref={toast} />
-
 
         <TabMenu
           model={[{ label: "ALL" }, ...tabMenuItems]}

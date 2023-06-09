@@ -19,6 +19,7 @@ import { useQuery } from "@blitzjs/rpc";
 import getOrders from "app/orders/queries/getOrders";
 import getOrder from "app/orders/queries/getOrder";
 import { getQueryClient, useMutation, usePaginatedQuery } from "@blitzjs/rpc";
+import Barcode from "react-barcode";
 
 // import Layout from "src/core/layouts/Layout";
 // import getOrder from "src/orders/queries/getOrder";
@@ -128,6 +129,7 @@ const orderDetails = {
   shoppingMethodCode: 'Premium (Priority (2-4 days))',
   shoppingMethodTitle: 'Premium (Priority (2-4 days))',
 };
+
 
 export const OrderDetails = () => {
 
@@ -309,6 +311,8 @@ console.log('item: ', item);
                   <div className="mt-2 " key={key}>{value}</div>
                 ))}
               </div>
+<Barcode value="1234567"/>
+             
             </div>
           </TabPanel>
         </TabView>
