@@ -100,6 +100,7 @@ export default resolver.pipe(
           gateway,
           isShippingIsBilling,
           order_items,
+          orderItemsData
         },
       } = input
 
@@ -126,13 +127,31 @@ export default resolver.pipe(
             order_items,
           },
         })
+        const updateInventoryProduct = async (productId: number, quantity: number, shelf: number) => {
+          const updatedProduct = await db.inventory_products.update({
+            where: {
+              id: shelf
+              // product_shelf: {
+              //   product: productId,
+              //   shelf
+              // },
+            },
+            data: { quantity: { increment: quantity } },
+          })
+          return updatedProduct
+        }
+        console.log('orderItemsData: ', orderItemsData);
+
+        const updatedProducts = await Promise.all(orderItemsData.map(({ productID, quantity, shelf }) => updateInventoryProduct(productID, quantity, shelf)))
+
+
         console.log("order123: ", order)
         return order
       } catch (error) {
-        console.log("error12: ", error)
+        console.log("error13: ", error)
+        throw new Error(error)
       }
     }
-
     return
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const order = await db.orders.create({ data: input })

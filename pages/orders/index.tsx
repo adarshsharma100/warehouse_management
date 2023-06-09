@@ -1,43 +1,34 @@
-import { Suspense, useEffect, useRef, useState, useReducer } from "react";
-import { getQueryClient, useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
-import { useRouter } from "next/router";
-import Layout from "layouts/Layout"
-import getOrders from "app/orders/queries/getOrders";
-import getOrderStatuses from "app/order_statuses/queries/getOrder_statuses"
-import Loading from "components/loading";
-import { Button } from "primereact/button";
-import * as Yup from "yup"
-import { DataTable } from "primereact/datatable";
-import { Column } from "primereact/column";
-import { cities, dateFormat } from "app/constants";
+import { invoke, useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
+import { cities, createSearchFunction, dateFormat } from "app/constants";
+import getOrder_statuses from "app/order_statuses/queries/getOrder_statuses";
 import createOrder from "app/orders/mutations/createOrder";
 import updateOrder from "app/orders/mutations/updateOrder";
+import getOrders from "app/orders/queries/getOrders";
+import getProducts from "app/products/queries/getProducts";
 import CreateShipment from 'app/shipments/mutations/createShipment';
-import { OverlayPanel } from 'primereact/overlaypanel';
-import { InputText } from "primereact/inputtext";
-import { Dropdown } from "primereact/dropdown";
 import classNames from "classnames";
-import { createCSVFormat, createSearchFunction, filterExistingValues, } from "app/constants"
-import { AutoComplete } from "primereact/autocomplete";
-import getOrder_statuses from "app/order_statuses/queries/getOrder_statuses";
-import getOrder_items from "app/order_items/queries/getOrder_items";
-import getProducts from "app/products/queries/getProducts"
+import Loading from "components/loading";
 import { useFormik } from "formik";
-import CreateOrder from 'app/orders/mutations/createOrder'
-import getCustomers from "app/customers/queries/getCustomers";
-import { TriStateCheckbox } from 'primereact/tristatecheckbox';
-import { ToggleButton } from 'primereact/togglebutton';
+import Layout from "layouts/Layout";
+import { useRouter } from "next/router";
+import { AutoComplete } from "primereact/autocomplete";
+import { Button } from "primereact/button";
 import { Checkbox } from "primereact/checkbox";
-import { JobStatus } from "components/JobStatus";
+import { Column } from "primereact/column";
+import { DataTable } from "primereact/datatable";
+import { Dropdown } from "primereact/dropdown";
+import { InputText } from "primereact/inputtext";
+import { OverlayPanel } from 'primereact/overlaypanel';
+import { Suspense, useEffect, useReducer, useRef, useState } from "react";
+import * as Yup from "yup";
 import AddressComponent from "../../components/AddressComponent";
-import db from "db";
 
-import { Toast } from "primereact/toast";
-import { tsuccess } from "app/constants";
-import { tError } from "app/constants";
-import { TabMenu } from "primereact/tabmenu"
+import { tError, tsuccess } from "app/constants";
+import updateInventory_product from "app/inventory_products/mutations/updateInventory_product";
 import getInventory_products from "app/inventory_products/queries/getInventory_products";
-import updateInventory_product from "app/inventory_products/mutations/updateInventory_product"
+import { TabMenu } from "primereact/tabmenu";
+import { Toast } from "primereact/toast";
+import getInventory_product from "app/inventory_products/queries/getInventory_product";
 
 
 const initialOrderDetails = {
@@ -56,10 +47,10 @@ const initialOrderDetails = {
   shopifyId: "",
   isExistingCustomer: false,
   customerId: "",
-  paymentStatus: "",
+  paymentStatus: { id: "", name: "" },
   totalPrice: "",
   gateway: "",
-  orderItems: '',
+  orderItems: [{ id: '', name: '', quantity: '', price: '', availableInventory: "" }],
   address: '',
   city: '',
   state: '',
@@ -103,17 +94,17 @@ const gateway_ = [
   { id: 4, name: 'Net-Banking' },
 ]
 const paymentStatus_ = [
-  { id: 1, name: 'Unpaid' },
-  { id: 2, name: 'Paid' },
+  { id: 1, name: "PAID" },
+  { id: 2, name: "PENDING" },
+  { id: 3, name: "REFUNDED" },
+  { id: 4, name: "PARTIALLY - REFUNDED" },
+  { id: 5, name: "VOIDED" },
 ]
 
-const ITEMS_PER_PAGE = 100;
+const ITEMS_PER_PAGE = 250;
 
 export const OrdersList = () => {
-
   const toast = useRef(null)
-
-
   const router = useRouter();
   const page = Number(router.query.page) || 0;
   const [{ orders }, { refetch: refetchOrders }] = usePaginatedQuery(getOrders, {
@@ -121,8 +112,6 @@ export const OrdersList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   });
-  console.log('orders: ', orders);
-
 
   const [{ order_statuses, }] = useQuery(getOrder_statuses, {
     orderBy: { id: "asc" },
@@ -149,7 +138,7 @@ export const OrdersList = () => {
     take: ITEMS_PER_PAGE,
     where: undefined
   })
-  console.log('inventory_products: ', inventory_products);
+
   const [updateInventory_productMutation, { error: updateInventoryError, isLoading: updatingInventory },] = useMutation(updateInventory_product)
 
 
@@ -171,6 +160,7 @@ export const OrdersList = () => {
       name: `${sku} - ${name}`,
       id,
       description,
+      sku,
     }
   })
 
@@ -180,7 +170,7 @@ export const OrdersList = () => {
     ...customers,
     name: `${customers?.firstName}${customers?.companyName ? `- ${customers?.companyName}` : ""}`
   }))
-  console.log('customerOptions: ', customerOptions);
+
   const [customerOptionsSuggestions, setCustomerOptionsSuggestions] = useState<any>(null)
 
   const [gatewayOptions] = useState(gateway_)
@@ -208,10 +198,10 @@ export const OrdersList = () => {
       let _filteredSuggestions
       if (!event.query.trim().length) {
         _filteredSuggestions = [...cities]
-        // console.log("searchCity -", _filteredSuggestions)
+        // 
       } else {
         _filteredSuggestions = cities.filter((element) => {
-          // console.log("searchCity +", _filteredSuggestions)
+          // 
           return element.city.toLowerCase().startsWith(event.query.toLowerCase())
         })
       }
@@ -239,37 +229,54 @@ export const OrdersList = () => {
     }, 50);
   };
 
+  const isInStock = async (sku) => {
+    try {
+      const { inventory_products
+      } = await invoke(getInventory_products, {
+        where: {
+          products: {
+            sku,
+          },
+          shelves: {
+            areas: {
+              warehouse: 2
+            }
+          }
+        }
+      })
 
 
-  // const searchCustomers = (event) => {
-  //   setTimeout(() => {
-  //     let _filteredSuggestions;
+      const { quantity, blocked, goodShelfIds, blockedShelfIds } = inventory_products.reduce((acc, curr, i) => {
+        if (curr?.shelves?.shelfType === 2) {
+          return {
+            ...acc,
+            quantity: acc.quantity + curr?.quantity,
+            goodShelfIds: [...acc.goodShelfIds, curr.id]
+          }
+        }
+        else {
+          return {
+            ...acc,
+            blocked: acc.blocked + curr?.quantity,
+            blockedShelfIds: [...acc.blockedShelfIds, curr.id]
+          }
+        }
+      }, {
+        quantity: 0,
+        blocked: 0,
+        blockedShelfIds: [],
+        goodShelfIds: [],
+      })
+      console.log('goodShelfIds: ', goodShelfIds);
+      console.log('blockedShelfIds: ', blockedShelfIds);
 
-  //     if (!event.query.trim().length) {
-  //       _filteredSuggestions = [...customerOptions];
-  //     } else {
-  //       const query = event.query.toLowerCase();
-  //       _filteredSuggestions = customerOptions.filter((element) => {
-  //         const firstName = element.firstName?.toLowerCase();
-  //         const companyName = element.companyName?.toLowerCase();
-  //         const fullName = `${firstName} - ${companyName}`;
+      const availableQuantity = quantity - blocked
+      return { availableQuantity, shelf: { blockedShelfIds, goodShelfIds } }
 
-  //         return (
-  //           firstName?.startsWith(query) ||
-  //           companyName?.startsWith(query) ||
-  //           fullName?.startsWith(query)
-  //         );
-  //       });
-  //     }
-
-  //     setCustomerOptionsSuggestions(_filteredSuggestions);
-  //   }, 50);
-  // };
-
-
-
-
-
+    } catch (error) {
+      console.error('error: ', error);
+    }
+  }
 
   useEffect(() => {
     // let config = {
@@ -294,10 +301,6 @@ export const OrdersList = () => {
     // })
     //   .then((response) => console.log("responseobj", response.data))
     //   .catch((error) => console.log("error123", error));
-
-
-
-
   }, [])
 
 
@@ -337,7 +340,7 @@ export const OrdersList = () => {
 
 
   const handleRowClick = async (e) => {
-    // console.log('e.data: ', e.originalEvent.target.classList[0]);
+    // 
     // const onclickClass = e.originalEvent.target.classList[0]
 
     const onclickClass = e.target.classList[0]
@@ -368,7 +371,7 @@ export const OrdersList = () => {
     }));
 
     // const _quantity = e.data.order_items.quantity
-    // console.log('_billingAddress: ', _billingAddress);
+    // 
 
     await formik.setValues({
       ...e.data,
@@ -469,13 +472,10 @@ export const OrdersList = () => {
       //   country: Yup.string()
       // })
 
-
     }),
     onSubmit: async (data) => {
-      console.log('formdata: ', data);
-
       const {
-        firstName, lastName, email, contactNumber, orderStatus,
+        firstName, lastName, companyName, email, contactNumber, orderStatus,
         landmarkName, pincode, paymentStatus, totalPrice, gateway,
         orderItems, address, state, country, city,
         shippingAddress: {
@@ -500,7 +500,30 @@ export const OrdersList = () => {
         }
       } = data
 
-      const orderItemValue = orderItems?.map((ele) => ele)
+      const isAllQuantityAvailable = orderItems?.map((product) => {
+        const { availableInventory, quantity } = product
+        console.log('product: ', product);
+        return (
+          {
+            ...product,
+            isAvailable: Number(availableInventory) >= Number(quantity)
+          }
+        );
+      })
+      console.log('isAllQuantityAvailable - product:: ', isAllQuantityAvailable);
+
+
+      if (!isAllQuantityAvailable.every(product => product.isAvailable === true)) {
+        toast.current?.show({
+          severity: 'error',
+          summary: 'Error',
+          detail: "Can not verify order due to low Quantity",
+          life: 3000
+        })
+        return
+      }
+
+      // const orderItemValue = orderItems?.map((ele) => ele)
       const { id: activeID } = activeRowData
 
       if (newOrderUpdate) {
@@ -509,7 +532,7 @@ export const OrdersList = () => {
             id: activeID,
             customer: {
               firstName,
-              lastName
+              lastName,
             }
           }, {
             onSuccess: () => {
@@ -521,7 +544,7 @@ export const OrdersList = () => {
           })
 
         } catch (error) {
-          console.log('error: ', error);
+
         }
       } else {
         try {
@@ -529,6 +552,7 @@ export const OrdersList = () => {
             customer: {
               firstName,
               lastName,
+              companyName,
               // shopifyId: "1425636985",
               addresses: {
                 create: {
@@ -609,43 +633,48 @@ export const OrdersList = () => {
                   ],
                 }
               },
-              paymentStatus,
+              paymentStatus: paymentStatus.id,
               totalPrice,
               gateway,
               // channelCreatedAt: new Date(),
               order_items: {
-                create: orderItemValue.map((ele) => ({
+                create: orderItems.map((ele) => ({
                   product: ele.id,
                   quantity: Number(ele.quantity),
                   price: Number(ele.price),
                 }))
               },
+              orderItemsData: orderItems.map(ele => ({
+                productID: ele?.id,
+                quantity: Number(ele.quantity),
+                shelf: ele?.shelf
+              }))
             },
-
-
           },
             {
-              onSuccess: async () => {
+              onSuccess: async (data) => {
+                console.log('data: ', data);
                 await refetchOrders()
                 formik?.resetForm()
                 setOrderDialog(!orderDialog)
 
-                //TO do Add Toast messages 
-                alert(" new order created ")
+                toast.current.show({ severity: 'success', summary: 'Success', detail: `${data?.id} Created`, life: 3000 });
+
               }, onError: (error) => {
+                console.log('error: ', error);
                 alert(error)
               },
             })
         } catch (error) {
-          console.log('OrderCreation error: ', error);
+
         }
       }
 
-      console.log('Order mutation Error')
+
     }
   })
 
-  console.log('formik', formik.errors)
+
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
@@ -653,49 +682,49 @@ export const OrdersList = () => {
   }
 
 
-  const [orderItemInput, setOrderItemInput] = useState([{ id: '', name: '', quantity: '', price: '' }]);
-
   const handleAddInput = () => {
-    setOrderItemInput([...orderItemInput, { id: '', name: '', quantity: '', price: '' }]);
+    formik.setFieldValue("orderItems", [...formik.values.orderItems, { id: '', name: '', quantity: '', price: '' }]);
   };
 
   const handleRemoveInput = (index) => {
-    if (orderItemInput.length === 1) {
+    if (formik.values.orderItems.length === 1) {
       return;
     }
-    const newInputsItems = [...orderItemInput];
+    const newInputsItems = [...formik.values.orderItems];
     newInputsItems.splice(index, 1);
-    setOrderItemInput(newInputsItems);
+    formik.setFieldValue("orderItems", newInputsItems);
   };
+
+  console.log('formik.values: ', formik.values);
 
 
   const handleInputChange = (event, index) => {
     const { name, value } = event.target;
-    setOrderItemInput(prevState => {
-      const newInputsItems = [...prevState];
-      newInputsItems[index][name] = value;
 
-      const newOrderItems = newInputsItems.map(({ id, name, quantity, price }) => ({ id, name, quantity, price, }));
-      const totalPrice = newOrderItems.reduce((acc, curr) => {
-        return acc + curr.price * curr.quantity;
-      }, 0)
+    const newInputsItems = [...formik.values.orderItems];
+    newInputsItems[index][name] = value;
+    console.log('newInputsItems: ', newInputsItems);
 
-      // update the state with the new order items
-      formik.setValues({ ...formik.values, orderItems: newOrderItems, totalPrice: totalPrice });
-      return newInputsItems;
-    });
+    const totalPrice = newInputsItems.reduce((acc, curr) => {
+      return acc + curr.price * curr.quantity;
+    }, 0)
+
+    // update the state with the new order items
+    formik.setValues({ ...formik.values, orderItems: newInputsItems, totalPrice: totalPrice });
+    return newInputsItems;
+
   };
 
   const [verificationStatus, setVerificationStatus] = useState(false);
   const inventory_productName = inventory_products.map((val) => val.products.name)
-  console.log('inventory_productName: ', inventory_productName);
+
 
 
 
   const checkVerifyOrder = () => {
     const inventoryProduct = inventory_products.find(product => product.products.name === selectOrder.name);
   }
-  console.log('inventoryProduct: ', inventory_products);
+
 
   const [createShipment] = useMutation(CreateShipment)
 
@@ -708,85 +737,7 @@ export const OrdersList = () => {
         <div className="flex justify-content-end">
           {checkVerified && (
 
-            // <Button
-            //   type="button"
-            //   icon="pi pi-verified"
-            //   label="Verify"
-            //   className="p-button-outlined"
-
-            //   onClick={async () => {
-            //     const activeIDs = selectedOrder.map((ele) => ele?.id);
-            //     const activeOrderItems = selectedOrder.map((ele) => ele?.order_items).flat();
-            //     const activeOrderName = activeOrderItems.map((i) => i.products.name)
-            //     const activeOrderQuantity = activeOrderItems.map((i) => i.quantity)
-
-            //     if (activeIDs.length > 0) {
-            //       activeIDs.forEach(async (id) => {
-
-            //         const selectedProduct = inventory_products.find((product) => product.products.name === activeOrderName[0]);
-            //         console.log('selectedProduct: ', selectedProduct);
-
-            //         if (selectedProduct && selectedProduct.quantity > activeOrderQuantity[0]) {
-            //           const updatedQuantity = Number(selectedProduct.quantity) - Number(activeOrderQuantity[0]);
-
-            //           await updateInventory_productMutation(
-            //             {
-            //               id: selectedProduct.id,
-            //               quantity: updatedQuantity,
-            //             },
-            //             {
-            //               onSuccess: () => {
-            //                 toast?.current?.show(
-            //                   tsuccess("Inventory  updated successfully.")
-            //                 )
-            //               },
-            //             }
-            //           )
-
-            //           await updateNewOrder({
-            //             id,
-            //             verified: 1,
-            //           });
-            //           const shipmentNumber = `ROB0${Math.floor(Math.random() * 100000)}`;
-            //           const shipmentItems = activeOrderItems.map((item) => {
-            //             return {
-            //               order_items: {
-            //                 connect: {
-            //                   id: item.id,
-            //                 },
-            //               },
-            //             };
-            //           });
-
-            //           await createShipment(
-            //             {
-            //               ordersId: id,
-            //               shipmentNumber,
-            //               priority: 'LOW',
-            //               shipment_items: {
-            //                 create: shipmentItems,
-            //               },
-            //             },
-            //             {
-            //               onSuccess: () => {
-            //                 toast?.current.show(tsuccess('Verified'));
-            //               },
-            //               onError: (error) => {
-            //                 console.log('error: ', error);
-            //                 toast?.current.show(terror('Not Verified'));
-            //               },
-            //             }
-            //           );
-            //         } 
-            //         else {
-            //           alert('You should reduce your quantity')
-            //         }
-
-            //       });
-            //     }
-
-            //   }}
-            // />
+            
 
 
             <Button
@@ -797,152 +748,47 @@ export const OrdersList = () => {
 
               onClick={async () => {
                 const activeIDs = selectedOrder.map((ele) => ele?.id);
-                const activeOrderItems = selectedOrder.map((ele) => ele?.order_items).flat();
-
-                const productQuantityArray = activeOrderItems.map((item) => ({
-                  productName: item.products.name,
-                  quantity: item.quantity,
-                }));
-
-                console.log('productQuantityArray: ', productQuantityArray);
-
-                const newArrayOfObjects = productQuantityArray.map((item) => {
-                  const inventoryProduct = inventory_products.find((product) => product.products.name === item.productName);
-                  console.log('inventoryProduct00: ', inventoryProduct.quantity > item.quantity ? inventoryProduct.quantity - item.quantity : 0);
-                  const updatedQuantity = inventoryProduct.quantity > item.quantity ? inventoryProduct.quantity - item.quantity : 0;
-
-                  if (inventoryProduct) {
-                    return {
-                      productName: item.productName,
-                      quantity: updatedQuantity,
-                    };
-                  } else {
-                    return {
-                      productName: item.productName,
-                      quantity: 0,
-                    };
-                  }
-                });
-
-                console.log('newArrayOfObjects: ', newArrayOfObjects);
-
-                const isQuantityLess = productQuantityArray.every((item, index) => item.quantity < newArrayOfObjects[index].quantity);
 
 
-                if (isQuantityLess) {
-                  toast.current.show(tsuccess('quantity is less in order'));
-
-                  if (activeIDs.length > 0) {
-
-                    newArrayOfObjects.forEach(async (obj) => {
-                      const inventoryProduct = inventory_products.find((product) => product.products.name === obj.productName);
-
-                      if (inventoryProduct && obj.quantity > 0) {
-                        await updateInventory_productMutation(
-                          {
-                            id: inventoryProduct.id,
-                            quantity: obj.quantity,
-                          },
-                          {
-                            onSuccess: () => {
-                              toast.current.show(tsuccess('update Inventory'));
-                            },
-                            onError: (error) => {
-                              console.log('Error:', error);
-                              toast.current.show(terror('update Inventory error'));
-
-                              // Handle the error, show an error message, etc.
-                            },
-                          }
-                        );
-                      }
+                if (activeIDs.length > 0) {
+                  selectedOrder.forEach(async (ele) => {
+                    await updateNewOrder({
+                      id: ele?.id,
+                      verified: 1,
                     });
-
-
-                    activeIDs.forEach(async (id) => {
-                      await updateNewOrder({
-                        id,
-                        verified: 1,
-                      });
-                      const shipmentNumber = `ROB0${Math.floor(Math.random() * 100000)}`;
-                      const shipmentItems = activeOrderItems.map((item) => {
-                        return {
-                          order_items: {
-                            connect: {
-                              id: item.id,
-                            },
-                          },
-                        };
-                      });
-
-                      await createShipment(
-                        {
-                          ordersId: id,
-                          shipmentNumber,
-                          priority: 'LOW',
-                          shipment_items: {
-                            create: shipmentItems,
+                    const shipmentNumber = `ROB0${Math.floor(Math.random() * 100000)}`;
+                    const shipmentItems = ele?.order_items.map((item) => {
+                      return {
+                        order_items: {
+                          connect: {
+                            id: item.id,
                           },
                         },
-                        {
-                          onSuccess: () => {
-                            toast?.current.show(tsuccess('Verified'));
-                          },
-                          onError: (error) => {
-                            console.log('error: ', error);
-                            toast?.current.show(terror('Not Verified'));
-                          },
-                        }
-                      );
-                    }
-                    )
+                      };
+                    });
+
+                    await createShipment(
+                      {
+                        ordersId: ele?.id,
+                        shipmentNumber,
+                        priority: 'LOW',
+                        shipment_items: {
+                          create: shipmentItems,
+                        },
+                      },
+                      {
+                        onSuccess: () => {
+                          toast?.current.show(tsuccess('Verified'));
+                        },
+                        onError: (error) => {
+
+                          toast?.current.show(terror('Not Verified'));
+                        },
+                      }
+                    );
                   }
+                  )
                 }
-
-                else {
-                  toast.current.show(tError('Not done'));
-                }
-
-
-                // if (activeIDs.length > 0) {
-                //   activeIDs.forEach(async (id) => {
-                //     await updateNewOrder({
-                //       id,
-                //       verified: 1,
-                //     });
-                //     const shipmentNumber = `ROB0${Math.floor(Math.random() * 100000)}`;
-                //     const shipmentItems = activeOrderItems.map((item) => {
-                //       return {
-                //         order_items: {
-                //           connect: {
-                //             id: item.id,
-                //           },
-                //         },
-                //       };
-                //     });
-
-                //     await createShipment(
-                //       {
-                //         ordersId: id,
-                //         shipmentNumber,
-                //         priority: 'LOW',
-                //         shipment_items: {
-                //           create: shipmentItems,
-                //         },
-                //       },
-                //       {
-                //         onSuccess: () => {
-                //           toast?.current.show(tsuccess('Verified'));
-                //         },
-                //         onError: (error) => {
-                //           console.log('error: ', error);
-                //           toast?.current.show(terror('Not Verified'));
-                //         },
-                //       }
-                //     );
-                //   }
-                //   )
-                // }
 
               }}
             />
@@ -1025,7 +871,7 @@ export const OrdersList = () => {
             //                 toast?.current.show(tsuccess('Verified'));
             //               },
             //               onError: (error) => {
-            //                 console.log('error: ', error);
+            //
             //                 toast?.current.show(terror('Not Verified'));
             //               },
             //             }
@@ -1051,8 +897,8 @@ export const OrdersList = () => {
 
   const [selectedOrder, setSelectedOrder] = useState([]);
   const [checkVerified, setCheckVerified] = useState(false)
-  // console.log('checkVerified: ', checkVerified);
-  // console.log('selectedOrder: ', selectedOrder);
+  // 
+  // 
 
   useEffect(() => {
     if (selectedOrder && Object.keys(selectedOrder).length >= 1) {
@@ -1138,14 +984,8 @@ export const OrdersList = () => {
     storageAccountName: process.env.NEXT_PUBLIC_STORAGERESOURCENAME,
     manifestImageURL: ""
   };
-
-
-
   const [state, dispatch] = useReducer(reducer, initialState);
   const { statusId } = state
-  console.log('statusId: ', statusId);
-
-
   const tabMenuItems = order_statuses?.map(status => (
     {
       label: `${status.name === "CREATED" ? "NEW" : status.name}`,
@@ -1154,8 +994,15 @@ export const OrdersList = () => {
     }
   ))
 
+  const isSelectable = (data) => !data?.verified;
 
+  const isRowSelectable = (event) => (event.data ? isSelectable(event.data) : true);
 
+  const cellClassName = (data, row,) => {
+    const index = row.rowIndex
+    const verified = row.props.value[index]?.verified
+    verified ? '' : 'p-disabled'
+  };
   return (
 
     <div className="grid w-full" >
@@ -1202,7 +1049,7 @@ export const OrdersList = () => {
                       forceSelection
                       onChange={async (e) => {
                         const selectedCustomer = e.value;
-                        console.log('selectedCustomer: ', selectedCustomer);
+
                         let name = typeof e.value === "string" ? e.value : e.value?.name
 
                         await formik.setValues({
@@ -1243,55 +1090,10 @@ export const OrdersList = () => {
                   </span>
                 </div>
 
-
-                {/* <div className="field col-12 md:col-3 lg:col-2 mt-4">
-                  <span className="p-float-label">
-                    <AutoComplete
-                      value={formik.values.customer ? `${formik.values.customer.firstName || ''}  ${formik.values.customer.companyName || ''}` : ''}
-                      dropdown
-                      field="firstName"
-                      suggestions={customerOptionsSuggestions}
-                      completeMethod={searchCustomers}
-                      forceSelection
-                      onChange={(e) => {
-                        const selectedCustomer = e.value;
-
-                        formik.setFieldValue('customer', selectedCustomer);
-                        formik.setFieldValue('firstName', selectedCustomer?.firstName);
-                        formik.setFieldValue('lastName', selectedCustomer?.lastName);
-                        formik.setFieldValue('address', selectedCustomer?.addresses?.areaStreet);
-                        formik.setFieldValue('email', selectedCustomer?.addresses?.emails_emails_addressesToaddresses?.map((ele) => ele.email));
-                        formik.setFieldValue('pincode', selectedCustomer?.addresses?.pincode);
-                        formik.setFieldValue('state', selectedCustomer?.addresses?.state);
-                        formik.setFieldValue('landmarkName', selectedCustomer?.addresses?.landmarkName);
-                        formik.setFieldValue('city', selectedCustomer?.addresses?.cityCountryProvince);
-                        formik.setFieldValue('country', selectedCustomer?.addresses?.country_addresses_countryTocountry?.name);
-
-                        if (selectedCustomer?.addresses && selectedCustomer?.addresses?.contact_number.length > 0) {
-                          const contactNumber = selectedCustomer?.addresses?.contact_number[0]?.number || '';
-                          formik.setFieldValue('contactNumber', contactNumber);
-                        } else {
-                          formik.setFieldValue('contactNumber', '');
-                        }
-                      }}
-                      itemTemplate={(option) => (
-                        <div>
-                          <span>{option.firstName} </span> - <span>{option.companyName || ""} </span>
-                        </div>
-                      )}
-                      aria-label="customer"
-                      dropdownAriaLabel="Select customer"
-                      className={classNames({ "p-invalid": isFormFieldValid("name") })}
-                    />
-                    <label htmlFor="type" className={classNames({ "p-error": isFormFieldValid("type") })}>
-                      Select Customer
-                    </label>
-                  </span>
-                </div> */}
-
                 {[
                   { field: "firstName", label: "First Name" },
                   { field: "lastName", label: "Last Name" },
+                  { field: "companyName", label: "Company Name" },
                   { field: "email", label: "Email ID" },
                   { field: "contactNumber", label: "Contact Number" },
                   { label: "Address", field: "address" },
@@ -1333,7 +1135,7 @@ export const OrdersList = () => {
                       completeMethod={searchCities}
                       field="city"
                       onChange={async (e) => {
-                        console.log('e.value + ', e.value);
+
                         let city = typeof e.value === "string" ? e.value : e.value.city
                         let state = typeof e.value === "string" ? " " : e.value.state
                         let country = typeof e.value === "string" ? "" : "India"
@@ -1408,7 +1210,7 @@ export const OrdersList = () => {
                         onChange={(e) => {
                           const selectedOption = orderStatusOption.find(option => option.name === e.target.value.name);
                           const selectedOptionName = selectedOption ? selectedOption.name : null;
-                          console.log('selectedOptionName: ', selectedOption);
+
                           formik.setFieldValue('orderStatus', selectedOption);
                         }}
 
@@ -1457,7 +1259,7 @@ export const OrdersList = () => {
                     <span className="p-float-label ">
                       <AutoComplete
                         id="paymentStatus"
-                        value={formik.values.paymentStatus}
+                        value={formik.values.paymentStatus?.name}
                         dropdown
                         forceSelection
                         suggestions={paymentOptionsSuggestions}
@@ -1465,9 +1267,9 @@ export const OrdersList = () => {
                         field="name"
                         onChange={(e) => {
 
-                          const selectedOrderItem = paymentOptions.find(option_ => option_.name === e.value.name);
-                          const selectedItemsOptionName = selectedOrderItem ? selectedOrderItem.name : null;
-                          formik.setFieldValue('paymentStatus', selectedItemsOptionName);
+                          // const selectedOrderItem = paymentOptions.find(option_ => option_.name === e.value.name);
+                          // const selectedItemsOptionName = selectedOrderItem ? selectedOrderItem.id : null;
+                          formik.setFieldValue('paymentStatus', e?.value);
                         }}
                         aria-label="paymentStatus"
                         dropdownAriaLabel="paymentStatus"
@@ -1484,7 +1286,7 @@ export const OrdersList = () => {
                 </div>
                 <div className="col-12">
                   <h3 >Order Items</h3>
-                  {orderItemInput.map((ele, index) => (
+                  {formik.values.orderItems.map((ele, index) => (
                     <div key={index} className="grid ">
 
                       <div className="field col-12 lg:col-4 md:col-6 mt-2">
@@ -1492,17 +1294,26 @@ export const OrdersList = () => {
                           <AutoComplete
                             id="name"
                             value={ele?.name}
+                            name="name"
                             dropdown
                             forceSelection
                             suggestions={orderItemsSuggestions}
                             completeMethod={searchOrderItems}
                             field="name"
                             onChange={async (e) => {
-                              console.log(e.value, 'itemevent')
-                              handleInputChange(e, index)
-                              const test = [...orderItemInput]
-                              test[index] = { ...e.value }
-                              setOrderItemInput(test)
+                              const inventory = await isInStock(e?.target?.value?.sku)
+                              const _orderItemInput = [...formik.values.orderItems]
+                              _orderItemInput[index] = {
+                                ..._orderItemInput[index],
+                                ...e.value,
+                                availableInventory: inventory?.availableQuantity,
+                                shelf: inventory?.shelf?.blockedShelfIds[0]
+                              }
+                              await formik.setValues({
+                                ...formik.values,
+                                orderItems: _orderItemInput,
+                              })
+
                             }}
                             aria-label="products"
                             dropdownAriaLabel="Select Product"
@@ -1522,32 +1333,12 @@ export const OrdersList = () => {
                         <span className="p-float-label">
                           <InputText
                             className=''
-                            type='text'
-                            name='quantity'
-                            value={ele?.quantity}
-                            onChange={async (e) => {
-                              handleInputChange(e, index)
-
-                            }}
-
-                          />
-                          <label
-                            htmlFor={"type"}
-                            className={classNames({ "p-error": isFormFieldValid("type") })}
-                          >
-                            Quantity
-                          </label>
-                        </span>
-                      </div>
-                      <div className="field col-12 lg:col-3 md:col-6 mt-2">
-                        <span className="p-float-label">
-                          <InputText
-                            className=''
-                            type='text'
+                            type='number'
                             name='price'
                             value={ele?.price}
                             onChange={async (e) => {
                               handleInputChange(e, index)
+
                             }}
 
                           />
@@ -1557,8 +1348,46 @@ export const OrdersList = () => {
                           >
                             Price
                           </label>
-                        </span></div>
-                      <div className="field col-12 lg:col-2 md:col-6 mt-2">
+                        </span>
+                      </div>
+                      <div className="field col-12 lg:col-3 md:col-6 mt-2">
+                        <span className="p-float-label">
+                          <InputText
+                            className=''
+                            type='number'
+                            name='quantity'
+                            value={ele?.quantity}
+                            onChange={async (e) => {
+                              handleInputChange(e, index)
+                            }}
+                          />
+                          <label
+                            htmlFor={"type"}
+                            className={classNames({ "p-error": isFormFieldValid("type") })}
+                          >
+                            Quantity
+                          </label>
+                        </span>
+                      </div>
+                      <div className="field col-12 lg:col-1 md:col-6 mt-2">
+                        <span className="p-float-label">
+                          <InputText
+                            className=''
+                            id="availableInventory"
+                            type='text'
+                            name='availableInventory'
+                            value={ele?.availableInventory}
+                            disabled
+                          />
+                          <label
+                            htmlFor="availableInventory"
+                            className={classNames({ "p-error": isFormFieldValid("availableInventory") })}
+                          >
+                            Inventory
+                          </label>
+                        </span>
+                      </div>
+                      <div className="field flex justify-content-between col-12 lg:col-1 md:col-6 mt-2 ">
                         <Button
                           icon="pi pi-minus"
                           className="p-2 m-1"
@@ -1623,10 +1452,6 @@ export const OrdersList = () => {
                     <h3 className="field col-12 lg:col-5 md:col-6 mt-4">Billing Address</h3>
                     <AddressComponent errors={formik.errors.billingAddress} value={formik.values.billingAddress} setField={formik.setFieldValue} addressName={'billingAddress'} />
                   </div >}
-
-
-
-
               </div>
 
               <div className="flex mt-4">
@@ -1657,10 +1482,7 @@ export const OrdersList = () => {
 
 
       <div className="col-12">
-
         <div className="card">
-
-
           <TabMenu
             model={[...tabMenuItems]}
             activeIndex={statusId}
@@ -1674,13 +1496,13 @@ export const OrdersList = () => {
               //   dispatch({ type: 'GET_ORDERS', payload: [] });
               // }
               if (statusId === 2) {
-                <DataTable
-                  value={orders}
+                // <DataTable
+                //   value={orders}
 
 
-                >
+                // >
 
-                </DataTable>
+                // </DataTable>
 
               }
             }}
@@ -1696,6 +1518,8 @@ export const OrdersList = () => {
             selection={selectedOrder}
             onSelectionChange={(e) => setSelectedOrder(e.value)}
             tableStyle={{ minWidth: '50rem' }}
+            isDataSelectable={isRowSelectable}
+            cellClassName={cellClassName}
 
           >
             <Column
@@ -1945,7 +1769,7 @@ export const OrdersList = () => {
                         optionLabel="name"
                         optionValue="id"
                         onChange={async (e) => {
-                          console.log('e: ', e.target.value);
+
                           await updateNewOrder({
                             id: rowData.id,
                             orderStatus: e.target.value
@@ -2068,130 +1892,61 @@ const OrdersPage = () => {
 
 export default OrdersPage;
 
-// Working CRUD for orders can delete after orders page is complete
-{/* <Button
-icon="pi pi-plus"
-label="Test Order"
-className="block ml-auto"
-onClick={async () => {
-
-  try {
-
-    const order = createNewOrder({
-      customer: {
-        firstName: "Varun",
-        lastName: "J",
-        shopifyId: "1425636985",
-        addresses: {
-          create: {
-            buildingNumber: "56",
-            areaStreet: "street",
-            landmarkName: "mark",
-            cityCountryProvince: "Mysore",
-            state: "Karnataka",
-            pincode: "560079",
-            country: 1,
-            emails_emails_addressesToaddresses: {
-              create: [
-                {
-                  email: "test2@gmail.com",
-                },
-              ],
-            },
-            contact_number: {
-              create: [
-                {
-                  type: "mobile",
-                  number: "1",
-                },
-              ],
-            }
-
-          }
-        }
-      },
-      order: {
-        orderStatus: 4,
-        isShippingIsBilling: true,
-        shippingAddress: {
-          buildingNumber: "123",
-          areaStreet: "Main St.",
-          landmarkName: "Central Park",
-          cityCountryProvince: "New York",
-          state: "NY",
-          pincode: "10001",
-          country: 1,
-          emails_emails_addressesToaddresses: {
-            create: [
-              {
-                email: "shiptest2@gmail.com",
-              },
-            ],
-          },
-          contact_number: {
-            create: [
-              {
-                type: "landline",
-                number: "1425",
-              },
-            ],
-          }
-        },
-        billingAddress: {
-          buildingNumber: "456",
-          areaStreet: "Broadway",
-          landmarkName: "Times Square",
-          cityCountryProvince: "New York",
-          state: "NY",
-          pincode: "10001",
-          country: 1,
-          emails_emails_addressesToaddresses: {
-            create: [
-              {
-                email: "Billtest2@gmail.com",
-              },
-            ],
-          },
-          contact_number: {
-            create: [
-              {
-                type: "landline",
-                number: "1",
-              },
-            ],
-          }
-        },
-        paymentStatus: "unpaid",
-        totalPrice: 200,
-        gateway: "paytm",
-        channelCreatedAt: new Date(),
-        order_items: {
-          create: [{
-            product: 11,
-            quantity: 10,
-            price: 123,
-          }, {
-            product: 12,
-            quantity: 10,
-            price: 123,
-          }]
-        },
-
-      }
-
+// sample data received onsubmit 
+/**{
+    "name": "select",
+    "firstName": "select",
+    "lastName": "A2y",
+    "email": "qqq",
+    "companyName": "",
+    "customer": {
+        "firstName": "",
+        "companyName": ""
     },
-      {
-        onSuccess: async () => {
-          await refetch()
-          alert("created")
-        }, onError: (error) => {
-          alert(error)
-        },
-      })
-  } catch (error) {
-    console.log('error123: ', error);
-
-  }
-
-}}
-></Button> */}
+    "contactNumber": "0987654321",
+    "checkedAddress": "",
+    "orderStatus": "",
+    "landmarkName": "zxczc",
+    "shippingAddressId": "",
+    "billingAddressId": "",
+    "shopifyId": "",
+    "isExistingCustomer": false,
+    "customerId": "",
+    "paymentStatus": "",
+    "totalPrice": 121,
+    "gateway": "",
+    "orderItems": [
+        {
+            "id": 5,
+            "name": "TIFTO0007 - Controllers.",
+            "quantity": "11",
+            "price": "11"
+        }
+    ],
+    "address": "jsdnsfsd",
+    "city": "Sunam",
+    "state": "Punjab",
+    "country": "India",
+    "pincode": "0864",
+    "shippingAddress": {
+        "address": "",
+        "pincode": "",
+        "city": "",
+        "state": "",
+        "country": "",
+        "landmarkName": "",
+        "email": "",
+        "contactNumber": ""
+    },
+    "billingAddress": {
+        "address": "",
+        "pincode": "",
+        "city": "",
+        "state": "",
+        "country": "",
+        "landmarkName": "",
+        "email": "",
+        "contactNumber": ""
+    },
+    "isShippingIsBilling": true
+} */
