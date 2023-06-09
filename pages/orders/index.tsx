@@ -267,14 +267,13 @@ export const OrdersList = () => {
         blockedShelfIds: [],
         goodShelfIds: [],
       })
-      console.log('goodShelfIds: ', goodShelfIds);
-      console.log('blockedShelfIds: ', blockedShelfIds);
+
 
       const availableQuantity = quantity - blocked
       return { availableQuantity, shelf: { blockedShelfIds, goodShelfIds } }
 
     } catch (error) {
-      console.error('error: ', error);
+
     }
   }
 
@@ -288,10 +287,10 @@ export const OrdersList = () => {
 
     // axios.get("https://robocraze-com.myshopify.com/admin/api/2023-01/orders.json", config)
     //   .then((response) => {
-    //     console.log(response.data);
+    //     
     //   })
     //   .catch((error) => {
-    //     console.log(error);
+    //     
     //   });
 
     // axios.get(""{
@@ -299,8 +298,8 @@ export const OrdersList = () => {
     //     "X-Shopify-Access-Token": "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",
     //   },
     // })
-    //   .then((response) => console.log("responseobj", response.data))
-    //   .catch((error) => console.log("error123", error));
+    //   .then((response) => 
+    //   .catch((error) => 
   }, [])
 
 
@@ -502,7 +501,7 @@ export const OrdersList = () => {
 
       const isAllQuantityAvailable = orderItems?.map((product) => {
         const { availableInventory, quantity } = product
-        console.log('product: ', product);
+
         return (
           {
             ...product,
@@ -510,7 +509,7 @@ export const OrdersList = () => {
           }
         );
       })
-      console.log('isAllQuantityAvailable - product:: ', isAllQuantityAvailable);
+
 
 
       if (!isAllQuantityAvailable.every(product => product.isAvailable === true)) {
@@ -653,7 +652,7 @@ export const OrdersList = () => {
           },
             {
               onSuccess: async (data) => {
-                console.log('data: ', data);
+
                 await refetchOrders()
                 formik?.resetForm()
                 setOrderDialog(!orderDialog)
@@ -661,7 +660,7 @@ export const OrdersList = () => {
                 toast.current.show({ severity: 'success', summary: 'Success', detail: `${data?.id} Created`, life: 3000 });
 
               }, onError: (error) => {
-                console.log('error: ', error);
+
                 alert(error)
               },
             })
@@ -695,7 +694,7 @@ export const OrdersList = () => {
     formik.setFieldValue("orderItems", newInputsItems);
   };
 
-  console.log('formik.values: ', formik.values);
+
 
 
   const handleInputChange = (event, index) => {
@@ -703,7 +702,7 @@ export const OrdersList = () => {
 
     const newInputsItems = [...formik.values.orderItems];
     newInputsItems[index][name] = value;
-    console.log('newInputsItems: ', newInputsItems);
+
 
     const totalPrice = newInputsItems.reduce((acc, curr) => {
       return acc + curr.price * curr.quantity;
@@ -737,7 +736,7 @@ export const OrdersList = () => {
         <div className="flex justify-content-end">
           {checkVerified && (
 
-            
+
 
 
             <Button
@@ -1483,7 +1482,7 @@ export const OrdersList = () => {
 
       <div className="col-12">
         <div className="card">
-          <TabMenu
+          {/* <TabMenu
             model={[...tabMenuItems]}
             activeIndex={statusId}
             onTabChange={(e) => {
@@ -1506,7 +1505,7 @@ export const OrdersList = () => {
 
               }
             }}
-          />
+          /> */}
 
           <DataTable
             value={orders}
@@ -1577,7 +1576,7 @@ export const OrdersList = () => {
               }}
             /> */}
 
-           
+
             {/* Add Hover thing in product  */}
 
             <Column
@@ -1799,7 +1798,7 @@ export const OrdersList = () => {
 
                 return (
                   <div className="flex gap-4">
-                    <Button
+                    {/* <Button
                       id="edit"
                       label="Edit"
                       icon='pi pi-pencil'
@@ -1856,7 +1855,7 @@ export const OrdersList = () => {
                       }}
                       tooltip="Update Order"
                       tooltipOptions={{ position: "left" }}
-                    />
+                    /> */}
 
                     <Button
                       id="view"
