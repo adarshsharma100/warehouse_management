@@ -2,19 +2,21 @@ import { Routes } from "@blitzjs/next";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useMutation } from "@blitzjs/rpc";
-import Layout from "src/core/layouts/Layout";
-import createGrn from "src/grns/mutations/createGrn";
-import { GrnForm, FORM_ERROR } from "src/grns/components/GrnForm";
+import Layout from "layouts/Layout"
+
+// import Layout from "src/core/layouts/Layout";
+// import createGrn from "src/grns/mutations/createGrn";
+// import { GrnForm, FORM_ERROR } from "src/grns/components/GrnForm";
 
 const NewGrnPage = () => {
   const router = useRouter();
-  const [createGrnMutation] = useMutation(createGrn);
+  // const [createGrnMutation] = useMutation(createGrn);
 
   return (
     <Layout title={"Create New Grn"}>
       <h1>Create New Grn</h1>
 
-      <GrnForm
+      {/* <GrnForm
         submitText="Create Grn"
         // TODO use a zod schema for form validation
         //  - Tip: extract mutation's schema into a shared `validations.ts` file and
@@ -32,7 +34,7 @@ const NewGrnPage = () => {
             };
           }
         }}
-      />
+      /> */}
 
       <p>
         <Link href={Routes.GrnsPage()}>

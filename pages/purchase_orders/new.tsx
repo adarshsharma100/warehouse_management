@@ -26,7 +26,7 @@ const NewPurchase_orderPage = () => {
             const purchase_order = await createPurchase_orderMutation(values)
             await router.push(
               Routes.ShowPurchase_orderPage({
-                purchase_orderId: purchase_order.po_id,
+                purchase_orderId: purchase_order?.po_id,
               })
             )
           } catch (error: any) {

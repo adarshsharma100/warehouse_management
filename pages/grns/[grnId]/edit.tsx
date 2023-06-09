@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useQuery, useMutation } from "@blitzjs/rpc";
 import { useParam } from "@blitzjs/next";
+import Layout from "layouts/Layout"
 
-import Layout from "src/core/layouts/Layout";
-import getGrn from "src/grns/queries/getGrn";
-import updateGrn from "src/grns/mutations/updateGrn";
-import { GrnForm, FORM_ERROR } from "src/grns/components/GrnForm";
+// import Layout from "src/core/layouts/Layout";
+// import getGrn from "src/grns/queries/getGrn";
+// import updateGrn from "src/grns/mutations/updateGrn";
+// import { GrnForm, FORM_ERROR } from "src/grns/components/GrnForm";
 
 export const EditGrn = () => {
   const router = useRouter();
@@ -34,7 +35,7 @@ export const EditGrn = () => {
         <h1>Edit Grn {grn.id}</h1>
         <pre>{JSON.stringify(grn, null, 2)}</pre>
 
-        <GrnForm
+        {/* <GrnForm
           submitText="Update Grn"
           // TODO use a zod schema for form validation
           //  - Tip: extract mutation's schema into a shared `validations.ts` file and
@@ -56,7 +57,7 @@ export const EditGrn = () => {
               };
             }
           }}
-        />
+        /> */}
       </div>
     </>
   );

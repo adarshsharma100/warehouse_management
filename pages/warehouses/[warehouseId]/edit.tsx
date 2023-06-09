@@ -5,35 +5,36 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useQuery, useMutation } from "@blitzjs/rpc";
 import { useParam } from "@blitzjs/next";
+import Layout from "layouts/Layout"
 
-import Layout from "src/core/layouts/Layout";
-import getWarehouse from "src/warehouses/queries/getWarehouse";
-import updateWarehouse from "src/warehouses/mutations/updateWarehouse";
-import {
-  WarehouseForm,
-  FORM_ERROR,
-} from "src/warehouses/components/WarehouseForm";
+// import Layout from "src/core/layouts/Layout";
+// import getWarehouse from "src/warehouses/queries/getWarehouse";
+// // import updateWarehouse from "src/warehouses/mutations/updateWarehouse";
+// import {
+//   WarehouseForm,
+//   FORM_ERROR,
+// } from "src/warehouses/components/WarehouseForm";
 
 export const EditWarehouse = () => {
   const router = useRouter();
   const warehouseId = useParam("warehouseId", "number");
-  const [warehouse, { setQueryData }] = useQuery(
-    getWarehouse,
-    { id: warehouseId },
-    {
-      // This ensures the query never refreshes and overwrites the form data while the user is editing.
-      staleTime: Infinity,
-    }
-  );
-  const [updateWarehouseMutation] = useMutation(updateWarehouse);
+  // const [warehouse, { setQueryData }] = useQuery(
+  //   getWarehouse,
+  //   { id: warehouseId },
+  //   {
+  //     // This ensures the query never refreshes and overwrites the form data while the user is editing.
+  //     staleTime: Infinity,
+  //   }
+  // );
+  // const [updateWarehouseMutation] = useMutation(updateWarehouse);
 
   return (
     <>
       <Head>
-        <title>Edit Warehouse {warehouse.id}</title>
+        <title>Edit Warehouse </title>
       </Head>
 
-      <div>
+      {/* <div>
         <h1>Edit Warehouse {warehouse.id}</h1>
         <pre>{JSON.stringify(warehouse, null, 2)}</pre>
 
@@ -62,7 +63,7 @@ export const EditWarehouse = () => {
             }
           }}
         />
-      </div>
+      </div> */}
     </>
   );
 };
@@ -75,7 +76,7 @@ const EditWarehousePage = () => {
       </Suspense>
 
       <p>
-        <Link href={Routes.WarehousesPage()}>Warehouses</Link>
+        {/* <Link href={Routes.WarehousesPage()}>Warehouses</Link> */}
       </p>
     </div>
   );

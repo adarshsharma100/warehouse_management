@@ -5,8 +5,9 @@ import Link from "next/link"
 import { useRouter } from "next/router"
 import { useQuery, useMutation } from "@blitzjs/rpc"
 import { useParam } from "@blitzjs/next"
+import Layout from "layouts/Layout"
 
-import Layout from "app/core/layouts/Layout"
+// import Layout from "app/core/layouts/Layout"
 import getProduct from "app/products/queries/getProduct"
 import updateProduct from "app/products/mutations/updateProduct"
 import { ProductForm, FORM_ERROR } from "app/products/components/ProductForm"
@@ -15,23 +16,23 @@ import Loading from "components/loading"
 export const EditProduct = () => {
   const router = useRouter()
   const productId = useParam("productId", "number")
-  const [product, { setQueryData }] = useQuery(
-    getProduct,
-    { id: productId },
-    {
-      // This ensures the query never refreshes and overwrites the form data while the user is editing.
-      staleTime: Infinity,
-    }
-  )
+  // const [product, { setQueryData }] = useQuery(
+  //   getProduct,
+  //   { id: productId },
+  //   {
+  //     // This ensures the query never refreshes and overwrites the form data while the user is editing.
+  //     staleTime: Infinity,
+  //   }
+  // )
   const [updateProductMutation] = useMutation(updateProduct)
 
   return (
     <>
       <Head>
-        <title>Edit Product {product.id}</title>
+        <title>Edit Product </title>
       </Head>
 
-      <div>
+      {/* <div>
         <h1>Edit Product {product.id}</h1>
         <pre>{JSON.stringify(product, null, 2)}</pre>
 
@@ -58,7 +59,7 @@ export const EditProduct = () => {
             }
           }}
         />
-      </div>
+      </div> */}
     </>
   )
 }

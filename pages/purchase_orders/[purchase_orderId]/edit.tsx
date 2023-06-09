@@ -15,27 +15,27 @@ import Loading from "components/loading"
 export const EditPurchase_order = () => {
   const router = useRouter()
   const purchase_orderId = useParam("purchase_orderId", "number")
-  const [purchase_order, { setQueryData }] = useQuery(
-    getPurchase_order,
-    { po_id: purchase_orderId },
-    {
-      // This ensures the query never refreshes and overwrites the form data while the user is editing.
-      staleTime: Infinity,
-    }
-  )
+  // const [purchase_order, { setQueryData }] = useQuery(
+  //   getPurchase_order,
+  //   { po_id: purchase_orderId },
+  //   {
+  //     // This ensures the query never refreshes and overwrites the form data while the user is editing.
+  //     staleTime: Infinity,
+  //   }
+  // )
   const [updatePurchase_orderMutation] = useMutation(updatePurchase_order)
 
   return (
     <>
       <Head>
-        <title>Edit Purchase_order {purchase_order.po_id}</title>
+        <title>Edit Purchase_order </title>
       </Head>
 
       <div>
-        <h1>Edit Purchase_order {purchase_order.po_id}</h1>
-        <pre>{JSON.stringify(purchase_order, null, 2)}</pre>
+        {/* <h1>Edit Purchase_order {purchase_order.po_id}</h1>
+        <pre>{JSON.stringify(purchase_order, null, 2)}</pre> */}
 
-        <Purchase_orderForm
+        {/* <Purchase_orderForm
           submitText="Update Purchase_order"
           // TODO use a zod schema for form validation
           //  - Tip: extract mutation's schema into a shared `validations.ts` file and
@@ -57,7 +57,7 @@ export const EditPurchase_order = () => {
               }
             }
           }}
-        />
+        /> */}
       </div>
     </>
   )

@@ -5,35 +5,36 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useQuery, useMutation } from "@blitzjs/rpc";
 import { useParam } from "@blitzjs/next";
+import Layout from "layouts/Layout"
 
-import Layout from "src/core/layouts/Layout";
-import getShipment from "src/shipments/queries/getShipment";
-import updateShipment from "src/shipments/mutations/updateShipment";
-import {
-  ShipmentForm,
-  FORM_ERROR,
-} from "src/shipments/components/ShipmentForm";
+// import Layout from "src/core/layouts/Layout";
+// import getShipment from "src/shipments/queries/getShipment";
+// import updateShipment from "src/shipments/mutations/updateShipment";
+// import {
+//   ShipmentForm,
+//   FORM_ERROR,
+// } from "src/shipments/components/ShipmentForm";
 
 export const EditShipment = () => {
   const router = useRouter();
   const shipmentId = useParam("shipmentId", "number");
-  const [shipment, { setQueryData }] = useQuery(
-    getShipment,
-    { id: shipmentId },
-    {
-      // This ensures the query never refreshes and overwrites the form data while the user is editing.
-      staleTime: Infinity,
-    }
-  );
-  const [updateShipmentMutation] = useMutation(updateShipment);
+  // const [shipment, { setQueryData }] = useQuery(
+  //   getShipment,
+  //   { id: shipmentId },
+  //   {
+  //     // This ensures the query never refreshes and overwrites the form data while the user is editing.
+  //     staleTime: Infinity,
+  //   }
+  // );
+  // const [updateShipmentMutation] = useMutation(updateShipment);
 
   return (
     <>
       <Head>
-        <title>Edit Shipment {shipment.id}</title>
+        <title>Edit Shipment</title>
       </Head>
 
-      <div>
+      {/* <div>
         <h1>Edit Shipment {shipment.id}</h1>
         <pre>{JSON.stringify(shipment, null, 2)}</pre>
 
@@ -62,7 +63,7 @@ export const EditShipment = () => {
             }
           }}
         />
-      </div>
+      </div> */}
     </>
   );
 };

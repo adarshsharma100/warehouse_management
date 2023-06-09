@@ -2,22 +2,24 @@ import { Routes } from "@blitzjs/next";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useMutation } from "@blitzjs/rpc";
-import Layout from "src/core/layouts/Layout";
-import createShipment from "src/shipments/mutations/createShipment";
-import {
-  ShipmentForm,
-  FORM_ERROR,
-} from "src/shipments/components/ShipmentForm";
+import Layout from "layouts/Layout"
+
+// import Layout from "src/core/layouts/Layout";
+// import createShipment from "src/shipments/mutations/createShipment";
+// import {
+//   ShipmentForm,
+//   FORM_ERROR,
+// } from "src/shipments/components/ShipmentForm";
 
 const NewShipmentPage = () => {
   const router = useRouter();
-  const [createShipmentMutation] = useMutation(createShipment);
+  // const [createShipmentMutation] = useMutation(createShipment);
 
   return (
     <Layout title={"Create New Shipment"}>
       <h1>Create New Shipment</h1>
 
-      <ShipmentForm
+      {/* <ShipmentForm
         submitText="Create Shipment"
         // TODO use a zod schema for form validation
         //  - Tip: extract mutation's schema into a shared `validations.ts` file and
@@ -37,7 +39,7 @@ const NewShipmentPage = () => {
             };
           }
         }}
-      />
+      /> */}
 
       <p>
         <Link href={Routes.ShipmentsPage()}>

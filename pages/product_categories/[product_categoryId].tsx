@@ -5,26 +5,27 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useQuery, useMutation } from "@blitzjs/rpc";
 import { useParam } from "@blitzjs/next";
+import Layout from "layouts/Layout"
 
-import Layout from "src/core/layouts/Layout";
-import getProduct_category from "src/product_categories/queries/getProduct_category";
-import deleteProduct_category from "src/product_categories/mutations/deleteProduct_category";
+// import Layout from "src/core/layouts/Layout";
+// import getProduct_category from "src/product_categories/queries/getProduct_category";
+// import deleteProduct_category from "src/product_categories/mutations/deleteProduct_category";
 
 export const Product_category = () => {
   const router = useRouter();
   const product_categoryId = useParam("product_categoryId", "number");
-  const [deleteProduct_categoryMutation] = useMutation(deleteProduct_category);
-  const [product_category] = useQuery(getProduct_category, {
-    id: product_categoryId,
-  });
+  // const [deleteProduct_categoryMutation] = useMutation(deleteProduct_category);
+  // const [product_category] = useQuery(getProduct_category, {
+  //   id: product_categoryId,
+  // });
 
   return (
     <>
       <Head>
-        <title>Product_category {product_category.id}</title>
+        <title>Product_category </title>
       </Head>
 
-      <div>
+      {/* <div>
         <h1>Product_category {product_category.id}</h1>
         <pre>{JSON.stringify(product_category, null, 2)}</pre>
 
@@ -48,7 +49,7 @@ export const Product_category = () => {
         >
           Delete
         </button>
-      </div>
+      </div> */}
     </>
   );
 };

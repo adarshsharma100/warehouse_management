@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePaginatedQuery } from "@blitzjs/rpc";
 import { useRouter } from "next/router";
 import Layout from "layouts/Layout";
-// import Layout from "src/core/layouts/Layout";
+// // import Layout from "src/core/layouts/Layout";
 import getAreas from "app/areas/queries/getAreas";
 
 const ITEMS_PER_PAGE = 100;

@@ -6,35 +6,37 @@ import { useRouter } from "next/router";
 import { useQuery, useMutation } from "@blitzjs/rpc";
 import { useParam } from "@blitzjs/next";
 
-import Layout from "src/core/layouts/Layout";
-import getArea from "src/areas/queries/getArea";
-import updateArea from "src/areas/mutations/updateArea";
-import { AreaForm, FORM_ERROR } from "src/areas/components/AreaForm";
+// // import Layout from "src/core/layouts/Layout";
+// import getArea from "src/areas/queries/getArea";
+// import updateArea from "src/areas/mutations/updateArea";
+// import { AreaForm, FORM_ERROR } from "src/areas/components/AreaForm";
+import Layout from "layouts/Layout"
 
 export const EditArea = () => {
   const router = useRouter();
   const areaId = useParam("areaId", "number");
-  const [area, { setQueryData }] = useQuery(
-    getArea,
-    { id: areaId },
-    {
-      // This ensures the query never refreshes and overwrites the form data while the user is editing.
-      staleTime: Infinity,
-    }
-  );
-  const [updateAreaMutation] = useMutation(updateArea);
+  // const [area, { setQueryData }] = useQuery(
+  //   getArea,
+  //   { id: areaId },
+  //   {
+  //     // This ensures the query never refreshes and overwrites the form data while the user is editing.
+  //     staleTime: Infinity,
+  //   }
+  // );
+  // const [updateAreaMutation] = useMutation(updateArea);
 
   return (
     <>
       <Head>
-        <title>Edit Area {area.id}</title>
+        <title>Edit Area </title>
       </Head>
 
       <div>
-        <h1>Edit Area {area.id}</h1>
-        <pre>{JSON.stringify(area, null, 2)}</pre>
+        <h1>Edit Area </h1>
+        {/* <h1>Edit Area {area.id}</h1> */}
+        {/* <pre>{JSON.stringify(area, null, 2)}</pre> */}
 
-        <AreaForm
+        {/* <AreaForm
           submitText="Update Area"
           // TODO use a zod schema for form validation
           //  - Tip: extract mutation's schema into a shared `validations.ts` file and
@@ -56,7 +58,7 @@ export const EditArea = () => {
               };
             }
           }}
-        />
+        /> */}
       </div>
     </>
   );

@@ -1,6 +1,6 @@
 import { BlitzAPIHandler, BlitzNextApiResponse } from "@blitzjs/next"
 import { PrismaClient } from "@prisma/client"
-import { mail } from "../../../helperFunctions/mail"
+// import { mail } from "../../../helperFunctions/mail"
 // import { getSession, useAuthenticatedSession } from "@blitzjs/auth"
 // import { useSession } from "@blitzjs/auth"
 
@@ -22,7 +22,7 @@ const handler = async (req, res) => {
     const record = req.body
 
     console.log("body", req.body)
-    mail("inventory_products@robocraze.com", record.to, record.subject, record.message)
+    // mail("inventory_products@robocraze.com", record.to, record.subject, record.message)
     res.statusCode = 200
     res.setHeader("Content-Type", "application/json")
     res.end(JSON.stringify({ name: "John Doe" }))

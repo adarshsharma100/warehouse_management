@@ -3198,7 +3198,7 @@ arrify@^2.0.1:
   resolved "https://registry.npmjs.org/arrify/-/arrify-2.0.1.tgz"
   integrity sha512-3duEwti880xqi4eAMN8AyR4a0ByT90zoYdLlevfrvU43vb0YZwZVfxOgxWrLXXXpyugL0hNZc9G6BiB5B3nUug==
 
-asap@~2.0.3:
+asap@^2.0.0, asap@~2.0.3:
   version "2.0.6"
   resolved "https://registry.npmjs.org/asap/-/asap-2.0.6.tgz"
   integrity sha512-BSHWgDSAiKs50o2Re8ppvp3seVHXSRM44cdSsT9FfNEUUZLOGWVCsiWaRPWM1Znn+mqZ1OfVZ3z3DWEzSp7hRA==
@@ -4709,6 +4709,14 @@ devtools-protocol@0.0.1068969:
   resolved "https://registry.npmjs.org/devtools-protocol/-/devtools-protocol-0.0.1068969.tgz"
   integrity sha512-ATFTrPbY1dKYhPPvpjtwWKSK2mIwGmRwX54UASn9THEuIZCe2n9k3vVuMmt6jWeL+e5QaaguEv/pMyR+JQB7VQ==
 
+dezalgo@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/dezalgo/-/dezalgo-1.0.4.tgz#751235260469084c132157dfa857f386d4c33d81"
+  integrity sha512-rXSP0bf+5n0Qonsb+SVVfNfIsimO4HEtmnIpPHY8Q1UCzKlQrDMfdobr8nJOOsRgWCyMRqeSBQzmWUMq7zvVig==
+  dependencies:
+    asap "^2.0.0"
+    wrappy "1"
+
 dfa@^1.2.0:
   version "1.2.0"
   resolved "https://registry.npmjs.org/dfa/-/dfa-1.2.0.tgz"
@@ -5945,6 +5953,16 @@ formdata-polyfill@^4.0.10:
   integrity sha512-buewHzMvYL29jdeQTVILecSaZKnt/RJWjoZCF5OW60Z67/GmSLBkOFM7qh1PI3zFNtJbaZL5eQu1vLfazOwj4g==
   dependencies:
     fetch-blob "^3.1.2"
+
+formidable@2.1.1:
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/formidable/-/formidable-2.1.1.tgz#81269cbea1a613240049f5f61a9d97731517414f"
+  integrity sha512-0EcS9wCFEzLvfiks7omJ+SiYJAiD+TzK4Pcw1UlUoGnhUxDcMKjt0P7x8wEb0u6OHu8Nb98WG3nxtlF5C7bvUQ==
+  dependencies:
+    dezalgo "^1.0.4"
+    hexoid "^1.0.0"
+    once "^1.4.0"
+    qs "^6.11.0"
 
 formik@2.2.9:
   version "2.2.9"

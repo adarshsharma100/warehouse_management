@@ -2,22 +2,24 @@ import { Routes } from "@blitzjs/next";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useMutation } from "@blitzjs/rpc";
-import Layout from "src/core/layouts/Layout";
-import createProduct_category from "src/product_categories/mutations/createProduct_category";
-import {
-  Product_categoryForm,
-  FORM_ERROR,
-} from "src/product_categories/components/Product_categoryForm";
+// import Layout from "src/core/layouts/Layout";
+// import createProduct_category from "src/product_categories/mutations/createProduct_category";
+// import {
+//   Product_categoryForm,
+//   FORM_ERROR,
+// } from "src/product_categories/components/Product_categoryForm";
+import Layout from "layouts/Layout"
+
 
 const NewProduct_categoryPage = () => {
   const router = useRouter();
-  const [createProduct_categoryMutation] = useMutation(createProduct_category);
+  // const [createProduct_categoryMutation] = useMutation(createProduct_category);
 
   return (
     <Layout title={"Create New Product_category"}>
       <h1>Create New Product_category</h1>
 
-      <Product_categoryForm
+      {/* <Product_categoryForm
         submitText="Create Product_category"
         // TODO use a zod schema for form validation
         //  - Tip: extract mutation's schema into a shared `validations.ts` file and
@@ -41,7 +43,7 @@ const NewProduct_categoryPage = () => {
             };
           }
         }}
-      />
+      /> */}
 
       <p>
         <Link href={Routes.Product_categoriesPage()}>Product_categories</Link>

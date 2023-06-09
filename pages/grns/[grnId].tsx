@@ -5,39 +5,40 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useQuery, useMutation } from "@blitzjs/rpc";
 import { useParam } from "@blitzjs/next";
+import Layout from "layouts/Layout"
 
-import Layout from "src/core/layouts/Layout";
-import getGrn from "src/grns/queries/getGrn";
-import deleteGrn from "src/grns/mutations/deleteGrn";
+// import Layout from "src/core/layouts/Layout";
+// import getGrn from "src/grns/queries/getGrn";
+// import deleteGrn from "src/grns/mutations/deleteGrn";
 
 export const Grn = () => {
   const router = useRouter();
   const grnId = useParam("grnId", "number");
-  const [deleteGrnMutation] = useMutation(deleteGrn);
-  const [grn] = useQuery(getGrn, { id: grnId });
+  // const [deleteGrnMutation] = useMutation(deleteGrn);
+  // const [grn] = useQuery(getGrn, { id: grnId });
 
   return (
     <>
       <Head>
-        <title>Grn {grn.id}</title>
+        {/* <title>Grn {grn.id}</title> */}
       </Head>
 
       <div>
-        <h1>Grn {grn.id}</h1>
-        <pre>{JSON.stringify(grn, null, 2)}</pre>
+        {/* <h1>Grn {grn?.id}</h1> */}
+        {/* <pre>{JSON.stringify(grn, null, 2)}</pre> */}
 
-        <Link href={Routes.EditGrnPage({ grnId: grn.id })}>
-          <a>Edit</a>
-        </Link>
+        {/* <Link href={Routes.EditGrnPage({ grnId: grn?.id })}> */}
+        <a>Edit</a>
+        {/* </Link> */}
 
         <button
           type="button"
-          onClick={async () => {
-            if (window.confirm("This will be deleted")) {
-              await deleteGrnMutation({ id: grn.id });
-              await router.push(Routes.GrnsPage());
-            }
-          }}
+          // onClick={async () => {
+          //   if (window.confirm("This will be deleted")) {
+          //     await deleteGrnMutation({ id: grn.id });
+          //     await router.push(Routes.GrnsPage());
+          //   }
+          // }}
           style={{ marginLeft: "0.5rem" }}
         >
           Delete

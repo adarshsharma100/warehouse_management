@@ -5,24 +5,24 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useQuery, useMutation } from "@blitzjs/rpc";
 import { useParam } from "@blitzjs/next";
+import Layout from "layouts/Layout"
 
-import Layout from "src/core/layouts/Layout";
-import getShipment from "src/shipments/queries/getShipment";
-import deleteShipment from "src/shipments/mutations/deleteShipment";
+// import Layout from "src/core/layouts/Layout";
+// import getShipment from "src/shipments/queries/getShipment";st";
 
 export const Shipment = () => {
   const router = useRouter();
   const shipmentId = useParam("shipmentId", "number");
-  const [deleteShipmentMutation] = useMutation(deleteShipment);
-  const [shipment] = useQuery(getShipment, { id: shipmentId });
+  // const [deleteShipmentMutation] = useMutation(deleteShipment);
+  // const [shipment] = useQuery(getShipment, { id: shipmentId });
 
   return (
     <>
       <Head>
-        <title>Shipment {shipment.id}</title>
+        <title>Shipment</title>
       </Head>
 
-      <div>
+      {/* <div>
         <h1>Shipment {shipment.id}</h1>
         <pre>{JSON.stringify(shipment, null, 2)}</pre>
 
@@ -42,7 +42,7 @@ export const Shipment = () => {
         >
           Delete
         </button>
-      </div>
+      </div> */}
     </>
   );
 };

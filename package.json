@@ -42,6 +42,7 @@
     "csv-stringify": "6.2.1",
     "download-csv": "1.1.1",
     "file-saver": "2.0.5",
+    "formidable": "2.1.1",
     "formik": "2.2.9",
     "fs": "0.0.1-security",
     "graphql": "16.6.0",

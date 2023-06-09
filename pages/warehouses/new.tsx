@@ -2,22 +2,24 @@ import { Routes } from "@blitzjs/next";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useMutation } from "@blitzjs/rpc";
-import Layout from "src/core/layouts/Layout";
-import createWarehouse from "src/warehouses/mutations/createWarehouse";
-import {
-  WarehouseForm,
-  FORM_ERROR,
-} from "src/warehouses/components/WarehouseForm";
+import Layout from "layouts/Layout"
+
+// import Layout from "src/core/layouts/Layout";
+// import createWarehouse from "src/warehouses/mutations/createWarehouse";
+// import {
+//   WarehouseForm,
+//   FORM_ERROR,
+// } from "src/warehouses/components/WarehouseForm";
 
 const NewWarehousePage = () => {
   const router = useRouter();
-  const [createWarehouseMutation] = useMutation(createWarehouse);
+  // const [createWarehouseMutation] = useMutation(createWarehouse);
 
   return (
     <Layout title={"Create New Warehouse"}>
       <h1>Create New Warehouse</h1>
 
-      <WarehouseForm
+      {/* <WarehouseForm
         submitText="Create Warehouse"
         // TODO use a zod schema for form validation
         //  - Tip: extract mutation's schema into a shared `validations.ts` file and
@@ -41,7 +43,7 @@ const NewWarehousePage = () => {
 
       <p>
         <Link href={Routes.WarehousesPage()}>Warehouses</Link>
-      </p>
+      </p> */}
     </Layout>
   );
 };

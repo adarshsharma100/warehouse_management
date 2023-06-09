@@ -5,24 +5,25 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useQuery, useMutation } from "@blitzjs/rpc";
 import { useParam } from "@blitzjs/next";
+import Layout from "layouts/Layout"
 
-import Layout from "src/core/layouts/Layout";
-import getProduct_brand from "src/product_brands/queries/getProduct_brand";
-import deleteProduct_brand from "src/product_brands/mutations/deleteProduct_brand";
+// import Layout from "src/core/layouts/Layout";
+// import getProduct_brand from "src/product_brands/queries/getProduct_brand";
+// import deleteProduct_brand from "src/product_brands/mutations/deleteProduct_brand";
 
 export const Product_brand = () => {
   const router = useRouter();
   const product_brandId = useParam("product_brandId", "number");
-  const [deleteProduct_brandMutation] = useMutation(deleteProduct_brand);
-  const [product_brand] = useQuery(getProduct_brand, { id: product_brandId });
+  // const [deleteProduct_brandMutation] = useMutation(deleteProduct_brand);
+  // const [product_brand] = useQuery(getProduct_brand, { id: product_brandId });
 
   return (
     <>
       <Head>
-        <title>Product_brand {product_brand.id}</title>
+        <title>Product_brand</title>
       </Head>
 
-      <div>
+      {/* <div>
         <h1>Product_brand {product_brand.id}</h1>
         <pre>{JSON.stringify(product_brand, null, 2)}</pre>
 
@@ -46,7 +47,7 @@ export const Product_brand = () => {
         >
           Delete
         </button>
-      </div>
+      </div> */}
     </>
   );
 };
