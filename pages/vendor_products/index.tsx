@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState } from "react"
+import { Suspense, useEffect, useRef, useState, useReducer } from "react"
 import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
 import getVendor_products from "app/vendor_products/queries/getVendor_products"
@@ -28,17 +28,41 @@ import { devNull } from "os"
 import LoaderFullScreen from "components/LoaderFullScreen"
 import { FilterMatchMode, FilterOperator } from "primereact/api"
 import { MultiSelect } from "primereact/multiselect"
+import { Paginator } from "primereact/paginator"
+import Head from "next/head"
 
 const ITEMS_PER_PAGE = 100
 
+const initialState = {
+  tableRowsCount: 10,
+  skipCount: 0,
+}
+
+const reducer = (state, { type, payload }) => {
+  switch (type) {
+    case 'UPDATE_TABLE_ROWS_COUNT':
+      return { ...state, tableRowsCount: payload }
+    case 'UPDATE_SKIP_COUNT':
+      return { ...state, skipCount: payload }
+    default:
+      throw new Error(`Unhandled action type: ${type}`);
+  }
+}
+
+
+
 export const Vendor_productsList = () => {
   const router = useRouter()
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { skipCount, tableRowsCount } = state;
   const page = Number(router.query.page) || 0
 
 
-
-  const [{ vendor_products }, { refetch, isLoading }] = useQuery(getVendor_products, {
+  const [{ vendor_products, count: total_vendor_products }, { refetch, isLoading }] = usePaginatedQuery(getVendor_products, {
     orderBy: { id: "desc" },
+    where: {},
+    skip: skipCount,
+    take: tableRowsCount
   })
 
   const [{ vendors }, { error: vp_VendorFetchingError, isLoading: isVendorsLoading }] = useQuery(
@@ -381,6 +405,14 @@ export const Vendor_productsList = () => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
 
+  const handlePageChange = async (event) => {
+    dispatch({ type: "UPDATE_SKIP_COUNT", payload: event.first })
+    dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
+  }
+
+
+  const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={total_vendor_products} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
+
 
   return (
     <div className="grid w-full" ref={scrolToTop}>
@@ -661,6 +693,7 @@ export const Vendor_productsList = () => {
             className="text-s datatable-responsive"
             filters={filters}
             header={header1}
+            footer={pagination}
             filterDisplay="menu"
             onRowClick={async (e) => {
 
@@ -695,11 +728,21 @@ export const Vendor_productsList = () => {
 
 const Vendor_productsPage = () => {
   return (
-    <Suspense fallback={<Loading />}>
-      <Layout>
-        <Vendor_productsList />
-      </Layout>
-    </Suspense>
+    // <Suspense fallback={<Loading />}>
+    //   <Layout>
+    //     <Vendor_productsList />
+    //   </Layout>
+    // </Suspense>
+    <Layout>
+      <Head>
+        <title>Vendor Catalog</title>
+      </Head>
+      <div>
+        <Suspense fallback={<Loading />}>
+          <Vendor_productsList />
+        </Suspense>
+      </div>
+    </Layout>
   )
 }
 

@@ -185,6 +185,7 @@ export const ShipmentsList = () => {
   const { orders, statusId, skipCount, tableRowsCount, selectedShipments, isReadyToShip, packageDimensions, readyToShipActiveIndex, containerName, sasToken, storageAccountName, manifestImageURL, statusName } = state
   console.log('selectedShipments ', selectedShipments);
 
+
   const firstSelectedShipmentItem = selectedShipments[0]
 
   const [{ shipments, count: shipmentCount }, { refetch }] = usePaginatedQuery(getShipments, {
