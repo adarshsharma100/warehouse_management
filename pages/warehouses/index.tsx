@@ -271,13 +271,16 @@ export const WarehousesList = () => {
 
 const Warehouses = () => {
   return (
-    <div>
-      <Suspense fallback={<Loading />}>
-        <Layout>
+    <Layout>
+      <Head>
+        <title>Product Categories</title>
+      </Head>
+      <div>
+        <Suspense fallback={<Loading />}>
           <WarehousesList />
-        </Layout>
-      </Suspense>
-    </div>
+        </Suspense>
+      </div>
+    </Layout>
   )
 }
 

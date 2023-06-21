@@ -1,6 +1,7 @@
-import { Suspense, useState } from "react";
+import { Suspense, useState, useReducer } from "react";
 import Head from "next/head";
 import Layout from 'layouts/Layout'
+import Loading from "components/loading";
 import { Button } from "primereact/button";
 import { InputText } from "primereact/inputtext";
 import { useFormik } from "formik";
@@ -12,6 +13,8 @@ import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import getProduct_categories from "app/product_categories/queries/getProduct_categories";
 import UpdateProduct_category from 'app/product_categories/mutations/updateProduct_category'
+import { Paginator } from "primereact/paginator";
+
 const initialproductCategories = {
   name: '',
   code: ''
@@ -22,13 +25,32 @@ const columns = [
   { field: "code", header: "Code" },
 ]
 
+const initialState = {
+  tableRowsCount: 10,
+  skipCount: 0,
+
+};
+
+const reducer = (state, { type, payload }) => {
+  switch (type) {
+    case 'UPDATE_TABLE_ROWS_COUNT':
+      return { ...state, tableRowsCount: payload }
+    case 'UPDATE_SKIP_COUNT':
+      return { ...state, skipCount: payload }
+    default:
+      throw new Error(`Unhandled action type: ${type}`);
+  }
+}
+
 
 export const Product_categoriesList = () => {
-  const [{ product_categories }] = useQuery(getProduct_categories, {
+  const [state, dispatch] = useReducer(reducer, initialState)
+  const { tableRowsCount, skipCount } = state
+  const [{ product_categories, count: total_product_categories }] = usePaginatedQuery(getProduct_categories, {
     orderBy: { id: "asc" },
-    skip: undefined,
-    where: undefined,
-    take: undefined
+    skip: skipCount,
+    where: {},
+    take: tableRowsCount
   })
   const [productCategories] = useState(initialproductCategories)
   console.log('productCategories: ', productCategories);
@@ -45,7 +67,7 @@ export const Product_categoriesList = () => {
       name: Yup.string().required("*Required")
     }),
     onSubmit: async (data) => {
-      
+
       const { name, code } = data
       const { id: rowId } = activeProductCategories
 
@@ -57,7 +79,7 @@ export const Product_categoriesList = () => {
             code
           }, {
             onSuccess: (data) => {
-              
+
               alert("Updated")
             },
             onError: (error) => {
@@ -66,7 +88,7 @@ export const Product_categoriesList = () => {
           }
           )
         } catch (error) {
-          
+
         }
 
       } else {
@@ -76,17 +98,17 @@ export const Product_categoriesList = () => {
             code,
           }, {
             onSuccess: (data) => {
-              
+
               alert('created!')
             },
             onError: (error) => {
-              
+
               alert('OnError')
             }
           }
           )
         } catch (error) {
-          
+
         }
       }
       setProductCategoriesDiolog(false)
@@ -108,6 +130,15 @@ export const Product_categoriesList = () => {
       />
     )
   })
+
+  const handlePageChange = async (event) => {
+
+    dispatch({ type: "UPDATE_SKIP_COUNT", payload: event.first })
+    dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
+  }
+
+
+  const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={total_product_categories} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
 
   return (
     <div>
@@ -168,7 +199,7 @@ export const Product_categoriesList = () => {
                   formik.resetForm()
                   setProductCategoriesDiolog(false)
                   setCheckUpdate(false)
-                
+
                 }}
               />
 
@@ -199,6 +230,9 @@ export const Product_categoriesList = () => {
           className="text-s datatable-responsive"
           responsiveLayout="scroll"
           filterDisplay="menu"
+          scrollable
+          scrollHeight="400px"
+          footer={pagination}
         >
           {columnComponents}
           <Column
@@ -234,14 +268,16 @@ export const Product_categoriesList = () => {
 
 const Product_categoriesPage = () => {
   return (
-    <div>
-      <Suspense fallback={<div>Loading...</div>}>
-        <Layout>
+    <Layout>
+      <Head>
+        <title>Product Categories</title>
+      </Head>
+      <div>
+        <Suspense fallback={<Loading />}>
           <Product_categoriesList />
-        </Layout>
-      </Suspense>
-
-    </div>
+        </Suspense>
+      </div>
+    </Layout>
   );
 };
 

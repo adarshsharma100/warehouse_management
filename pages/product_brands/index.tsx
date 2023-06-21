@@ -1,6 +1,6 @@
-import { Suspense, useState } from "react";
+import { Suspense, useState, useReducer } from "react";
 import Head from "next/head";
-import { useMutation, useQuery } from "@blitzjs/rpc";
+import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
 import Layout from 'layouts/Layout'
 import getProduct_brands from "app/product_brands/queries/getProduct_brands";
 import { Button } from "primereact/button";
@@ -12,19 +12,40 @@ import CreateProduct_brand from 'app/product_brands/mutations/createProduct_bran
 import UpdateProduct_brand from 'app/product_brands/mutations/updateProduct_brand'
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
+import { Paginator } from "primereact/paginator";
+import Loading from "components/loading";
+
 const initialproductBrand = {
   name: '',
 }
+const initialState = {
+  tableRowsCount: 10,
+  skipCount: 0,
+}
+
+const reducer = (state, { type, payload }) => {
+  switch (type) {
+    case 'UPDATE_TABLE_ROWS_COUNT':
+      return { ...state, tableRowsCount: payload }
+    case 'UPDATE_SKIP_COUNT':
+      return { ...state, skipCount: payload }
+    default:
+      throw new Error(`Unhandled action type: ${type}`);
+  }
+}
+
 const columns = [
   { field: "id", header: "ID" },
   { field: "name", header: "Name" },
 ]
 export const Product_brandsList = () => {
-  const [{ product_brands }] = useQuery(getProduct_brands, {
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { skipCount, tableRowsCount } = state;
+  const [{ product_brands, count: total_product_brands }] = usePaginatedQuery(getProduct_brands, {
     orderBy: { id: "asc" },
-    skip: undefined,
-    where: undefined,
-    take: undefined
+    skip: skipCount,
+    where: {},
+    take: tableRowsCount
   })
 
   const [productBrand] = useState(initialproductBrand)
@@ -83,6 +104,7 @@ export const Product_brandsList = () => {
       setProductBrandDiolog(false)
     }
   })
+
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
@@ -99,6 +121,15 @@ export const Product_brandsList = () => {
       />
     )
   })
+
+  const handlePageChange = async (event) => {
+    dispatch({ type: "UPDATE_SKIP_COUNT", payload: event.first })
+    dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
+  }
+
+
+  const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={total_product_brands} rowsPerPageOptions={[5, 10, 15]} onPageChange={handlePageChange} />
+
 
   return (
     <div>
@@ -149,7 +180,7 @@ export const Product_brandsList = () => {
                 type="submit"
                 className="mr-2"
                 // label="SUBMIT"
-              label={updateBrand ? "UPDATE" : "SUBMIT"}
+                label={updateBrand ? "UPDATE" : "SUBMIT"}
               />
               <Button
                 className="p-button-secondary flex-grow-0"
@@ -189,6 +220,7 @@ export const Product_brandsList = () => {
           className="text-s datatable-responsive"
           responsiveLayout="scroll"
           filterDisplay="menu"
+          footer={pagination}
         >
           {columnComponents}
 
@@ -222,14 +254,24 @@ export const Product_brandsList = () => {
 
 const Product_brandsPage = () => {
   return (
-    <div>
-      <Suspense fallback={<div>Loading...</div>}>
-        <Layout>
-          <Product_brandsList />
-        </Layout>
-      </Suspense>
-    </div>
+    // <div>
+    //   <Suspense fallback={<div>Loading...</div>}>
+    //     <Layout>
+    //       <Product_brandsList />
+    //     </Layout>
+    //   </Suspense>
+    // </div>
+    <Layout>
+      <Head>
+        <title>Product Brands</title>
+      </Head>
 
+      <div>
+        <Suspense fallback={<Loading />}>
+          <Product_brandsList />
+        </Suspense>
+      </div>
+    </Layout>
 
   );
 };

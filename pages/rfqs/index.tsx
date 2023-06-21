@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState } from "react"
+import { Suspense, useEffect, useRef, useState, useReducer } from "react"
 import Head from "next/head"
 import { useMutation, usePaginatedQuery, useQuery, invoke } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
@@ -47,19 +47,45 @@ import getEmails from "app/emails/queries/getEmails"
 import getRfq from "app/rfqs/queries/getRfq"
 import { constants } from "zlib"
 import { dateFilterTemplate } from "components/FilterTemplates"
+import { Paginator } from "primereact/paginator"
 
 const ITEMS_PER_PAGE = 100
 
+const initialState = {
+  tableRowsCount: 10,
+  skipCount: 0,
+
+};
+
+const reducer = (state, { type, payload }) => {
+  switch (type) {
+    case 'UPDATE_TABLE_ROWS_COUNT':
+      return { ...state, tableRowsCount: payload }
+    case 'UPDATE_SKIP_COUNT':
+      return { ...state, skipCount: payload }
+    default:
+      throw new Error(`Unhandled action type: ${type}`);
+  }
+}
+
 export const RfqsList = () => {
-  const router = useRouter()
+  const router = useRouter();
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { skipCount, tableRowsCount } = state;
+
+
   const antiCSRFToken = getAntiCSRFToken()
   const user = useCurrentUser()
   const { id, role, name, email } = user
 
   const page = Number(router.query.page) || 0
 
-  const [{ rfqs }, { error: rfqError, refetch }] = useQuery(getRfqs, {
+  const [{ rfqs, count: rfqsCount }, { error: rfqError, refetch }] = useQuery(getRfqs, {
     orderBy: { id: "desc" },
+    where: {},
+    skip: skipCount,
+    take: tableRowsCount
+
   })
   const [{ emails },] = useQuery(getEmails, {
     orderBy: { id: "asc" },
@@ -593,6 +619,15 @@ export const RfqsList = () => {
     msgArray.splice(i, 1)
     setRfqErrorMsgs(msgArray)
   }
+
+  const handlePageChange = async (event) => {
+
+    dispatch({ type: "UPDATE_SKIP_COUNT", payload: event.first })
+    dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
+  }
+
+
+  const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={rfqsCount} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
 
 
   return (
@@ -1211,6 +1246,7 @@ export const RfqsList = () => {
               // scrollable
               // scrollHeight="60vh"
               showGridlines
+              footer={pagination}
               // header={renderHeader}
               stripedRows
               className="text-s datatable-responsive"
@@ -1285,11 +1321,21 @@ export const RfqsList = () => {
 
 const RfqsPage = () => {
   return (
-    <Suspense fallback={<Loading />}>
-      <Layout>
-        <RfqsList />
-      </Layout>
-    </Suspense>
+    // <Suspense fallback={<Loading />}>
+    //   <Layout>
+    //     <RfqsList />
+    //   </Layout>
+    // </Suspense>
+    <Layout>
+      <Head>
+        <title>Rfqs</title>
+      </Head>
+      <div>
+        <Suspense fallback={<Loading />}>
+          <RfqsList />
+        </Suspense>
+      </div>
+    </Layout>
   )
 }
 

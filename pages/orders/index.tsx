@@ -1,5 +1,6 @@
 import { invoke, useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
 import { cities, createSearchFunction, dateFormat } from "app/constants";
+import Head from "next/head";
 import getOrder_statuses from "app/order_statuses/queries/getOrder_statuses";
 import createOrder from "app/orders/mutations/createOrder";
 import updateOrder from "app/orders/mutations/updateOrder";
@@ -19,6 +20,7 @@ import { DataTable } from "primereact/datatable";
 import { Dropdown } from "primereact/dropdown";
 import { InputText } from "primereact/inputtext";
 import { OverlayPanel } from 'primereact/overlaypanel';
+import { Paginator } from "primereact/paginator";
 import { Suspense, useEffect, useReducer, useRef, useState } from "react";
 import * as Yup from "yup";
 import AddressComponent from "../../components/AddressComponent";
@@ -30,6 +32,27 @@ import { TabMenu } from "primereact/tabmenu";
 import { Toast } from "primereact/toast";
 import getInventory_product from "app/inventory_products/queries/getInventory_product";
 
+const initialState = {
+  orders: [],
+  filteredOrders: [],
+  manifestShipments: [],
+  manifestStep: 0,
+  displayManifest: false,
+  statusId: undefined,
+  statusName: "ALL",
+  tableRowsCount: 10,
+  skipCount: 0,
+  first: 0,
+  rows: 10,
+  itemsPerPage: 10,
+  selectedShipments: [],
+  isReadyToShip: false,
+  readyToShipActiveIndex: 0,
+  containerName: 'manifests',
+  sasToken: process.env.NEXT_PUBLIC_STORAGESASTOKEN,
+  storageAccountName: process.env.NEXT_PUBLIC_STORAGERESOURCENAME,
+  manifestImageURL: ""
+};
 
 const initialOrderDetails = {
   name: "",
@@ -104,13 +127,50 @@ const paymentStatus_ = [
 const ITEMS_PER_PAGE = 250;
 
 export const OrdersList = () => {
+  const reducer = (state, { type, payload }) => {
+    switch (type) {
+      case 'GET_ORDERS':
+        return { ...state, orders: payload };
+      case 'FILTER_BY':
+        return { ...state, filteredOrders: payload };
+      case 'UPDATE_STATUS_ID':
+        return { ...state, statusId: payload };
+      case 'UPDATE_STATUS_NAME':
+        return { ...state, statusName: payload };
+      case 'UPDATE_SKIP_COUNT':
+        return { ...state, skipCount: payload };
+      case 'UPDATE_TABLE_ROWS_COUNT':
+        return { ...state, tableRowsCount: payload };
+      case 'SET_SELECTED_SHIPMENTS':
+        return { ...state, selectedShipments: payload };
+      case 'RESET_SELECTED_SHIPMENTS':
+        return { ...state, selectedShipments: [] };
+      case 'READY_TO_SHIP':
+        return { ...state, isReadyToShip: payload };
+      case 'READY_TO_SHIP_ACTIVE_INDEX':
+        return { ...state, readyToShipActiveIndex: payload };
+      case 'DISPATCH_SHIPMENTS':
+        return { ...state, displayManifest: true }
+      case 'SET_SHIPMENT_STATE':
+        return { ...state, [payload.prop]: payload.value }
+
+      case 'FILTER_BY_STATUS': // Add this case
+        const filteredOrders = state.orders.filter(order => order.status === 'unfulfilled');
+        return { ...state, filteredOrders };
+      default:
+        throw new Error(`Unhandled action type: ${type}`);
+    }
+  }
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { statusId, skipCount, tableRowsCount } = state
   const toast = useRef(null)
   const router = useRouter();
   const page = Number(router.query.page) || 0;
-  const [{ orders }, { refetch: refetchOrders }] = usePaginatedQuery(getOrders, {
-    orderBy: { id: "desc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
+  const [{ orders, count: orderCounts }, { refetch: refetchOrders }] = usePaginatedQuery(getOrders, {
+    orderBy: { id: "asc" },
+    where: {},
+    skip: skipCount,
+    take: tableRowsCount,
   });
 
   const [{ order_statuses, }] = useQuery(getOrder_statuses, {
@@ -673,8 +733,6 @@ export const OrdersList = () => {
     }
   })
 
-
-
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
@@ -912,6 +970,12 @@ export const OrdersList = () => {
     return order.verified ? "Verified" : "Not Verified";
   }
 
+  const handlePageChange = async (event) => {
+    dispatch({ type: "UPDATE_SKIP_COUNT", payload: event.first })
+    dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
+
+  }
+
   const searchCustomer = createSearchFunction(customerOptions, setCustomerOptionsSuggestions)
 
 
@@ -926,65 +990,87 @@ export const OrdersList = () => {
 
   //     tab_view 
 
+  // const initialState = {
+  //   orders: [],
+  //   filteredOrders: [],
+  //   manifestShipments: [],
+  //   manifestStep: 0,
+  //   displayManifest: false,
+  //   statusId: undefined,
+  //   statusName: "ALL",
+  //   tableRowsCount: 10,
+  //   skipCount: 0,
+  //   first: 0,
+  //   rows: 10,
+  //   itemsPerPage: 10,
+  //   selectedShipments: [],
+  //   isReadyToShip: false,
+  //   readyToShipActiveIndex: 0,
+  //   containerName: 'manifests',
+  //   sasToken: process.env.NEXT_PUBLIC_STORAGESASTOKEN,
+  //   storageAccountName: process.env.NEXT_PUBLIC_STORAGERESOURCENAME,
+  //   manifestImageURL: ""
+  // };
 
 
-  const reducer = (state, { type, payload }) => {
-    switch (type) {
-      case 'GET_ORDERS':
-        return { ...state, orders: payload };
-      case 'FILTER_BY':
-        return { ...state, filteredOrders: payload };
-      case 'UPDATE_STATUS_ID':
-        return { ...state, statusId: payload };
-      case 'UPDATE_STATUS_NAME':
-        return { ...state, statusName: payload };
-      case 'UPDATE_SKIP_COUNT':
-        return { ...state, skipCount: payload };
-      case 'UPDATE_TABLE_ROWS_COUNT':
-        return { ...state, tableRowsCount: payload };
-      case 'SET_SELECTED_SHIPMENTS':
-        return { ...state, selectedShipments: payload };
-      case 'RESET_SELECTED_SHIPMENTS':
-        return { ...state, selectedShipments: [] };
-      case 'READY_TO_SHIP':
-        return { ...state, isReadyToShip: payload };
-      case 'READY_TO_SHIP_ACTIVE_INDEX':
-        return { ...state, readyToShipActiveIndex: payload };
-      case 'DISPATCH_SHIPMENTS':
-        return { ...state, displayManifest: true }
-      case 'SET_SHIPMENT_STATE':
-        return { ...state, [payload.prop]: payload.value }
 
-      case 'FILTER_BY_STATUS': // Add this case
-        const filteredOrders = state.orders.filter(order => order.status === 'unfulfilled');
-        return { ...state, filteredOrders };
-      default:
-        throw new Error(`Unhandled action type: ${type}`);
-    }
-  }
-  const initialState = {
-    orders: [],
-    filteredOrders: [],
-    manifestShipments: [],
-    manifestStep: 0,
-    displayManifest: false,
-    statusId: undefined,
-    statusName: "ALL",
-    tableRowsCount: 10,
-    skipCount: 0,
-    first: 0,
-    rows: 10,
-    itemsPerPage: 10,
-    selectedShipments: [],
-    isReadyToShip: false,
-    readyToShipActiveIndex: 0,
-    containerName: 'manifests',
-    sasToken: process.env.NEXT_PUBLIC_STORAGESASTOKEN,
-    storageAccountName: process.env.NEXT_PUBLIC_STORAGERESOURCENAME,
-    manifestImageURL: ""
-  };
-  const [state, dispatch] = useReducer(reducer, initialState);
-  const { statusId } = state
+  // const reducer = (state, { type, payload }) => {
+  //   switch (type) {
+  //     case 'GET_ORDERS':
+  //       return { ...state, orders: payload };
+  //     case 'FILTER_BY':
+  //       return { ...state, filteredOrders: payload };
+  //     case 'UPDATE_STATUS_ID':
+  //       return { ...state, statusId: payload };
+  //     case 'UPDATE_STATUS_NAME':
+  //       return { ...state, statusName: payload };
+  //     case 'UPDATE_SKIP_COUNT':
+  //       return { ...state, skipCount: payload };
+  //     case 'UPDATE_TABLE_ROWS_COUNT':
+  //       return { ...state, tableRowsCount: payload };
+  //     case 'SET_SELECTED_SHIPMENTS':
+  //       return { ...state, selectedShipments: payload };
+  //     case 'RESET_SELECTED_SHIPMENTS':
+  //       return { ...state, selectedShipments: [] };
+  //     case 'READY_TO_SHIP':
+  //       return { ...state, isReadyToShip: payload };
+  //     case 'READY_TO_SHIP_ACTIVE_INDEX':
+  //       return { ...state, readyToShipActiveIndex: payload };
+  //     case 'DISPATCH_SHIPMENTS':
+  //       return { ...state, displayManifest: true }
+  //     case 'SET_SHIPMENT_STATE':
+  //       return { ...state, [payload.prop]: payload.value }
+
+  //     case 'FILTER_BY_STATUS': // Add this case
+  //       const filteredOrders = state.orders.filter(order => order.status === 'unfulfilled');
+  //       return { ...state, filteredOrders };
+  //     default:
+  //       throw new Error(`Unhandled action type: ${type}`);
+  //   }
+  // }
+  // const initialState = {
+  //   orders: [],
+  //   filteredOrders: [],
+  //   manifestShipments: [],
+  //   manifestStep: 0,
+  //   displayManifest: false,
+  //   statusId: undefined,
+  //   statusName: "ALL",
+  //   tableRowsCount: 10,
+  //   skipCount: 0,
+  //   first: 0,
+  //   rows: 10,
+  //   itemsPerPage: 10,
+  //   selectedShipments: [],
+  //   isReadyToShip: false,
+  //   readyToShipActiveIndex: 0,
+  //   containerName: 'manifests',
+  //   sasToken: process.env.NEXT_PUBLIC_STORAGESASTOKEN,
+  //   storageAccountName: process.env.NEXT_PUBLIC_STORAGERESOURCENAME,
+  //   manifestImageURL: ""
+  // };
+  // const [state, dispatch] = useReducer(reducer, initialState);
+  // const { statusId, skipCount, tableRowsCount } = state
   const tabMenuItems = order_statuses?.map(status => (
     {
       label: `${status.name === "CREATED" ? "NEW" : status.name}`,
@@ -993,9 +1079,26 @@ export const OrdersList = () => {
     }
   ))
 
+  // const [{ orders }] = usePaginatedQuery(getOrders, {
+  //   orderBy: { id: "asc" },
+  //   where: {},
+  //   skip: skipCount,
+  //   take: tableRowsCount,
+  // })
+
+  console.log("orders", orders);
+
+  const handleOnPageChange = () => {
+
+  }
+
   const isSelectable = (data) => !data?.verified;
 
   const isRowSelectable = (event) => (event.data ? isSelectable(event.data) : true);
+
+  const paginator = <Paginator first={skipCount} rows={tableRowsCount} totalRecords={orderCounts} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
+
+
 
   const cellClassName = (data, row,) => {
     const index = row.rowIndex
@@ -1482,34 +1585,12 @@ export const OrdersList = () => {
 
       <div className="col-12">
         <div className="card">
-          {/* <TabMenu
-            model={[...tabMenuItems]}
-            activeIndex={statusId}
-            onTabChange={(e) => {
-              // dispatch({ type: 'UPDATE_STATUS_ID', payload: e.value.id })
-              // dispatch({ type: 'UPDATE_STATUS_NAME', payload: e.value.status ?? e.value.label })
-              // dispatch({ type: 'RESET_SELECTED_SHIPMENTS', payload: [] })
-              // if (e.value.status === 'unfulfilled') {
-              //   dispatch({ type: 'FILTER_BY_STATUS' });
-              // } else {
-              //   dispatch({ type: 'GET_ORDERS', payload: [] });
-              // }
-              if (statusId === 2) {
-                // <DataTable
-                //   value={orders}
 
-
-                // >
-
-                // </DataTable>
-
-              }
-            }}
-          /> */}
 
           <DataTable
             value={orders}
             responsiveLayout="scroll"
+            // scrollable
             showGridlines
             header={renderHeader}
             stripedRows
@@ -1519,11 +1600,13 @@ export const OrdersList = () => {
             tableStyle={{ minWidth: '50rem' }}
             isDataSelectable={isRowSelectable}
             cellClassName={cellClassName}
+            footer={paginator}
 
           >
             <Column
               selectionMode="multiple"
-              headerStyle={{ width: '3rem' }}>
+              headerStyle={{ width: '3rem' }}
+            >
               <input
                 type="checkbox"
                 checked={isChecked}
@@ -1881,11 +1964,22 @@ export const OrdersList = () => {
 
 const OrdersPage = () => {
   return (
-    <Suspense fallback={<Loading />}>
-      <Layout>
-        <OrdersList />
-      </Layout>
-    </Suspense>
+    <Layout>
+      <Head>
+        <title>Orders</title>
+      </Head>
+
+      <div>
+        <Suspense fallback={<Loading />}>
+          <OrdersList />
+        </Suspense>
+      </div>
+    </Layout>
+    // <Suspense fallback={<Loading />}>
+    //   <Layout>
+    //     <OrdersList />
+    //   </Layout>
+    // </Suspense>
   )
 };
 

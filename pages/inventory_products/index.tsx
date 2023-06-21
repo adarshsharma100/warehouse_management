@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState } from "react"
+import { Suspense, useEffect, useRef, useState, useReducer } from "react"
 import { Routes } from "@blitzjs/next"
 import Head from "next/head"
 import { invoke, useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc"
@@ -31,17 +31,37 @@ import getWarehouses from "app/warehouses/queries/getWarehouses"
 import getWarehouse from "app/warehouses/queries/getWarehouse"
 import getArea from "app/areas/queries/getArea"
 import { MultiSelect } from "primereact/multiselect"
+import { Paginator } from "primereact/paginator"
 
-const ITEMS_PER_PAGE = 100
+const ITEMS_PER_PAGE = 20;
+
+const initialState = {
+  tableRowsCount: 10,
+  skipCount: 0,
+
+};
+
+const reducer = (state, { type, payload }) => {
+  switch (type) {
+    case 'UPDATE_TABLE_ROWS_COUNT':
+      return { ...state, tableRowsCount: payload }
+    case 'UPDATE_SKIP_COUNT':
+      return { ...state, skipCount: payload }
+    default:
+      throw new Error(`Unhandled action type: ${type}`);
+  }
+}
 
 export const Inventory_productsList = () => {
   const router = useRouter()
   const page = Number(router.query.page) || 0
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { skipCount, tableRowsCount } = state;
   const [createInventory_productMutation, { error: createInventoryError, isLoading: creatingInventory },] = useMutation(createInventory_product)
   const [updateInventory_productMutation, { error: updateInventoryError, isLoading: updatingInventory },] = useMutation(updateInventory_product)
 
   const [selectedWarehouse, setSelectedWarehouse] = useState()
-  const [{ inventory_products, hasMore }, { refetch }] = usePaginatedQuery(getInventory_products, {
+  const [{ inventory_products, count: totalInventoryProduct }, { refetch }] = usePaginatedQuery(getInventory_products, {
     orderBy: { id: "asc" },
     where: {
       shelves: {
@@ -50,8 +70,8 @@ export const Inventory_productsList = () => {
         }
       }
     },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
+    skip: skipCount,
+    take: tableRowsCount,
   })
 
   console.log("inventory_products", inventory_products)
@@ -61,6 +81,7 @@ export const Inventory_productsList = () => {
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
+
   const [{ warehouses }] = useQuery(getWarehouses, {
     orderBy: { id: "asc" },
     skip: ITEMS_PER_PAGE * page,
@@ -438,6 +459,13 @@ export const Inventory_productsList = () => {
     setSelectedColumns(defaultColumns)
   }, [])
 
+  const handlePageChange = async (event) => {
+    console.log(event);
+    dispatch({ type: "UPDATE_SKIP_COUNT", payload: event.first })
+    dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
+  }
+
+  const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={totalInventoryProduct} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
 
 
 
@@ -716,6 +744,8 @@ export const Inventory_productsList = () => {
               // scrollable
               // scrollHeight="60vh"
               stripedRows
+              scrollable
+              scrollHeight="400px"
               className="text-s datatable-responsive"
               filters={filters}
               header={header1}
@@ -725,6 +755,7 @@ export const Inventory_productsList = () => {
               rowExpansionTemplate={rowExpansionTemplate}
               // globalFilterFields={["products_sku"]}
               emptyMessage="No Results found."
+              footer={pagination}
             >
               <Column expander={true} style={{ width: "3em" }} />
               {columnComponents}
@@ -739,11 +770,21 @@ export const Inventory_productsList = () => {
 
 const Inventory_productsPage = () => {
   return (
-    <Suspense fallback={<Loading />}>
-      <Layout>
-        <Inventory_productsList />
-      </Layout>
-    </Suspense>
+    // <Suspense fallback={<Loading />}>
+    //   <Layout>
+    //     <Inventory_productsList />
+    //   </Layout>
+    // </Suspense>
+    <Layout>
+      <Head>
+        <title>Inventory Products</title>
+      </Head>
+      <div>
+        <Suspense fallback={<Loading />}>
+          <Inventory_productsList />
+        </Suspense>
+      </div>
+    </Layout>
   )
 }
 

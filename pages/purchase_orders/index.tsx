@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState } from "react"
+import { Suspense, useEffect, useRef, useState, useReducer } from "react"
 import { Routes } from "@blitzjs/next"
 import Head from "next/head"
 import Link from "next/link"
@@ -35,24 +35,47 @@ import CreateNewPo from "components/CreateNewPo"
 import { MultiSelect } from "primereact/multiselect"
 import { FilterMatchMode } from "primereact/api"
 import { dateFilterTemplate } from "components/FilterTemplates"
+import { Paginator } from "primereact/paginator"
 
 
 const ITEMS_PER_PAGE = 250
 
+const initialState = {
+  tableRowsCount: 10,
+  skipCount: 0,
+
+};
+
+const reducer = (state, { type, payload }) => {
+  switch (type) {
+    case 'UPDATE_TABLE_ROWS_COUNT':
+      return { ...state, tableRowsCount: payload }
+    case 'UPDATE_SKIP_COUNT':
+      return { ...state, skipCount: payload }
+    default:
+      throw new Error(`Unhandled action type: ${type}`);
+  }
+}
+
+
+
 export const Purchase_ordersList = () => {
   const router = useRouter()
+  const [state, dispatch] = useReducer(reducer, initialState)
+  const { tableRowsCount, skipCount } = state
   const antiCSRFToken = getAntiCSRFToken()
   const user = useCurrentUser()
   const { id: userId, role, name, email } = user
 
 
   const page = Number(router.query.page) || 0
-  const [{ purchase_orders, hasMore }, { error: getPoError, refetch }] = usePaginatedQuery(
+  const [{ purchase_orders, count: total_purchase_orders }, { error: getPoError, refetch }] = usePaginatedQuery(
     getPurchase_orders,
     {
       orderBy: { id: "desc" },
-      skip: ITEMS_PER_PAGE * page,
-      take: ITEMS_PER_PAGE,
+      where: {},
+      skip: skipCount,
+      take: tableRowsCount,
     }
   )
   console.log('purchase_orders: ', purchase_orders);
@@ -170,6 +193,14 @@ export const Purchase_ordersList = () => {
 
   }, [router.query])
 
+  const handlePageChange = async (event) => {
+    console.log(event);
+    dispatch({ type: "UPDATE_SKIP_COUNT", payload: event.first })
+    dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
+  }
+
+  const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={total_purchase_orders} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
+
 
   const [expandedRows, setExpandedRows] = useState()
 
@@ -186,6 +217,7 @@ export const Purchase_ordersList = () => {
                 // header={renderHeader}
                 stripedRows
                 className="text-s datatable-responsive w-full mt-5"
+
               // paginator
               // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
               // rows={PAGINATION_VARIABLES.rows}
@@ -474,6 +506,7 @@ export const Purchase_ordersList = () => {
               value={purchase_orders}
               showGridlines
               scrollable
+              scrollHeight="300px"
               // header={renderHeader}
               stripedRows
               className="text-s datatable-responsive"
@@ -488,6 +521,7 @@ export const Purchase_ordersList = () => {
               filters={filters}
               header={header1}
               filterDisplay="menu"
+              footer={pagination}
               // globalFilterFields={["products_sku"]}
               emptyMessage="No Results found."
               onRowClick={async (e) => {
@@ -513,11 +547,21 @@ export const Purchase_ordersList = () => {
 
 const Purchase_ordersPage = () => {
   return (
-    <Suspense fallback={<Loading />}>
-      <Layout>
-        <Purchase_ordersList />
-      </Layout>
-    </Suspense>
+    // <Suspense fallback={<Loading />}>
+    //   <Layout>
+    //     <Purchase_ordersList />
+    //   </Layout>
+    // </Suspense>
+    <Layout>
+      <Head>
+        <title>Purchase Order</title>
+      </Head>
+      <div>
+        <Suspense fallback={<Loading />}>
+          <Purchase_ordersList />
+        </Suspense>
+      </div>
+    </Layout>
   )
 }
 Purchase_ordersPage.authenticate = false

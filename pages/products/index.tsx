@@ -1,7 +1,8 @@
-import { Suspense, useState, useRef, useEffect } from "react"
-import { useMutation, useQuery } from "@blitzjs/rpc"
+import { Suspense, useState, useRef, useEffect, useReducer } from "react"
+import { useMutation, useQuery, usePaginatedQuery } from "@blitzjs/rpc"
 import papa from "papaparse"
 import Layout from "layouts/Layout"
+import Head from "next/head"
 import { DataTable } from "primereact/datatable"
 import { MultiSelect } from "primereact/multiselect"
 import { Column } from "primereact/column"
@@ -41,6 +42,16 @@ import { InputTextarea } from "primereact/inputtextarea"
 import { OverlayPanel } from "primereact/overlaypanel"
 import { dateFilterTemplate } from "components/FilterTemplates"
 import getProduct_brands from "app/product_brands/queries/getProduct_brands"
+import { Paginator } from "primereact/paginator"
+
+
+const initialState = {
+  tableRowsCount: 10,
+  skipCount: 0,
+  // first: 0,
+  // rows: 10,
+  // itemsPerPage: 10,
+};
 
 
 const columns = [
@@ -207,13 +218,33 @@ const initialColumnFilters = {
   status: initialFilterRules.andContains,
 }
 
+const reducer = (state, { type, payload }) => {
+  switch (type) {
+    case 'UPDATE_TABLE_ROWS_COUNT':
+      return { ...state, tableRowsCount: payload }
+    case 'UPDATE_SKIP_COUNT':
+      return { ...state, skipCount: payload }
+    default:
+      throw new Error(`Unhandled action type: ${type}`);
+  }
+}
 
 
 export const ProductsList = () => {
+  const [state, dispatch] = useReducer(reducer, initialState);
+  console.log("state", state);
+  const { skipCount, tableRowsCount } = state;
 
   // USE QUERY
   // <===START===>
-  const [{ products }, { refetch }] = useQuery(getProducts, { orderBy: { id: "desc" } })
+  const [{ products, count: totalProductsCount }, { refetch }] = usePaginatedQuery(getProducts,
+    {
+      orderBy: { id: "asc" },
+      where: {},
+      skip: skipCount,
+      take: tableRowsCount
+
+    })
   console.log('products: ', products);
   const [{ product_categories }] = useQuery(getProduct_categories, { orderBy: { id: "desc" } })
   const [{ product_brands }] = useQuery(getProduct_brands, { orderBy: { id: "asc" } })
@@ -568,10 +599,18 @@ export const ProductsList = () => {
     toast.current.show({ severity: 'info', summary: 'Success', detail: 'File Uploaded' });
   };
 
+  const handlePageChange = async (event) => {
+    console.log(event);
+    dispatch({ type: "UPDATE_SKIP_COUNT", payload: event.first })
+    dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
+  }
+
   const onTemplateRemove = (file, callback) => {
     setTotalSize(totalSize - file.size);
     callback();
   }
+
+  const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={totalProductsCount} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
 
   return (
     <div className="grid w-full">
@@ -960,6 +999,7 @@ export const ProductsList = () => {
             value={products}
             responsiveLayout="scroll"
             showGridlines
+            footer={pagination}
             header={productsTableHeader}
             filters={filters}
             className="text-s datatable-responsive"
@@ -1010,11 +1050,16 @@ export const ProductsList = () => {
 
 const ProductsPage = () => {
   return (
-    <Suspense fallback={<Loading />}>
-      <Layout>
-        <ProductsList />
-      </Layout>
-    </Suspense>
+    <Layout>
+      <Head>
+        <title>Products</title>
+      </Head>
+      <div>
+        <Suspense fallback={<Loading />}>
+          <ProductsList />
+        </Suspense>
+      </div>
+    </Layout>
   )
 }
 ProductsPage.authenticate = true
