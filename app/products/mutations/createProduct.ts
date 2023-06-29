@@ -21,7 +21,7 @@ const CreateProduct = z.object({
   gstTaxTypeCode: z.string().optional(),
   taxCalcType: z.string().optional(),
   brand: z.number().optional(),
-  costPrice: z.number(),
+  // costPrice: z.number(),
   type: z.number(),
   sku: z.string(),
   category: z.number(),
@@ -35,7 +35,8 @@ export default resolver.pipe(
     const product = await db.products.create({
       data: input,
       include: {
-        product_categories: true
+        product_categories: true,
+        // images: true
       }
     })
 
