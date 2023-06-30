@@ -3,14 +3,14 @@
   flex-direction: column;
   min-height: 100vh;
   justify-content: space-between;
-  padding: 6rem 2rem 2rem 4rem;
+  padding: 4rem 0rem 0rem 4rem;
   transition: margin-left $transitionDuration;
 }
 
 .layout-main {
   flex: 1 1 auto;
   bottom: 25px;
-  max-height: 77vh;
+  max-height: 85vh;
   overflow: auto;
   // padding-right: 1rem;
 }
