@@ -34,6 +34,7 @@ import getInventory_product from "app/inventory_products/queries/getInventory_pr
 import getPo_terms from "app/po_terms/queries/getPo_terms";
 import getProduct_prices from "app/product_prices/queries/getProduct_prices";
 import { InputSwitch } from "primereact/inputswitch";
+import getOrder_payment_statuses from "app/order_payment_statuses/queries/getOrder_payment_statuses";
 
 const initialState = {
   orders: [],
@@ -198,6 +199,15 @@ export const OrdersList = () => {
     take: ITEMS_PER_PAGE,
     where: undefined
   })
+  console.log('order_statuses: ', order_statuses);
+
+  const [{ order_payment_statuses }] = useQuery(getOrder_payment_statuses, {
+    orderBy: { id: 'asc' },
+    skip: ITEMS_PER_PAGE * page,
+    take: ITEMS_PER_PAGE,
+    where: undefined
+  })
+  console.log('order_payment_statuses: ', order_payment_statuses);
 
 
   // const [{ customers }] = useQuery(getCustomers, {
@@ -252,7 +262,7 @@ export const OrdersList = () => {
   const gstTotal = 0;
   const orderItemsOptions = products.map(({ id, name, sku, description, gstTaxTypeCode }) => {
     return {
-      name: `${sku} - ${name} - ${gstTaxTypeCode}%gst`,
+      name: `${sku} - ${name} `,
       id,
       description,
       sku,
@@ -268,6 +278,7 @@ export const OrdersList = () => {
 
 
   const [orderItemsSuggestions, setOderItemsSuggestions] = useState<any>(null)
+  console.log('orderItemsSuggestions: ', orderItemsSuggestions);
 
   const customerOptions = orders.map(({ customers }) => ({
     ...customers,
@@ -625,36 +636,37 @@ export const OrdersList = () => {
               companyName,
               display,
               // shopifyId: "1425636985",
-              addresses: {
-                create: {
-                  // buildingNumber: "56",
-                  areaStreet: address,
-                  landmarkName,
-                  cityCountryProvince: city,
-                  state,
-                  pincode,
-                  country: 1,
-                  emails_emails_addressesToaddresses: {
-                    create: [
-                      {
-                        email,
-                      },
-                    ],
-                  },
-                  contact_number: {
-                    create: [
-                      {
-                        type: "mobile",
-                        number: contactNumber,
-                      },
-                    ],
-                  }
+              // addresses: {
+              //   create: {
+              //     // buildingNumber: "56",
+              //     areaStreet: address,
+              //     landmarkName,
+              //     cityCountryProvince: city,
+              //     state,
+              //     pincode,
+              //     country: 1,
+              //     emails_emails_addressesToaddresses: {
+              //       create: [
+              //         {
+              //           email,
+              //         },
+              //       ],
+              //     },
+              //     contact_number: {
+              //       create: [
+              //         {
+              //           type: "mobile",
+              //           number: contactNumber,
+              //         },
+              //       ],
+              //     }
 
-                }
-              }
+              //   }
+              // }
             },
             order: {
-              orderStatus: Number(orderStatus?.id),
+              // orderStatus: Number(orderStatus?.id),
+              orderStatus : selectOrderStatus ? selectOrderStatus.id : null,
               isShippingIsBilling: true,
               shippingAddress: {
                 // buildingNumber: "123",
@@ -704,7 +716,8 @@ export const OrdersList = () => {
                   ],
                 }
               },
-              paymentStatus: paymentStatus.id,
+              // paymentStatus: paymentStatus.id,
+              paymentStatus: selectedPaymentStatus ? selectedPaymentStatus.id : null,
               totalPrice,
               gateway,
               discountAmount,
@@ -774,42 +787,42 @@ export const OrdersList = () => {
 
 
 
-  // const handleInputChange = (event, index) => {
-  //   const { name, value } = event.target;
-
-  //   const newInputsItems = [...formik.values.orderItems];
-  //   newInputsItems[index][name] = value;
-
-
-  //   const totalPrice = newInputsItems.reduce((acc, curr) => {
-  //     return acc + curr.price * curr.quantity;
-  //   }, 0)
-
-  //   // update the state with the new order items
-  //   formik.setValues({ ...formik.values, orderItems: newInputsItems, totalPrice: totalPrice });
-  //   return newInputsItems;
-
-  // };
-
-
-  const handleInputChange = async (event, index) => {
+  const handleInputChange = (event, index) => {
     const { name, value } = event.target;
 
     const newInputsItems = [...formik.values.orderItems];
     newInputsItems[index][name] = value;
 
-    const selectedProduct = newInputsItems[index];
-    const sellingPrice = product_prices.find((price) => price.productId === selectedProduct.id)?.sellingPrice || 0;
-
-    newInputsItems[index].price = sellingPrice;
 
     const totalPrice = newInputsItems.reduce((acc, curr) => {
       return acc + curr.price * curr.quantity;
-    }, 0);
+    }, 0)
 
+    // update the state with the new order items
     formik.setValues({ ...formik.values, orderItems: newInputsItems, totalPrice: totalPrice });
     return newInputsItems;
+
   };
+
+
+  // const handleInputChange = async (event, index) => {
+  //   const { name, value } = event.target;
+
+  //   const newInputsItems = [...formik.values.orderItems];
+  //   newInputsItems[index][name] = value;
+
+  //   const selectedProduct = newInputsItems[index];
+  //   const sellingPrice = product_prices.find((price) => price.productId === selectedProduct.id)?.sellingPrice || 0;
+
+  //   newInputsItems[index].price = sellingPrice;
+
+  //   const totalPrice = newInputsItems.reduce((acc, curr) => {
+  //     return acc + curr.price * curr.quantity;
+  //   }, 0);
+
+  //   formik.setValues({ ...formik.values, orderItems: newInputsItems, totalPrice: totalPrice });
+  //   return newInputsItems;
+  // };
 
   const [verificationStatus, setVerificationStatus] = useState(false);
   const inventory_productName = inventory_products.map((val) => val.products.name)
@@ -1163,6 +1176,37 @@ export const OrdersList = () => {
   };
 
 
+  //  Payment status dropdown -->>
+
+  const [paymentStatus, setPaymentStatus] = useState([])
+
+  const paymentStatusSearch = (event) => {
+    setPaymentStatus(order_payment_statuses.map((val) => val.name))
+  }
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState({ id: 1, name: 'PAID' });
+
+  const handlePaymentStatusChange = (e) => {
+    const selectedPayment = order_payment_statuses.find((status) => status.name === e.value);
+    setSelectedPaymentStatus(selectedPayment);
+  };
+
+  // Order Status dropdown ===>>>
+
+  const [orderStatus, setOrderStatus] = useState([])
+
+  const orderStatusSearch = () => {
+    setOrderStatus(order_statuses.map((val) => val.name))
+  }
+
+  const [selectOrderStatus, setSelectOrderStatus] = useState({ id: 4, name: 'Created', description: 'Order has been opened' })
+
+  const handleOrderStatusChange = (e) => {
+    const selectedOrder = order_statuses.find((order) => order.name === e.value);
+    setSelectOrderStatus(selectedOrder);
+  };
+
+
+
   // Discount handelchange code:->>
 
   const discountHandleSubmit = (event) => {
@@ -1182,6 +1226,12 @@ export const OrdersList = () => {
     (total, ele) => total + ele.price * ele.quantity + (ele.price * ele.quantity * ele.gst) / 100,
     0
   ) - formik.values.discountAmount);
+
+
+  const totalGST = (formik.values.orderItems.reduce(
+    (total, ele) => total + (ele.gst),
+    0
+  ));
 
 
 
@@ -1225,9 +1275,9 @@ export const OrdersList = () => {
               className="p-fluid">
 
               <div className="grid">
-                <div className="col-12 mt-3">
+                <div className=" mt-3">
                   <div>
-                    <span>Display Customer </span>
+                    {/* <span>Display Customer </span> */}
                   </div>
                   <InputSwitch
                     checked={formik.values.display === 1}
@@ -1239,7 +1289,7 @@ export const OrdersList = () => {
                   />
                 </div>
 
-                <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                <div className="field col-12 md:col-3 lg:col-2 mt-3">
 
                   <span className="p-float-label">
                     <AutoComplete
@@ -1302,7 +1352,7 @@ export const OrdersList = () => {
                   // { label: "Pincode", field: "pincode" },
                 ].map((ele, i) => {
                   return (
-                    <div key={`${ele.label}${i}`} className="field col-12 lg:col-2 md:col-6 mt-4">
+                    <div key={`${ele.label}${i}`} className="field col-12 lg:col-2 md:col-6 mt-3">
                       <span className="p-float-label">
                         <InputText
                           // disabled={productEditState}
@@ -1397,7 +1447,7 @@ export const OrdersList = () => {
                   {getFormErrorMessage("country")}
                 </div> */}
 
-                <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                <div className="field col-12 md:col-3 lg:col-2 mt-3">
                   <span className="p-float-label">
                     <InputText
                       id="gstNumber"
@@ -1418,22 +1468,25 @@ export const OrdersList = () => {
                 </div>
 
                 <div className="grid col-12">
-                  <div key={`Order Status`} className="field col-12 lg:col-4 md:col-6 mt-2">
+                  <div key={`Order Status`} className="field col-12 lg:col-4 md:col-6 ">
                     <span className="p-float-label">
                       <AutoComplete
                         id="orderStatus"
-                        value={formik.values.orderStatus}
+                        value={selectOrderStatus ? selectOrderStatus.name : ""}
+                        suggestions={orderStatus}
+                        completeMethod={orderStatusSearch}
+                        onChange={handleOrderStatusChange}
                         dropdown
                         forceSelection
-                        suggestions={orderStatusSuggestions}
-                        completeMethod={searchOrderStatus}
-                        field="name"
-                        onChange={(e) => {
-                          const selectedOption = orderStatusOption.find(option => option.name === e.target.value.name);
-                          const selectedOptionName = selectedOption ? selectedOption.name : null;
 
-                          formik.setFieldValue('orderStatus', selectedOption);
-                        }}
+                        // value={formik.values.orderStatus}
+                        // suggestions={orderStatusSuggestions}
+                        // completeMethod={searchOrderStatus}
+                        // onChange={(e) => {
+                        //   const selectedOption = orderStatusOption.find(option => option.name === e.target.value.name);
+                        //   const selectedOptionName = selectedOption ? selectedOption.name : null;
+                        //   formik.setFieldValue('orderStatus', selectedOption);
+                        // }}
 
                         className={classNames({ "p-invalid": isFormFieldValid("category") })}
                       />
@@ -1450,10 +1503,10 @@ export const OrdersList = () => {
                 </div>
 
                 <div className="col-12">
-                  <h3 className="field col-12 lg:col-5 md:col-6 ">Shipping Address</h3>
+                  <h3 className="p-0">Shipping Address</h3>
                   <AddressComponent isFormFieldValid={isFormFieldValid} getFormErrorMessage={getFormErrorMessage} errors={formik.errors.shippingAddress} value={formik.values.shippingAddress} setField={formik.setFieldValue} addressName={'shippingAddress'} />
                 </div>
-                <div className="col-12 mt-3 grid align-items-center">
+                <div className="col-12 grid align-items-center">
                   <label className="ml-3">If Billing Address is Shipping Address:</label>
                   <Checkbox
                     // disabled={true}
@@ -1467,19 +1520,19 @@ export const OrdersList = () => {
 
                 {!formik?.values?.isShippingIsBilling &&
                   <div className="col-12">
-                    <h3 className="field col-12 lg:col-5 md:col-6 mt-4">Billing Address</h3>
+                    <h3 className="mt-2">Billing Address</h3>
                     <AddressComponent errors={formik.errors.billingAddress} value={formik.values.billingAddress} setField={formik.setFieldValue} addressName={'billingAddress'} />
                   </div >
                 }
+
                 <div className="with-border col-12">
-                  <div className="col-12 ">
+                  <div className=" ">
                     <h3 >Order Items</h3>
                     {formik.values.orderItems.map((ele, index) => (
                       <div key={index} className="grid ">
-                        <span className="bg-primary border-circle w-2rem h-2rem flex align-items-center justify-content-center mt-4">{index + 1}</span>
+                        <span className="bg-primary border-circle w-2rem h-2rem flex align-items-center justify-content-center mt-4 ml-2">{index + 1}</span>
 
-
-                        <div className="field col-12 lg:col-4 md:col-6 mt-2 ">
+                        <div className="field col-12 lg:col-3 md:col-2 mt-2 ">
                           <span className="p-float-label">
                             <AutoComplete
                               id="name"
@@ -1487,39 +1540,14 @@ export const OrdersList = () => {
                               name="name"
                               dropdown
                               forceSelection
-                              // suggestions={orderItemsSuggestions}
-                              // suggestions={orderItemsSuggestions.filter(
-                              //   (option) => option !== ele?.name
-                              // )}
-                              suggestions={orderItemsSuggestions && orderItemsSuggestions.filter(
-                                (option) => option !== ele?.name
-                              )}
+                              suggestions={orderItemsSuggestions}
                               completeMethod={searchOrderItems}
                               field="name"
-                              // onChange={async (e) => {
-                              //   const inventory = await isInStock(e?.target?.value?.sku)
-                              //   const _orderItemInput = [...formik.values.orderItems]
-                              //   _orderItemInput[index] = {
-                              //     ..._orderItemInput[index],
-                              //     ...e.value,
-                              //     availableInventory: inventory?.availableQuantity,
-                              //     shelf: inventory?.shelf?.blockedShelfIds[0]
-                              //   }
-                              //   await formik.setValues({
-                              //     ...formik.values,
-                              //     orderItems: _orderItemInput,
-                              //   })
-
-                              // }}
-
                               onChange={async (e) => {
                                 const selectedProduct = e.value;
-
                                 const selectedProductGST = selectedProduct?.gstTaxTypeCode || 0;
-
                                 const inventory = await isInStock(selectedProduct?.sku);
                                 const sellingPrice = product_prices.find((price) => price.productId === selectedProduct?.id)?.sellingPrice || 0;
-
                                 const _orderItemInput = [...formik.values.orderItems];
                                 _orderItemInput[index] = {
                                   ..._orderItemInput[index],
@@ -1529,7 +1557,6 @@ export const OrdersList = () => {
                                   shelf: inventory?.shelf?.blockedShelfIds[0],
                                   gst: selectedProductGST, // Add the GST value to the order item
                                 };
-
                                 const totalAmount = ele.price * ele.quantity;
                                 const totalAmountWithGST = totalAmount + (totalAmount * ele.gst) / 100;
 
@@ -1539,7 +1566,6 @@ export const OrdersList = () => {
                                 });
 
                               }}
-
                               aria-label="products"
                               dropdownAriaLabel="Select Product"
                               className={classNames({ "p-invalid": isFormFieldValid("name") })}
@@ -1558,7 +1584,7 @@ export const OrdersList = () => {
                         <div className="field col-12 lg:col-3 md:col-6 mt-2 ">
                           <span className="p-float-label">
                             <InputText
-                              disabled={true}
+                              // disabled={true}
                               className=''
                               type='number'
                               name='price'
@@ -1596,32 +1622,34 @@ export const OrdersList = () => {
                             </label>
                           </span>
                         </div>
-                        {/* <div className="field col-12 lg:col-1 md:col-6 mt-2">
+
+                        <div className="field col-12 lg:col-1 md:col-6 mt-2">
                           <span className="p-float-label">
                             <InputText
+
                               className=''
-                              id="availableInventory"
+                              id="rowTotal"
                               type='text'
-                              name='availableInventory'
-                              value={ele?.availableInventory}
+                              name='rowTotal'
+                              value={(ele.price * ele.quantity)}
                               disabled
                             />
                             <label
                               htmlFor="availableInventory"
-                              className={classNames({ "p-error": isFormFieldValid("availableInventory") })}
+                              className={classNames({ "p-error": isFormFieldValid("rowTotal") })}
                             >
-                              Inventory
+                              Row Total
                             </label>
                           </span>
-                        </div> */}
+                        </div>
 
 
-                        <div className="field flex justify-content-between col-12 lg:col-1 md:col-6 mt-2 ">
+                        <div className="field flex  col-12 lg:col-1 md:col-6 mt-2 ">
                           <Button
                             icon="pi pi-minus"
                             className="p-2 m-1"
                             onClick={() => handleRemoveInput(index)}
-                            style={{ height: '40px' }}
+                            style={{ height: '35px' }}
                           />
 
                           <Button
@@ -1631,7 +1659,7 @@ export const OrdersList = () => {
                               e.preventDefault()
                               handleAddInput();
                             }}
-                            style={{ height: '40px' }}
+                            style={{ height: '35px' }}
                           />
                         </div>
 
@@ -1642,27 +1670,6 @@ export const OrdersList = () => {
 
                   </div>
 
-                  {/* <div className="field mt-1 flex justify-content-end">
-                    <span className="p-float-label ">
-                      <InputText
-                        disabled={true}
-                        id={"totalPrice"}
-                        // placeholder='SKU'
-                        name={"totalPrice"}
-                        value={formik.values.totalPrice}
-                        autoFocus
-                        className={classNames({ "p-invalid ": isFormFieldValid("description") })}
-                      />
-                      <label
-                        htmlFor={"totalPrice"}
-                        className={classNames({ "p-error": isFormFieldValid("sku") })}
-                      >
-                        
-                        Sub Total
-                      </label>
-                    </span>
-                    {getFormErrorMessage("totalPrice")}
-                  </div> */}
 
                   <div className="field mt-1 flex justify-content-end mt-2">
                     <span className="p-float-label ">
@@ -1682,6 +1689,23 @@ export const OrdersList = () => {
                       </label>
                     </span>
                     {getFormErrorMessage("totalPrice")}
+                  </div>
+
+                  <div className="field mt-1 flex justify-content-end mt-4">
+                    <span className="p-float-label">
+                      <InputText
+                        className=''
+                        type='text'
+                        name='gstTaxTypeCode'
+                        value={formik.values.gstTaxTypeCode}
+                        onChange={() => { }}
+                      />
+                      <label
+                        htmlFor="gstTaxTypeCode"
+                        className={classNames({ "p-error": isFormFieldValid("gstTaxTypeCode") })}>
+                        GST: {totalGST}%
+                      </label>
+                    </span>
                   </div>
 
                   <div className="field mt-1 flex justify-content-end mt-4">
@@ -1710,7 +1734,7 @@ export const OrdersList = () => {
                         type='text'
                         name='total'
                         value={totalPriceAmount.toFixed(1)}
-                      // onChange={() => { }}
+
                       />
                       <label
                         htmlFor="discountAmount"
@@ -1726,15 +1750,12 @@ export const OrdersList = () => {
                   <h3>Payment Method </h3>
                   <div className="grid">
 
-                    <div className="field col-12 lg:col-4 md:col-6 mt-2">
+                    <div className="field col-12 lg:col-2 md:col-2 mt-2">
                       <span className="p-float-label">
                         <AutoComplete
-
                           value={selectedPaymentTerm ? selectedPaymentTerm.name : ''}
-                          // value={selectedPaymentTerm ? itemsPaymentTerms.find((term) => term.id === selectedPaymentTerm)?.name : null}
                           suggestions={itemsPaymentTerms}
                           completeMethod={search}
-                          // onChange={(e) => setValuePaymentTerms(e.value)}
                           onChange={handlePaymentTermChange}
                           dropdown
                         />
@@ -1742,20 +1763,21 @@ export const OrdersList = () => {
                     </div>
                     {selectedPaymentTerm.name === '100% Advance' ?
                       <>
-
                         <div key={`paymentStatus`} className="field col-12 lg:col-4 md:col-6 mt-2">
                           <span className="p-float-label ">
                             <AutoComplete
                               id="paymentStatus"
-                              value={formik.values.paymentStatus?.name}
+                              value={selectedPaymentStatus ? selectedPaymentStatus.name : ''}
+                              suggestions={paymentStatus}
+                              completeMethod={paymentStatusSearch}
+                              onChange={handlePaymentStatusChange}
                               dropdown
-                              forceSelection
-                              suggestions={paymentOptionsSuggestions}
-                              completeMethod={searchPayment}
-                              field="name"
-                              onChange={(e) => {
-                                formik.setFieldValue('paymentStatus', e?.value);
-                              }}
+                              // value={formik.values.paymentStatus?.name}
+                              // suggestions={paymentOptionsSuggestions}
+                              // completeMethod={searchPayment}
+                              // onChange={(e) => {
+                              //   formik.setFieldValue('paymentStatus', e?.value);
+                              // }}
                               aria-label="paymentStatus"
                               dropdownAriaLabel="paymentStatus"
                               className={classNames({ "p-invalid": isFormFieldValid("paymentStatus") })}
@@ -1799,7 +1821,7 @@ export const OrdersList = () => {
                           {/* {getFormErrorMessage("category")} */}
                         </div>
 
-                        <div className="field col-12 md:col-3 lg:col-2 ">
+                        <div className="field col-12 md:col-3 lg:col-2 mt-2 ">
                           <span className="p-float-label">
                             <InputText
                               id="paymentReferenceId"
@@ -2074,7 +2096,7 @@ export const OrdersList = () => {
                   </div>
                 )
               }}
-              
+
             />
 
             <Column
@@ -2088,15 +2110,15 @@ export const OrdersList = () => {
                   </div>
                 )
               }}
-              // body={({ addresses_orders_shippingAddressIdToaddresses }) => {
-              //   const customerAddress = addresses_orders_shippingAddressIdToaddresses.areaStreet
-              //   console.log('customerAddress: ', customerAddress);
-              //   return (
-              //     <div className="">
-              //       {customerAddress}
-              //     </div>
-              //   )
-              // }}
+            // body={({ addresses_orders_shippingAddressIdToaddresses }) => {
+            //   const customerAddress = addresses_orders_shippingAddressIdToaddresses.areaStreet
+            //   console.log('customerAddress: ', customerAddress);
+            //   return (
+            //     <div className="">
+            //       {customerAddress}
+            //     </div>
+            //   )
+            // }}
             />
             <Column
               field="gateway"

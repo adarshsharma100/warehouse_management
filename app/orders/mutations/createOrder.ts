@@ -102,20 +102,25 @@ export default resolver.pipe(
           order_items,
           orderItemsData,
           gstNumber,
-          paymentTermsId ,
+          paymentTermsId,
           paymentReferenceId,
-          discountAmount, 
+          discountAmount,
 
         },
       } = input
 
       try {
-        const customer = await db.customers.create({
-          data: input.customer,
-        })
+
         const ShippingAddress = await db.addresses.create({
           data: shippingAddress,
         })
+        const customer = await db.customers.create({
+          data: {
+            ...input.customer,
+            addressesId: ShippingAddress.id
+          },
+        })
+
         //run only when isShippingIsBilling = true
         const BillingAddress =
           !isShippingIsBilling && (await db.addresses.create({ data: billingAddress }))
@@ -131,7 +136,7 @@ export default resolver.pipe(
             billingAddressId: isShippingIsBilling ? ShippingAddress.id : BillingAddress.id,
             order_items,
             gstNumber,
-            paymentTermsId ,
+            paymentTermsId,
             paymentReferenceId,
             discountAmount,
           },
@@ -180,7 +185,7 @@ export const createOrderFunction = async (input) => {
       order_items,
       shopifyId,
       gstNumber,
-      paymentTermsId ,
+      paymentTermsId,
       paymentReferenceId,
       discountAmount,
     },
@@ -219,7 +224,7 @@ export const createOrderFunction = async (input) => {
         paymentTermsId,
         paymentReferenceId,
         discountAmount,
-        
+
       },
     })
     // console.log("order123: ", order)

@@ -48,7 +48,7 @@ const AddressComponent = ({ value, setField, addressName, errors, }) => {
                     { label: "Contact Number", field: "contactNumber", },
                 ].map((ele, i) => {
                     return (
-                        <div key={`${ele.label}${i}`} className="field col-12 lg:col-2 md:col-6 mt-4">
+                        <div key={`${ele.label}${i}`} className="field col-12 lg:col-2 md:col-6 mt-3">
                             <span className="p-float-label">
                                 <InputText
                                     id={ele.field}
@@ -78,7 +78,7 @@ const AddressComponent = ({ value, setField, addressName, errors, }) => {
                 })
                 }
 
-                <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                <div className="field col-12 md:col-3 lg:col-2 mt-3">
                     <div className="p-float-label">
                         <AutoComplete
                             id="city"
@@ -109,7 +109,7 @@ const AddressComponent = ({ value, setField, addressName, errors, }) => {
                 </div>
 
 
-                <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                <div className="field col-12 md:col-3 lg:col-2 mt-2">
                     <span className="p-float-label">
                         <InputText
                             id="state"
@@ -126,7 +126,7 @@ const AddressComponent = ({ value, setField, addressName, errors, }) => {
 
                 </div>
 
-                <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                <div className="field col-12 md:col-3 lg:col-2 mt-2">
                     <span className="p-float-label">
                         <InputText
                             id="country"
