@@ -302,7 +302,7 @@ export const ProductsList = () => {
   // <===START===>
   const [{ products, count: totalProductsCount }, { refetch }] = usePaginatedQuery(getProducts,
     {
-      orderBy: { id: "asc" },
+      orderBy: { id: "desc" },
       where: {},
       skip: skipCount,
       take: tableRowsCount
@@ -341,6 +341,7 @@ export const ProductsList = () => {
   const [filename, setFilename] = useState('');
   const [filteredKitId, setFilteredKitId] = useState([]);
   const [imageUploadObject, setImageUploadObject] = useState<any>({})
+  const [imageUploadArray, setImageUploadArray] = useState<any>([]);
   const [selectedStatus, setSelectedStatus] = useState<any>(null);
   const [inputs, setInputs] = useState([{ product: '', quantity: '' }]);
   const [totalSize, setTotalSize] = useState(0);
@@ -350,8 +351,14 @@ export const ProductsList = () => {
   const [filteredKitSuggestions, setFilteredKitSuggestions] = useState<any>([]);
   const [brandSuggestions, setBrandSuggestions] = useState([])
   const [filteredKitProductId, setFilteredKitProductId] = useState([]);
-  // let filteredKitProductId = [];
-  let _filteredKitProductId = [];
+  const disabledButtons = {
+    basicUpload: true,
+    choose: false,
+    cancel: true,
+    upload: true,
+    retry: true,
+    clear: true
+  };
 
   // <===STOP===>
 
@@ -473,37 +480,72 @@ export const ProductsList = () => {
     setFilename(filename);
   }
 
-  const uploadHandler = async () => {
-    const filename = uuidv4()
+  const handleOnRemoveImageArrayChange = (event) => {
+    const newArray = Array.from(imageUploadArray);
+    const _imageUploadArray = newArray.filter((eachItem) => eachItem.name !== event.file.name);
+    setImageUploadArray(_imageUploadArray);
 
-    console.log("fileName", filename);
+  }
 
+  const uploadHandler = async (imageUploadArray) => {
 
-    const fileExtension = imageUploadObject.name.slice(imageUploadObject.name.lastIndexOf('.') + 1);
-    console.log("fileExtension", fileExtension);
-    if (imageUploadObject) {
-      // const newFileName = event.files[0].name.split('.').pop();
-      const response = await uploadFileToBlob(imageUploadObject, `${filename}.${fileExtension}`);
-      console.log('response: ', response);
-      if (response?.uploadResponse._response.status === 201) {
-        const _tempString = response?.blockBlobClient.url.split("?")[0];
-        console.log("_tempString ", _tempString);
-        await createImageMutation({ imageUrl: _tempString }, {
-          onSuccess: async () => {
-            toast.current.show({ severity: 'info', summary: 'Image Creation Complete', detail: 'Image created successfully' });
-          },
-          onError: (error) => {
-            console.log('error: ', error);
-            toast.current.show({ severity: 'error', summary: 'Update Failed', detail: 'Product failed to update' });
+    imageUploadArray.forEach(async (eachArray) => {
+      const filename = uuidv4()
+      const fileExtension = eachArray.name.slice(eachArray.name.lastIndexOf('.') + 1);
+      if (eachArray) {
+        // const newFileName = event.files[0].name.split('.').pop();
+        const response = await uploadFileToBlob(eachArray, `${filename}.${fileExtension}`);
+        console.log('response: ', response);
+        if (response?.uploadResponse._response.status === 201) {
+          const _tempString = response?.blockBlobClient.url.split("?")[0];
+          console.log("_tempString ", _tempString);
+          await createImageMutation({ imageUrl: _tempString }, {
+            onSuccess: async () => {
+              toast.current.show({ severity: 'info', summary: 'Image Creation Complete', detail: 'Image created successfully' });
+            },
+            onError: (error) => {
+              console.log('error: ', error);
+              toast.current.show({ severity: 'error', summary: 'Update Failed', detail: 'Product failed to update' });
 
-          }
-        })
+            }
+          })
+
+        }
 
       }
+    })
+    // const filename = uuidv4()
 
-    }
+    // console.log("fileName", filename);
+
+
+    // const fileExtension = imageUploadObject.name.slice(imageUploadObject.name.lastIndexOf('.') + 1);
+    // console.log("fileExtension", fileExtension);
+    // if (imageUploadObject) {
+    //   // const newFileName = event.files[0].name.split('.').pop();
+    //   const response = await uploadFileToBlob(imageUploadObject, `${filename}.${fileExtension}`);
+    //   console.log('response: ', response);
+    //   if (response?.uploadResponse._response.status === 201) {
+    //     const _tempString = response?.blockBlobClient.url.split("?")[0];
+    //     console.log("_tempString ", _tempString);
+    //     await createImageMutation({ imageUrl: _tempString }, {
+    //       onSuccess: async () => {
+    //         toast.current.show({ severity: 'info', summary: 'Image Creation Complete', detail: 'Image created successfully' });
+    //       },
+    //       onError: (error) => {
+    //         console.log('error: ', error);
+    //         toast.current.show({ severity: 'error', summary: 'Update Failed', detail: 'Product failed to update' });
+
+    //       }
+    //     })
+
+    //   }
+
+    // }
 
   };
+
+
 
   const formik = useFormik({
     initialValues: initialProductDetails,
@@ -645,11 +687,16 @@ export const ProductsList = () => {
               averageCostPrice: costPrice
             }
           },
+          dimensions: {
+            create: {
+              length: length,
+              width: width,
+              height: height,
+              weight: weight
+            }
+          },
           color,
-          length,
-          width,
-          height,
-          weight,
+
           hsnCode,
           // imageUrl: filename,
           type,
@@ -661,8 +708,9 @@ export const ProductsList = () => {
           onSuccess: async () => {
             toast.current.show({ severity: 'info', summary: 'Product Creation Complete', detail: 'Product created successfully' });
 
-            await uploadHandler()
+            await uploadHandler(imageUploadArray)
             setImageUploadObject(null)
+            setImageUploadArray([])
 
             await refetch()
             setProductDialog(false)
@@ -733,22 +781,7 @@ export const ProductsList = () => {
     dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
   }
 
-  const handleFilteredKitvalueChange = () => {
-    console.log("filteredKitId", filteredKitId);
-    // console.log("formikValue", formik.values.kitProducts);
-    const filteredKitSuggestions = products.filter((product) => {
-      if (!filteredKitId.includes(product.id)) {
-        console.log("In true", filteredKitId);
-        return true
-      } else {
-        return false
-      }
-    })
 
-
-    console.log("filteredKitSuggestions", filteredKitSuggestions);
-    setFilteredKitSuggestions(filteredKitSuggestions);
-  }
 
   const onTemplateRemove = (file, callback) => {
     setTotalSize(totalSize - file.size);
@@ -780,7 +813,7 @@ export const ProductsList = () => {
   console.log("setFilteredKitSuggestions", filteredKitSuggestions);
   console.log("filteredKitId", filteredKitId);
 
-  console.log("File Image", imageUploadObject);
+  console.log("File Image", imageUploadArray);
 
   const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={totalProductsCount} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
 
@@ -865,19 +898,26 @@ export const ProductsList = () => {
                   className="m-1"
                   onClick={() => { setProductEditState(!productEditState) }}
                 />}</h4>
-              {/* {imageUploadObject.length > 0 ? <div className="selected-image-container">
-                {imageUploadObject.map((eachImage) => {
-                  return (
-                    <Image src={eachImage.objectURL} alt="Image" width="100" height="50" preview key={eachImage.objectURL} />
-                  )
-                })}
-              </div> : null} */}
-              <div className="selected-image-container">
-                <Image src={imageUploadObject?.objectURL} alt="Image" width="100" height="50" preview />
+
+              <div className="selected-image-container flex justify-content-between" >
+                {imageUploadArray && imageUploadArray.length > 0 ?
+                  imageUploadArray.map((eachImage, index) => {
+                    return (
+                      <div key={index} className="m-3">
+                        <Image src={eachImage.objectURL}
+                          alt="Image"
+                          width="100"
+                          height="50" preview />
+                      </div>
+                    )
+                  })
+                  : null
+
+                }
               </div>
 
             </div>
-            <div className="flex justify-content-center align-item-center">
+            {/* <div className="flex justify-content-center align-item-center">
               <FileUpload
                 name="product_image"
                 url="./upload.php"
@@ -887,14 +927,15 @@ export const ProductsList = () => {
                 onSelect={async (e) => {
                   console.log("event", e.files[0]);
                   setImageUploadObject(e.files[0]);
+                  setImageUploadArray([...imageUploadArray, e.files[0]]);
                 }}
 
-                onRemove={() => setImageUploadObject(null)}
+                onRemove={handleOnRemoveImageArrayChange}
                 multiple
                 accept="image/*"
                 maxFileSize={1000000}
               />
-            </div>
+            </div> */}
             <form
               onSubmit={formik.handleSubmit}
               className="p-fluid"
@@ -1140,12 +1181,6 @@ export const ProductsList = () => {
                             />}
                             <Button icon="pi pi-plus-circle" onClick={async (event) => {
                               event.preventDefault()
-                              // console.log("formik.values.kitProducts", event);
-                              // console.log("formik.values.kitProducts", formik.values.kitProducts);
-                              // formik.values.kitProducts.map((kitProduct) => setFilteredKitSuggestions(Object.assign([], filteredKitSuggestions, {
-                              //   name: ,
-                              //   id: kitProduct.product.id
-                              // })));
                               await formik.setFieldValue("kitProducts", formik.values.kitProducts.reduce((acc, curr, i) => {
                                 if (index !== i)
                                   return [...acc, curr]
@@ -1160,7 +1195,7 @@ export const ProductsList = () => {
                 </div>}
 
               </div>
-              {/* <div className="flex justify-content-center align-item-center">
+              {productDialog ? <div className="flex justify-content-center align-item-center">
                 <FileUpload
                   name="product_image"
                   url="./upload.php"
@@ -1170,14 +1205,17 @@ export const ProductsList = () => {
                   onSelect={async (e) => {
                     console.log("event", e.files[0]);
                     setImageUploadObject(e.files[0]);
+                    setImageUploadArray([...imageUploadArray, e.files[0]]);
                   }}
+                  onClear={() => setImageUploadArray([])}
 
-                  onRemove={() => setImageUploadObject(null)}
+                  onRemove={handleOnRemoveImageArrayChange}
                   multiple
                   accept="image/*"
                   maxFileSize={1000000}
+
                 />
-              </div> */}
+              </div> : null}
               <div className="flex mt-4 justify-content-end">
                 {productEditState && <Button
                   type="submit"
@@ -1194,6 +1232,7 @@ export const ProductsList = () => {
                     setProductDialog(false)
                     setProductEditState(false)
                     setActiveProduct(false)
+                    setImageUploadArray([])
                   }}
                 />
               </div>

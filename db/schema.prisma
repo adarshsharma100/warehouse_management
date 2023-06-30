@@ -95,6 +95,7 @@ model customers {
   addressesId Int
   shopifyId   String?   @db.VarChar(45)
   companyName String?   @db.VarChar(50)
+  display     Int?      @default(0) @db.TinyInt
   addresses   addresses @relation(fields: [addressesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_customers_addresses1")
   orders      orders[]
 
@@ -108,6 +109,7 @@ model dimensions {
   height   Float?     @db.Float
   weight   Float?     @db.Float
   packages packages[]
+  products products[]
   shipment shipment?
 }
 
@@ -287,6 +289,7 @@ model orders {
   paymentStatus                                 Int?
   gstNumber                                     String?               @db.VarChar(15)
   paymentTermsId                                Int
+  discountAmount                                Int?
   order_items                                   order_items[]
   addresses_orders_shippingAddressIdToaddresses addresses             @relation("orders_shippingAddressIdToaddresses", fields: [shippingAddressId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_addresses1")
   addresses_orders_billingAddressIdToaddresses  addresses             @relation("orders_billingAddressIdToaddresses", fields: [billingAddressId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_addresses2")
@@ -387,10 +390,6 @@ model products {
   name                                             String               @db.VarChar(100)
   sku                                              String               @unique(map: "sku_UNIQUE") @db.VarChar(15)
   description                                      String?              @db.LongText
-  length                                           Int?
-  width                                            Int?
-  height                                           Int?
-  weight                                           Int?
   color                                            String?              @db.VarChar(7)
   hsnCode                                          String?              @db.VarChar(15)
   imageUrl                                         String?              @db.VarChar(300)
@@ -402,9 +401,8 @@ model products {
   status                                           products_status      @default(Active)
   category                                         Int?
   brand                                            Int?
-  costPrice                                        Int?
   type                                             Int
-  imagesId                                         Int?
+  dimensionsId                                     Int?
   inventory_products                               inventory_products[]
   kit_products_kit_products_productsIdToproducts   kit_products[]       @relation("kit_products_productsIdToproducts")
   kit_products_kit_products_kitProductIDToproducts kit_products[]       @relation("kit_products_kitProductIDToproducts")
@@ -413,7 +411,7 @@ model products {
   product_tags                                     product_tags[]
   product_brand                                    product_brand?       @relation(fields: [brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_brands2")
   product_categories                               product_categories?  @relation(fields: [category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_category")
-  images                                           images?              @relation(fields: [imagesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_images1")
+  dimensions                                       dimensions?          @relation(fields: [dimensionsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_dimensions1")
   product_types                                    product_types        @relation(fields: [type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_product_types1")
   quality_ckeck_quality_ckeck_productsToproducts   quality_ckeck[]      @relation("quality_ckeck_productsToproducts")
   rfq_products                                     rfq_products[]
@@ -422,7 +420,7 @@ model products {
   @@index([brand], map: "fk_products_brands2_idx")
   @@index([category], map: "fk_products_category_idx")
   @@index([type], map: "fk_products_product_types1_idx")
-  @@index([imagesId], map: "fk_products_images1_idx")
+  @@index([dimensionsId], map: "fk_products_dimensions1_idx")
 }
 
 model purchase_orders {
@@ -777,9 +775,8 @@ model product_prices {
 }
 
 model images {
-  id       Int        @id @default(autoincrement())
-  imageUrl String     @db.VarChar(150)
-  products products[]
+  id       Int    @id @default(autoincrement())
+  imageUrl String @db.VarChar(150)
 }
 
 enum contact_number_type {
