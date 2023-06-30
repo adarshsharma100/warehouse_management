@@ -446,9 +446,7 @@ export const ProductsList = () => {
   }
   const productsTableHeader = renderHeader()
   const searchCategory = createSearchFunction(product_categories, setCategorySuggestions)
-
-
-
+  const uploadOption = { style: { display: "none" } }
 
   const kitSearchCategory = createSearchFunction(
     products.filter(({ id }) => {
@@ -631,7 +629,7 @@ export const ProductsList = () => {
           customDuty,
           gstTaxTypeCode: gstcode,
           taxCalcType: taxCalcuation,
-          kit_products: {
+          kit_products_kit_products_productsIdToproducts: {
             updateMany: existingKitProducts.map(({ kitId, quantity }) => ({
               where: {
                 id: kitId
@@ -687,20 +685,20 @@ export const ProductsList = () => {
               averageCostPrice: costPrice
             }
           },
-          dimensions: {
-            create: {
-              length: length,
-              width: width,
-              height: height,
-              weight: weight
-            }
-          },
+          // dimensions: {
+          //   create: {
+          //     length: length,
+          //     width: width,
+          //     height: height,
+          //     weight: weight
+          //   }
+          // },
           color,
 
           hsnCode,
           // imageUrl: filename,
           type,
-          kit_products: type === 2 ? {
+          kit_products_kit_products_productsIdToproducts: type === 2 ? {
             create: createKitProducts(kitProducts)
           } : undefined
         },
@@ -1116,7 +1114,8 @@ export const ProductsList = () => {
                                 value={product}
                                 onChange={async (e) => {
                                   await formik.setFieldValue("kitProducts", formik.values.kitProducts.map((kitProduct, i) => {
-                                    setFilteredKitProductId([...filteredKitProductId, e.value.id]);
+                                    const _filteredKitProductId = [...filteredKitProductId, e.value?.id];
+                                    setFilteredKitProductId(_filteredKitProductId);
                                     if (i !== index)
                                       return kitProduct
                                     return {
@@ -1205,7 +1204,9 @@ export const ProductsList = () => {
                   onSelect={async (e) => {
                     console.log("event", e.files[0]);
                     setImageUploadObject(e.files[0]);
-                    setImageUploadArray([...imageUploadArray, e.files[0]]);
+                    const newImageUploadArray = [...imageUploadArray, e.files[0]];
+                    setImageUploadArray(newImageUploadArray);
+                    // setImageUploadArray([...imageUploadArray, e.files[0]]);
                   }}
                   onClear={() => setImageUploadArray([])}
 
@@ -1213,6 +1214,9 @@ export const ProductsList = () => {
                   multiple
                   accept="image/*"
                   maxFileSize={1000000}
+                  uploadOptions={uploadOption}
+
+
 
                 />
               </div> : null}

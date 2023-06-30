@@ -85,6 +85,8 @@ export const Product = z.object({
       name: z.string(),
       id: z.number(),
       description
+    }, {
+      invalid_type_error: "Product required"
     }),
     quantity: z.number()
   })).optional()
