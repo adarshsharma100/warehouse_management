@@ -100,7 +100,12 @@ export default resolver.pipe(
           gateway,
           isShippingIsBilling,
           order_items,
-          orderItemsData
+          orderItemsData,
+          gstNumber,
+          paymentTermsId ,
+          paymentReferenceId,
+          discountAmount, 
+
         },
       } = input
 
@@ -125,6 +130,10 @@ export default resolver.pipe(
             shippingAddressId: ShippingAddress.id,
             billingAddressId: isShippingIsBilling ? ShippingAddress.id : BillingAddress.id,
             order_items,
+            gstNumber,
+            paymentTermsId ,
+            paymentReferenceId,
+            discountAmount,
           },
         })
         const updateInventoryProduct = async (productId: number, quantity: number, shelf: number) => {
@@ -142,7 +151,7 @@ export default resolver.pipe(
         }
         console.log('orderItemsData: ', orderItemsData);
 
-        const updatedProducts = await Promise.all(orderItemsData.map(({ productID, quantity, shelf }) => updateInventoryProduct(productID, quantity, shelf)))
+        // const updatedProducts = await Promise.all(orderItemsData.map(({ productID, quantity, shelf }) => updateInventoryProduct(productID, quantity, shelf)))
 
 
         console.log("order123: ", order)
@@ -170,6 +179,10 @@ export const createOrderFunction = async (input) => {
       isShippingIsBilling,
       order_items,
       shopifyId,
+      gstNumber,
+      paymentTermsId ,
+      paymentReferenceId,
+      discountAmount,
     },
   } = input
 
@@ -202,6 +215,11 @@ export const createOrderFunction = async (input) => {
         shippingAddressId: ShippingAddress.id,
         billingAddressId: isShippingIsBilling ? ShippingAddress.id : BillingAddress.id,
         order_items,
+        gstNumber,
+        paymentTermsId,
+        paymentReferenceId,
+        discountAmount,
+        
       },
     })
     // console.log("order123: ", order)

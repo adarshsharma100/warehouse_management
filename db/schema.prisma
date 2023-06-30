@@ -95,6 +95,7 @@ model customers {
   addressesId Int
   shopifyId   String?   @db.VarChar(45)
   companyName String?   @db.VarChar(50)
+  display     Int?      @default(0) @db.TinyInt
   addresses   addresses @relation(fields: [addressesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_customers_addresses1")
   orders      orders[]
 
@@ -102,11 +103,13 @@ model customers {
 }
 
 model dimensions {
-  id       Int       @id @default(autoincrement())
-  length   Float?    @db.Float
-  width    Float?    @db.Float
-  height   Float?    @db.Float
-  weight   Float?    @db.Float
+  id       Int        @id @default(autoincrement())
+  length   Float?     @db.Float
+  width    Float?     @db.Float
+  height   Float?     @db.Float
+  weight   Float?     @db.Float
+  packages packages[]
+  products products[]
   shipment shipment?
 }
 
@@ -122,21 +125,21 @@ model emails {
 }
 
 model grn {
-  id                                 Int             @id @default(autoincrement())
-  grnNumber                          String          @unique(map: "grnNumber_UNIQUE") @db.VarChar(45)
-  invoiceNo                          String          @unique(map: "invoiceNo_UNIQUE") @db.VarChar(45)
-  invoiceDate                        DateTime        @db.DateTime(0)
-  trackingId                         String?         @db.VarChar(200)
-  eta                                DateTime?       @db.DateTime(0)
-  createdAt                          DateTime        @default(now()) @db.DateTime(0)
-  updatedAt                          DateTime        @default(now()) @db.DateTime(0)
-  status                             Int
-  createdBy                          Int
-  purchaseOrder                      Int
-  grn_status                         grn_status      @relation(fields: [status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_grn_status1")
-  purchase_orders                    purchase_orders @relation(fields: [purchaseOrder], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_purchase_orders1")
-  user                               user            @relation(fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_user1")
-  grn_products_grn_products_grnTogrn grn_products[]  @relation("grn_products_grnTogrn")
+  id              Int             @id @default(autoincrement())
+  grnNumber       String          @unique(map: "grnNumber_UNIQUE") @db.VarChar(45)
+  invoiceNo       String          @unique(map: "invoiceNo_UNIQUE") @db.VarChar(45)
+  invoiceDate     DateTime        @db.DateTime(0)
+  trackingId      String?         @db.VarChar(200)
+  eta             DateTime?       @db.DateTime(0)
+  createdAt       DateTime        @default(now()) @db.DateTime(0)
+  updatedAt       DateTime        @default(now()) @db.DateTime(0)
+  status          Int
+  createdBy       Int
+  purchaseOrder   Int
+  grn_status      grn_status      @relation(fields: [status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_grn_status1")
+  purchase_orders purchase_orders @relation(fields: [purchaseOrder], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_purchase_orders1")
+  user            user            @relation(fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_user1")
+  grn_products    grn_products[]
 
   @@index([status], map: "fk_grn_grn_status1_idx")
   @@index([purchaseOrder], map: "fk_grn_purchase_orders1_idx")
@@ -144,15 +147,15 @@ model grn {
 }
 
 model grn_products {
-  id                        Int         @id @default(autoincrement())
-  receivedQuantity          Int
-  rejectedQuantity          Int?
-  poProduct                 Int
-  grn                       Int
-  grn_grn_products_grnTogrn grn         @relation("grn_products_grnTogrn", fields: [grn], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_products_grn1")
-  po_products               po_products @relation(fields: [poProduct], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_products_po_products1")
+  id               Int         @id @default(autoincrement())
+  receivedQuantity Int
+  rejectedQuantity Int?
+  poProduct        Int
+  grnId            Int
+  grn              grn         @relation(fields: [grnId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_products_grn1")
+  po_products      po_products @relation(fields: [poProduct], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_products_po_products1")
 
-  @@index([grn], map: "fk_grn_products_grn1_idx")
+  @@index([grnId], map: "fk_grn_products_grn1_idx")
   @@index([poProduct], map: "fk_grn_products_po_products1_idx")
 }
 
@@ -284,12 +287,16 @@ model orders {
   verified                                      Int?                  @db.TinyInt
   giftMessage                                   String?               @db.VarChar(250)
   paymentStatus                                 Int?
+  gstNumber                                     String?               @db.VarChar(15)
+  paymentTermsId                                Int
+  discountAmount                                Int?
   order_items                                   order_items[]
   addresses_orders_shippingAddressIdToaddresses addresses             @relation("orders_shippingAddressIdToaddresses", fields: [shippingAddressId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_addresses1")
   addresses_orders_billingAddressIdToaddresses  addresses             @relation("orders_billingAddressIdToaddresses", fields: [billingAddressId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_addresses2")
   customers                                     customers             @relation(fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_customers1")
   order_payment_status                          order_payment_status? @relation(fields: [paymentStatus], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_order_payment_status1")
   order_status                                  order_status          @relation(fields: [orderStatus], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_order_status1")
+  po_terms                                      po_terms              @relation(fields: [paymentTermsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_po_terms1")
   shopify                                       shopify?              @relation(fields: [shopifyId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_shopify1")
   shipment                                      shipment[]
 
@@ -299,6 +306,7 @@ model orders {
   @@index([orderStatus], map: "fk_orders_order_status1_idx")
   @@index([shopifyId], map: "fk_orders_shopify1_idx")
   @@index([paymentStatus], map: "fk_orders_order_payment_status1_idx")
+  @@index([paymentTermsId], map: "fk_orders_po_terms1_idx")
 }
 
 model permission {
@@ -344,6 +352,7 @@ model po_terms {
   id              Int               @id @default(autoincrement())
   name            String?           @db.VarChar(45)
   description     String?           @db.LongText
+  orders          orders[]
   purchase_orders purchase_orders[]
 }
 
@@ -381,30 +390,28 @@ model products {
   name                                             String               @db.VarChar(100)
   sku                                              String               @unique(map: "sku_UNIQUE") @db.VarChar(15)
   description                                      String?              @db.LongText
-  length                                           Int?
-  width                                            Int?
-  height                                           Int?
-  weight                                           Int?
   color                                            String?              @db.VarChar(7)
   hsnCode                                          String?              @db.VarChar(15)
   imageUrl                                         String?              @db.VarChar(300)
   createdAT                                        DateTime?            @default(now()) @db.DateTime(0)
   updatedAT                                        DateTime?            @default(now()) @db.DateTime(0)
   customDuty                                       String?              @db.VarChar(45)
-  gstTaxTypeCode                                   String?              @db.VarChar(45)
+  gstTaxTypeCode                                   Int?
   taxCalcType                                      String?              @db.VarChar(45)
   status                                           products_status      @default(Active)
   category                                         Int?
   brand                                            Int?
-  costPrice                                        Int
   type                                             Int
+  dimensionsId                                     Int?
   inventory_products                               inventory_products[]
   kit_products_kit_products_productsIdToproducts   kit_products[]       @relation("kit_products_productsIdToproducts")
   kit_products_kit_products_kitProductIDToproducts kit_products[]       @relation("kit_products_kitProductIDToproducts")
   order_items                                      order_items[]
+  product_prices                                   product_prices?
   product_tags                                     product_tags[]
   product_brand                                    product_brand?       @relation(fields: [brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_brands2")
   product_categories                               product_categories?  @relation(fields: [category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_category")
+  dimensions                                       dimensions?          @relation(fields: [dimensionsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_dimensions1")
   product_types                                    product_types        @relation(fields: [type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_product_types1")
   quality_ckeck_quality_ckeck_productsToproducts   quality_ckeck[]      @relation("quality_ckeck_productsToproducts")
   rfq_products                                     rfq_products[]
@@ -413,6 +420,7 @@ model products {
   @@index([brand], map: "fk_products_brands2_idx")
   @@index([category], map: "fk_products_category_idx")
   @@index([type], map: "fk_products_product_types1_idx")
+  @@index([dimensionsId], map: "fk_products_dimensions1_idx")
 }
 
 model purchase_orders {
@@ -742,6 +750,33 @@ model order_payment_status {
   name        String   @db.VarChar(45)
   description String?  @db.VarChar(150)
   orders      orders[]
+}
+
+model packages {
+  id           Int        @id @default(autoincrement())
+  name         String     @db.VarChar(45)
+  dimensionsId Int
+  dimensions   dimensions @relation(fields: [dimensionsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_packages_dimensions1")
+
+  @@index([dimensionsId], map: "fk_packages_dimensions1_idx")
+}
+
+model product_prices {
+  id                Int      @id @default(autoincrement())
+  lastPurchasePrice Int?
+  mrp               Int?
+  minSellingPrice   Int?
+  sellingPrice      Int?
+  averageCostPrice  Int?
+  productId         Int      @unique(map: "productId_UNIQUE")
+  products          products @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_prices_products1")
+
+  @@index([productId], map: "fk_product_prices_products1_idx")
+}
+
+model images {
+  id       Int    @id @default(autoincrement())
+  imageUrl String @db.VarChar(150)
 }
 
 enum contact_number_type {

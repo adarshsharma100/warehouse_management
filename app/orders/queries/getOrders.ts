@@ -41,7 +41,7 @@ export default resolver.pipe(
             addresses_orders_billingAddressIdToaddresses: true,
             addresses_orders_shippingAddressIdToaddresses: true,
             customers: {
-              include: {
+              include: {          
                 addresses: {
                   include: {
                     contact_number: true,
@@ -52,6 +52,7 @@ export default resolver.pipe(
                   },
                 },
               },
+             
             },
           },
         }),

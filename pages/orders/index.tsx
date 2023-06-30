@@ -31,6 +31,9 @@ import getInventory_products from "app/inventory_products/queries/getInventory_p
 import { TabMenu } from "primereact/tabmenu";
 import { Toast } from "primereact/toast";
 import getInventory_product from "app/inventory_products/queries/getInventory_product";
+import getPo_terms from "app/po_terms/queries/getPo_terms";
+import getProduct_prices from "app/product_prices/queries/getProduct_prices";
+import { InputSwitch } from "primereact/inputswitch";
 
 const initialState = {
   orders: [],
@@ -60,7 +63,8 @@ const initialOrderDetails = {
   lastName: '',
   email: '',
   companyName: "",
-  customer: { firstName: '', companyName: '' },
+  gstNumber: "",
+  customer: { firstName: '', companyName: '', },
   contactNumber: '',
   checkedAddress: '',
   orderStatus: '',
@@ -73,6 +77,11 @@ const initialOrderDetails = {
   paymentStatus: { id: "", name: "" },
   totalPrice: "",
   gateway: "",
+  display: 0,
+  gstTaxTypeCode: "",
+  discountAmount: '',
+  paymentTermsId: '',
+  paymentReferenceId: "",
   orderItems: [{ id: '', name: '', quantity: '', price: '', availableInventory: "" }],
   address: '',
   city: '',
@@ -111,10 +120,11 @@ const customers_ = [
   { id: 5, name: 'customers5' }
 ]
 const gateway_ = [
-  { id: 1, name: 'Paypal' },
+  { id: 1, name: 'RazorPay' },
   { id: 2, name: 'Paytm' },
   { id: 3, name: 'UPI' },
   { id: 4, name: 'Net-Banking' },
+  { id: 5, name: 'Cash' },
 ]
 const paymentStatus_ = [
   { id: 1, name: "PAID" },
@@ -166,12 +176,21 @@ export const OrdersList = () => {
   const toast = useRef(null)
   const router = useRouter();
   const page = Number(router.query.page) || 0;
+
   const [{ orders, count: orderCounts }, { refetch: refetchOrders }] = usePaginatedQuery(getOrders, {
     orderBy: { id: "asc" },
     where: {},
     skip: skipCount,
     take: tableRowsCount,
   });
+  const [{ po_terms }] = useQuery(getPo_terms, {
+    orderBy: { id: 'asc' },
+    skip: ITEMS_PER_PAGE * page,
+    take: ITEMS_PER_PAGE,
+    where: undefined
+  })
+  console.log('po_terms: ', po_terms);
+
 
   const [{ order_statuses, }] = useQuery(getOrder_statuses, {
     orderBy: { id: "asc" },
@@ -191,6 +210,17 @@ export const OrdersList = () => {
   const [{ products }] = useQuery(getProducts, {
     orderBy: { id: "asc" },
   })
+  console.log('products: ', products);
+
+  const [{ product_prices }] = useQuery(getProduct_prices, {
+    orderBy: { id: "asc" },
+    where: undefined,
+    skip: undefined,
+    take: undefined
+  })
+  console.log('product_prices: ', product_prices.map((val) => val.sellingPrice));
+
+
 
   const [{ inventory_products }] = useQuery(getInventory_products, {
     orderBy: { id: "asc" },
@@ -206,6 +236,9 @@ export const OrdersList = () => {
   // const goToPreviousPage = () => router.push({ query: { page: page - 1 } });
   // const goToNextPage = () => router.push({ query: { page: page + 1 } });
 
+  // // Add Payment terms
+  // const [optionsPaymentTerms, setOptionsPaymentTerms] = useState({ id: 3, name: '100% Advance', description: '100% Advance' })
+  // console.log('optionsPaymentTerms: ', optionsPaymentTerms);
 
 
   const [createNewOrder] = useMutation(createOrder)
@@ -215,14 +248,24 @@ export const OrdersList = () => {
   const [orderStatusOption, setOrderStatusOption] = useState(order_statuses)
   const [orderStatusSuggestions, setOderStatusSuggestions] = useState<any>(null)
 
-  const orderItemsOptions = products.map(({ id, name, sku, description }) => {
+
+  const gstTotal = 0;
+  const orderItemsOptions = products.map(({ id, name, sku, description, gstTaxTypeCode }) => {
     return {
-      name: `${sku} - ${name}`,
+      name: `${sku} - ${name} - ${gstTaxTypeCode}%gst`,
       id,
       description,
       sku,
+      gstTaxTypeCode,
     }
   })
+  console.log('gstTotal: ', gstTotal);
+
+
+  const calculateTotalPrice = () => {
+
+  }
+
 
   const [orderItemsSuggestions, setOderItemsSuggestions] = useState<any>(null)
 
@@ -230,16 +273,21 @@ export const OrdersList = () => {
     ...customers,
     name: `${customers?.firstName}${customers?.companyName ? `- ${customers?.companyName}` : ""}`
   }))
+  console.log('customerOptions: ', customerOptions);
+
+  // const paymentTermsOption = po_terms.map((val) => {
+  //    return val.name
+  // })
+  // console.log('paymentTermsOption: ', paymentTermsOption);
 
   const [customerOptionsSuggestions, setCustomerOptionsSuggestions] = useState<any>(null)
+  // const [paymentTermsOptionsSuggestions, setPaymentTermsOptionsSuggestions] = useState<any>(null)
+
 
   const [gatewayOptions] = useState(gateway_)
   const [gatewayOptionsSuggestions, setGatewayOptionsSuggestions] = useState<any>(null)
-
   const [paymentOptions] = useState(paymentStatus_)
   const [paymentOptionsSuggestions, setPaymentOptionsSuggestions] = useState<any>(null)
-
-
   const [addressSuggestion, setAddressSuggestion] = useState<any>(null)
   const [activeRowData, setActiveRowData] = useState({})
   const [newOrderUpdate, setNewOrderUpdate] = useState(false)
@@ -251,6 +299,7 @@ export const OrdersList = () => {
   const searchGateway = createSearchFunction(gatewayOptions, setGatewayOptionsSuggestions)
   const searchPayment = createSearchFunction(paymentOptions, setPaymentOptionsSuggestions)
   const scrollToTop = useRef<HTMLDivElement>(null)
+
 
 
   const searchCities = (event: { query: string }) => {
@@ -364,36 +413,46 @@ export const OrdersList = () => {
 
 
   const address = [
-    { name: 'address', requiredMessage: 'Address  is required' },
-    { name: 'pincode', requiredMessage: 'Pincode  is required' },
-    { name: 'city', requiredMessage: 'City is required' },
-    { name: 'state', requiredMessage: 'State  is required' },
-    { name: 'country', requiredMessage: 'Country status is required' },
-    { name: 'email', requiredMessage: 'Email is required', type: "email" },
-    { name: 'contactNumber', requiredMessage: 'Contact number is required' },
-  ];
-
-  const CustomerParams = [
-    { name: 'firstName', requiredMessage: 'FirstName is required' },
-    { name: 'lastName', requiredMessage: 'LastName is required' },
     // { name: 'address', requiredMessage: 'Address  is required' },
     // { name: 'pincode', requiredMessage: 'Pincode  is required' },
     // { name: 'city', requiredMessage: 'City is required' },
     // { name: 'state', requiredMessage: 'State  is required' },
     // { name: 'country', requiredMessage: 'Country status is required' },
-    // { name: 'email', requiredMessage: 'Email is required' },
+    // { name: 'email', requiredMessage: 'Email is required', type: "email" },
     // { name: 'contactNumber', requiredMessage: 'Contact number is required' },
+  ];
+
+  const CustomerParams = [
+    { name: 'firstName', requiredMessage: 'FirstName is required' },
+    { name: 'lastName', requiredMessage: 'LastName is required' },
+    // { name: 'contactNumber', requiredMessage: 'Contact number is required' },
+    // { name: 'companyName', requiredMessage: 'companyName is required' },
+    // { name: 'gstNumber ', requiredMessage: 'GSTNumber is required' },
+    // { name: 'pincode', requiredMessage: 'Pincode  is required' },
+    // { name: 'city', requiredMessage: 'City is required' },
+    // { name: 'state', requiredMessage: 'State  is required' },
+    // { name: 'country', requiredMessage: 'Country status is required' },
+    // { name: 'email', requiredMessage: 'Email is required' },
+
     ...address
   ];
 
+  const CustomerParamSchema = CustomerParams.map(({ name, requiredMessage }) => {
 
-  const CustomerParamSchema = CustomerParams.map(({ requiredMessage }) => {
+    // if (name === 'contactNumber') {
+    //   return Yup.string().matches(/^\d{10}$/, 'Contact number must be 10 digits').required(requiredMessage);
+    // }
+
     return Yup.string().when("isExistingCustomer", {
       is: false,
       then: Yup.string().required(requiredMessage),
     });
   });
-  const addressSchema = address.map(({ requiredMessage }) => {
+
+  const addressSchema = address.map(({ name, requiredMessage }) => {
+    if (name === 'contactNumber') {
+      return Yup.string().matches(/^\d{10}$/, 'Contact number must be 10 digits').required(requiredMessage);
+    }
     return Yup.string().required(requiredMessage);
   });
 
@@ -428,6 +487,7 @@ export const OrdersList = () => {
       quantity: quantity.toString(),
       price: price.toString()
     }));
+
 
     // const _quantity = e.data.order_items.quantity
     // 
@@ -472,70 +532,20 @@ export const OrdersList = () => {
     initialValues: orderItemsDetails,
     validationSchema: Yup.object().shape({
       ...Object.assign({}, ...CustomerParams.map((p, i) => ({ [p.name]: CustomerParamSchema[i] }))),
-      // shippingAddress: Yup.object().shape({
-      //   ...Object.assign({}, ...address.map((p, i) => ({ [p.name]: addressSchema[i] }))),
-      // })
-      // shippingAddress: Yup.object().shape({
-      //   address: Yup.string()
-      //     .required('Shipping address is required'),
-      //   pincode: Yup.string()
-      //     .required('Shipping pincode is required'),
-      //   city: Yup.string()
-      //     .required('Shipping city is required'),
-      //   state: Yup.string()
-      //     .required('Shipping state is required'),
-      //   country: Yup.string()
-      // })
 
-      // lastName: Yup.string()
-      //   .required('Last name is required'),
-      // email: Yup.string()
-      //   .email('Invalid email')
-      //   .required('Email is required'),
-      // customer: Yup.string()
-      //   .required('Customer name is required'),
-      // contactNumber: Yup.string()
-      //   .required('Contact number is required'),
-      // checkedAddress: Yup.string()
-      //   .required('Checked address is required'),
-      // orderStatus: Yup.string()
-      //   .required('Order status is required'),
-      // landmarkName: Yup.string(),
-      // shippingAddressId: Yup.string(),
-      // billingAddressId: Yup.string(),
-      // shopifyId: Yup.string(),
-      // customerId: Yup.string(),
-      // paymentStatus: Yup.string(),
-      // totalPrice: Yup.string(),
-      // gateway: Yup.string(),
-      // orderItems: Yup.string(),
-      // address: Yup.string()
-      //   .required('Address is required'),
-      // city: Yup.string()
-      //   .required('City is required'),
-      // state: Yup.string()
-      //   .required('State is required'),
-      // country: Yup.string()
-      //   .required('Country is required'),
-      // pincode: Yup.string()
-      //   .required('Pincode is required'),
-      // shippingAddress: Yup.object().shape({
-      //   address: Yup.string()
-      //     .required('Shipping address is required'),
-      //   pincode: Yup.string()
-      //     .required('Shipping pincode is required'),
-      //   city: Yup.string()
-      //     .required('Shipping city is required'),
-      //   state: Yup.string()
-      //     .required('Shipping state is required'),
-      //   country: Yup.string()
-      // })
+      gstNumber: Yup.string()
+        .min(15, 'GST number must be at least 15 characters')
+        .matches(/^[\dA-Za-z]{15}$/, 'GST number must be 15 alphanumeric characters')
+        .required('GSTNumber is required'),
+
+      // ...Object.assign({}, ...addressSchema.map((p, i) => ({ [p.name]: addressSchema[i] }))),
+
 
     }),
     onSubmit: async (data) => {
       const {
         firstName, lastName, companyName, email, contactNumber, orderStatus,
-        landmarkName, pincode, paymentStatus, totalPrice, gateway,
+        landmarkName, pincode, paymentStatus, totalPrice, gateway, display, discountAmount, gstNumber, gstTaxTypeCode, paymentTermsId, paymentReferenceId,
         orderItems, address, state, country, city,
         shippingAddress: {
           address: shippingAreaStreet,
@@ -558,6 +568,7 @@ export const OrdersList = () => {
           contactNumber: billingContactNumber
         }
       } = data
+      console.log('orderItems: ', orderItems);
 
       const isAllQuantityAvailable = orderItems?.map((product) => {
         const { availableInventory, quantity } = product
@@ -612,6 +623,7 @@ export const OrdersList = () => {
               firstName,
               lastName,
               companyName,
+              display,
               // shopifyId: "1425636985",
               addresses: {
                 create: {
@@ -695,6 +707,11 @@ export const OrdersList = () => {
               paymentStatus: paymentStatus.id,
               totalPrice,
               gateway,
+              discountAmount,
+              gstNumber,
+              gstTaxTypeCode,
+              paymentTermsId: selectedPaymentTerm ? selectedPaymentTerm.id : null,
+              paymentReferenceId,
               // channelCreatedAt: new Date(),
               order_items: {
                 create: orderItems.map((ele) => ({
@@ -706,7 +723,7 @@ export const OrdersList = () => {
               orderItemsData: orderItems.map(ele => ({
                 productID: ele?.id,
                 quantity: Number(ele.quantity),
-                shelf: ele?.shelf
+                // shelf: ele?.shelf
               }))
             },
           },
@@ -720,19 +737,21 @@ export const OrdersList = () => {
                 toast.current.show({ severity: 'success', summary: 'Success', detail: `${data?.id} Created`, life: 3000 });
 
               }, onError: (error) => {
+                console.log('error: ', error);
+                toast.current.show({ severity: 'error', summary: 'error', detail: `${data?.id} Created`, life: 3000 });
 
-                alert(error)
               },
             })
         } catch (error) {
+          console.log('error: ', error);
 
         }
       }
-
-
     }
   })
 
+  console.log(formik.errors, 'formik.error')
+  // console.log('orderItem', orderItemsDetails)
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
@@ -755,28 +774,45 @@ export const OrdersList = () => {
 
 
 
-  const handleInputChange = (event, index) => {
+  // const handleInputChange = (event, index) => {
+  //   const { name, value } = event.target;
+
+  //   const newInputsItems = [...formik.values.orderItems];
+  //   newInputsItems[index][name] = value;
+
+
+  //   const totalPrice = newInputsItems.reduce((acc, curr) => {
+  //     return acc + curr.price * curr.quantity;
+  //   }, 0)
+
+  //   // update the state with the new order items
+  //   formik.setValues({ ...formik.values, orderItems: newInputsItems, totalPrice: totalPrice });
+  //   return newInputsItems;
+
+  // };
+
+
+  const handleInputChange = async (event, index) => {
     const { name, value } = event.target;
 
     const newInputsItems = [...formik.values.orderItems];
     newInputsItems[index][name] = value;
 
+    const selectedProduct = newInputsItems[index];
+    const sellingPrice = product_prices.find((price) => price.productId === selectedProduct.id)?.sellingPrice || 0;
+
+    newInputsItems[index].price = sellingPrice;
 
     const totalPrice = newInputsItems.reduce((acc, curr) => {
       return acc + curr.price * curr.quantity;
-    }, 0)
+    }, 0);
 
-    // update the state with the new order items
     formik.setValues({ ...formik.values, orderItems: newInputsItems, totalPrice: totalPrice });
     return newInputsItems;
-
   };
 
   const [verificationStatus, setVerificationStatus] = useState(false);
   const inventory_productName = inventory_products.map((val) => val.products.name)
-
-
-
 
   const checkVerifyOrder = () => {
     const inventoryProduct = inventory_products.find(product => product.products.name === selectOrder.name);
@@ -793,9 +829,6 @@ export const OrdersList = () => {
 
         <div className="flex justify-content-end">
           {checkVerified && (
-
-
-
 
             <Button
               type="button"
@@ -978,6 +1011,9 @@ export const OrdersList = () => {
 
   const searchCustomer = createSearchFunction(customerOptions, setCustomerOptionsSuggestions)
 
+  // const searchPaymentTerms = createSearchFunction(paymentTermsOption, setPaymentTermsOptionsSuggestions)
+
+
 
   const handleViewClick = async (id) => {
     router.push(`orders/${id}`);
@@ -1090,6 +1126,7 @@ export const OrdersList = () => {
 
   const handleOnPageChange = () => {
 
+
   }
 
   const isSelectable = (data) => !data?.verified;
@@ -1105,6 +1142,56 @@ export const OrdersList = () => {
     const verified = row.props.value[index]?.verified
     verified ? '' : 'p-disabled'
   };
+
+
+
+
+
+  //  payment terms code-->>
+
+  const [itemsPaymentTerms, setItemsPaymentTerms] = useState([]);
+
+  const search = (event) => {
+    setItemsPaymentTerms(po_terms.map((val) => val.name))
+  }
+
+  const [selectedPaymentTerm, setSelectedPaymentTerm] = useState({ id: 3, name: '100% Advance' });
+
+  const handlePaymentTermChange = (e) => {
+    const selectedTerm = po_terms.find((term) => term.name === e.value);
+    setSelectedPaymentTerm(selectedTerm);
+  };
+
+
+  // Discount handelchange code:->>
+
+  const discountHandleSubmit = (event) => {
+    const { value } = event.target;
+    formik.handleChange(event);
+    formik.setFieldValue("discountAmount", parseFloat(value));
+    const totalPrice = formik.values.totalPrice;
+    if (value > totalPrice) {
+      toast.current.show({ severity: 'error', summary: 'Discount amount should be less than the total price.', life: 3000 });
+      formik.setFieldValue("discountAmount", "");
+    }
+  };
+
+  console.log('type off', typeof formik.values.discountAmount)
+
+  const totalPriceAmount = (formik.values.orderItems.reduce(
+    (total, ele) => total + ele.price * ele.quantity + (ele.price * ele.quantity * ele.gst) / 100,
+    0
+  ) - formik.values.discountAmount);
+
+
+
+  //  checked customer 
+  const [displayChecked, setDisplayChecked] = useState(false);
+  console.log('displayChecked: ', displayChecked);
+
+
+
+
   return (
 
     <div className="grid w-full" >
@@ -1137,16 +1224,29 @@ export const OrdersList = () => {
             <form onSubmit={formik.handleSubmit}
               className="p-fluid">
 
-              <div className=" grid">
+              <div className="grid">
+                <div className="col-12 mt-3">
+                  <div>
+                    <span>Display Customer </span>
+                  </div>
+                  <InputSwitch
+                    checked={formik.values.display === 1}
+                    onChange={(e) => {
+                      console.log('e:value ', e.value);
+                      formik.setFieldValue("display", e.value ? 1 : 0);
+                    }}
+                    className="mt-2"
+                  />
+                </div>
 
                 <div className="field col-12 md:col-3 lg:col-2 mt-4">
-                  <span className="p-float-label">
 
+                  <span className="p-float-label">
                     <AutoComplete
                       value={formik.values?.name}
                       dropdown
                       field="name"
-                      suggestions={customerOptionsSuggestions}
+                      suggestions={customerOptionsSuggestions && customerOptionsSuggestions.filter((val) => val.display === 1)}
                       completeMethod={searchCustomer}
                       forceSelection
                       onChange={async (e) => {
@@ -1178,7 +1278,6 @@ export const OrdersList = () => {
                         }
 
                       }}
-
                       aria-label="customer"
                       dropdownAriaLabel="Select customer"
                       className={classNames({ "p-invalid": isFormFieldValid("name") })}
@@ -1196,11 +1295,11 @@ export const OrdersList = () => {
                   { field: "firstName", label: "First Name" },
                   { field: "lastName", label: "Last Name" },
                   { field: "companyName", label: "Company Name" },
-                  { field: "email", label: "Email ID" },
-                  { field: "contactNumber", label: "Contact Number" },
-                  { label: "Address", field: "address" },
-                  { label: "LandMark", field: "landmarkName" },
-                  { label: "Pincode", field: "pincode" },
+                  // { field: "gstNumber", label: "GST " },
+                  // { field: "contactNumber", label: "Contact Number" },
+                  // { label: "Address", field: "address" },
+                  // { label: "LandMark", field: "landmarkName" },
+                  // { label: "Pincode", field: "pincode" },
                 ].map((ele, i) => {
                   return (
                     <div key={`${ele.label}${i}`} className="field col-12 lg:col-2 md:col-6 mt-4">
@@ -1228,7 +1327,7 @@ export const OrdersList = () => {
                 })
                 }
 
-                <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                {/* <div className="field col-12 md:col-3 lg:col-2 mt-4">
                   <div className="p-float-label">
                     <AutoComplete
                       id="city"
@@ -1296,6 +1395,26 @@ export const OrdersList = () => {
                     </label>
                   </span>
                   {getFormErrorMessage("country")}
+                </div> */}
+
+                <div className="field col-12 md:col-3 lg:col-2 mt-4">
+                  <span className="p-float-label">
+                    <InputText
+                      id="gstNumber"
+                      name="gstNumber"
+                      value={formik.values?.gstNumber}
+                      onChange={formik.handleChange}
+                      className={classNames({ "p-invalid": isFormFieldValid("gstNumber") })}
+
+                    />
+                    <label
+                      htmlFor="gstNumber"
+                      className={classNames({ "p-error": isFormFieldValid("gstNumber") })}
+                    >
+                      GST Number
+                    </label>
+                    {getFormErrorMessage("gstNumber")}
+                  </span>
                 </div>
 
                 <div className="grid col-12">
@@ -1325,216 +1444,13 @@ export const OrdersList = () => {
                         Order Status
                       </label>
                     </span>
-                    {/* {getFormErrorMessage("category")} */}
+
                   </div>
 
-                  <div key={`gateway`} className="field col-12 lg:col-4 md:col-6 mt-2">
-                    <span className="p-float-label">
-                      <AutoComplete
-                        id="gateway"
-                        value={formik.values.gateway}
-                        dropdown
-                        forceSelection
-                        suggestions={gatewayOptionsSuggestions}
-                        completeMethod={searchGateway}
-                        field="name"
-                        onChange={(e) => {
-                          const selectedOrderItem = gatewayOptions.find(option_ => option_.name === e.value?.name);
-                          const selectedItemsOptionName = selectedOrderItem ? selectedOrderItem.name : null;
-                          formik.setFieldValue('gateway', selectedItemsOptionName);
-                        }}
-                        aria-label="gateway"
-                        dropdownAriaLabel="gateway"
-                        className={classNames({ "p-invalid": isFormFieldValid("category") })}
-                      />
-                      <label
-
-                        className={classNames({ "p-error": isFormFieldValid("category") })}
-                      >
-                        Gateway
-                      </label>
-                    </span>
-                    {/* {getFormErrorMessage("category")} */}
-                  </div>
-
-                  <div key={`paymentStatus`} className="field col-12 lg:col-4 md:col-6 mt-2">
-                    <span className="p-float-label ">
-                      <AutoComplete
-                        id="paymentStatus"
-                        value={formik.values.paymentStatus?.name}
-                        dropdown
-                        forceSelection
-                        suggestions={paymentOptionsSuggestions}
-                        completeMethod={searchPayment}
-                        field="name"
-                        onChange={(e) => {
-
-                          // const selectedOrderItem = paymentOptions.find(option_ => option_.name === e.value.name);
-                          // const selectedItemsOptionName = selectedOrderItem ? selectedOrderItem.id : null;
-                          formik.setFieldValue('paymentStatus', e?.value);
-                        }}
-                        aria-label="paymentStatus"
-                        dropdownAriaLabel="paymentStatus"
-                        className={classNames({ "p-invalid": isFormFieldValid("paymentStatus") })}
-                      />
-                      <label
-
-                        className={classNames({ "p-error": isFormFieldValid("paymentStatus") })}
-                      >
-                        Payment Status
-                      </label>
-                    </span>
-                  </div>
-                </div>
-                <div className="col-12">
-                  <h3 >Order Items</h3>
-                  {formik.values.orderItems.map((ele, index) => (
-                    <div key={index} className="grid ">
-
-                      <div className="field col-12 lg:col-4 md:col-6 mt-2">
-                        <span className="p-float-label">
-                          <AutoComplete
-                            id="name"
-                            value={ele?.name}
-                            name="name"
-                            dropdown
-                            forceSelection
-                            suggestions={orderItemsSuggestions}
-                            completeMethod={searchOrderItems}
-                            field="name"
-                            onChange={async (e) => {
-                              const inventory = await isInStock(e?.target?.value?.sku)
-                              const _orderItemInput = [...formik.values.orderItems]
-                              _orderItemInput[index] = {
-                                ..._orderItemInput[index],
-                                ...e.value,
-                                availableInventory: inventory?.availableQuantity,
-                                shelf: inventory?.shelf?.blockedShelfIds[0]
-                              }
-                              await formik.setValues({
-                                ...formik.values,
-                                orderItems: _orderItemInput,
-                              })
-
-                            }}
-                            aria-label="products"
-                            dropdownAriaLabel="Select Product"
-                            className={classNames({ "p-invalid": isFormFieldValid("name") })}
-
-                          />
-                          <label
-                            htmlFor={"type"}
-                            className={classNames({ "p-error": isFormFieldValid("type") })}
-                          >
-                            Products
-                          </label>
-                        </span>
-
-                      </div>
-                      <div className="field col-12 lg:col-3 md:col-6 mt-2">
-                        <span className="p-float-label">
-                          <InputText
-                            className=''
-                            type='number'
-                            name='price'
-                            value={ele?.price}
-                            onChange={async (e) => {
-                              handleInputChange(e, index)
-
-                            }}
-
-                          />
-                          <label
-                            htmlFor={"type"}
-                            className={classNames({ "p-error": isFormFieldValid("type") })}
-                          >
-                            Price
-                          </label>
-                        </span>
-                      </div>
-                      <div className="field col-12 lg:col-3 md:col-6 mt-2">
-                        <span className="p-float-label">
-                          <InputText
-                            className=''
-                            type='number'
-                            name='quantity'
-                            value={ele?.quantity}
-                            onChange={async (e) => {
-                              handleInputChange(e, index)
-                            }}
-                          />
-                          <label
-                            htmlFor={"type"}
-                            className={classNames({ "p-error": isFormFieldValid("type") })}
-                          >
-                            Quantity
-                          </label>
-                        </span>
-                      </div>
-                      <div className="field col-12 lg:col-1 md:col-6 mt-2">
-                        <span className="p-float-label">
-                          <InputText
-                            className=''
-                            id="availableInventory"
-                            type='text'
-                            name='availableInventory'
-                            value={ele?.availableInventory}
-                            disabled
-                          />
-                          <label
-                            htmlFor="availableInventory"
-                            className={classNames({ "p-error": isFormFieldValid("availableInventory") })}
-                          >
-                            Inventory
-                          </label>
-                        </span>
-                      </div>
-                      <div className="field flex justify-content-between col-12 lg:col-1 md:col-6 mt-2 ">
-                        <Button
-                          icon="pi pi-minus"
-                          className="p-2 m-1"
-                          onClick={() => handleRemoveInput(index)}
-                          style={{ height: '40px' }}
-                        />
-
-                        <Button
-                          icon="pi pi-plus"
-                          className="m-1"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            handleAddInput();
-                          }}
-                          style={{ height: '40px' }}
-                        />
-                      </div>
-                    </div>
-                  ))
-                  }
-                </div>
-
-                <div className="field col-12 lg:col-2 md:col-6 mt-1">
-                  <span className="p-float-label">
-                    <InputText
-                      disabled={true}
-                      id={"totalPrice"}
-                      // placeholder='SKU'
-                      name={"totalPrice"}
-                      value={formik.values.totalPrice}
-                      autoFocus
-                      className={classNames({ "p-invalid ": isFormFieldValid("description") })}
-                    />
-                    <label
-                      htmlFor={"totalPrice"}
-                      className={classNames({ "p-error": isFormFieldValid("sku") })}
-                    >
-                      TotalPrice
-                    </label>
-                  </span>
-                  {getFormErrorMessage("totalPrice")}
                 </div>
 
                 <div className="col-12">
-                  <h3 className="field col-12 lg:col-5 md:col-6 mt-4">Shipping Address</h3>
+                  <h3 className="field col-12 lg:col-5 md:col-6 ">Shipping Address</h3>
                   <AddressComponent isFormFieldValid={isFormFieldValid} getFormErrorMessage={getFormErrorMessage} errors={formik.errors.shippingAddress} value={formik.values.shippingAddress} setField={formik.setFieldValue} addressName={'shippingAddress'} />
                 </div>
                 <div className="col-12 mt-3 grid align-items-center">
@@ -1553,7 +1469,366 @@ export const OrdersList = () => {
                   <div className="col-12">
                     <h3 className="field col-12 lg:col-5 md:col-6 mt-4">Billing Address</h3>
                     <AddressComponent errors={formik.errors.billingAddress} value={formik.values.billingAddress} setField={formik.setFieldValue} addressName={'billingAddress'} />
-                  </div >}
+                  </div >
+                }
+                <div className="with-border col-12">
+                  <div className="col-12 ">
+                    <h3 >Order Items</h3>
+                    {formik.values.orderItems.map((ele, index) => (
+                      <div key={index} className="grid ">
+                        <span className="bg-primary border-circle w-2rem h-2rem flex align-items-center justify-content-center mt-4">{index + 1}</span>
+
+
+                        <div className="field col-12 lg:col-4 md:col-6 mt-2 ">
+                          <span className="p-float-label">
+                            <AutoComplete
+                              id="name"
+                              value={ele?.name}
+                              name="name"
+                              dropdown
+                              forceSelection
+                              // suggestions={orderItemsSuggestions}
+                              // suggestions={orderItemsSuggestions.filter(
+                              //   (option) => option !== ele?.name
+                              // )}
+                              suggestions={orderItemsSuggestions && orderItemsSuggestions.filter(
+                                (option) => option !== ele?.name
+                              )}
+                              completeMethod={searchOrderItems}
+                              field="name"
+                              // onChange={async (e) => {
+                              //   const inventory = await isInStock(e?.target?.value?.sku)
+                              //   const _orderItemInput = [...formik.values.orderItems]
+                              //   _orderItemInput[index] = {
+                              //     ..._orderItemInput[index],
+                              //     ...e.value,
+                              //     availableInventory: inventory?.availableQuantity,
+                              //     shelf: inventory?.shelf?.blockedShelfIds[0]
+                              //   }
+                              //   await formik.setValues({
+                              //     ...formik.values,
+                              //     orderItems: _orderItemInput,
+                              //   })
+
+                              // }}
+
+                              onChange={async (e) => {
+                                const selectedProduct = e.value;
+
+                                const selectedProductGST = selectedProduct?.gstTaxTypeCode || 0;
+
+                                const inventory = await isInStock(selectedProduct?.sku);
+                                const sellingPrice = product_prices.find((price) => price.productId === selectedProduct?.id)?.sellingPrice || 0;
+
+                                const _orderItemInput = [...formik.values.orderItems];
+                                _orderItemInput[index] = {
+                                  ..._orderItemInput[index],
+                                  ...selectedProduct,
+                                  price: sellingPrice,
+                                  availableInventory: inventory?.availableQuantity,
+                                  shelf: inventory?.shelf?.blockedShelfIds[0],
+                                  gst: selectedProductGST, // Add the GST value to the order item
+                                };
+
+                                const totalAmount = ele.price * ele.quantity;
+                                const totalAmountWithGST = totalAmount + (totalAmount * ele.gst) / 100;
+
+                                await formik.setValues({
+                                  ...formik.values,
+                                  orderItems: _orderItemInput,
+                                });
+
+                              }}
+
+                              aria-label="products"
+                              dropdownAriaLabel="Select Product"
+                              className={classNames({ "p-invalid": isFormFieldValid("name") })}
+
+                            />
+                            <label
+                              htmlFor={"type"}
+                              className={classNames({ "p-error": isFormFieldValid("type") })}
+                            >
+                              Products
+                            </label>
+                          </span>
+
+                        </div>
+
+                        <div className="field col-12 lg:col-3 md:col-6 mt-2 ">
+                          <span className="p-float-label">
+                            <InputText
+                              disabled={true}
+                              className=''
+                              type='number'
+                              name='price'
+                              value={ele?.price}
+                              onChange={async (e) => {
+                                handleInputChange(e, index)
+                              }}
+
+                            />
+                            <label
+                              htmlFor={"type"}
+                              className={classNames({ "p-error": isFormFieldValid("type") })}
+                            >
+                              Price
+                            </label>
+                          </span>
+                        </div>
+
+                        <div className="field col-12 lg:col-3 md:col-6 mt-2 ">
+                          <span className="p-float-label">
+                            <InputText
+                              className=''
+                              type='number'
+                              name='quantity'
+                              value={ele?.quantity}
+                              onChange={async (e) => {
+                                handleInputChange(e, index)
+                              }}
+                            />
+                            <label
+                              htmlFor="type"
+                              className={classNames({ "p-error": isFormFieldValid("type"), })}
+                            >
+                              Quantity - <span className="green_color">{ele?.availableInventory}</span>
+                            </label>
+                          </span>
+                        </div>
+                        {/* <div className="field col-12 lg:col-1 md:col-6 mt-2">
+                          <span className="p-float-label">
+                            <InputText
+                              className=''
+                              id="availableInventory"
+                              type='text'
+                              name='availableInventory'
+                              value={ele?.availableInventory}
+                              disabled
+                            />
+                            <label
+                              htmlFor="availableInventory"
+                              className={classNames({ "p-error": isFormFieldValid("availableInventory") })}
+                            >
+                              Inventory
+                            </label>
+                          </span>
+                        </div> */}
+
+
+                        <div className="field flex justify-content-between col-12 lg:col-1 md:col-6 mt-2 ">
+                          <Button
+                            icon="pi pi-minus"
+                            className="p-2 m-1"
+                            onClick={() => handleRemoveInput(index)}
+                            style={{ height: '40px' }}
+                          />
+
+                          <Button
+                            icon="pi pi-plus"
+                            className="m-1"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              handleAddInput();
+                            }}
+                            style={{ height: '40px' }}
+                          />
+                        </div>
+
+                      </div>
+                    ))}
+
+
+
+                  </div>
+
+                  {/* <div className="field mt-1 flex justify-content-end">
+                    <span className="p-float-label ">
+                      <InputText
+                        disabled={true}
+                        id={"totalPrice"}
+                        // placeholder='SKU'
+                        name={"totalPrice"}
+                        value={formik.values.totalPrice}
+                        autoFocus
+                        className={classNames({ "p-invalid ": isFormFieldValid("description") })}
+                      />
+                      <label
+                        htmlFor={"totalPrice"}
+                        className={classNames({ "p-error": isFormFieldValid("sku") })}
+                      >
+                        
+                        Sub Total
+                      </label>
+                    </span>
+                    {getFormErrorMessage("totalPrice")}
+                  </div> */}
+
+                  <div className="field mt-1 flex justify-content-end mt-2">
+                    <span className="p-float-label ">
+                      <InputText
+                        disabled={true}
+                        id={"totalPrice"}
+                        name={"totalPrice"}
+                        value={formik.values.totalPrice}
+                        autoFocus
+                        className={classNames({ "p-invalid ": isFormFieldValid("description") })}
+                      />
+                      <label
+                        htmlFor={"totalPrice"}
+                        className={classNames({ "p-error": isFormFieldValid("sku") })}
+                      >
+                        Sub Total
+                      </label>
+                    </span>
+                    {getFormErrorMessage("totalPrice")}
+                  </div>
+
+                  <div className="field mt-1 flex justify-content-end mt-4">
+                    <span className="p-float-label">
+                      <InputText
+                        className=''
+                        type='text'
+                        name='discountAmount'
+                        value={formik.values.discountAmount}
+                        onChange={discountHandleSubmit}
+                      />
+                      <label
+                        htmlFor="discountAmount"
+                        className={classNames({ "p-error": isFormFieldValid("discountAmount") })}>
+                        Discount Amount
+                      </label>
+                    </span>
+                  </div>
+
+
+                  <div className="field mt-1 flex justify-content-end mt-4">
+                    <span className="p-float-label">
+                      <InputText
+                        disabled
+                        className=''
+                        type='text'
+                        name='total'
+                        value={totalPriceAmount.toFixed(1)}
+                      // onChange={() => { }}
+                      />
+                      <label
+                        htmlFor="discountAmount"
+                        className={classNames({ "p-error": isFormFieldValid("discountAmount") })}>
+                        <span className="green_color">Total Amount</span>
+                      </label>
+                    </span>
+                  </div>
+
+                </div>
+
+                <div className="col-12">
+                  <h3>Payment Method </h3>
+                  <div className="grid">
+
+                    <div className="field col-12 lg:col-4 md:col-6 mt-2">
+                      <span className="p-float-label">
+                        <AutoComplete
+
+                          value={selectedPaymentTerm ? selectedPaymentTerm.name : ''}
+                          // value={selectedPaymentTerm ? itemsPaymentTerms.find((term) => term.id === selectedPaymentTerm)?.name : null}
+                          suggestions={itemsPaymentTerms}
+                          completeMethod={search}
+                          // onChange={(e) => setValuePaymentTerms(e.value)}
+                          onChange={handlePaymentTermChange}
+                          dropdown
+                        />
+                      </span>
+                    </div>
+                    {selectedPaymentTerm.name === '100% Advance' ?
+                      <>
+
+                        <div key={`paymentStatus`} className="field col-12 lg:col-4 md:col-6 mt-2">
+                          <span className="p-float-label ">
+                            <AutoComplete
+                              id="paymentStatus"
+                              value={formik.values.paymentStatus?.name}
+                              dropdown
+                              forceSelection
+                              suggestions={paymentOptionsSuggestions}
+                              completeMethod={searchPayment}
+                              field="name"
+                              onChange={(e) => {
+                                formik.setFieldValue('paymentStatus', e?.value);
+                              }}
+                              aria-label="paymentStatus"
+                              dropdownAriaLabel="paymentStatus"
+                              className={classNames({ "p-invalid": isFormFieldValid("paymentStatus") })}
+                            />
+                            <label
+
+                              className={classNames({ "p-error": isFormFieldValid("paymentStatus") })}
+                            >
+                              Payment Status
+                            </label>
+                          </span>
+                        </div>
+
+                        <div key={`gateway`} className="field col-12 lg:col-4 md:col-6 mt-2">
+
+                          <span className="p-float-label">
+                            <AutoComplete
+                              id="gateway"
+                              value={formik.values.gateway}
+                              dropdown
+                              forceSelection
+                              suggestions={gatewayOptionsSuggestions}
+                              completeMethod={searchGateway}
+                              field="name"
+                              onChange={(e) => {
+                                const selectedOrderItem = gatewayOptions.find(option_ => option_.name === e.value?.name);
+                                const selectedItemsOptionName = selectedOrderItem ? selectedOrderItem.name : null;
+                                formik.setFieldValue('gateway', selectedItemsOptionName);
+                              }}
+                              aria-label="gateway"
+                              dropdownAriaLabel="gateway"
+                              className={classNames({ "p-invalid": isFormFieldValid("category") })}
+                            />
+                            <label
+
+                              className={classNames({ "p-error": isFormFieldValid("category") })}
+                            >
+                              Payment Method
+                            </label>
+                          </span>
+                          {/* {getFormErrorMessage("category")} */}
+                        </div>
+
+                        <div className="field col-12 md:col-3 lg:col-2 ">
+                          <span className="p-float-label">
+                            <InputText
+                              id="paymentReferenceId"
+                              value={formik.values?.paymentReferenceId}
+                              onChange={formik.handleChange}
+                              className={classNames({ "p-invalid": isFormFieldValid("paymentReferenceId") })}
+
+                            />
+                            <label
+                              htmlFor="paymentReferenceId"
+                              className={classNames({ "p-error": isFormFieldValid("paymentReferenceId") })}
+                            >
+                              Reference Number
+                            </label>
+
+                          </span>
+                        </div>
+
+                      </>
+                      :
+                      ''}
+
+
+
+                  </div>
+
+                </div>
+
+
               </div>
 
               <div className="flex mt-4">
@@ -1718,9 +1993,6 @@ export const OrdersList = () => {
             />
 
 
-
-
-
             <Column
               field="products.name"
               header="Channel"
@@ -1802,6 +2074,7 @@ export const OrdersList = () => {
                   </div>
                 )
               }}
+              
             />
 
             <Column
@@ -1815,12 +2088,27 @@ export const OrdersList = () => {
                   </div>
                 )
               }}
-
+              // body={({ addresses_orders_shippingAddressIdToaddresses }) => {
+              //   const customerAddress = addresses_orders_shippingAddressIdToaddresses.areaStreet
+              //   console.log('customerAddress: ', customerAddress);
+              //   return (
+              //     <div className="">
+              //       {customerAddress}
+              //     </div>
+              //   )
+              // }}
             />
             <Column
               field="gateway"
               header="Payment Gateway"
-            // className="text-center"
+            />
+            <Column
+              field="gstNumber"
+              header='GST Number'
+            />
+            <Column
+              field="paymentReferenceId"
+              header='Payment Reference Id'
 
             />
             <Column

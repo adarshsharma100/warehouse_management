@@ -34,6 +34,8 @@ const AddressComponent = ({ value, setField, addressName, errors, }) => {
     // }
 
 
+  
+
     return (
 
         <>
@@ -42,8 +44,8 @@ const AddressComponent = ({ value, setField, addressName, errors, }) => {
                     { label: "Address", field: "address" },
                     { label: "LandMark", field: "landmark" },
                     { label: "Pincode", field: "pincode" },
-                    { field: "email", label: "Email ID" },
-                    { field: "contactNumber", label: "Contact Number" },
+                    { label: "Email ID", field: "email", },
+                    { label: "Contact Number", field: "contactNumber", },
                 ].map((ele, i) => {
                     return (
                         <div key={`${ele.label}${i}`} className="field col-12 lg:col-2 md:col-6 mt-4">
