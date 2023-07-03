@@ -105,6 +105,8 @@ export default resolver.pipe(
           paymentTermsId,
           paymentReferenceId,
           discountAmount,
+          payment_method,
+          paymentMethodId,
 
         },
       } = input
@@ -139,6 +141,9 @@ export default resolver.pipe(
             paymentTermsId,
             paymentReferenceId,
             discountAmount,
+            payment_method,
+            paymentMethodId,
+
           },
         })
         const updateInventoryProduct = async (productId: number, quantity: number, shelf: number) => {
@@ -188,6 +193,8 @@ export const createOrderFunction = async (input) => {
       paymentTermsId,
       paymentReferenceId,
       discountAmount,
+      payment_method,
+      paymentMethodId,
     },
   } = input
 
@@ -224,6 +231,10 @@ export const createOrderFunction = async (input) => {
         paymentTermsId,
         paymentReferenceId,
         discountAmount,
+        payment_method,
+        paymentMethodId,
+
+
 
       },
     })

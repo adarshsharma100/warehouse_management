@@ -234,14 +234,14 @@ model jobs {
 
 model kit_products {
   id                                           Int      @id @default(autoincrement())
-  productsId                                   Int
+  productId                                    Int
   quantity                                     Int
-  kitProductID                                 Int
-  products_kit_products_productsIdToproducts   products @relation("kit_products_productsIdToproducts", fields: [productsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products1")
-  products_kit_products_kitProductIDToproducts products @relation("kit_products_kitProductIDToproducts", fields: [kitProductID], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products2")
+  kitProductId                                 Int
+  products_kit_products_productIdToproducts    products @relation("kit_products_productIdToproducts", fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products1")
+  products_kit_products_kitProductIdToproducts products @relation("kit_products_kitProductIdToproducts", fields: [kitProductId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products2")
 
-  @@index([productsId], map: "fk_kit_products_products1_idx")
-  @@index([kitProductID], map: "fk_kit_products_products2_idx")
+  @@index([productId], map: "fk_kit_products_products1_idx")
+  @@index([kitProductId], map: "fk_kit_products_products2_idx")
 }
 
 model manifest {
@@ -290,12 +290,14 @@ model orders {
   gstNumber                                     String?               @db.VarChar(15)
   paymentTermsId                                Int
   discountAmount                                Int?
+  paymentMethodId                               Int
   order_items                                   order_items[]
   addresses_orders_shippingAddressIdToaddresses addresses             @relation("orders_shippingAddressIdToaddresses", fields: [shippingAddressId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_addresses1")
   addresses_orders_billingAddressIdToaddresses  addresses             @relation("orders_billingAddressIdToaddresses", fields: [billingAddressId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_addresses2")
   customers                                     customers             @relation(fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_customers1")
   order_payment_status                          order_payment_status? @relation(fields: [paymentStatus], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_order_payment_status1")
   order_status                                  order_status          @relation(fields: [orderStatus], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_order_status1")
+  payment_method                                payment_method        @relation(fields: [paymentMethodId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_payment_method2")
   po_terms                                      po_terms              @relation(fields: [paymentTermsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_po_terms1")
   shopify                                       shopify?              @relation(fields: [shopifyId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_shopify1")
   shipment                                      shipment[]
@@ -307,6 +309,7 @@ model orders {
   @@index([shopifyId], map: "fk_orders_shopify1_idx")
   @@index([paymentStatus], map: "fk_orders_order_payment_status1_idx")
   @@index([paymentTermsId], map: "fk_orders_po_terms1_idx")
+  @@index([paymentMethodId], map: "fk_orders_payment_method2_idx")
 }
 
 model permission {
@@ -402,16 +405,16 @@ model products {
   category                                         Int?
   brand                                            Int?
   type                                             Int
-  dimensionsId                                     Int?
+  dimensionsId                                     Int
   inventory_products                               inventory_products[]
-  kit_products_kit_products_productsIdToproducts   kit_products[]       @relation("kit_products_productsIdToproducts")
-  kit_products_kit_products_kitProductIDToproducts kit_products[]       @relation("kit_products_kitProductIDToproducts")
+  kit_products_kit_products_productIdToproducts    kit_products[]       @relation("kit_products_productIdToproducts")
+  kit_products_kit_products_kitProductIdToproducts kit_products[]       @relation("kit_products_kitProductIdToproducts")
   order_items                                      order_items[]
   product_prices                                   product_prices?
   product_tags                                     product_tags[]
   product_brand                                    product_brand?       @relation(fields: [brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_brands2")
   product_categories                               product_categories?  @relation(fields: [category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_category")
-  dimensions                                       dimensions?          @relation(fields: [dimensionsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_dimensions1")
+  dimensions                                       dimensions           @relation(fields: [dimensionsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_dimensions1")
   product_types                                    product_types        @relation(fields: [type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_product_types1")
   quality_ckeck_quality_ckeck_productsToproducts   quality_ckeck[]      @relation("quality_ckeck_productsToproducts")
   rfq_products                                     rfq_products[]
@@ -779,6 +782,30 @@ model images {
   imageUrl String @db.VarChar(150)
 }
 
+model payment_method {
+  id     Int      @id @default(autoincrement())
+  name   String?  @db.VarChar(45)
+  orders orders[]
+}
+
+model putaway {
+  id              Int             @id @default(autoincrement())
+  putawayNumber   String?         @db.VarChar(45)
+  generatedBy     String?         @db.VarChar(45)
+  status          putaway_status?
+  pendingQuantity Int?
+  createdAt       DateTime?       @db.DateTime(0)
+  updatedAt       DateTime?       @db.DateTime(0)
+  quantity        Int?
+}
+
+model putaway_types {
+  id           Int     @id @default(autoincrement())
+  name         String? @db.VarChar(45)
+  displayName  String? @db.VarChar(45)
+  putawayTypes String? @db.VarChar(45)
+}
+
 enum contact_number_type {
   mobile
   landline
@@ -812,4 +839,9 @@ enum vendors_status {
 enum products_status {
   Active
   Inactive
+}
+
+enum putaway_status {
+  Created
+  Pending
 }

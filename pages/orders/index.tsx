@@ -35,6 +35,7 @@ import getPo_terms from "app/po_terms/queries/getPo_terms";
 import getProduct_prices from "app/product_prices/queries/getProduct_prices";
 import { InputSwitch } from "primereact/inputswitch";
 import getOrder_payment_statuses from "app/order_payment_statuses/queries/getOrder_payment_statuses";
+import getPayment_methods from "app/payment_methods/queries/getPayment_methods";
 
 const initialState = {
   orders: [],
@@ -83,6 +84,8 @@ const initialOrderDetails = {
   discountAmount: '',
   paymentTermsId: '',
   paymentReferenceId: "",
+  payment_method: '',
+  paymentMethodId:'',
   orderItems: [{ id: '', name: '', quantity: '', price: '', availableInventory: "" }],
   address: '',
   city: '',
@@ -208,6 +211,14 @@ export const OrdersList = () => {
     where: undefined
   })
   console.log('order_payment_statuses: ', order_payment_statuses);
+
+  const [{ payment_methods }] = useQuery(getPayment_methods, {
+    orderBy: { id: 'asc' },
+    skip: ITEMS_PER_PAGE * page,
+    take: ITEMS_PER_PAGE,
+    where: undefined
+  })
+  console.log('payment_methods: ', payment_methods);
 
 
   // const [{ customers }] = useQuery(getCustomers, {
@@ -556,7 +567,7 @@ export const OrdersList = () => {
     onSubmit: async (data) => {
       const {
         firstName, lastName, companyName, email, contactNumber, orderStatus,
-        landmarkName, pincode, paymentStatus, totalPrice, gateway, display, discountAmount, gstNumber, gstTaxTypeCode, paymentTermsId, paymentReferenceId,
+        landmarkName, pincode, paymentStatus, totalPrice, gateway, payment_method, display, discountAmount, gstNumber, gstTaxTypeCode,paymentMethodId, paymentTermsId, paymentReferenceId,
         orderItems, address, state, country, city,
         shippingAddress: {
           address: shippingAreaStreet,
@@ -635,6 +646,7 @@ export const OrdersList = () => {
               lastName,
               companyName,
               display,
+
               // shopifyId: "1425636985",
               // addresses: {
               //   create: {
@@ -666,7 +678,7 @@ export const OrdersList = () => {
             },
             order: {
               // orderStatus: Number(orderStatus?.id),
-              orderStatus : selectOrderStatus ? selectOrderStatus.id : null,
+              orderStatus: selectOrderStatus ? selectOrderStatus.id : null,
               isShippingIsBilling: true,
               shippingAddress: {
                 // buildingNumber: "123",
@@ -717,6 +729,8 @@ export const OrdersList = () => {
                 }
               },
               // paymentStatus: paymentStatus.id,
+              // payment_method: selectPaymentMethod ? selectPaymentMethod?.name : null,
+              paymentMethodId:selectPaymentMethod ? selectPaymentMethod?.id : null,
               paymentStatus: selectedPaymentStatus ? selectedPaymentStatus.id : null,
               totalPrice,
               gateway,
@@ -1204,6 +1218,21 @@ export const OrdersList = () => {
     const selectedOrder = order_statuses.find((order) => order.name === e.value);
     setSelectOrderStatus(selectedOrder);
   };
+
+  // payment method dropdown ===>>
+
+  const [paymentMethod, setPaymentMethod] = useState([])
+  const paymentMethodSearch = () => {
+    setPaymentMethod(payment_methods.map((val) => val.name))
+  }
+  const [selectPaymentMethod, setSelectPaymentMethod] = useState({})
+  console.log('selectPaymentMethod: ', selectPaymentMethod);
+
+  const handlePaymentMethodChange = (e) => {
+    const selectPaymentMethod = payment_methods.find((val) => val.name === e.value)
+    setSelectPaymentMethod(selectPaymentMethod)
+
+  }
 
 
 
@@ -1791,29 +1820,30 @@ export const OrdersList = () => {
                           </span>
                         </div>
 
-                        <div key={`gateway`} className="field col-12 lg:col-4 md:col-6 mt-2">
-
+                        <div key={`paymentMethodId`} className="field col-12 lg:col-4 md:col-6 mt-2">
                           <span className="p-float-label">
                             <AutoComplete
-                              id="gateway"
-                              value={formik.values.gateway}
+                              id="paymentMethodId"
+                              value={selectPaymentMethod ? selectPaymentMethod?.name : ''}
+                              suggestions={paymentMethod}
+                              completeMethod={paymentMethodSearch}
+                              onChange={handlePaymentMethodChange}
                               dropdown
                               forceSelection
-                              suggestions={gatewayOptionsSuggestions}
-                              completeMethod={searchGateway}
-                              field="name"
-                              onChange={(e) => {
-                                const selectedOrderItem = gatewayOptions.find(option_ => option_.name === e.value?.name);
-                                const selectedItemsOptionName = selectedOrderItem ? selectedOrderItem.name : null;
-                                formik.setFieldValue('gateway', selectedItemsOptionName);
-                              }}
-                              aria-label="gateway"
-                              dropdownAriaLabel="gateway"
-                              className={classNames({ "p-invalid": isFormFieldValid("category") })}
+                              aria-label="paymentMethodId"
+                              dropdownAriaLabel="paymentMethodId"
+                              className={classNames({ "p-invalid": isFormFieldValid("paymentMethodId") })}
+                              // field="name"
+                              // id="gateway"
+                              // value={formik.values.gateway}
+                              // onChange={(e) => {
+                              //   const selectedOrderItem = gatewayOptions.find(option_ => option_.name === e.value?.name);
+                              //   const selectedItemsOptionName = selectedOrderItem ? selectedOrderItem.name : null;
+                              //   formik.setFieldValue('gateway', selectedItemsOptionName);
+                              // }}
                             />
                             <label
-
-                              className={classNames({ "p-error": isFormFieldValid("category") })}
+                              className={classNames({ "p-error": isFormFieldValid("paymentMethodId") })}
                             >
                               Payment Method
                             </label>
@@ -2122,7 +2152,9 @@ export const OrdersList = () => {
             />
             <Column
               field="gateway"
-              header="Payment Gateway"
+              header="Payment Method"
+             
+              
             />
             <Column
               field="gstNumber"
