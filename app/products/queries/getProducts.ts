@@ -25,14 +25,33 @@ export default resolver.pipe(
           orderBy,
           include: {
             vendor_products: true,
-            // kit_products: {
-            //   include: {
-            //     products_kit_products_productsIdToproducts: true,
-            //   },
-            // },
+            kit_products_kit_products_productIdToproducts: {
+              include: {
+                products_kit_products_kitProductIdToproducts: {
+                  select: {
+                    name: true,
+                    id: true,
+                    sku: true,
+
+                  }
+                }
+
+              }
+            },
             product_categories: true,
             product_types: true,
             product_brand: true,
+            product_prices: {
+              select: {
+                sellingPrice: true,
+                averageCostPrice: true,
+              }
+            },
+            // images: {
+            //   select: {
+            //     imageUrl: true
+            //   }
+            // }
 
           },
 

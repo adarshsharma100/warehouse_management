@@ -1,5 +1,7 @@
-import { Suspense, useState, useRef, useEffect, useReducer } from "react"
+import { Suspense, useState, useRef, useEffect, useReducer, useCallback } from "react"
 import { useMutation, useQuery, usePaginatedQuery } from "@blitzjs/rpc"
+import { BlobServiceClient, ContainerClient } from '@azure/storage-blob';
+import { v4 as uuidv4 } from 'uuid';
 import papa from "papaparse"
 import Layout from "layouts/Layout"
 import Head from "next/head"
@@ -16,6 +18,8 @@ import { Tag } from 'primereact/tag';
 import createProduct from "app/products/mutations/createProduct"
 import updateProduct from "app/products/mutations/updateProduct"
 import uploadCsvForProcessing from "app/pipeline/mutations/uploadCsvForProcessing"
+
+import createImage from "app/images/mutations/createImage";
 
 import getProducts from "app/products/queries/getProducts"
 
@@ -43,7 +47,15 @@ import { OverlayPanel } from "primereact/overlaypanel"
 import { dateFilterTemplate } from "components/FilterTemplates"
 import getProduct_brands from "app/product_brands/queries/getProduct_brands"
 import { Paginator } from "primereact/paginator"
+import { Image } from 'primereact/image';
+import { Galleria } from "primereact/galleria";
+import { object } from "zod"
 
+const constantTokens = {
+  storageAccountName: process.env.NEXT_PUBLIC_STORAGERESOURCENAME,
+  sasToken: process.env.NEXT_PUBLIC_STORAGESASTOKEN,
+  containerName: 'manifests'
+}
 
 const initialState = {
   tableRowsCount: 10,
@@ -75,44 +87,85 @@ const columns = [
     filterPlaceholder: "Search by Type"
   },
   {
-    field: "Kit Products",
+    field: "kit_products_kit_products_productIdToproducts",
     header: "Kit Products",
-    body: ({ kit_products }) => {
-      const orderItemOverlayRef = useRef(null);
+    body: ({ kit_products_kit_products_productIdToproducts }) => {
+      const [showOverlay, setShowOverlay] = useState(false);
+
+      const handleMouseEnter = () => {
+        setShowOverlay(true);
+      };
+
+      const handleMouseLeave = () => {
+        setShowOverlay(false);
+      };
 
       return (
         <>
-          {kit_products?.length ?
-            <div className="w-max">
-              <Button
-                label={`Kit Products`}
-                onClick={(e) => orderItemOverlayRef?.current?.toggle(e)}
-                className="p-button-link"
-              />
-              <OverlayPanel ref={orderItemOverlayRef}>
-                <div className="w-20rem">
-                  {kit_products?.map((product, i) => {
-                    const { quantity, products_kit_products_productsIdToproducts: { name, sku } } = product
-                    return (
-                      <div key={i} className="pt-2 pb-2">
-                        {[{ prop: "Name", value: name },
-                        { prop: "SKU", value: sku },
-                        { prop: "Quantity", value: quantity }
-                        ].map(({ prop, value }, index) => (
-                          <div key={index} className="grid">
-                            <label className="font-semibold col-4">{prop}:</label>
-                            <div className="col">
-                              {value?.toString()}
+          {kit_products_kit_products_productIdToproducts?.length > 2 ? (
+            <div className="product-column">
+              <div
+                className="product-header"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+              >
+                <Button
+                  label={`Kit-Products(${kit_products_kit_products_productIdToproducts.length})`}
+                  className="p-button-link"
+                />
+              </div>
+              {showOverlay && (
+                <div className="overlay-panel">
+                  <div className="w-20rem">
+                    {kit_products_kit_products_productIdToproducts.map((product, i) => {
+                      const { quantity, products_kit_products_kitProductIdToproducts: { name, sku } } = product;
+                      return (
+                        <div key={i} className="pt-2 pb-2">
+                          {[{ prop: "Name", value: name },
+                          { prop: "SKU", value: sku },
+                          { prop: "Quantity", value: quantity }
+                          ].map(({ prop, value }, index) => (
+                            <div key={index} className="grid">
+                              <label className="font-semibold col-4">{prop}:</label>
+                              <div className="col">
+                                {value?.toString()}
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    )
-                  })}
-
+                          ))}
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
-              </OverlayPanel>
-            </div> : <div className="w-max text-center">N/A</div>}
+              )}
+            </div>
+          ) : kit_products_kit_products_productIdToproducts?.length < 3 && kit_products_kit_products_productIdToproducts.length > 0 ?
+            <div className="w-20rem">
+              {kit_products_kit_products_productIdToproducts?.map((product, i) => {
+                const { quantity, products_kit_products_kitProductIdToproducts: { name, sku } } = product;
+                return (
+                  <div key={i} className="pt-2 pb-2">
+                    {[{ prop: "Name", value: name },
+                    { prop: "SKU", value: sku },
+                    { prop: "Quantity", value: quantity }
+                    ].map(({ prop, value }, index) => (
+                      <div key={index} className="grid">
+                        <label className="font-semibold col-4">{prop}:</label>
+                        <div className="col">
+                          {value?.toString()}
+                        </div>
+                      </div>
+                    ))}
+
+                  </div>
+                )
+              })}
+            </div>
+
+
+            : <div className="hideLargeContent">No Kit Product is found</div>
+
+          }
         </>
       )
     },
@@ -154,10 +207,18 @@ const columns = [
     header: "HSN Code"
   },
   {
-    field: "costPrice",
-    header: "Cost Price",
+    field: "product_prices.averageCostPrice",
+    header: "Average Cost Price",
     filter: true,
-    filterPlaceholder: "Search by Price"
+    filterPlaceholder: "Search by Price",
+    body: (rowData) => <div className="hideLargeContent">{rowData.product_prices?.averageCostPrice !== null ? rowData.product_prices?.averageCostPrice : "N/A"}</div>
+  },
+  {
+    field: "product_prices.sellingPrice",
+    header: "Selling Price",
+    filter: true,
+    filterPlaceholder: "Search by Price",
+    body: (rowData) => <div className="hideLargeContent">{rowData.product_prices?.sellingPrice !== null ? rowData.product_prices?.sellingPrice : "N/A"}</div>
   },
   {
     field: "taxCalcuation",
@@ -198,7 +259,9 @@ const initialProductDetails = {
   category: undefined,
   brand: undefined,
   costPrice: 0,
+  sellingPrice: 0,
   type: 1,
+
 }
 
 const productTypes = [
@@ -239,7 +302,7 @@ export const ProductsList = () => {
   // <===START===>
   const [{ products, count: totalProductsCount }, { refetch }] = usePaginatedQuery(getProducts,
     {
-      orderBy: { id: "asc" },
+      orderBy: { id: "desc" },
       where: {},
       skip: skipCount,
       take: tableRowsCount
@@ -255,6 +318,7 @@ export const ProductsList = () => {
   // USE MUTATIONS
   // <===START===>
   const [createProductMutation, { isLoading: creatingProduct }] = useMutation(createProduct)
+  const [createImageMutation, { isLoading: creatingImage }] = useMutation(createImage);
   const [uploadCsvMutation] = useMutation(uploadCsvForProcessing)
   const [updateProductMutation, { isLoading: updatingProduct }] = useMutation(updateProduct)
   // const [updateActiveProduct] = useMutation(updateProduct)
@@ -275,14 +339,27 @@ export const ProductsList = () => {
   const [selectedColumns, setSelectedColumns] = useState([])
   // const [editUpdateProduct, setEditUpdateProduct] = useState(false)
   const [filename, setFilename] = useState('');
-  const [imageUploadObject, setImageUploadObject] = useState<any>(null)
+  const [filteredKitId, setFilteredKitId] = useState([]);
+  const [imageUploadObject, setImageUploadObject] = useState<any>({})
+  const [imageUploadArray, setImageUploadArray] = useState<any>([]);
   const [selectedStatus, setSelectedStatus] = useState<any>(null);
   const [inputs, setInputs] = useState([{ product: '', quantity: '' }]);
   const [totalSize, setTotalSize] = useState(0);
   const [unitSuggestions, setUnitSuggestions] = useState<any>(null)
   const [categorySuggestions, setCategorySuggestions] = useState<any>(null)
   const [kitSuggestions, setKitSuggestions] = useState<any>(null)
+  const [filteredKitSuggestions, setFilteredKitSuggestions] = useState<any>([]);
   const [brandSuggestions, setBrandSuggestions] = useState([])
+  const [filteredKitProductId, setFilteredKitProductId] = useState([]);
+  const disabledButtons = {
+    basicUpload: true,
+    choose: false,
+    cancel: true,
+    upload: true,
+    retry: true,
+    clear: true
+  };
+
   // <===STOP===>
 
   const toast = useRef(null)
@@ -369,12 +446,25 @@ export const ProductsList = () => {
   }
   const productsTableHeader = renderHeader()
   const searchCategory = createSearchFunction(product_categories, setCategorySuggestions)
-  const kitSearchCategory = createSearchFunction(products.map(({ id, name, sku, description }) => {
-    return {
-      name: `${sku} - ${name}`,
-      id,
-    }
-  }), setKitSuggestions)
+  const uploadOption = { style: { display: "none" } }
+
+  const kitSearchCategory = createSearchFunction(
+    products.filter(({ id }) => {
+      if (!filteredKitProductId.includes(id)) {
+        return true
+      } else {
+        return false
+      }
+    }).map(({ id, name, sku, description }) => {
+
+      return {
+        name: `${sku} - ${name}`,
+        id,
+      }
+
+
+    }), setKitSuggestions)
+
 
   const searchBrand = createSearchFunction(product_brands, setBrandSuggestions)
 
@@ -388,6 +478,73 @@ export const ProductsList = () => {
     setFilename(filename);
   }
 
+  const handleOnRemoveImageArrayChange = (event) => {
+    const newArray = Array.from(imageUploadArray);
+    const _imageUploadArray = newArray.filter((eachItem) => eachItem.name !== event.file.name);
+    setImageUploadArray(_imageUploadArray);
+
+  }
+
+  const uploadHandler = async (imageUploadArray) => {
+
+    imageUploadArray.forEach(async (eachArray) => {
+      const filename = uuidv4()
+      const fileExtension = eachArray.name.slice(eachArray.name.lastIndexOf('.') + 1);
+      if (eachArray) {
+        // const newFileName = event.files[0].name.split('.').pop();
+        const response = await uploadFileToBlob(eachArray, `${filename}.${fileExtension}`);
+        console.log('response: ', response);
+        if (response?.uploadResponse._response.status === 201) {
+          const _tempString = response?.blockBlobClient.url.split("?")[0];
+          console.log("_tempString ", _tempString);
+          await createImageMutation({ imageUrl: _tempString }, {
+            onSuccess: async () => {
+              toast.current.show({ severity: 'info', summary: 'Image Creation Complete', detail: 'Image created successfully' });
+            },
+            onError: (error) => {
+              console.log('error: ', error);
+              toast.current.show({ severity: 'error', summary: 'Update Failed', detail: 'Product failed to update' });
+
+            }
+          })
+
+        }
+
+      }
+    })
+    // const filename = uuidv4()
+
+    // console.log("fileName", filename);
+
+
+    // const fileExtension = imageUploadObject.name.slice(imageUploadObject.name.lastIndexOf('.') + 1);
+    // console.log("fileExtension", fileExtension);
+    // if (imageUploadObject) {
+    //   // const newFileName = event.files[0].name.split('.').pop();
+    //   const response = await uploadFileToBlob(imageUploadObject, `${filename}.${fileExtension}`);
+    //   console.log('response: ', response);
+    //   if (response?.uploadResponse._response.status === 201) {
+    //     const _tempString = response?.blockBlobClient.url.split("?")[0];
+    //     console.log("_tempString ", _tempString);
+    //     await createImageMutation({ imageUrl: _tempString }, {
+    //       onSuccess: async () => {
+    //         toast.current.show({ severity: 'info', summary: 'Image Creation Complete', detail: 'Image created successfully' });
+    //       },
+    //       onError: (error) => {
+    //         console.log('error: ', error);
+    //         toast.current.show({ severity: 'error', summary: 'Update Failed', detail: 'Product failed to update' });
+
+    //       }
+    //     })
+
+    //   }
+
+    // }
+
+  };
+
+
+
   const formik = useFormik({
     initialValues: initialProductDetails,
     validate: validateZodSchema(Product),
@@ -395,11 +552,12 @@ export const ProductsList = () => {
       console.log('formdata: ', data);
 
 
+
       //function to create new kit products
 
       const createKitProducts = (products) =>
         products.map(({ product, quantity }) => ({
-          products_kit_products_productsIdToproducts: {
+          products_kit_products_productIdToproducts: {
             connect: {
               id: product.id
             }
@@ -420,6 +578,7 @@ export const ProductsList = () => {
         height,
         weight,
         costPrice,
+        sellingPrice,
         tags,
         color,
         type,
@@ -437,6 +596,7 @@ export const ProductsList = () => {
       // }))
 
 
+      const filename = uuidv4();
 
       const { id: activeProductId, kit_products } = activeRowData
 
@@ -449,7 +609,9 @@ export const ProductsList = () => {
         filter(product => !product?.kitId)
 
       const removedKitProducts = kit_products?.filter(({ id }) => !existingKitIds?.includes(id))
-      console.log('removedKitProducts: ', removedKitProducts.map(product => product.id),);
+      // console.log('removedKitProducts: ', removedKitProducts?.map(product => product.id),);
+
+
 
 
       if (activeProduct)
@@ -467,7 +629,7 @@ export const ProductsList = () => {
           customDuty,
           gstTaxTypeCode: gstcode,
           taxCalcType: taxCalcuation,
-          kit_products: {
+          kit_products_kit_products_productsIdToproducts: {
             updateMany: existingKitProducts.map(({ kitId, quantity }) => ({
               where: {
                 id: kitId
@@ -479,7 +641,7 @@ export const ProductsList = () => {
             create: createKitProducts(newKitProducts),
             deleteMany: {
               id: {
-                in: removedKitProducts.map(product => product?.id),
+                in: removedKitProducts?.map(product => product?.id),
               },
             },
 
@@ -488,6 +650,8 @@ export const ProductsList = () => {
           {
             onSuccess: async () => {
               toast.current.show({ severity: 'info', summary: 'Update Complete', detail: 'Product updated successfully' });
+
+              // await uploadHandler()
               await refetch()
               setProductDialog(false)
               setActiveProduct(false)
@@ -502,6 +666,8 @@ export const ProductsList = () => {
             }
           })
 
+
+
       await createProductMutation(
         {
           name,
@@ -510,32 +676,52 @@ export const ProductsList = () => {
           gstTaxTypeCode: gstcode,
           taxCalcType: taxCalcuation,
           sku: moment().format('x'),
-          category: category.id,
+          // category: category.id,
+          product_categories: {
+            connect: {
+              id: category.id
+
+            }
+          },
           brand: brand?.id,
-          costPrice,
+          // costPrice,
+          product_prices: {
+            create: {
+              sellingPrice: sellingPrice,
+              averageCostPrice: costPrice
+            }
+          },
+          dimensions: {
+            create: {
+              length: length,
+              width: width,
+              height: height,
+              weight: weight,
+            }
+          },
           color,
-          length,
-          width,
-          height,
-          weight,
           hsnCode,
+          product_types: {
+            connect: {
+              id: type
+
+            }
+
+          },
           // imageUrl: filename,
-          type,
-          kit_products: type === 2 ? {
+          // type,
+          kit_products_kit_products_productIdToproducts: type === 2 ? {
             create: createKitProducts(kitProducts)
           } : undefined
         },
         {
           onSuccess: async () => {
             toast.current.show({ severity: 'info', summary: 'Product Creation Complete', detail: 'Product created successfully' });
-            // const uploadImage = async (e) => {
-            //   const file = e.files[0]
-            //   const response = await fetch("/api/upload", {
-            //     method: "POST",
-            //     body: file,
-            //   })
-            //   const { filename } = await response.json()
-            // }
+
+            await uploadHandler(imageUploadArray)
+            setImageUploadObject(null)
+            setImageUploadArray([])
+
             await refetch()
             setProductDialog(false)
             formik.resetForm()
@@ -551,6 +737,9 @@ export const ProductsList = () => {
     },
   })
 
+
+  console.log('  formik.errors: ', formik.errors
+  );
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
@@ -605,10 +794,39 @@ export const ProductsList = () => {
     dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
   }
 
+
+
   const onTemplateRemove = (file, callback) => {
     setTotalSize(totalSize - file.size);
     callback();
   }
+
+  const uploadFileToBlob = useCallback(
+    async (file: File | null, newFileName: string) => {
+      if (!file) {
+        console.log('No FILE');
+      } else {
+        const blobService = new BlobServiceClient(
+          `https://${constantTokens.storageAccountName}.blob.core.windows.net/?${constantTokens.sasToken}`
+        );
+
+        const containerClient: ContainerClient =
+          blobService.getContainerClient(constantTokens.containerName);
+        const blockBlobClient = containerClient.getBlockBlobClient(newFileName);
+        console.log('file: ', file);
+        const uploadResponse = await blockBlobClient.uploadBrowserData(file)
+        return { uploadResponse, blockBlobClient }
+      }
+      console.log("done");
+    },
+    []
+  );
+
+
+  console.log("setFilteredKitSuggestions", filteredKitSuggestions);
+  console.log("filteredKitId", filteredKitId);
+
+  console.log("File Image", imageUploadArray);
 
   const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={totalProductsCount} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
 
@@ -693,30 +911,49 @@ export const ProductsList = () => {
                   className="m-1"
                   onClick={() => { setProductEditState(!productEditState) }}
                 />}</h4>
-            </div>
 
+              <div className="selected-image-container flex justify-content-between" >
+                {imageUploadArray && imageUploadArray.length > 0 ?
+                  imageUploadArray.map((eachImage, index) => {
+                    return (
+                      <div key={index} className="m-3">
+                        <Image src={eachImage.objectURL}
+                          alt="Image"
+                          width="100"
+                          height="50" preview />
+                      </div>
+                    )
+                  })
+                  : null
+
+                }
+              </div>
+
+            </div>
+            {/* <div className="flex justify-content-center align-item-center">
+              <FileUpload
+                name="product_image"
+                url="./upload.php"
+                // onUpload={(event) => console.log("File Upload", event)}
+                customUpload
+                uploadHandler={uploadHandler}
+                onSelect={async (e) => {
+                  console.log("event", e.files[0]);
+                  setImageUploadObject(e.files[0]);
+                  setImageUploadArray([...imageUploadArray, e.files[0]]);
+                }}
+
+                onRemove={handleOnRemoveImageArrayChange}
+                multiple
+                accept="image/*"
+                maxFileSize={1000000}
+              />
+            </div> */}
             <form
               onSubmit={formik.handleSubmit}
               className="p-fluid"
             >
               <div className="formgrid grid">
-                <div className="field col-12">
-                  {/* //TODO: @Varun: the below code will have to be adjusted for file upload */}
-                  {/* <FileUpload
-                  cancelOptions={true}
-                  name="product_image"
-                  url="/api/upload"
-                  accept="image/*"
-                  maxFileSize={1000000}
-                  onBeforeSend={(event) => {
-                    event.xhr.setRequestHeader("anti-csrf", antiCSRFToken)
-                  }}
-                  auto={true}
-                  onSelect={async (e) => {
-                    setImageUploadObject(e.files[0])
-                  }}
-                /> */}
-                </div>
                 {
                   [
                     { type: 'text', label: "Name*", field: "name", header: "Name" },
@@ -731,6 +968,7 @@ export const ProductsList = () => {
                     { type: 'text', label: "HSN code", field: "hsnCode", header: "HSN Code" },
                     { type: 'number', label: "Cost Price", field: "costPrice", header: "Cost Price" },
                     { type: 'text', label: "Tax Calculation Type", field: "taxCalcuation", header: "Tax Calcuation" },
+                    { type: 'number', label: "Selling Price", field: "sellingPrice", header: "Selling Price" },
                     { type: 'textArea', label: "Description", field: "description", header: "Name" },
                   ].map(({ field, type, label }, i) => {
                     return (
@@ -891,6 +1129,8 @@ export const ProductsList = () => {
                                 value={product}
                                 onChange={async (e) => {
                                   await formik.setFieldValue("kitProducts", formik.values.kitProducts.map((kitProduct, i) => {
+                                    const _filteredKitProductId = [...filteredKitProductId, e.value?.id];
+                                    setFilteredKitProductId(_filteredKitProductId);
                                     if (i !== index)
                                       return kitProduct
                                     return {
@@ -953,8 +1193,8 @@ export const ProductsList = () => {
                                 await formik.setFieldValue("kitProducts", formik.values.kitProducts.filter((data, i) => index !== i))
                               }}
                             />}
-                            <Button icon="pi pi-plus-circle" onClick={async (e) => {
-                              e.preventDefault()
+                            <Button icon="pi pi-plus-circle" onClick={async (event) => {
+                              event.preventDefault()
                               await formik.setFieldValue("kitProducts", formik.values.kitProducts.reduce((acc, curr, i) => {
                                 if (index !== i)
                                   return [...acc, curr]
@@ -967,8 +1207,34 @@ export const ProductsList = () => {
                     </div>
                   </div>
                 </div>}
-              </div>
 
+              </div>
+              {productDialog ? <div className="flex justify-content-center align-item-center">
+                <FileUpload
+                  name="product_image"
+                  url="./upload.php"
+                  // onUpload={(event) => console.log("File Upload", event)}
+                  customUpload
+                  uploadHandler={uploadHandler}
+                  onSelect={async (e) => {
+                    console.log("event", e.files[0]);
+                    setImageUploadObject(e.files[0]);
+                    const newImageUploadArray = [...imageUploadArray, e.files[0]];
+                    setImageUploadArray(newImageUploadArray);
+                    // setImageUploadArray([...imageUploadArray, e.files[0]]);
+                  }}
+                  onClear={() => setImageUploadArray([])}
+
+                  onRemove={handleOnRemoveImageArrayChange}
+                  multiple
+                  accept="image/*"
+                  maxFileSize={1000000}
+                  uploadOptions={uploadOption}
+
+
+
+                />
+              </div> : null}
               <div className="flex mt-4 justify-content-end">
                 {productEditState && <Button
                   type="submit"
@@ -985,6 +1251,7 @@ export const ProductsList = () => {
                     setProductDialog(false)
                     setProductEditState(false)
                     setActiveProduct(false)
+                    setImageUploadArray([])
                   }}
                 />
               </div>
@@ -992,7 +1259,7 @@ export const ProductsList = () => {
             </form>
           </div>
         </div>
-      </div>
+      </div >
       <div className="col-12" >
         <div className="card">
           <DataTable

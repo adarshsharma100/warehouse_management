@@ -78,12 +78,15 @@ export const Product = z.object({
     invalid_type_error: "Please select an option from the dropdown.",
   }).optional().nullable(),
   costPrice: z.number(),
+  sellingPrice: z.number().optional(),
   type: z.number(),
   kitProducts: z.array(z.object({
     product: z.object({
       name: z.string(),
       id: z.number(),
       description
+    }, {
+      invalid_type_error: "Product required"
     }),
     quantity: z.number()
   })).optional()

@@ -9,11 +9,11 @@ const CreateProduct = z.object({
     .max(100)
     .transform((str) => str.trim())
     .optional(),
-  kit_products: z.unknown(),
-  length: z.number().optional().nullable(),
-  width: z.number().optional(),
-  height: z.number().optional(),
-  weight: z.number().optional(),
+
+  // length: z.number().optional().nullable(),
+  // width: z.number().optional(),
+  // height: z.number().optional(),
+  // weight: z.number().optional(),
   color: z.string().optional(),
   customDuty: z.string().optional(),
   hsnCode: z.string().optional(),
@@ -21,10 +21,33 @@ const CreateProduct = z.object({
   gstTaxTypeCode: z.string().optional(),
   taxCalcType: z.string().optional(),
   brand: z.number().optional(),
-  costPrice: z.number(),
-  type: z.number(),
+  product_categories: z.object({
+    connect: z.object({
+      id: z.number()
+    })
+  }),
+  // costPrice: z.number(),
+  product_prices: z.object({
+    create: z.object({
+      sellingPrice: z.number(),
+      averageCostPrice: z.number()
+    }),
+  }).optional(),
+  dimensions: z.object({
+    create: z.object({
+      width: z.number().optional(),
+      height: z.number().optional(),
+      weight: z.number().optional(),
+      length: z.number().optional()
+    })
+  }).optional(),
+  product_types: z.object({
+    connect: z.object({
+      id: z.number()
+    })
+  }),
   sku: z.string(),
-  category: z.number(),
+  // category: z.number(),
 })
 
 export default resolver.pipe(
@@ -33,9 +56,16 @@ export default resolver.pipe(
   async (input) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const product = await db.products.create({
+
+      // data: {
+      //   ...input,
+      //   kit
+      // },
       data: input,
       include: {
-        product_categories: true
+        product_categories: true,
+
+        // images: true
       }
     })
 
