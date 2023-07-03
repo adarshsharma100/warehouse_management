@@ -87,9 +87,9 @@ const columns = [
     filterPlaceholder: "Search by Type"
   },
   {
-    field: "kit_products_kit_products_productsIdToproducts",
+    field: "kit_products_kit_products_productIdToproducts",
     header: "Kit Products",
-    body: ({ kit_products_kit_products_productsIdToproducts }) => {
+    body: ({ kit_products_kit_products_productIdToproducts }) => {
       const [showOverlay, setShowOverlay] = useState(false);
 
       const handleMouseEnter = () => {
@@ -102,7 +102,7 @@ const columns = [
 
       return (
         <>
-          {kit_products_kit_products_productsIdToproducts?.length > 2 ? (
+          {kit_products_kit_products_productIdToproducts?.length > 2 ? (
             <div className="product-column">
               <div
                 className="product-header"
@@ -110,15 +110,15 @@ const columns = [
                 onMouseLeave={handleMouseLeave}
               >
                 <Button
-                  label={`Kit-Products(${kit_products_kit_products_productsIdToproducts.length})`}
+                  label={`Kit-Products(${kit_products_kit_products_productIdToproducts.length})`}
                   className="p-button-link"
                 />
               </div>
               {showOverlay && (
                 <div className="overlay-panel">
                   <div className="w-20rem">
-                    {kit_products_kit_products_productsIdToproducts.map((product, i) => {
-                      const { quantity, products_kit_products_kitProductIDToproducts: { name, sku } } = product;
+                    {kit_products_kit_products_productIdToproducts.map((product, i) => {
+                      const { quantity, products_kit_products_kitProductIdToproducts: { name, sku } } = product;
                       return (
                         <div key={i} className="pt-2 pb-2">
                           {[{ prop: "Name", value: name },
@@ -139,10 +139,10 @@ const columns = [
                 </div>
               )}
             </div>
-          ) : kit_products_kit_products_productsIdToproducts?.length < 3 && kit_products_kit_products_productsIdToproducts.length > 0 ?
+          ) : kit_products_kit_products_productIdToproducts?.length < 3 && kit_products_kit_products_productIdToproducts.length > 0 ?
             <div className="w-20rem">
-              {kit_products_kit_products_productsIdToproducts?.map((product, i) => {
-                const { quantity, products_kit_products_kitProductIDToproducts: { name, sku } } = product;
+              {kit_products_kit_products_productIdToproducts?.map((product, i) => {
+                const { quantity, products_kit_products_kitProductIdToproducts: { name, sku } } = product;
                 return (
                   <div key={i} className="pt-2 pb-2">
                     {[{ prop: "Name", value: name },
@@ -557,7 +557,7 @@ export const ProductsList = () => {
 
       const createKitProducts = (products) =>
         products.map(({ product, quantity }) => ({
-          products_kit_products_productsIdToproducts: {
+          products_kit_products_productIdToproducts: {
             connect: {
               id: product.id
             }
@@ -710,7 +710,7 @@ export const ProductsList = () => {
           },
           // imageUrl: filename,
           // type,
-          kit_products_kit_products_productsIdToproducts: type === 2 ? {
+          kit_products_kit_products_productIdToproducts: type === 2 ? {
             create: createKitProducts(kitProducts)
           } : undefined
         },

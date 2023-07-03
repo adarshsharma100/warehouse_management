@@ -25,16 +25,9 @@ export default resolver.pipe(
           orderBy,
           include: {
             vendor_products: true,
-
-            // kit_products: {
-            //   include: {
-            //     products_kit_products_productsIdToproducts: true,
-            //   },
-            // },
-
-            kit_products_kit_products_productsIdToproducts: {
+            kit_products_kit_products_productIdToproducts: {
               include: {
-                products_kit_products_kitProductIDToproducts: {
+                products_kit_products_kitProductIdToproducts: {
                   select: {
                     name: true,
                     id: true,
@@ -42,8 +35,6 @@ export default resolver.pipe(
 
                   }
                 }
-
-
 
               }
             },
