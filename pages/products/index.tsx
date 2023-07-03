@@ -102,7 +102,7 @@ const columns = [
 
       return (
         <>
-          {kit_products_kit_products_productsIdToproducts.length > 2 ? (
+          {kit_products_kit_products_productsIdToproducts?.length > 2 ? (
             <div className="product-column">
               <div
                 className="product-header"
@@ -139,7 +139,7 @@ const columns = [
                 </div>
               )}
             </div>
-          ) : kit_products_kit_products_productsIdToproducts.length < 3 && kit_products_kit_products_productsIdToproducts.length > 0 ?
+          ) : kit_products_kit_products_productsIdToproducts?.length < 3 && kit_products_kit_products_productsIdToproducts.length > 0 ?
             <div className="w-20rem">
               {kit_products_kit_products_productsIdToproducts?.map((product, i) => {
                 const { quantity, products_kit_products_kitProductIDToproducts: { name, sku } } = product;
@@ -609,7 +609,7 @@ export const ProductsList = () => {
         filter(product => !product?.kitId)
 
       const removedKitProducts = kit_products?.filter(({ id }) => !existingKitIds?.includes(id))
-      console.log('removedKitProducts: ', removedKitProducts?.map(product => product.id),);
+      // console.log('removedKitProducts: ', removedKitProducts?.map(product => product.id),);
 
 
 
@@ -641,7 +641,7 @@ export const ProductsList = () => {
             create: createKitProducts(newKitProducts),
             deleteMany: {
               id: {
-                in: removedKitProducts.map(product => product?.id),
+                in: removedKitProducts?.map(product => product?.id),
               },
             },
 
@@ -676,7 +676,13 @@ export const ProductsList = () => {
           gstTaxTypeCode: gstcode,
           taxCalcType: taxCalcuation,
           sku: moment().format('x'),
-          category: category.id,
+          // category: category.id,
+          product_categories: {
+            connect: {
+              id: category.id
+
+            }
+          },
           brand: brand?.id,
           // costPrice,
           product_prices: {
@@ -685,19 +691,25 @@ export const ProductsList = () => {
               averageCostPrice: costPrice
             }
           },
-          // dimensions: {
-          //   create: {
-          //     length: length,
-          //     width: width,
-          //     height: height,
-          //     weight: weight
-          //   }
-          // },
+          dimensions: {
+            create: {
+              length: length,
+              width: width,
+              height: height,
+              weight: weight,
+            }
+          },
           color,
-
           hsnCode,
+          product_types: {
+            connect: {
+              id: type
+
+            }
+
+          },
           // imageUrl: filename,
-          type,
+          // type,
           kit_products_kit_products_productsIdToproducts: type === 2 ? {
             create: createKitProducts(kitProducts)
           } : undefined
@@ -725,6 +737,9 @@ export const ProductsList = () => {
     },
   })
 
+
+  console.log('  formik.errors: ', formik.errors
+  );
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {

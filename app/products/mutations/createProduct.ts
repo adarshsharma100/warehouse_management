@@ -9,7 +9,7 @@ const CreateProduct = z.object({
     .max(100)
     .transform((str) => str.trim())
     .optional(),
-  kit_products: z.unknown(),
+
   // length: z.number().optional().nullable(),
   // width: z.number().optional(),
   // height: z.number().optional(),
@@ -21,7 +21,11 @@ const CreateProduct = z.object({
   gstTaxTypeCode: z.string().optional(),
   taxCalcType: z.string().optional(),
   brand: z.number().optional(),
-
+  product_categories: z.object({
+    connect: z.object({
+      id: z.number()
+    })
+  }),
   // costPrice: z.number(),
   product_prices: z.object({
     create: z.object({
@@ -31,15 +35,19 @@ const CreateProduct = z.object({
   }).optional(),
   dimensions: z.object({
     create: z.object({
-      width: z.number(),
-      height: z.number(),
-      weight: z.number(),
-      length: z.number()
+      width: z.number().optional(),
+      height: z.number().optional(),
+      weight: z.number().optional(),
+      length: z.number().optional()
     })
   }).optional(),
-  type: z.number(),
+  product_types: z.object({
+    connect: z.object({
+      id: z.number()
+    })
+  }),
   sku: z.string(),
-  category: z.number(),
+  // category: z.number(),
 })
 
 export default resolver.pipe(
@@ -48,18 +56,15 @@ export default resolver.pipe(
   async (input) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const product = await db.products.create({
+
       // data: {
       //   ...input,
-      //   dimensionsId: {
-      //     create: {
-      //       length: 0,
-      //     }
-      //   }
-
+      //   kit
       // },
       data: input,
       include: {
         product_categories: true,
+
         // images: true
       }
     })
