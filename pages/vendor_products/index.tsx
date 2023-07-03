@@ -421,12 +421,12 @@ export const Vendor_productsList = () => {
 
       <div className="col-12 ">
 
-        <div className="card flex justify-content-between align-items-center">
+        <div className="card flex justify-content-between align-items-center mb-0">
           <h4 className="mb-0">Vendor Catalog</h4>
           <div className="flex">
             <Button
               icon="pi pi-plus"
-              className="ml-2"
+              className="ml-2 p-2"
               label="Add Vendor Products"
               onClick={() => {
                 setVendorDialog(true)
@@ -685,7 +685,7 @@ export const Vendor_productsList = () => {
 
 
       <div className="col-12">
-        <div className="card">
+        <div className="card mb-0">
           <DataTable
             value={vendor_products}
             showGridlines
@@ -695,6 +695,7 @@ export const Vendor_productsList = () => {
             header={header1}
             footer={pagination}
             filterDisplay="menu"
+            scrollable scrollHeight="455px"
             onRowClick={async (e) => {
 
               const {

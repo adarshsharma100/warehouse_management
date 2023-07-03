@@ -296,7 +296,7 @@ export const OrdersList = () => {
         where: {
           products: {
             sku,
-          },
+          },   
           shelves: {
             areas: {
               warehouse: 2
