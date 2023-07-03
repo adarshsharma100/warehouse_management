@@ -747,6 +747,65 @@ model order_payment_status {
   orders      orders[]
 }
 
+model images {
+  id       Int    @id @default(autoincrement())
+  imageUrl String @db.VarChar(150)
+}
+
+model packages {
+  id           Int        @id @default(autoincrement())
+  name         String     @db.VarChar(45)
+  dimensionsId Int
+  dimensions   dimensions @relation(fields: [dimensionsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_packages_dimensions1")
+
+  @@index([dimensionsId], map: "fk_packages_dimensions1_idx")
+}
+
+model payment_method {
+  id     Int      @id @default(autoincrement())
+  name   String?  @db.VarChar(45)
+  orders orders[]
+}
+
+model product_prices {
+  id                Int      @id @default(autoincrement())
+  lastPurchasePrice Int?
+  mrp               Int?
+  minSellingPrice   Int?
+  sellingPrice      Int?
+  averageCostPrice  Int?
+  productId         Int      @unique(map: "productId_UNIQUE")
+  products          products @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_prices_products1")
+
+  @@index([productId], map: "fk_product_prices_products1_idx")
+}
+
+model putaway {
+  id              Int             @id @default(autoincrement())
+  putawayNumber   String?         @db.VarChar(45)
+  generatedBy     String?         @db.VarChar(45)
+  status          putaway_status?
+  pendingQuantity Int?
+  createdAt       DateTime?       @db.DateTime(0)
+  updatedAt       DateTime?       @db.DateTime(0)
+  quantity        Int?
+}
+
+model putaway_types {
+  id           Int     @id @default(autoincrement())
+  name         String? @db.VarChar(45)
+  displayName  String? @db.VarChar(45)
+  putawayTypes String? @db.VarChar(45)
+}
+
+model quality_ckeck {
+  id                                        Int      @id @default(autoincrement())
+  products                                  Int
+  products_quality_ckeck_productsToproducts products @relation("quality_ckeck_productsToproducts", fields: [products], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_quality_ckeck_products1")
+
+  @@index([products], map: "fk_quality_ckeck_products1_idx")
+}
+
 enum contact_number_type {
   mobile
   landline
