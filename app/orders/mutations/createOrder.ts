@@ -100,17 +100,29 @@ export default resolver.pipe(
           gateway,
           isShippingIsBilling,
           order_items,
-          orderItemsData
+          orderItemsData,
+          gstNumber,
+          paymentTermsId,
+          paymentReferenceId,
+          discountAmount,
+          payment_method,
+          paymentMethodId,
+
         },
       } = input
 
       try {
-        const customer = await db.customers.create({
-          data: input.customer,
-        })
+
         const ShippingAddress = await db.addresses.create({
           data: shippingAddress,
         })
+        const customer = await db.customers.create({
+          data: {
+            ...input.customer,
+            addressesId: ShippingAddress.id
+          },
+        })
+
         //run only when isShippingIsBilling = true
         const BillingAddress =
           !isShippingIsBilling && (await db.addresses.create({ data: billingAddress }))
@@ -125,6 +137,13 @@ export default resolver.pipe(
             shippingAddressId: ShippingAddress.id,
             billingAddressId: isShippingIsBilling ? ShippingAddress.id : BillingAddress.id,
             order_items,
+            gstNumber,
+            paymentTermsId,
+            paymentReferenceId,
+            discountAmount,
+            payment_method,
+            paymentMethodId,
+
           },
         })
         const updateInventoryProduct = async (productId: number, quantity: number, shelf: number) => {
@@ -142,7 +161,7 @@ export default resolver.pipe(
         }
         console.log('orderItemsData: ', orderItemsData);
 
-        const updatedProducts = await Promise.all(orderItemsData.map(({ productID, quantity, shelf }) => updateInventoryProduct(productID, quantity, shelf)))
+        // const updatedProducts = await Promise.all(orderItemsData.map(({ productID, quantity, shelf }) => updateInventoryProduct(productID, quantity, shelf)))
 
 
         console.log("order123: ", order)
@@ -170,6 +189,12 @@ export const createOrderFunction = async (input) => {
       isShippingIsBilling,
       order_items,
       shopifyId,
+      gstNumber,
+      paymentTermsId,
+      paymentReferenceId,
+      discountAmount,
+      payment_method,
+      paymentMethodId,
     },
   } = input
 
@@ -202,6 +227,15 @@ export const createOrderFunction = async (input) => {
         shippingAddressId: ShippingAddress.id,
         billingAddressId: isShippingIsBilling ? ShippingAddress.id : BillingAddress.id,
         order_items,
+        gstNumber,
+        paymentTermsId,
+        paymentReferenceId,
+        discountAmount,
+        payment_method,
+        paymentMethodId,
+
+
+
       },
     })
     // console.log("order123: ", order)

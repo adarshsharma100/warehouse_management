@@ -612,8 +612,7 @@ export const VendorsList = () => {
       const {
         id: activeVendorId,
         //   vendor_branches: [{ id: vendorBranchId, address: addressId }]
-      } = activeVendorData
-
+      } = activeVendorData 
 
       const { name, code, vendorScore, contact, creditPeriod, leadTime, gstin, email, address, vendor_city
         , vendor_state, branch_code, landmarkName, pincode, status } = data

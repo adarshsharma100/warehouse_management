@@ -13,6 +13,10 @@
   },
   "cSpell.words": [
     "formik",
+    "handelchange",
     "Picklist"
-  ]
+  ],
+  "[scss]": {
+    "editor.defaultFormatter": "vscode.css-language-features"
+  }
 }
