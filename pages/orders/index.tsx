@@ -6,6 +6,7 @@ import createOrder from "app/orders/mutations/createOrder";
 import updateOrder from "app/orders/mutations/updateOrder";
 import getOrders from "app/orders/queries/getOrders";
 import getProducts from "app/products/queries/getProducts";
+import getCustomers from "app/customers/queries/getCustomers";
 import CreateShipment from 'app/shipments/mutations/createShipment';
 import classNames from "classnames";
 import Loading from "components/loading";
@@ -38,7 +39,7 @@ import getOrder_payment_statuses from "app/order_payment_statuses/queries/getOrd
 import getPayment_methods from "app/payment_methods/queries/getPayment_methods";
 
 const initialState = {
-  orders: [],
+  _orders: [],
   filteredOrders: [],
   manifestShipments: [],
   manifestStep: 0,
@@ -85,7 +86,7 @@ const initialOrderDetails = {
   paymentTermsId: '',
   paymentReferenceId: "",
   payment_method: '',
-  paymentMethodId:'',
+  paymentMethodId: '',
   orderItems: [{ id: '', name: '', quantity: '', price: '', availableInventory: "" }],
   address: '',
   city: '',
@@ -144,41 +145,50 @@ export const OrdersList = () => {
   const reducer = (state, { type, payload }) => {
     switch (type) {
       case 'GET_ORDERS':
-        return { ...state, orders: payload };
-      case 'FILTER_BY':
-        return { ...state, filteredOrders: payload };
+        return { ...state, _orders: payload };
+      case 'UPDATE_ORDERS':
+        console.log("payload", payload);
+
+        const _filteredOrders = payload.status === 'all' ? state._orders : state._orders.filter(_order => _order.orderStatus === payload.id);
+        console.log("_filteredOrders", _filteredOrders);
+        return { ...state, _orders: _filteredOrders };
+      // case 'FILTER_BY':
+      //   return { ...state, filteredOrders: payload };
       case 'UPDATE_STATUS_ID':
+
         return { ...state, statusId: payload };
-      case 'UPDATE_STATUS_NAME':
-        return { ...state, statusName: payload };
+      // case 'UPDATE_STATUS_NAME':
+      //   return { ...state, statusName: payload };
       case 'UPDATE_SKIP_COUNT':
         return { ...state, skipCount: payload };
       case 'UPDATE_TABLE_ROWS_COUNT':
         return { ...state, tableRowsCount: payload };
-      case 'SET_SELECTED_SHIPMENTS':
-        return { ...state, selectedShipments: payload };
-      case 'RESET_SELECTED_SHIPMENTS':
-        return { ...state, selectedShipments: [] };
-      case 'READY_TO_SHIP':
-        return { ...state, isReadyToShip: payload };
-      case 'READY_TO_SHIP_ACTIVE_INDEX':
-        return { ...state, readyToShipActiveIndex: payload };
-      case 'DISPATCH_SHIPMENTS':
-        return { ...state, displayManifest: true }
-      case 'SET_SHIPMENT_STATE':
-        return { ...state, [payload.prop]: payload.value }
+      // case 'SET_SELECTED_SHIPMENTS':
+      //   return { ...state, selectedShipments: payload };
+      // case 'RESET_SELECTED_SHIPMENTS':
+      //   return { ...state, selectedShipments: [] };
+      // case 'READY_TO_SHIP':
+      //   return { ...state, isReadyToShip: payload };
+      // case 'READY_TO_SHIP_ACTIVE_INDEX':
+      //   return { ...state, readyToShipActiveIndex: payload };
+      // case 'DISPATCH_SHIPMENTS':
+      //   return { ...state, displayManifest: true }
+      // case 'SET_SHIPMENT_STATE':
+      //   return { ...state, [payload.prop]: payload.value }
 
-      case 'FILTER_BY_STATUS': // Add this case
-        const filteredOrders = state.orders.filter(order => order.status === 'unfulfilled');
-        return { ...state, filteredOrders };
+      // case 'FILTER_BY_STATUS': // Add this case
+      //   const filteredOrders = state._orders.filter(order => order.status === 'unfulfilled');
+      //   return { ...state, filteredOrders };
       default:
         throw new Error(`Unhandled action type: ${type}`);
     }
   }
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { statusId, skipCount, tableRowsCount } = state
+  const [allOrders, setAllOrders] = useState([]);
+  const { statusId, skipCount, tableRowsCount, statusName, _orders } = state
   const toast = useRef(null)
   const router = useRouter();
+
   const page = Number(router.query.page) || 0;
 
   const [{ orders, count: orderCounts }, { refetch: refetchOrders }] = usePaginatedQuery(getOrders, {
@@ -187,22 +197,25 @@ export const OrdersList = () => {
     skip: skipCount,
     take: tableRowsCount,
   });
+
   const [{ po_terms }] = useQuery(getPo_terms, {
     orderBy: { id: 'asc' },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
     where: undefined
   })
-  console.log('po_terms: ', po_terms);
+  // console.log('po_terms: ', po_terms);
 
 
   const [{ order_statuses, }] = useQuery(getOrder_statuses, {
     orderBy: { id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
-    where: undefined
+    where: {},
+    skip: 0,
+    take: undefined,
   })
-  console.log('order_statuses: ', order_statuses);
+  // console.log('order_statuses: ', order_statuses);
+  console.log("statusId", statusId);
+  console.log("statusName", statusName);
 
   const [{ order_payment_statuses }] = useQuery(getOrder_payment_statuses, {
     orderBy: { id: 'asc' },
@@ -210,7 +223,7 @@ export const OrdersList = () => {
     take: ITEMS_PER_PAGE,
     where: undefined
   })
-  console.log('order_payment_statuses: ', order_payment_statuses);
+  // console.log('order_payment_statuses: ', order_payment_statuses);
 
   const [{ payment_methods }] = useQuery(getPayment_methods, {
     orderBy: { id: 'asc' },
@@ -218,20 +231,20 @@ export const OrdersList = () => {
     take: ITEMS_PER_PAGE,
     where: undefined
   })
-  console.log('payment_methods: ', payment_methods);
+  // console.log('payment_methods: ', payment_methods);
 
-
-  // const [{ customers }] = useQuery(getCustomers, {
-  //   skip: undefined,
-  //   where: undefined,
-  //   orderBy: undefined,
-  //   take: undefined
-  // })
 
   const [{ products }] = useQuery(getProducts, {
     orderBy: { id: "asc" },
   })
-  console.log('products: ', products);
+
+  const [{ customers }] = useQuery(getCustomers, {
+    orderBy: { id: "asc" },
+    skip: undefined,
+    where: undefined,
+    take: undefined
+  })
+
 
   const [{ product_prices }] = useQuery(getProduct_prices, {
     orderBy: { id: "asc" },
@@ -239,8 +252,6 @@ export const OrdersList = () => {
     skip: undefined,
     take: undefined
   })
-  console.log('product_prices: ', product_prices.map((val) => val.sellingPrice));
-
 
 
   const [{ inventory_products }] = useQuery(getInventory_products, {
@@ -267,11 +278,13 @@ export const OrdersList = () => {
   const [orderItemsDetails, setOrderItemsDetails] = useState(initialOrderDetails)
   const [orderDialog, setOrderDialog] = useState(false)
   const [orderStatusOption, setOrderStatusOption] = useState(order_statuses)
+  const [selectedOrderItemValue, setSelectedOrderItemValue] = useState([])
   const [orderStatusSuggestions, setOderStatusSuggestions] = useState<any>(null)
 
 
   const gstTotal = 0;
-  const orderItemsOptions = products.map(({ id, name, sku, description, gstTaxTypeCode }) => {
+
+  const orderItemsOptions = products.filter((product) => !selectedOrderItemValue?.includes(product.id)).map(({ id, name, sku, description, gstTaxTypeCode }) => {
     return {
       name: `${sku} - ${name} `,
       id,
@@ -280,7 +293,7 @@ export const OrdersList = () => {
       gstTaxTypeCode,
     }
   })
-  console.log('gstTotal: ', gstTotal);
+  // console.log('gstTotal: ', gstTotal);
 
 
   const calculateTotalPrice = () => {
@@ -289,13 +302,13 @@ export const OrdersList = () => {
 
 
   const [orderItemsSuggestions, setOderItemsSuggestions] = useState<any>(null)
-  console.log('orderItemsSuggestions: ', orderItemsSuggestions);
+
 
   const customerOptions = orders.map(({ customers }) => ({
     ...customers,
     name: `${customers?.firstName}${customers?.companyName ? `- ${customers?.companyName}` : ""}`
   }))
-  console.log('customerOptions: ', customerOptions);
+
 
   // const paymentTermsOption = po_terms.map((val) => {
   //    return val.name
@@ -367,7 +380,7 @@ export const OrdersList = () => {
         where: {
           products: {
             sku,
-          },   
+          },
           shelves: {
             areas: {
               warehouse: 2
@@ -407,32 +420,6 @@ export const OrdersList = () => {
 
     }
   }
-
-  useEffect(() => {
-    // let config = {
-    //   headers: {
-    //     'X-Shopify-Access-Token': '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',
-    //     'Content-Type': 'application/json'
-    //   },
-    // };
-
-    // axios.get("https://robocraze-com.myshopify.com/admin/api/2023-01/orders.json", config)
-    //   .then((response) => {
-    //     
-    //   })
-    //   .catch((error) => {
-    //     
-    //   });
-
-    // axios.get(""{
-    //   headers: {
-    //     "X-Shopify-Access-Token": "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",
-    //   },
-    // })
-    //   .then((response) => 
-    //   .catch((error) => 
-  }, [])
-
 
   const address = [
     // { name: 'address', requiredMessage: 'Address  is required' },
@@ -567,7 +554,7 @@ export const OrdersList = () => {
     onSubmit: async (data) => {
       const {
         firstName, lastName, companyName, email, contactNumber, orderStatus,
-        landmarkName, pincode, paymentStatus, totalPrice, gateway, payment_method, display, discountAmount, gstNumber, gstTaxTypeCode,paymentMethodId, paymentTermsId, paymentReferenceId,
+        landmarkName, pincode, paymentStatus, totalPrice, gateway, payment_method, display, discountAmount, gstNumber, gstTaxTypeCode, paymentMethodId, paymentTermsId, paymentReferenceId,
         orderItems, address, state, country, city,
         shippingAddress: {
           address: shippingAreaStreet,
@@ -730,7 +717,7 @@ export const OrdersList = () => {
               },
               // paymentStatus: paymentStatus.id,
               // payment_method: selectPaymentMethod ? selectPaymentMethod?.name : null,
-              paymentMethodId:selectPaymentMethod ? selectPaymentMethod?.id : null,
+              paymentMethodId: selectPaymentMethod ? selectPaymentMethod?.id : null,
               paymentStatus: selectedPaymentStatus ? selectedPaymentStatus.id : null,
               totalPrice,
               gateway,
@@ -764,20 +751,20 @@ export const OrdersList = () => {
                 toast.current.show({ severity: 'success', summary: 'Success', detail: `${data?.id} Created`, life: 3000 });
 
               }, onError: (error) => {
-                console.log('error: ', error);
+                // console.log('error: ', error);
                 toast.current.show({ severity: 'error', summary: 'error', detail: `${data?.id} Created`, life: 3000 });
 
               },
             })
         } catch (error) {
-          console.log('error: ', error);
+          // console.log('error: ', error);
 
         }
       }
     }
   })
 
-  console.log(formik.errors, 'formik.error')
+  // console.log(formik.errors, 'formik.error')
   // console.log('orderItem', orderItemsDetails)
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
@@ -790,6 +777,10 @@ export const OrdersList = () => {
   };
 
   const handleRemoveInput = (index) => {
+    const _filteredDeleteItemOptions = selectedOrderItemValue.filter((value) => value !== formik.values.orderItems[index]?.id)
+    setSelectedOrderItemValue(_filteredDeleteItemOptions);
+
+
     if (formik.values.orderItems.length === 1) {
       return;
     }
@@ -1026,6 +1017,7 @@ export const OrdersList = () => {
   }, [selectedOrder]);
 
 
+
   function verifyOrder(order) {
     return order.verified ? "Verified" : "Not Verified";
   }
@@ -1051,105 +1043,26 @@ export const OrdersList = () => {
     setIsChecked(!isChecked);
   };
 
-  //     tab_view 
+  const _order_statuses = order_statuses.filter((status) => {
+    if (status.name === "Processing"
+      || status.name === "Fulfilled"
+      || status.name === "Cancelled"
+      || status.name === "Failed" || status.name === "PENDING VERIFICATION"
+    ) {
+      return true
+    } else {
+      return false
+    }
+  })
 
-  // const initialState = {
-  //   orders: [],
-  //   filteredOrders: [],
-  //   manifestShipments: [],
-  //   manifestStep: 0,
-  //   displayManifest: false,
-  //   statusId: undefined,
-  //   statusName: "ALL",
-  //   tableRowsCount: 10,
-  //   skipCount: 0,
-  //   first: 0,
-  //   rows: 10,
-  //   itemsPerPage: 10,
-  //   selectedShipments: [],
-  //   isReadyToShip: false,
-  //   readyToShipActiveIndex: 0,
-  //   containerName: 'manifests',
-  //   sasToken: process.env.NEXT_PUBLIC_STORAGESASTOKEN,
-  //   storageAccountName: process.env.NEXT_PUBLIC_STORAGERESOURCENAME,
-  //   manifestImageURL: ""
-  // };
-
-
-
-  // const reducer = (state, { type, payload }) => {
-  //   switch (type) {
-  //     case 'GET_ORDERS':
-  //       return { ...state, orders: payload };
-  //     case 'FILTER_BY':
-  //       return { ...state, filteredOrders: payload };
-  //     case 'UPDATE_STATUS_ID':
-  //       return { ...state, statusId: payload };
-  //     case 'UPDATE_STATUS_NAME':
-  //       return { ...state, statusName: payload };
-  //     case 'UPDATE_SKIP_COUNT':
-  //       return { ...state, skipCount: payload };
-  //     case 'UPDATE_TABLE_ROWS_COUNT':
-  //       return { ...state, tableRowsCount: payload };
-  //     case 'SET_SELECTED_SHIPMENTS':
-  //       return { ...state, selectedShipments: payload };
-  //     case 'RESET_SELECTED_SHIPMENTS':
-  //       return { ...state, selectedShipments: [] };
-  //     case 'READY_TO_SHIP':
-  //       return { ...state, isReadyToShip: payload };
-  //     case 'READY_TO_SHIP_ACTIVE_INDEX':
-  //       return { ...state, readyToShipActiveIndex: payload };
-  //     case 'DISPATCH_SHIPMENTS':
-  //       return { ...state, displayManifest: true }
-  //     case 'SET_SHIPMENT_STATE':
-  //       return { ...state, [payload.prop]: payload.value }
-
-  //     case 'FILTER_BY_STATUS': // Add this case
-  //       const filteredOrders = state.orders.filter(order => order.status === 'unfulfilled');
-  //       return { ...state, filteredOrders };
-  //     default:
-  //       throw new Error(`Unhandled action type: ${type}`);
-  //   }
-  // }
-  // const initialState = {
-  //   orders: [],
-  //   filteredOrders: [],
-  //   manifestShipments: [],
-  //   manifestStep: 0,
-  //   displayManifest: false,
-  //   statusId: undefined,
-  //   statusName: "ALL",
-  //   tableRowsCount: 10,
-  //   skipCount: 0,
-  //   first: 0,
-  //   rows: 10,
-  //   itemsPerPage: 10,
-  //   selectedShipments: [],
-  //   isReadyToShip: false,
-  //   readyToShipActiveIndex: 0,
-  //   containerName: 'manifests',
-  //   sasToken: process.env.NEXT_PUBLIC_STORAGESASTOKEN,
-  //   storageAccountName: process.env.NEXT_PUBLIC_STORAGERESOURCENAME,
-  //   manifestImageURL: ""
-  // };
-  // const [state, dispatch] = useReducer(reducer, initialState);
-  // const { statusId, skipCount, tableRowsCount } = state
-  const tabMenuItems = order_statuses?.map(status => (
+  const tabMenuItems = _order_statuses?.map(status => (
     {
-      label: `${status.name === "CREATED" ? "NEW" : status.name}`,
+      label: `${status.name === "Fulfilled" ? "COMPLETE" : status.name.toUpperCase()}`,
       status: status.name,
       id: status.id
     }
   ))
 
-  // const [{ orders }] = usePaginatedQuery(getOrders, {
-  //   orderBy: { id: "asc" },
-  //   where: {},
-  //   skip: skipCount,
-  //   take: tableRowsCount,
-  // })
-
-  console.log("orders", orders);
 
   const handleOnPageChange = () => {
 
@@ -1226,7 +1139,7 @@ export const OrdersList = () => {
     setPaymentMethod(payment_methods.map((val) => val.name))
   }
   const [selectPaymentMethod, setSelectPaymentMethod] = useState({})
-  console.log('selectPaymentMethod: ', selectPaymentMethod);
+
 
   const handlePaymentMethodChange = (e) => {
     const selectPaymentMethod = payment_methods.find((val) => val.name === e.value)
@@ -1249,7 +1162,7 @@ export const OrdersList = () => {
     }
   };
 
-  console.log('type off', typeof formik.values.discountAmount)
+  // console.log('type off', typeof formik.values.discountAmount)
 
   const totalPriceAmount = (formik.values.orderItems.reduce(
     (total, ele) => total + ele.price * ele.quantity + (ele.price * ele.quantity * ele.gst) / 100,
@@ -1264,12 +1177,18 @@ export const OrdersList = () => {
 
 
 
+
+
   //  checked customer 
   const [displayChecked, setDisplayChecked] = useState(false);
   console.log('displayChecked: ', displayChecked);
+  console.log("orders", orders);
 
+  useEffect(() => {
+    dispatch({ type: 'GET_ORDERS', payload: orders })
+  }, [orders])
 
-
+  console.log("_orders", _orders);
 
   return (
 
@@ -1574,6 +1493,8 @@ export const OrdersList = () => {
                               field="name"
                               onChange={async (e) => {
                                 const selectedProduct = e.value;
+                                console.log("e.value", e.value);
+                                setSelectedOrderItemValue([...selectedOrderItemValue, e.value?.id])
                                 const selectedProductGST = selectedProduct?.gstTaxTypeCode || 0;
                                 const inventory = await isInStock(selectedProduct?.sku);
                                 const sellingPrice = product_prices.find((price) => price.productId === selectedProduct?.id)?.sellingPrice || 0;
@@ -1833,14 +1754,14 @@ export const OrdersList = () => {
                               aria-label="paymentMethodId"
                               dropdownAriaLabel="paymentMethodId"
                               className={classNames({ "p-invalid": isFormFieldValid("paymentMethodId") })}
-                              // field="name"
-                              // id="gateway"
-                              // value={formik.values.gateway}
-                              // onChange={(e) => {
-                              //   const selectedOrderItem = gatewayOptions.find(option_ => option_.name === e.value?.name);
-                              //   const selectedItemsOptionName = selectedOrderItem ? selectedOrderItem.name : null;
-                              //   formik.setFieldValue('gateway', selectedItemsOptionName);
-                              // }}
+                            // field="name"
+                            // id="gateway"
+                            // value={formik.values.gateway}
+                            // onChange={(e) => {
+                            //   const selectedOrderItem = gatewayOptions.find(option_ => option_.name === e.value?.name);
+                            //   const selectedItemsOptionName = selectedOrderItem ? selectedOrderItem.name : null;
+                            //   formik.setFieldValue('gateway', selectedItemsOptionName);
+                            // }}
                             />
                             <label
                               className={classNames({ "p-error": isFormFieldValid("paymentMethodId") })}
@@ -1910,12 +1831,28 @@ export const OrdersList = () => {
       </div> */}
 
 
+
+
       <div className="col-12">
+
         <div className="card">
 
+          <div className="col-12">
+            <TabMenu
+              model={[{ label: "ALL", id: 0, status: "all" }, ...tabMenuItems]}
+              activeIndex={statusId}
+              onTabChange={(e) => {
+                console.log("e.value", e.value);
+                dispatch({ type: 'UPDATE_ORDERS', payload: { id: e.value.id, status: e.value.status } });
+                dispatch({ type: 'UPDATE_STATUS_ID', payload: e.value.id })
+                // dispatch({ type: 'UPDATE_STATUS_NAME', payload: e.value.status ?? e.value.label })
 
+
+              }}
+            />
+          </div>
           <DataTable
-            value={orders}
+            value={_orders}
             responsiveLayout="scroll"
             // scrollable
             showGridlines
@@ -1943,48 +1880,34 @@ export const OrdersList = () => {
 
             <Column
               // field={}
-              header="ID"
+              header="Order ID"
               body={(rowData) => rowData.Id ? rowData.id : rowData.id}
             />
 
-            {/* <Column
+            <Column
               field=""
-              header="Products"
-              body={({ order_items }) => {
-                const orderItemOverlayRef = useRef(null);
+              header="Customer Name"
+              body={({ customers }) => {
+                const { firstName, lastName } = customers || {};
                 return (
-                  <div>
-                    <Button
-                      label={`Products(${order_items.length})`}
-                      onClick={(e) => orderItemOverlayRef?.current?.toggle(e)}
-                      className="p-button-link"
-                    />
-                    <OverlayPanel ref={orderItemOverlayRef}>
-                      <div className="w-20rem">
-                        {order_items.map((product, i) => {
-                          const { quantity, products: { name, sku } } = product
-                          return (
-                            <div key={i} className="pt-2 pb-2">
-                              {[{ prop: "Name", value: name },
-                              { prop: "SKU", value: sku },
-                              { prop: "Quantity", value: quantity }
-                              ].map(({ prop, value }, index) => (
-                                <div key={index} className="grid">
-                                  <label className="font-semibold col-4">{prop}:</label>
-                                  <div className="col">
-                                    {value?.toString()}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )
-                        })}
+                  <div className="pt-2 pb-2 w-8rem">
+                    <div className="grid">
+                      <div className="col">
+                        {`${firstName} ${lastName}`}
                       </div>
-                    </OverlayPanel>
+                    </div>
                   </div>
                 )
               }}
-            /> */}
+            />
+
+            <Column
+              field="products.name"
+              header="Channel"
+              // className="text-center"
+              body={(rowdata) => rowdata.shopifyId ? "SH" : "IH"}
+
+            />
 
 
             {/* Add Hover thing in product  */}
@@ -2005,18 +1928,45 @@ export const OrdersList = () => {
 
                 return (
                   <div className="product-column">
-                    <div
-                      className="product-header"
-                      onMouseEnter={handleMouseEnter}
-                      onMouseLeave={handleMouseLeave}
-                    >
-                      <Button
-                        label={`Products(${order_items.length})`}
-                        className="p-button-link"
-                      />
-                    </div>
-                    {showOverlay && (
-                      <div className="overlay-panel">
+                    {order_items.length > 2 ?
+                      <>
+                        <div
+                          className="product-header"
+                          onMouseEnter={handleMouseEnter}
+                          onMouseLeave={handleMouseLeave}
+                        >
+                          <Button
+                            label={`Products(${order_items.length})`}
+                            className="p-button-link"
+                          />
+                        </div>
+                        {showOverlay && (
+                          <div className="overlay-panel">
+                            <div className="w-20rem">
+                              {order_items.map((product, i) => {
+                                const { quantity, products: { name, sku } } = product;
+                                return (
+                                  <div key={i} className="pt-2 pb-2">
+                                    {[{ prop: "Name", value: name },
+                                    { prop: "SKU", value: sku },
+                                    { prop: "Quantity", value: quantity }
+                                    ].map(({ prop, value }, index) => (
+                                      <div key={index} className="grid">
+                                        <label className="font-semibold col-4">{prop}:</label>
+                                        <div className="col">
+                                          {value?.toString()}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                      </>
+                      : order_items.length === 2 && order_items.length !== 0 ?
                         <div className="w-20rem">
                           {order_items.map((product, i) => {
                             const { quantity, products: { name, sku } } = product;
@@ -2036,71 +1986,14 @@ export const OrdersList = () => {
                               </div>
                             )
                           })}
-                        </div>
-                      </div>
-                    )}
+                        </div> :
+                        <div className="hideLargeContent">No Kit Product is found</div>}
+
+
                   </div>
                 )
               }}
             />
-
-
-            <Column
-              field="products.name"
-              header="Channel"
-              // className="text-center"
-              body={(rowdata) => rowdata.shopifyId ? "SH" : "IH"}
-
-            />
-
-            <Column
-              field=""
-              header="Customer Details"
-              body={({ customers }) => {
-                const orderItemOverlayRef = useRef(null);
-                const contactNumbers = customers?.addresses?.contact_number || [];
-                const { firstName, lastName } = customers || {};
-                return (
-                  <div>
-                    <Button
-                      label={`Customer Details`}
-                      onClick={(e) => orderItemOverlayRef?.current?.toggle(e)}
-                      className="p-button-link"
-                    />
-                    <OverlayPanel ref={orderItemOverlayRef}>
-                      <div className="w-20rem">
-                        <div className="pt-2 pb-2">
-                          <div className="grid">
-                            <label className="font-semibold col-4">Name:</label>
-                            <div className="col">
-                              {`${firstName} ${lastName}`}
-                            </div>
-                          </div>
-                        </div>
-                        {contactNumbers.map((contact, i) => {
-                          const { type, number } = contact;
-                          return (
-                            <div key={i} className="pt-2 pb-2">
-                              {[{ prop: "Type", value: type },
-                              { prop: "Number", value: number }
-                              ].map(({ prop, value }, index) => (
-                                <div key={index} className="grid">
-                                  <label className="font-semibold col-4">{prop}:</label>
-                                  <div className="col">
-                                    {value?.toString()}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </OverlayPanel>
-                  </div>
-                )
-              }}
-            />
-
             <Column
               field=""
               header="Customer Contact Number"
@@ -2140,21 +2033,13 @@ export const OrdersList = () => {
                   </div>
                 )
               }}
-            // body={({ addresses_orders_shippingAddressIdToaddresses }) => {
-            //   const customerAddress = addresses_orders_shippingAddressIdToaddresses.areaStreet
-            //   console.log('customerAddress: ', customerAddress);
-            //   return (
-            //     <div className="">
-            //       {customerAddress}
-            //     </div>
-            //   )
-            // }}
+
             />
             <Column
               field="gateway"
               header="Payment Method"
-             
-              
+
+
             />
             <Column
               field="gstNumber"
@@ -2292,15 +2177,13 @@ export const OrdersList = () => {
               }}
 
             />
-
-
-
           </DataTable>
 
         </div>
 
       </div>
-    </div >
+    </div>
+
   )
 };
 
