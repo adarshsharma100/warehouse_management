@@ -109,7 +109,10 @@ model dimensions {
   height   Float?     @db.Float
   weight   Float?     @db.Float
   packages packages[]
+<<<<<<< HEAD
   products products[]
+=======
+>>>>>>> origin/grn_inbound
   shipment shipment?
 }
 
@@ -747,11 +750,14 @@ model order_payment_status {
   orders      orders[]
 }
 
+<<<<<<< HEAD
 model images {
   id       Int    @id @default(autoincrement())
   imageUrl String @db.VarChar(150)
 }
 
+=======
+>>>>>>> origin/grn_inbound
 model packages {
   id           Int        @id @default(autoincrement())
   name         String     @db.VarChar(45)
@@ -761,6 +767,7 @@ model packages {
   @@index([dimensionsId], map: "fk_packages_dimensions1_idx")
 }
 
+<<<<<<< HEAD
 model payment_method {
   id     Int      @id @default(autoincrement())
   name   String?  @db.VarChar(45)
@@ -769,11 +776,16 @@ model payment_method {
 
 model product_prices {
   id                Int      @id @default(autoincrement())
+=======
+model prices {
+  id                Int  @id @default(autoincrement())
+>>>>>>> origin/grn_inbound
   lastPurchasePrice Int?
   mrp               Int?
   minSellingPrice   Int?
   sellingPrice      Int?
   averageCostPrice  Int?
+<<<<<<< HEAD
   productId         Int      @unique(map: "productId_UNIQUE")
   products          products @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_prices_products1")
 
@@ -804,6 +816,8 @@ model quality_ckeck {
   products_quality_ckeck_productsToproducts products @relation("quality_ckeck_productsToproducts", fields: [products], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_quality_ckeck_products1")
 
   @@index([products], map: "fk_quality_ckeck_products1_idx")
+=======
+>>>>>>> origin/grn_inbound
 }
 
 enum contact_number_type {
