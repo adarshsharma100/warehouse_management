@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState, useReducer } from "react"
+import { Suspense, useEffect, useRef, useState, useReducer, startTransition } from "react"
 import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
 import getVendor_products from "app/vendor_products/queries/getVendor_products"
@@ -36,10 +36,13 @@ const ITEMS_PER_PAGE = 100
 const initialState = {
   tableRowsCount: 10,
   skipCount: 0,
+  productSearchQuery: "new"
 }
 
 const reducer = (state, { type, payload }) => {
   switch (type) {
+    case 'UPDATE_VENDOR_STATE':
+      return { ...state, [payload.key]: payload.value }
     case 'UPDATE_TABLE_ROWS_COUNT':
       return { ...state, tableRowsCount: payload }
     case 'UPDATE_SKIP_COUNT':
@@ -54,7 +57,7 @@ const reducer = (state, { type, payload }) => {
 export const Vendor_productsList = () => {
   const router = useRouter()
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { skipCount, tableRowsCount } = state;
+  const { skipCount, tableRowsCount, productSearchQuery } = state;
   const page = Number(router.query.page) || 0
 
 
@@ -75,6 +78,17 @@ export const Vendor_productsList = () => {
   const [{ products }, { error: vp_ProductsFetchingError, isLoading: isProductsLoading }] =
     useQuery(getProducts, {
       orderBy: { id: "asc" },
+      where: {
+        OR: [
+          {
+            name: { contains: productSearchQuery ?? undefined },
+          },
+          {
+            sku: { contains: productSearchQuery ?? undefined },
+          }
+
+        ]
+      }
     })
 
 
@@ -553,7 +567,14 @@ export const Vendor_productsList = () => {
                   completeMethod={searchProducts}
                   field="name"
                   onChange={async (e) => {
+
                     let product = typeof e.value === "string" ? e.value : e.value
+                    let _productSearchQuery = typeof e.value === "string" ? e.value : undefined
+                    startTransition(() => {
+                      dispatch({ type: "UPDATE_VENDOR_STATE", payload: { key: "productSearchQuery", value: _productSearchQuery }, })
+                    });
+
+
                     await formik.setValues({
                       ...formik.values,
                       product,
