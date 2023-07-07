@@ -109,10 +109,7 @@ model dimensions {
   height   Float?     @db.Float
   weight   Float?     @db.Float
   packages packages[]
-<<<<<<< HEAD
   products products[]
-=======
->>>>>>> origin/grn_inbound
   shipment shipment?
 }
 
@@ -143,6 +140,7 @@ model grn {
   purchase_orders purchase_orders @relation(fields: [purchaseOrder], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_purchase_orders1")
   user            user            @relation(fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_user1")
   grn_products    grn_products[]
+  putaway         putaway[]
 
   @@index([status], map: "fk_grn_grn_status1_idx")
   @@index([purchaseOrder], map: "fk_grn_purchase_orders1_idx")
@@ -150,13 +148,14 @@ model grn {
 }
 
 model grn_products {
-  id               Int         @id @default(autoincrement())
+  id               Int                @id @default(autoincrement())
   receivedQuantity Int
   rejectedQuantity Int?
   poProduct        Int
   grnId            Int
-  grn              grn         @relation(fields: [grnId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_products_grn1")
-  po_products      po_products @relation(fields: [poProduct], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_products_po_products1")
+  grn              grn                @relation(fields: [grnId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_products_grn1")
+  po_products      po_products        @relation(fields: [poProduct], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_products_po_products1")
+  putaway_products putaway_products[]
 
   @@index([grnId], map: "fk_grn_products_grn1_idx")
   @@index([poProduct], map: "fk_grn_products_po_products1_idx")
@@ -419,6 +418,7 @@ model products {
   product_categories                               product_categories?  @relation(fields: [category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_category")
   dimensions                                       dimensions           @relation(fields: [dimensionsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_dimensions1")
   product_types                                    product_types        @relation(fields: [type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_product_types1")
+  putaway_products                                 putaway_products[]
   quality_ckeck_quality_ckeck_productsToproducts   quality_ckeck[]      @relation("quality_ckeck_productsToproducts")
   rfq_products                                     rfq_products[]
   vendor_products                                  vendor_products[]
@@ -672,6 +672,7 @@ model user {
   inventory_history inventory_history[]
   jobs              jobs[]
   purchase_orders   purchase_orders[]
+  putaway           putaway[]
   session           session[]
   token             token[]
   user_roles        user_roles[]
@@ -750,14 +751,11 @@ model order_payment_status {
   orders      orders[]
 }
 
-<<<<<<< HEAD
 model images {
   id       Int    @id @default(autoincrement())
   imageUrl String @db.VarChar(150)
 }
 
-=======
->>>>>>> origin/grn_inbound
 model packages {
   id           Int        @id @default(autoincrement())
   name         String     @db.VarChar(45)
@@ -767,7 +765,6 @@ model packages {
   @@index([dimensionsId], map: "fk_packages_dimensions1_idx")
 }
 
-<<<<<<< HEAD
 model payment_method {
   id     Int      @id @default(autoincrement())
   name   String?  @db.VarChar(45)
@@ -776,16 +773,11 @@ model payment_method {
 
 model product_prices {
   id                Int      @id @default(autoincrement())
-=======
-model prices {
-  id                Int  @id @default(autoincrement())
->>>>>>> origin/grn_inbound
   lastPurchasePrice Int?
   mrp               Int?
   minSellingPrice   Int?
   sellingPrice      Int?
   averageCostPrice  Int?
-<<<<<<< HEAD
   productId         Int      @unique(map: "productId_UNIQUE")
   products          products @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_prices_products1")
 
@@ -793,21 +785,31 @@ model prices {
 }
 
 model putaway {
-  id              Int             @id @default(autoincrement())
-  putawayNumber   String?         @db.VarChar(45)
-  generatedBy     String?         @db.VarChar(45)
-  status          putaway_status?
-  pendingQuantity Int?
-  createdAt       DateTime?       @db.DateTime(0)
-  updatedAt       DateTime?       @db.DateTime(0)
-  quantity        Int?
+  id               Int                @id @default(autoincrement())
+  putawayNumber    String?            @db.VarChar(45)
+  status           putaway_status?
+  createdAt        DateTime?          @db.DateTime(0)
+  updatedAt        DateTime?          @default(now()) @db.DateTime(0)
+  quantity         Int?
+  pendingQuantity  Int?
+  grnId            Int
+  createdBy        Int
+  putawaytypeId    Int
+  grn              grn                @relation(fields: [grnId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_grn1")
+  putaway_types    putaway_types      @relation(fields: [putawaytypeId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_putaway_types1")
+  user             user               @relation(fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_user1")
+  putaway_products putaway_products[]
+
+  @@index([grnId], map: "fk_putaway_grn1_idx")
+  @@index([putawaytypeId], map: "fk_putaway_putaway_types1_idx")
+  @@index([createdBy], map: "fk_putaway_user1_idx")
 }
 
 model putaway_types {
-  id           Int     @id @default(autoincrement())
-  name         String? @db.VarChar(45)
-  displayName  String? @db.VarChar(45)
-  putawayTypes String? @db.VarChar(45)
+  id          Int       @id @default(autoincrement())
+  name        String?   @db.VarChar(45)
+  displayName String?   @db.VarChar(45)
+  putaway     putaway[]
 }
 
 model quality_ckeck {
@@ -816,8 +818,21 @@ model quality_ckeck {
   products_quality_ckeck_productsToproducts products @relation("quality_ckeck_productsToproducts", fields: [products], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_quality_ckeck_products1")
 
   @@index([products], map: "fk_quality_ckeck_products1_idx")
-=======
->>>>>>> origin/grn_inbound
+}
+
+model putaway_products {
+  id              Int          @id @default(autoincrement())
+  grnProductId    Int
+  pendingQuantity Int?
+  putawayId       Int
+  productsId      Int
+  grn_products    grn_products @relation(fields: [grnProductId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_products_grn_products1")
+  products        products     @relation(fields: [productsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_products_products1")
+  putaway         putaway      @relation(fields: [putawayId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_products_putaway1")
+
+  @@index([grnProductId], map: "fk_putaway_products_grn_products1_idx")
+  @@index([productsId], map: "fk_putaway_products_products1_idx")
+  @@index([putawayId], map: "fk_putaway_products_putaway1_idx")
 }
 
 enum contact_number_type {
@@ -856,6 +871,6 @@ enum products_status {
 }
 
 enum putaway_status {
-  Created
+  Completed
   Pending
 }
