@@ -10,7 +10,7 @@ interface GetCustomersInput
 
 export default resolver.pipe(
   resolver.authorize(),
-  async ({ where, orderBy, skip = 0, take = 100 }: GetCustomersInput) => {
+  async ({ where, orderBy, skip = 0, take = 250 }: GetCustomersInput) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const {
       items: customers,

@@ -557,7 +557,7 @@ export const ProductsList = () => {
 
       const createKitProducts = (products) =>
         products.map(({ product, quantity }) => ({
-          products_kit_products_productIdToproducts: {
+          products_kit_products_kitProductIdToproducts: {
             connect: {
               id: product.id
             }
@@ -683,7 +683,12 @@ export const ProductsList = () => {
 
             }
           },
-          brand: brand?.id,
+          product_brand: {
+            connect: {
+              id: brand?.id
+            }
+          },
+          // brand: brand?.id,
           // costPrice,
           product_prices: {
             create: {
@@ -737,7 +742,7 @@ export const ProductsList = () => {
     },
   })
 
-
+  console.log("Formik Data", activeRowData);
   console.log('  formik.errors: ', formik.errors
   );
 
@@ -964,7 +969,7 @@ export const ProductsList = () => {
                     { type: 'text', label: "Color", field: "color", header: "Color" },
                     // { type: 'text', label: "Brand", field: "brand", header: "Brand" },
                     { type: 'text', label: "Custom duty", field: "customDuty", header: "Tax code" },
-                    { type: 'text', label: "Gst Tax type code", field: "gstcode", header: "Gst Code" },
+                    { type: 'number', label: "Gst Tax type code", field: "gstcode", header: "Gst Code" },
                     { type: 'text', label: "HSN code", field: "hsnCode", header: "HSN Code" },
                     { type: 'number', label: "Cost Price", field: "costPrice", header: "Cost Price" },
                     { type: 'text', label: "Tax Calculation Type", field: "taxCalcuation", header: "Tax Calcuation" },
@@ -1281,7 +1286,7 @@ export const ProductsList = () => {
               setSelectedStatus(e.data.product_types)
 
 
-              const _kitData = e.data.kit_products.map((prod) => {
+              const _kitData = e.data.kit_products?.map((prod) => {
                 const { products_kit_products_productsIdToproducts: product, quantity, id: kitId } = prod
                 return ({
                   product: { name: `${product.sku}-${product.name}`, id: product?.id, },

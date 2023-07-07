@@ -21,6 +21,8 @@ import { DataTable } from "primereact/datatable";
 import { Dropdown } from "primereact/dropdown";
 import { InputText } from "primereact/inputtext";
 import { OverlayPanel } from 'primereact/overlaypanel';
+import { Badge } from "primereact/badge";
+import { Tooltip } from "primereact/tooltip";
 import { Paginator } from "primereact/paginator";
 import { Suspense, useEffect, useReducer, useRef, useState } from "react";
 import * as Yup from "yup";
@@ -37,6 +39,7 @@ import getProduct_prices from "app/product_prices/queries/getProduct_prices";
 import { InputSwitch } from "primereact/inputswitch";
 import getOrder_payment_statuses from "app/order_payment_statuses/queries/getOrder_payment_statuses";
 import getPayment_methods from "app/payment_methods/queries/getPayment_methods";
+import { Divider } from "primereact/divider";
 
 const initialState = {
   _orders: [],
@@ -146,45 +149,23 @@ export const OrdersList = () => {
     switch (type) {
       case 'GET_ORDERS':
         return { ...state, _orders: payload };
-      case 'UPDATE_ORDERS':
-        console.log("payload", payload);
-
-        const _filteredOrders = payload.status === 'all' ? state._orders : state._orders.filter(_order => _order.orderStatus === payload.id);
-        console.log("_filteredOrders", _filteredOrders);
-        return { ...state, _orders: _filteredOrders };
-      // case 'FILTER_BY':
-      //   return { ...state, filteredOrders: payload };
       case 'UPDATE_STATUS_ID':
-
         return { ...state, statusId: payload };
-      // case 'UPDATE_STATUS_NAME':
-      //   return { ...state, statusName: payload };
+      case 'UPDATE_STATUS_NAME':
+        return { ...state, statusName: payload };
       case 'UPDATE_SKIP_COUNT':
         return { ...state, skipCount: payload };
       case 'UPDATE_TABLE_ROWS_COUNT':
         return { ...state, tableRowsCount: payload };
-      // case 'SET_SELECTED_SHIPMENTS':
-      //   return { ...state, selectedShipments: payload };
-      // case 'RESET_SELECTED_SHIPMENTS':
-      //   return { ...state, selectedShipments: [] };
-      // case 'READY_TO_SHIP':
-      //   return { ...state, isReadyToShip: payload };
-      // case 'READY_TO_SHIP_ACTIVE_INDEX':
-      //   return { ...state, readyToShipActiveIndex: payload };
-      // case 'DISPATCH_SHIPMENTS':
-      //   return { ...state, displayManifest: true }
-      // case 'SET_SHIPMENT_STATE':
-      //   return { ...state, [payload.prop]: payload.value }
 
-      // case 'FILTER_BY_STATUS': // Add this case
-      //   const filteredOrders = state._orders.filter(order => order.status === 'unfulfilled');
-      //   return { ...state, filteredOrders };
       default:
         throw new Error(`Unhandled action type: ${type}`);
     }
   }
   const [state, dispatch] = useReducer(reducer, initialState);
   const [allOrders, setAllOrders] = useState([]);
+  const [isVisible, setIsVisible] = useState(true);
+
   const { statusId, skipCount, tableRowsCount, statusName, _orders } = state
   const toast = useRef(null)
   const router = useRouter();
@@ -193,7 +174,7 @@ export const OrdersList = () => {
 
   const [{ orders, count: orderCounts }, { refetch: refetchOrders }] = usePaginatedQuery(getOrders, {
     orderBy: { id: "asc" },
-    where: {},
+    where: { orderStatus: statusId },
     skip: skipCount,
     take: tableRowsCount,
   });
@@ -238,14 +219,6 @@ export const OrdersList = () => {
     orderBy: { id: "asc" },
   })
 
-  const [{ customers }] = useQuery(getCustomers, {
-    orderBy: { id: "asc" },
-    skip: undefined,
-    where: undefined,
-    take: undefined
-  })
-
-
   const [{ product_prices }] = useQuery(getProduct_prices, {
     orderBy: { id: "asc" },
     where: undefined,
@@ -279,7 +252,24 @@ export const OrdersList = () => {
   const [orderDialog, setOrderDialog] = useState(false)
   const [orderStatusOption, setOrderStatusOption] = useState(order_statuses)
   const [selectedOrderItemValue, setSelectedOrderItemValue] = useState([])
+  const [selectedCustomerName, setSelectedCustomerName] = useState('');
   const [orderStatusSuggestions, setOderStatusSuggestions] = useState<any>(null)
+
+
+  const [{ customers }] = useQuery(getCustomers, {
+    orderBy: { id: "asc" },
+    skip: undefined,
+    where: {},
+
+    // where: {
+    //   firstName: { contains: selectedCustomerName ?? undefined }
+    // },
+    take: undefined
+  })
+
+
+  console.log("customers", customers)
+  // console.log("selectedCustomers", selectedCustomerName)
 
 
   const gstTotal = 0;
@@ -304,9 +294,9 @@ export const OrdersList = () => {
   const [orderItemsSuggestions, setOderItemsSuggestions] = useState<any>(null)
 
 
-  const customerOptions = orders.map(({ customers }) => ({
-    ...customers,
-    name: `${customers?.firstName}${customers?.companyName ? `- ${customers?.companyName}` : ""}`
+  const customerOptions = customers?.map((customer) => ({
+    ...customer,
+    name: `${customer?.firstName}${customer?.companyName ? `- ${customer?.companyName}` : ""}`
   }))
 
 
@@ -326,6 +316,8 @@ export const OrdersList = () => {
   const [addressSuggestion, setAddressSuggestion] = useState<any>(null)
   const [activeRowData, setActiveRowData] = useState({})
   const [newOrderUpdate, setNewOrderUpdate] = useState(false)
+  const [showOverlay, setShowOverlay] = useState(false)
+  const productDisplayRef = useRef(null);
 
 
   const searchOrderStatus = createSearchFunction(orderStatusOption, setOderStatusSuggestions)
@@ -535,6 +527,8 @@ export const OrdersList = () => {
 
     scrollToTop?.current && scrollToTop?.current.scrollIntoView()
   }
+
+
 
 
   const formik = useFormik({
@@ -1009,6 +1003,7 @@ export const OrdersList = () => {
   // 
 
   useEffect(() => {
+
     if (selectedOrder && Object.keys(selectedOrder).length >= 1) {
       setCheckVerified(true);
     } else {
@@ -1016,7 +1011,16 @@ export const OrdersList = () => {
     }
   }, [selectedOrder]);
 
+  // useEffect(() => {
+  //   const debounceTimer = setTimeout(() => {
+  //     setSelectedCustomerName(formik.values.name);
+  //   }, 300);
 
+  //   // Cleanup function for the debounced function
+  //   return () => {
+  //     clearTimeout(debounceTimer);
+  //   };
+  // }, [formik.values.name]);
 
   function verifyOrder(order) {
     return order.verified ? "Verified" : "Not Verified";
@@ -1043,21 +1047,10 @@ export const OrdersList = () => {
     setIsChecked(!isChecked);
   };
 
-  const _order_statuses = order_statuses.filter((status) => {
-    if (status.name === "Processing"
-      || status.name === "Fulfilled"
-      || status.name === "Cancelled"
-      || status.name === "Failed" || status.name === "PENDING VERIFICATION"
-    ) {
-      return true
-    } else {
-      return false
-    }
-  })
 
-  const tabMenuItems = _order_statuses?.map(status => (
+  const tabMenuItems = order_statuses?.map(status => (
     {
-      label: `${status.name === "Fulfilled" ? "COMPLETE" : status.name.toUpperCase()}`,
+      label: status.name,
       status: status.name,
       id: status.id
     }
@@ -1175,6 +1168,157 @@ export const OrdersList = () => {
     0
   ));
 
+  const handleTabMenuOrderDataChange = (event) => {
+    const { id, label, status } = event.value;
+    // const _filteredOrderData = status === "all" ? orders : orders.filter(order => order.orderStatus === id);
+    // console.log("_filteredOrderData", _filteredOrderData);
+    // setAllOrders(Object.assign([], _filteredOrderData));
+    dispatch({ type: 'UPDATE_STATUS_ID', payload: id })
+    dispatch({ type: 'UPDATE_STATUS_NAME', payload: status ?? label })
+  }
+
+  const handleMouseEnter = (event) => {
+    if (productDisplayRef.current) {
+      productDisplayRef.current.toggle(event);
+    }
+
+  };
+
+  const handleMouseLeave = (event) => {
+    if (productDisplayRef.current) {
+      productDisplayRef.current.toggle(event);
+    }
+
+  };
+
+  const handleCustomerDetailsRender = ({ customers }) => {
+    console.log("Customer Data", customers);
+    const { addresses: { contact_number, emails_emails_addressesToaddresses,
+      areaStreet, buildingNumber, cityCountryProvince, landmarkName, pincode, state },
+      firstName, lastName } = customers;
+
+    return (
+      <div className="w-30rem">
+        <div className="customer-name-container">
+          <span className="mr-1">{firstName}</span>
+          <span className="ml-1">{lastName}</span>
+        </div>
+        <div className="address-container">
+          {buildingNumber ? <span className="mr-2">{buildingNumber}</span> : null}
+          {areaStreet ? <span className="mr-2">{areaStreet},</span> : null}
+          {landmarkName ? <span className="mr-2">{landmarkName},</span> : null}
+          <span className="mr-2">{cityCountryProvince}</span>
+          <span className="mr-2">{pincode}</span>
+          <span>{state}</span>
+        </div>
+        <div className="email-container">
+          {emails_emails_addressesToaddresses ? <span>{emails_emails_addressesToaddresses[0]?.email}</span> : null}
+        </div>
+        <div className="contact-number-container">
+          {contact_number ? <span>{contact_number[0]?.number}</span> : null}
+        </div>
+      </div>
+    )
+
+  }
+
+  const handleShowProducts = ({ order_items }) => {
+    return (
+      <div className="product-column">
+        {order_items.length > 2 ?
+          <>
+            <div
+              className="product-header"
+
+            >
+              <Button
+                label={`Products(${order_items.length})`}
+                className="p-button-link"
+                onMouseEnter={handleMouseEnter}
+              // onMouseLeave={handleMouseLeave}
+
+              />
+            </div>
+            <div className="overlay-panel">
+              <OverlayPanel ref={productDisplayRef} showCloseIcon  >
+                <div style={{
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                  overflowX: 'hidden'
+                }}>
+                  {/* <Tooltip target=".product-header" autoHide={true} >
+                <div style={{
+                  maxHeight: '200px',
+                  overflow: 'auto',
+                }}> */}
+                  {order_items.map((product, i) => {
+                    const { quantity, products: { name, sku } } = product;
+                    return (
+
+                      <div key={i} >
+
+                        {[{ prop: "Name", value: name },
+                        { prop: "SKU", value: sku },
+                        { prop: "Quantity", value: quantity }
+                        ].map(({ prop, value }, index) => (
+
+                          <div key={index} className="grid">
+
+                            <label className="font-semibold col-4">{prop}:</label>
+                            <div className="col">
+                              {value?.toString()}
+                            </div>
+
+                          </div>
+
+
+
+                        ))}
+                        {i !== order_items.length - 1 && (
+                          <Divider align="center" type="dashed" style={{ borderTop: '1px solid #ddd' }} />
+                        )}
+                      </div>
+
+
+                    )
+                  })}
+                </div>
+              </OverlayPanel>
+            </div>
+
+
+          </>
+          : order_items.length === 2 && order_items.length !== 0 ?
+            <OverlayPanel ref={productDisplayRef} className="w-20rem">
+              {order_items.map((product, i) => {
+                const { quantity, products: { name, sku } } = product;
+                return (
+                  <div key={i} className="pt-2 pb-2">
+                    {[{ prop: "Name", value: name },
+                    { prop: "SKU", value: sku },
+                    { prop: "Quantity", value: quantity }
+                    ].map(({ prop, value }, index) => (
+                      <div key={index} className="grid">
+                        <label className="font-semibold col-4">{prop}:</label>
+                        <div className="col">
+                          {value?.toString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })}
+            </OverlayPanel> :
+            <div className="hideLargeContent">No Product is found</div>}
+
+
+      </div>
+    )
+
+
+
+  }
+
 
 
 
@@ -1184,11 +1328,8 @@ export const OrdersList = () => {
   console.log('displayChecked: ', displayChecked);
   console.log("orders", orders);
 
-  useEffect(() => {
-    dispatch({ type: 'GET_ORDERS', payload: orders })
-  }, [orders])
-
-  console.log("_orders", _orders);
+  console.log("_orders", allOrders);
+  console.log('formik.values: ', formik.values.name);
 
   return (
 
@@ -1216,28 +1357,41 @@ export const OrdersList = () => {
       {orderDialog &&
         <div className="col-12">
           <div className="card">
-            <div>
-              <h3>Customer Details</h3>
+            <div className="flex col-12">
+              <h3 className="mt-2">Customer Details</h3>
+              <div className="flex justify-content-center align-items-center ml-4">
+                <InputSwitch
+                  checked={formik.values.display === 1}
+                  onChange={(e) => {
+                    console.log('e:value ', e.value);
+                    formik.setFieldValue("display", e.value ? 1 : 0);
+                  }}
+                // className="mt-2"
+                />
+                <label className="ml-3" style={{ fontSize: "0.8rem" }}>Show Customer in Future Search </label>
+              </div>
+
             </div>
+
             <form onSubmit={formik.handleSubmit}
               className="p-fluid">
 
               <div className="grid">
                 <div className=" mt-3">
-                  <div>
-                    {/* <span>Display Customer </span> */}
-                  </div>
-                  <InputSwitch
+                  {/* <div>
+                    <span>Display Customer </span>
+                  </div> */}
+                  {/* <InputSwitch
                     checked={formik.values.display === 1}
                     onChange={(e) => {
                       console.log('e:value ', e.value);
                       formik.setFieldValue("display", e.value ? 1 : 0);
                     }}
                     className="mt-2"
-                  />
+                  /> */}
                 </div>
 
-                <div className="field col-12 md:col-3 lg:col-2 mt-3">
+                <div className="field col-12 md:col-4 lg:col-3 mt-3">
 
                   <span className="p-float-label">
                     <AutoComplete
@@ -1247,10 +1401,18 @@ export const OrdersList = () => {
                       suggestions={customerOptionsSuggestions && customerOptionsSuggestions.filter((val) => val.display === 1)}
                       completeMethod={searchCustomer}
                       forceSelection
+
                       onChange={async (e) => {
+                        // const selectedCustomer = typeof e.value === "string" ? e.value : " "
                         const selectedCustomer = e.value;
+                        console.log("customer e.value", e.value);
+                        console.log("customer e.value", typeof e.value);
+
+
+                        // setSelectedCustomerName(selectedCustomer);
 
                         let name = typeof e.value === "string" ? e.value : e.value?.name
+
 
                         await formik.setValues({
                           ...formik.values,
@@ -1278,6 +1440,7 @@ export const OrdersList = () => {
                       }}
                       aria-label="customer"
                       dropdownAriaLabel="Select customer"
+
                       className={classNames({ "p-invalid": isFormFieldValid("name") })}
                     />
                     <label
@@ -1325,77 +1488,7 @@ export const OrdersList = () => {
                 })
                 }
 
-                {/* <div className="field col-12 md:col-3 lg:col-2 mt-4">
-                  <div className="p-float-label">
-                    <AutoComplete
-                      id="city"
-                      value={formik.values.city}
-                      suggestions={addressSuggestion}
-                      completeMethod={searchCities}
-                      field="city"
-                      onChange={async (e) => {
-
-                        let city = typeof e.value === "string" ? e.value : e.value.city
-                        let state = typeof e.value === "string" ? " " : e.value.state
-                        let country = typeof e.value === "string" ? "" : "India"
-
-                        await formik.setValues({ ...formik.values, city, state, country })
-                      }}
-                      aria-label="cities"
-                      dropdownAriaLabel="Select City"
-                      className={classNames({ "p-invalid": isFormFieldValid("city") })}
-                    // disabled={!vendorEditState}
-                    />
-
-                    <label
-                      htmlFor="vendor_city"
-                      className={classNames({ "p-error": isFormFieldValid("city") })}
-                    >
-                      City
-                    </label>
-                  </div>
-                  {getFormErrorMessage("city")}
-                </div>
-
-                <div className="field col-12 md:col-3 lg:col-2 mt-4">
-                  <span className="p-float-label">
-                    <InputText
-                      id="state"
-                      value={formik.values.state}
-                      className={classNames({ "p-invalid": isFormFieldValid("state") })}
-                      // disabled={!vendorEditState}
-                      onChange={formik.handleChange}
-                    />
-                    <label
-                      htmlFor="state"
-                      className={classNames({ "p-error": isFormFieldValid("state") })}
-                    >
-                      State
-                    </label>
-                  </span>
-                  {getFormErrorMessage("state")}
-                </div>
-
-                <div className="field col-12 md:col-3 lg:col-2 mt-4">
-                  <span className="p-float-label">
-                    <InputText
-                      id="country"
-                      value={formik.values.country}
-                      className={classNames({ "p-invalid": isFormFieldValid("country") })}
-                      // disabled={!vendorEditState}
-                      onChange={formik.handleChange}
-                    />
-                    <label
-                      htmlFor="country"
-                      className={classNames({ "p-error": isFormFieldValid("country") })}
-                    >
-                      Country
-                    </label>
-                  </span>
-                  {getFormErrorMessage("country")}
-                </div> */}
-
-                <div className="field col-12 md:col-3 lg:col-2 mt-3">
+                <div className="field col-12 md:col-6 lg:col-2 mt-3">
                   <span className="p-float-label">
                     <InputText
                       id="gstNumber"
@@ -1839,20 +1932,14 @@ export const OrdersList = () => {
 
           <div className="col-12">
             <TabMenu
-              model={[{ label: "ALL", id: 0, status: "all" }, ...tabMenuItems]}
+              model={[{ label: "ALL" }, ...tabMenuItems]}
               activeIndex={statusId}
-              onTabChange={(e) => {
-                console.log("e.value", e.value);
-                dispatch({ type: 'UPDATE_ORDERS', payload: { id: e.value.id, status: e.value.status } });
-                dispatch({ type: 'UPDATE_STATUS_ID', payload: e.value.id })
-                // dispatch({ type: 'UPDATE_STATUS_NAME', payload: e.value.status ?? e.value.label })
+              onTabChange={handleTabMenuOrderDataChange}
 
-
-              }}
             />
           </div>
           <DataTable
-            value={_orders}
+            value={orders}
             responsiveLayout="scroll"
             // scrollable
             showGridlines
@@ -1867,7 +1954,7 @@ export const OrdersList = () => {
             footer={paginator}
 
           >
-            <Column
+            {statusId === 1 ? <Column
               selectionMode="multiple"
               headerStyle={{ width: '3rem' }}
             >
@@ -1876,7 +1963,7 @@ export const OrdersList = () => {
                 checked={isChecked}
                 onChange={handleCheckboxChange}
               />
-            </Column>
+            </Column> : null}
 
             <Column
               // field={}
@@ -1884,7 +1971,7 @@ export const OrdersList = () => {
               body={(rowData) => rowData.Id ? rowData.id : rowData.id}
             />
 
-            <Column
+            {/* <Column
               field=""
               header="Customer Name"
               body={({ customers }) => {
@@ -1899,7 +1986,7 @@ export const OrdersList = () => {
                   </div>
                 )
               }}
-            />
+            /> */}
 
             <Column
               field="products.name"
@@ -1915,86 +2002,15 @@ export const OrdersList = () => {
             <Column
               field=""
               header="Products"
-              body={({ order_items }) => {
-                const [showOverlay, setShowOverlay] = useState(false);
-
-                const handleMouseEnter = () => {
-                  setShowOverlay(true);
-                };
-
-                const handleMouseLeave = () => {
-                  setShowOverlay(false);
-                };
-
-                return (
-                  <div className="product-column">
-                    {order_items.length > 2 ?
-                      <>
-                        <div
-                          className="product-header"
-                          onMouseEnter={handleMouseEnter}
-                          onMouseLeave={handleMouseLeave}
-                        >
-                          <Button
-                            label={`Products(${order_items.length})`}
-                            className="p-button-link"
-                          />
-                        </div>
-                        {showOverlay && (
-                          <div className="overlay-panel">
-                            <div className="w-20rem">
-                              {order_items.map((product, i) => {
-                                const { quantity, products: { name, sku } } = product;
-                                return (
-                                  <div key={i} className="pt-2 pb-2">
-                                    {[{ prop: "Name", value: name },
-                                    { prop: "SKU", value: sku },
-                                    { prop: "Quantity", value: quantity }
-                                    ].map(({ prop, value }, index) => (
-                                      <div key={index} className="grid">
-                                        <label className="font-semibold col-4">{prop}:</label>
-                                        <div className="col">
-                                          {value?.toString()}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                      </>
-                      : order_items.length === 2 && order_items.length !== 0 ?
-                        <div className="w-20rem">
-                          {order_items.map((product, i) => {
-                            const { quantity, products: { name, sku } } = product;
-                            return (
-                              <div key={i} className="pt-2 pb-2">
-                                {[{ prop: "Name", value: name },
-                                { prop: "SKU", value: sku },
-                                { prop: "Quantity", value: quantity }
-                                ].map(({ prop, value }, index) => (
-                                  <div key={index} className="grid">
-                                    <label className="font-semibold col-4">{prop}:</label>
-                                    <div className="col">
-                                      {value?.toString()}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )
-                          })}
-                        </div> :
-                        <div className="hideLargeContent">No Kit Product is found</div>}
-
-
-                  </div>
-                )
-              }}
+              body={handleShowProducts}
             />
+
             <Column
+              field=""
+              header="Customer"
+              body={handleCustomerDetailsRender}
+            />
+            {/* <Column
               field=""
               header="Customer Contact Number"
               body={({ customers }) => {
@@ -2020,9 +2036,9 @@ export const OrdersList = () => {
                 )
               }}
 
-            />
+            /> */}
 
-            <Column
+            {/* <Column
               field=""
               header='Customer Address'
               body={({ customers }) => {
@@ -2034,7 +2050,7 @@ export const OrdersList = () => {
                 )
               }}
 
-            />
+            /> */}
             <Column
               field="gateway"
               header="Payment Method"
