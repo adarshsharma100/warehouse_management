@@ -394,7 +394,6 @@ export const ProductsList = () => {
     onSubmit: async (data) => {
       console.log('formdata: ', data);
 
-
       //function to create new kit products
 
       const createKitProducts = (products) =>
@@ -403,7 +402,7 @@ export const ProductsList = () => {
             connect: {
               id: product.id
             }
-          },
+          }, 
           quantity,
 
         }))

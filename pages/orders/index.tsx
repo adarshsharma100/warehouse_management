@@ -793,10 +793,6 @@ export const OrdersList = () => {
 
         <div className="flex justify-content-end">
           {checkVerified && (
-
-
-
-
             <Button
               type="button"
               icon="pi pi-verified"
