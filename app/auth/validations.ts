@@ -63,7 +63,7 @@ export const Product = z.object({
   color: z.string().optional().nullable(),
   hsnCode: z.string().optional().nullable(),
   imageUrl: z.string().optional().nullable(),
-  gstTaxTypeCode: z.string().optional().nullable(),
+  gstTaxTypeCode: z.number().optional().nullable(),
   taxCalcType: z.string().optional().nullable(),
   category: z.object({
     id: z.number(),
@@ -77,7 +77,7 @@ export const Product = z.object({
   }, {
     invalid_type_error: "Please select an option from the dropdown.",
   }).optional().nullable(),
-  costPrice: z.number(),
+  costPrice: z.number().optional(),
   sellingPrice: z.number().optional(),
   type: z.number(),
   kitProducts: z.array(z.object({

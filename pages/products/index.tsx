@@ -219,7 +219,7 @@ const columns = [
     header: "Custom Duty"
   },
   {
-    field: "gstcode",
+    field: "gstTaxTypeCode",
     header: "Gst Code"
   },
   {
@@ -569,9 +569,8 @@ export const ProductsList = () => {
     initialValues: initialProductDetails,
     validate: validateZodSchema(Product),
     onSubmit: async (data) => {
-      console.log('formdata: ', data);
-
-
+      console.log(data);
+      // alert(data);
 
       //function to create new kit products
 
@@ -604,9 +603,11 @@ export const ProductsList = () => {
         type,
         kitProducts,
         customDuty,
-        gstcode,
+        gstTaxTypeCode,
         taxCalcuation,
       } = data
+
+      console.log("kitProducts", kitProducts);
 
       // const tagsValue = tags.map(({ value }) => value)
 
@@ -634,7 +635,7 @@ export const ProductsList = () => {
 
 
 
-      if (activeProduct)
+      if (activeProduct) {
         return await updateProductMutation({
           id: activeProductId,
           name: name,
@@ -647,10 +648,10 @@ export const ProductsList = () => {
           color,
           hsnCode,
           customDuty,
-          gstTaxTypeCode: gstcode,
+          gstTaxTypeCode,
           taxCalcType: taxCalcuation,
-          kit_products_kit_products_productsIdToproducts: {
-            updateMany: existingKitProducts.map(({ kitId, quantity }) => ({
+          kit_products_kit_products_productIdToproducts: {
+            updateMany: existingKitProducts?.map(({ kitId, quantity }) => ({
               where: {
                 id: kitId
               },
@@ -686,6 +687,9 @@ export const ProductsList = () => {
             }
           })
 
+      }
+
+
 
 
       await createProductMutation(
@@ -693,7 +697,7 @@ export const ProductsList = () => {
           name,
           description,
           customDuty,
-          gstTaxTypeCode: gstcode,
+          gstTaxTypeCode,
           taxCalcType: taxCalcuation,
           sku: moment().format('x'),
           // category: category.id,
@@ -846,6 +850,7 @@ export const ProductsList = () => {
 
   console.log("setFilteredKitSuggestions", filteredKitSuggestions);
   console.log("filteredKitId", filteredKitId);
+  console.log("formik.value", formik.values)
 
   console.log("File Image", imageUploadArray);
 
@@ -924,33 +929,37 @@ export const ProductsList = () => {
         <div className="card">
 
           <div>
+
             <div className="flex justify-content-between">
               <h4>{activeProduct ? "Update" : "Create"} Product</h4>
-              <h4>{activeProduct &&
+              <h4 className="mt-0">{activeProduct &&
                 <Button
                   icon="pi pi-pencil"
                   className="m-1"
                   onClick={() => { setProductEditState(!productEditState) }}
                 />}</h4>
-
-              <div className="selected-image-container flex justify-content-between" >
-                {imageUploadArray && imageUploadArray.length > 0 ?
-                  imageUploadArray.map((eachImage, index) => {
-                    return (
-                      <div key={index} className="m-3">
-                        <Image src={eachImage.objectURL}
-                          alt="Image"
-                          width="100"
-                          height="50" preview />
-                      </div>
-                    )
-                  })
-                  : null
-
-                }
-              </div>
-
             </div>
+
+
+            {imageUploadArray && imageUploadArray.length > 0 ?
+              <div className="selected-image-container flex justify-content-end" >
+                {imageUploadArray.map((eachImage, index) => {
+                  return (
+                    <div key={index} className="m-3">
+                      <Image src={eachImage.objectURL}
+                        alt="Image"
+                        width="100"
+                        height="50" preview />
+                    </div>
+                  )
+                })}
+              </div>
+              : null
+
+
+            }
+
+
             {/* <div className="flex justify-content-center align-item-center">
               <FileUpload
                 name="product_image"
@@ -985,7 +994,7 @@ export const ProductsList = () => {
                     { type: 'text', label: "Color", field: "color", header: "Color" },
                     // { type: 'text', label: "Brand", field: "brand", header: "Brand" },
                     { type: 'text', label: "Custom duty", field: "customDuty", header: "Tax code" },
-                    { type: 'text', label: "Gst Tax type code", field: "gstcode", header: "Gst Code" },
+                    { type: 'number', label: "Gst Tax type code", field: "gstTaxTypeCode", header: "Gst Code" },
                     { type: 'text', label: "HSN code", field: "hsnCode", header: "HSN Code" },
                     { type: 'number', label: "Cost Price", field: "costPrice", header: "Cost Price" },
                     { type: 'text', label: "Tax Calculation Type", field: "taxCalcuation", header: "Tax Calcuation" },
@@ -1134,7 +1143,7 @@ export const ProductsList = () => {
                       <div className="col-12">
                         <span className="text-lg">Kit Products</span>
                       </div>
-                      {formik.values.kitProducts.map(({ product, quantity }, index) => (
+                      {formik.values.kitProducts?.map(({ product, quantity }, index) => (
                         <>
                           <div key={`kit-product-${index}`} className="field col-12 lg:col-9 mt-5">
                             <span className="p-float-label">
@@ -1261,6 +1270,7 @@ export const ProductsList = () => {
                   type="submit"
                   className="mr-2 "
                   label={activeProduct ? 'UPDATE' : 'SUBMIT'}
+
                 />}
                 <Button
                   className="p-button-secondary flex-grow-0"
@@ -1298,12 +1308,13 @@ export const ProductsList = () => {
               setActiveRowData({ ...e.data })
               setActiveProduct(true)
               setProductDialog(true)
+              console.log("row data click", e.data);
 
               setSelectedStatus(e.data.product_types)
 
 
-              const _kitData = e.data.kit_products?.map((prod) => {
-                const { products_kit_products_productsIdToproducts: product, quantity, id: kitId } = prod
+              const _kitData = e.data.kit_products_kit_products_productIdToproducts?.map((prod) => {
+                const { products_kit_products_kitProductIdToproducts: product, quantity, id: kitId } = prod
                 return ({
                   product: { name: `${product.sku}-${product.name}`, id: product?.id, },
                   quantity,
@@ -1316,7 +1327,7 @@ export const ProductsList = () => {
                 ...e.data,
                 type: e?.data?.type,
                 category: e.data.product_categories,
-                gstcode: e?.data?.gstTaxTypeCode,
+                gstTaxTypeCode: e?.data?.gstTaxTypeCode,
                 taxCalcuation: e?.data?.taxCalcType,
                 kitProducts: _kitData,
                 brand: e?.data.product_brand,
