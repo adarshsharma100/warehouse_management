@@ -44,6 +44,7 @@ import { InputSwitch } from "primereact/inputswitch"
 import { InputNumber } from "primereact/inputnumber"
 import { InputTextarea } from "primereact/inputtextarea"
 import { OverlayPanel } from "primereact/overlaypanel"
+import { Divider } from "primereact/divider";
 import { dateFilterTemplate } from "components/FilterTemplates"
 import getProduct_brands from "app/product_brands/queries/getProduct_brands"
 import { Paginator } from "primereact/paginator"
@@ -91,9 +92,14 @@ const columns = [
     header: "Kit Products",
     body: ({ kit_products_kit_products_productIdToproducts }) => {
       const [showOverlay, setShowOverlay] = useState(false);
+      const productDisplayRef = useRef(null);
 
-      const handleMouseEnter = () => {
-        setShowOverlay(true);
+      const handleMouseEnter = (event) => {
+        if (productDisplayRef.current) {
+          productDisplayRef.current.toggle(event);
+
+        }
+
       };
 
       const handleMouseLeave = () => {
@@ -106,17 +112,24 @@ const columns = [
             <div className="product-column">
               <div
                 className="product-header"
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
+
+
+              // onMouseLeave={handleMouseLeave}
               >
                 <Button
                   label={`Kit-Products(${kit_products_kit_products_productIdToproducts.length})`}
                   className="p-button-link"
+                  onMouseEnter={handleMouseEnter}
                 />
               </div>
-              {showOverlay && (
-                <div className="overlay-panel">
-                  <div className="w-20rem">
+              {/* {showOverlay && ( */}
+              <div className="overlay-panel">
+                <OverlayPanel ref={productDisplayRef} showCloseIcon  >
+                  <div style={{
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    overflowX: 'hidden'
+                  }}>
                     {kit_products_kit_products_productIdToproducts.map((product, i) => {
                       const { quantity, products_kit_products_kitProductIdToproducts: { name, sku } } = product;
                       return (
@@ -126,19 +139,26 @@ const columns = [
                           { prop: "Quantity", value: quantity }
                           ].map(({ prop, value }, index) => (
                             <div key={index} className="grid">
-                              <label className="font-semibold col-4">{prop}:</label>
-                              <div className="col">
+                              <span className="font-semibold col-4">{prop}:</span>
+                              <span className="col">
                                 {value?.toString()}
-                              </div>
+                              </span>
+
                             </div>
                           ))}
                         </div>
                       )
                     })}
                   </div>
-                </div>
-              )}
+
+
+                </OverlayPanel>
+
+              </div>
+
             </div>
+
+
           ) : kit_products_kit_products_productIdToproducts?.length < 3 && kit_products_kit_products_productIdToproducts.length > 0 ?
             <div className="w-20rem">
               {kit_products_kit_products_productIdToproducts?.map((product, i) => {
@@ -163,7 +183,7 @@ const columns = [
             </div>
 
 
-            : <div className="hideLargeContent">No Kit Product is found</div>
+            : <div className="hideLargeContent">-</div>
 
           }
         </>
@@ -233,13 +253,13 @@ const columns = [
   },
 
   {
-    field: "createdAT",
-    header: "Created On",
-    filterField: "createdAT",
+    field: "updatedAT",
+    header: "Updated On",
+    filterField: "updatedAT",
     filter: true,
     filterElement: dateFilterTemplate,
     dataType: "date",
-    body: (rowData) => <div>{dateFormat(rowData.createdAT)}</div>,
+    body: (rowData) => <div>{dateFormat(rowData.updatedAT)}</div>,
   },
 ]
 
@@ -557,7 +577,7 @@ export const ProductsList = () => {
 
       const createKitProducts = (products) =>
         products.map(({ product, quantity }) => ({
-          products_kit_products_productIdToproducts: {
+          products_kit_products_kitProductIdToproducts: {
             connect: {
               id: product.id
             }
@@ -713,6 +733,7 @@ export const ProductsList = () => {
           kit_products_kit_products_productIdToproducts: type === 2 ? {
             create: createKitProducts(kitProducts)
           } : undefined
+
         },
         {
           onSuccess: async () => {
@@ -1281,7 +1302,7 @@ export const ProductsList = () => {
               setSelectedStatus(e.data.product_types)
 
 
-              const _kitData = e.data.kit_products.map((prod) => {
+              const _kitData = e.data.kit_products?.map((prod) => {
                 const { products_kit_products_productsIdToproducts: product, quantity, id: kitId } = prod
                 return ({
                   product: { name: `${product.sku}-${product.name}`, id: product?.id, },

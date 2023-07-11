@@ -2,6 +2,17 @@ import { resolver } from "@blitzjs/rpc"
 import db from "db"
 import { z } from "zod"
 
+const productSchema = z.object({
+  create: z.object({
+    products_kit_products_kitProductIdToproducts: z.object({
+      connect: z.object({
+        id: z.number()
+      })
+    }),
+    quantity: z.number()
+  })
+});
+
 const CreateProduct = z.object({
   name: z.string().min(3).max(45).transform((str) => str.trim()),
   description: z
@@ -18,7 +29,7 @@ const CreateProduct = z.object({
   customDuty: z.string().optional(),
   hsnCode: z.string().optional(),
   imageUrl: z.string().optional(),
-  gstTaxTypeCode: z.string().optional(),
+  gstTaxTypeCode: z.number().optional(),
   taxCalcType: z.string().optional(),
   brand: z.number().optional(),
   product_categories: z.object({
@@ -47,6 +58,8 @@ const CreateProduct = z.object({
     })
   }),
   sku: z.string(),
+  kit_products_kit_products_productIdToproducts: z.unknown()
+
   // category: z.number(),
 })
 
@@ -61,7 +74,33 @@ export default resolver.pipe(
       //   ...input,
       //   kit
       // },
-      data: input,
+      data: {
+        ...input,
+        // kit_products_kit_products_productIdToproducts: {
+        //   create: [{
+        //     products_kit_products_kitProductIdToproducts: {
+        //       connect: {
+        //         id: 396
+
+        //       }
+
+        //     },
+        //     quantity: 5
+
+        //   }, {
+        //     products_kit_products_kitProductIdToproducts: {
+        //       connect: {
+        //         id: 397
+        //       }
+
+        //     },
+
+        //     quantity: 58
+
+        //   }]
+
+        // },
+      },
       include: {
         product_categories: true,
 
