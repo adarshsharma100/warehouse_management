@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+
+
 export const email = z
   .string()
   .email()
@@ -51,6 +53,27 @@ export const description = z
   .max(100)
   .transform((str) => str.trim())
   .optional()
+
+export const Vendor = z.object({
+  name: z.string().min(3).max(45).transform((str) => str.trim()).refine((val) => val.trim().length > 0, {
+    message: 'Field is required and cannot be empty.',
+  }),
+  code: z.string().max(45).transform((str) => str.trim()).refine((val) => val.trim().length > 0, {
+    message: 'Field is required and cannot be empty.',
+  }),
+  gstin: z.string().max(45).transform((str) => str.trim()).optional(),
+  creditPeriod: z.number().refine((val) => val !== 0, {
+    message: 'Credit period is required.',
+  }),
+  leadTime: z.number().optional().nullable(),
+  status: z.object({
+    name: z.string()
+  }, {
+    invalid_type_error: "Please select an option from the dropdown.",
+  }),
+  vendorScore: z.number().optional().nullable(),
+
+})
 
 export const Product = z.object({
   name: z.string().min(3).max(45).transform((str) => str.trim()),

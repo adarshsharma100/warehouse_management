@@ -13,6 +13,7 @@ import { Column } from "primereact/column"
 import { Dialog } from "primereact/dialog"
 import classNames from "classnames"
 import { InputText } from "primereact/inputtext"
+import { InputNumber } from "primereact/inputnumber"
 import { Chip } from "primereact/Chip"
 import { MultiSelect } from "primereact/multiselect"
 import createVendor from "app/vendors/mutations/createVendor"
@@ -50,6 +51,9 @@ import { InputTextarea } from "primereact/inputtextarea"
 import getTags from "app/tags/queries/getTags"
 import Creatable from "react-select/creatable"
 import chroma from "chroma-js"
+import { validateZodSchema } from "blitz"
+import { Vendor } from "app/auth/validations"
+import { type } from "os"
 
 const ITEMS_PER_PAGE = 100
 
@@ -146,20 +150,26 @@ export const VendorsList = () => {
     // color: getRandomColor(),
   }))
 
+  const StatusCheck = [
+    { name: 'Active' },
+    { name: 'Inactive' },
+  ];
+
   const initialVendorState = {
     name: "",
     code: "",
-    vendorScore: '',
+    vendorScore: undefined,
     email: "",
     contact: "",
     gstin: "",
-    creditPeriod: "",
-    leadTime: "",
+    creditPeriod: 0,
+    leadTime: undefined,
     address: "",
     vendor_city: "",
     vendor_state: "",
     tags: [],
-    status: "",
+    status:
+      { name: 'Active' },
     branch_code: "",
     pincode: "",
     landmarkName: ""
@@ -278,10 +288,10 @@ export const VendorsList = () => {
 
 
   const [selectedStatus, setSelectedStatus] = useState(null);
-  const StatusCheck = [
-    { name: 'Active' },
-    { name: 'Inactive' },
-  ];
+  // const StatusCheck = [
+  //   { name: 'Active' },
+  //   { name: 'Inactive' },
+  // ];
 
   const header = (
     <div style={{ textAlign: "left" }}>
@@ -413,6 +423,7 @@ export const VendorsList = () => {
       <Dropdown
         value={options.value}
         options={statuses}
+
         onChange={(e) => options.filterCallback(e.value, options.index)}
         itemTemplate={statusItemTemplate}
         placeholder="Select a Status"
@@ -585,25 +596,13 @@ export const VendorsList = () => {
 
   // console.log("ErrorMsgs", ErrorMsgs[0])
 
-  const [createNewVendors] = useMutation(createVendor)
+
   const [updateActiveVender] = useMutation(updateVendor)
 
 
   const formik = useFormik({
     initialValues: vendorDetails,
-    validationSchema: Yup.object().shape({
-      name: Yup.string().required("*Required"),
-      // vendor_email: Yup.string().email("Enter valid email").required("*Required"),
-      // vendor_contact: Yup.string()
-      //   .min(10, "Enter Valid 10 digit Number")
-      //   .max(10, "Enter Valid 10 digit Number")
-      //   .required("*Required"),
-      // vendor_gstin: Yup.string().min(15, "Enter correct GST No. ").max(15, "Enter correct GST No."),
-
-      // address: Yup.string().required("*Required"),
-      // vendor_city: Yup.string().required("*Required"),
-      // vendor_state: Yup.string().required("*Required"),
-    }),
+    validate: validateZodSchema(Vendor),
 
     onSubmit: async (data) => {
       console.log("formData", data)
@@ -612,7 +611,7 @@ export const VendorsList = () => {
       const {
         id: activeVendorId,
         //   vendor_branches: [{ id: vendorBranchId, address: addressId }]
-      } = activeVendorData 
+      } = activeVendorData
 
       const { name, code, vendorScore, contact, creditPeriod, leadTime, gstin, email, address, vendor_city
         , vendor_state, branch_code, landmarkName, pincode, status } = data
@@ -654,7 +653,7 @@ export const VendorsList = () => {
             name,
             code,
             gstin,
-            creditPeriod: parseInt(creditPeriod),
+            creditPeriod,
             leadTime: parseInt(leadTime),
             status: status?.name,
             vendorScore: parseInt(vendorScore),
@@ -720,11 +719,11 @@ export const VendorsList = () => {
           }
 
 
-          const vendor = await createVendorMutation({
+          await createVendorMutation({
             name,
             code,
             gstin,
-            creditPeriod: parseInt(creditPeriod),
+            creditPeriod,
             leadTime: parseInt(leadTime),
             status: status?.name,
             vendorScore: parseInt(vendorScore),
@@ -906,7 +905,7 @@ export const VendorsList = () => {
                 { type: "email", label: "Email", field: "email" },
                 { type: "text", label: "Contact Number", field: "contact" },
                 { type: "text", label: "GSTIN", field: "gstin" },
-                { type: "text", label: "Credit Period", field: "creditPeriod" },
+                { type: "number", label: "Credit Period", field: "creditPeriod" },
                 { type: "text", label: "Lead Time", field: "leadTime" },
                 { type: "text", label: "Address", field: "address" },
                 { type: "text", label: "Landmark", field: "landmarkName" },
@@ -918,15 +917,32 @@ export const VendorsList = () => {
                     className="field col-12 md:col-3 lg:col-2 mt-4"
                   >
                     <span className="p-float-label">
-                      <InputText
-                        id={ele.field}
-                        name={ele.field}
-                        value={formik.values[ele.field]}
-                        onChange={formik.handleChange}
-                        autoFocus
-                        className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
-                        disabled={!vendorEditState}
-                      />
+                      {
+                        ele.type === "text" || ele.type === "email" ? (
+                          <InputText
+                            id={ele.field}
+                            name={ele.field}
+                            value={formik.values[ele.field]}
+                            onChange={formik.handleChange}
+                            autoFocus
+                            className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
+                            disabled={!vendorEditState}
+                          />
+
+                        ) : ele.type === "number" ? (
+                          <InputNumber
+
+                            id={ele.field}
+                            name={ele.field}
+                            value={formik.values[ele.field]}
+                            onChange={formik.handleChange}
+                            autoFocus
+                            className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
+                            disabled={!vendorEditState}
+                          />
+                        ) : null
+                      }
+
                       <label
                         htmlFor={ele.field}
                         className={classNames({ "p-error": isFormFieldValid(ele.field) })}
@@ -994,6 +1010,7 @@ export const VendorsList = () => {
                   <Dropdown
                     id="status"
                     value={formik.values.status}
+                    // defaultValue="Active"
                     onChange={formik.handleChange}
                     options={StatusCheck}
                     optionLabel="name"

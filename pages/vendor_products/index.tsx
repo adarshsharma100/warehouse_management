@@ -616,6 +616,25 @@ export const Vendor_productsList = () => {
             </div>
             <div className="field col-12 md:col-3 lg:col-3 mt-4">
               <span className="p-float-label">
+                <Dropdown
+                  disabled={readOnly}
+                  value={formik.values.status}
+                  onChange={formik.handleChange}
+                  options={statusOptions}
+                  optionLabel="name"
+                  placeholder="Status"
+                  className="w-full"
+                  id="status"
+                />
+                <label
+                  htmlFor={"type"}
+                  className={classNames({ "p-error": isFormFieldValid("status") })}
+                >
+                  Priority
+                </label>
+              </span>
+
+              {/* <span className="p-float-label">
                 <InputNumber
                   id="priority"
                   name="priority"
@@ -632,7 +651,7 @@ export const Vendor_productsList = () => {
                   Priority
                 </label>
               </span>
-              {getFormErrorMessage("priority")}
+              {getFormErrorMessage("priority")} */}
             </div>
             <div className="field col-12 md:col-3 lg:col-3 mt-4">
               <span className="p-float-label">
