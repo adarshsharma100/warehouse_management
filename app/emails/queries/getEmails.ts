@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc"
 import db, { Prisma } from "db"
 
 interface GetEmailsInput
-  extends Pick<Prisma.emailsFindManyArgs, "where" | "orderBy" | "skip" | "take"> {}
+  extends Pick<Prisma.emailsFindManyArgs, "where" | "orderBy" | "skip" | "take"> { }
 
 export default resolver.pipe(
   resolver.authorize(),
@@ -21,8 +21,26 @@ export default resolver.pipe(
       query: (paginateArgs) =>
         db.emails.findMany({
           ...paginateArgs,
-          where,
+          where: {
+            OR: [
+              {
+                addresses_emails_addressesToaddresses: {
+                  vendor_branches: {
+                    some: {
+                      vendors: {
+                        name: {
+                          contains: "Ka"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              { email: { contains: "Ka" } }
+            ]
+          },
           orderBy,
+
         }),
     })
 

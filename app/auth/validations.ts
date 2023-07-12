@@ -55,9 +55,13 @@ export const description = z
   .optional()
 
 export const Vendor = z.object({
-  name: z.string().min(3).max(45).transform((str) => str.trim()).refine((val) => val.trim().length > 0, {
-    message: 'Field is required and cannot be empty.',
-  }),
+  name: z.string()
+    .min(3, 'Name must be at least 3 characters long.')
+    .max(45)
+    .transform((str) => str.trim())
+    .refine((val) => val.trim().length > 0, {
+      message: 'Field is required and cannot be empty.',
+    }),
   code: z.string().max(45).transform((str) => str.trim()).refine((val) => val.trim().length > 0, {
     message: 'Field is required and cannot be empty.',
   }),

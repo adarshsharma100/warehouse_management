@@ -89,7 +89,13 @@ export const RfqsList = () => {
   })
   const [{ emails },] = useQuery(getEmails, {
     orderBy: { id: "asc" },
+    where: {
+
+    }
   })
+
+  console.log('emails: ', emails);
+
 
   const [{ purchase_orders }, { error: getPoError }] = useQuery(getPurchase_orders, {
     orderBy: { id: "desc" }, // Do not change the order this will affect on LatestPO function
@@ -142,6 +148,7 @@ export const RfqsList = () => {
   const [rfqDetails, setRfqDetails] = useState(initialRfqState)
   const [rfqEditState, setRfqEditState] = useState(false)
   const [readOnlyForm, setReadOnlyForm] = useState(true)
+  const [totalTargetPrice, setTotalTargetPrice] = useState(0)
 
   const initialItemList = {
     product_id: "",
@@ -149,7 +156,9 @@ export const RfqsList = () => {
     costPrice: "",
     product_name: "",
     last_po_price: "-",
+    last_purchase_quantity: "",
     last_vendor: "",
+
     avg_price: "-",
   }
 
@@ -235,7 +244,9 @@ export const RfqsList = () => {
     )
     console.log('lastProductPrice: ', lastProductPrice);
 
-
+    const purchaseQuantity = lastProductPrice?.po_products?.find(
+      (ele) => ele.vendor_products.products.id === num
+    ).quantity
     const vendor = lastProductPrice?.vendors?.name
     const poId = lastProductPrice?.id
     const productPrice = lastProductPrice?.po_products?.find(
@@ -246,6 +257,7 @@ export const RfqsList = () => {
       poId,
       vendor: vendor ?? "NA",
       productPrice: productPrice ?? "NA",
+      purchaseQuantity: purchaseQuantity ?? "NA"
     }
 
 
@@ -305,6 +317,8 @@ export const RfqsList = () => {
 
 
 
+
+
   const columnComponents = columns.reduce((acc, curr) => {
     if (selectedColumns.includes(curr.field))
       return [
@@ -323,10 +337,10 @@ export const RfqsList = () => {
     return acc;
   }, []);
 
-  useEffect(() => {
-    const defaultColumns = columns.filter(col => !["updatedAt", "rfq.rfqNumber"].includes(col.field)).map(col => col.field)
-    setSelectedColumns(defaultColumns)
-  }, [])
+  // useEffect(() => {
+  //   const defaultColumns = columns.filter(col => !["updatedAt", "rfq.rfqNumber"].includes(col.field)).map(col => col.field)
+  //   setSelectedColumns(defaultColumns)
+  // }, [])
 
 
   console.log("selectedColumns", selectedColumns)
@@ -377,10 +391,14 @@ export const RfqsList = () => {
   }
 
   const handleFormChange = (e: any, i: number) => {
-    let data = [...itemList]
+    let data = [...itemList];
+    let totalValue;
     e.target ? (data[i][e.target.name] = e.value) : (data[i][e.originalEvent.target.name] = e.value)
     setItemList(data)
+
   }
+
+  console.log("setTotalTargetPrice", totalTargetPrice)
 
   const rowExpansionTemplate = (data) => {
     return (
@@ -585,10 +603,32 @@ export const RfqsList = () => {
 
   const emailsuggestions = createSearchFunction(optionsForVendorEmails, setVendorEmailSuggestions)
 
+  const removeErrorBox = (i) => {
+    const msgArray = [...rfqErrorMsgs]
+    msgArray.splice(i, 1)
+    setRfqErrorMsgs(msgArray)
+  }
+
+  const handlePageChange = async (event) => {
+
+    dispatch({ type: "UPDATE_SKIP_COUNT", payload: event.first })
+    dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
+  }
+
+
+  const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={rfqsCount} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
+
+  useEffect(() => {
+    const defaultColumns = columns.filter(col => !["updatedAt", "rfq.rfqNumber"].includes(col.field)).map(col => col.field)
+    setSelectedColumns(defaultColumns)
+  }, [])
+
   useEffect(() => {
     const currentItemsIds = itemList.map(({ rfq_products_id }) => rfq_products_id)
     setCurrentRfqitemsID([...currentItemsIds])
   }, [rfqDialog])
+
+  console.log("itemList", itemList);
 
   useEffect(() => {
     const ErrorArray = [
@@ -614,21 +654,21 @@ export const RfqsList = () => {
 
   ])
 
-  const removeErrorBox = (i) => {
-    const msgArray = [...rfqErrorMsgs]
-    msgArray.splice(i, 1)
-    setRfqErrorMsgs(msgArray)
-  }
+  useEffect(() => {
+    let _totalValue = 0;
+    const itemListTotal = itemList.map((eachList) => {
+      const { costPrice, quantity } = eachList;
+      console.log("costPrice", isNaN(costPrice));
+      console.log("quantity", quantity);
+      console.log("totalValue", _totalValue)
+      if (!isNaN(costPrice) && !isNaN(quantity)) {
+        _totalValue = _totalValue + (costPrice * quantity)
+      }
 
-  const handlePageChange = async (event) => {
+    })
+    setTotalTargetPrice(_totalValue)
 
-    dispatch({ type: "UPDATE_SKIP_COUNT", payload: event.first })
-    dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
-  }
-
-
-  const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={rfqsCount} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
-
+  }, [itemList])
 
   return (
     <>
@@ -1049,7 +1089,7 @@ export const RfqsList = () => {
                 {itemList.map((ele, i) => (
                   <>
                     <div className="col-12 grid mt-1" key={`RFQ-product-${i}`}>
-                      <div className="col-12 lg:col-6">
+                      <div className="col-12 lg:col-4">
                         <div className="field">
                           <div className="p-float-label">
                             <AutoComplete
@@ -1072,9 +1112,11 @@ export const RfqsList = () => {
 
                                 data[i].product_name = name
                                 data[i].product_id = product_id
-                                data[i].costPrice = costPrice
+                                data[i].quantity = lastPo.purchaseQuantity
+                                data[i].costPrice = lastPo.productPrice
                                 data[i].last_po_price = lastPo.productPrice
                                 data[i].last_vendor = lastPo.vendor
+                                data[i].last_purchase_quantity = lastPo.purchaseQuantity
 
                                 let itemsLength = !e.value?.name ? false : true
                                 await formik.setValues({ ...formik.values, itemsLength })
@@ -1086,17 +1128,12 @@ export const RfqsList = () => {
                             //   className={classNames({ "p-invalid": isFormFieldValid("name") })}
                             />
 
-                            <label
-                              htmlFor="name"
-                            //   className={classNames({ "p-error": isFormFieldValid("name") })}
-                            >
-                              Select Product
-                            </label>
+
                           </div>
                         </div>
                       </div>
 
-                      <div className="col-12 lg:col-1">
+                      <div className="col-12 lg:col-2">
                         <div className="field">
                           <span className="p-float-label ">
                             <InputNumber
@@ -1110,7 +1147,7 @@ export const RfqsList = () => {
                             <label
                             // className="labelpos_1"
                             >
-                              Target price
+                              Target price(excluding GST)
                             </label>
                           </span>
                         </div>
@@ -1144,14 +1181,30 @@ export const RfqsList = () => {
                               name="last_po_price"
                               disabled
                               value={ele.last_po_price}
-                              onChange={(e) => handleFormChange(e, i)}
-                            // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+
                             />
                             <label
                             // className="labelpos_1"
                             // className={classNames({ "p-error": isFormFieldValid("name") })}
                             >
                               Last PO Price
+                            </label>
+                          </span>
+                        </div>
+                        {/* {getFormErrorMessage("name")} */}
+                      </div>
+                      <div className="col-12 lg:col-1">
+                        <div className="field">
+                          <span className="p-float-label">
+                            <InputText
+                              id="last_purchase_quantity"
+                              name="last_purchase_quantity"
+                              disabled
+                              value={Number(ele.last_purchase_quantity)}
+
+                            />
+                            <label>
+                              Lastest Quantity
                             </label>
                           </span>
                         </div>
@@ -1201,6 +1254,15 @@ export const RfqsList = () => {
                   </>
                 ))}
                 <div className="m-auto text-2xl">{getFormErrorMessage("itemsLength")}</div>
+                <div className="col-12 grid">
+                  <div className="col-12 lg:col-4" />
+                  <div className="col-12 lg:col-1 mt-1">
+                    Total Value:
+                  </div>
+                  <div className="col-12 lg:col-2">
+                    <InputNumber value={totalTargetPrice} disabled />
+                  </div>
+                </div>
               </div>
 
               <div className="flex mx-4 justify-content-end ">

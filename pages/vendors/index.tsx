@@ -931,11 +931,14 @@ export const VendorsList = () => {
 
                         ) : ele.type === "number" ? (
                           <InputNumber
-
+                            // type="number"
                             id={ele.field}
                             name={ele.field}
                             value={formik.values[ele.field]}
-                            onChange={formik.handleChange}
+                            onChange={async (event) => {
+                              console.log("event", event.originalEvent.target.name)
+                              await formik.setValues({ ...formik.values, [event.originalEvent.target.name]: event.value })
+                            }}
                             autoFocus
                             className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
                             disabled={!vendorEditState}
