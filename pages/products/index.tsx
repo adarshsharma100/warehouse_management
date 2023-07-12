@@ -577,13 +577,14 @@ export const ProductsList = () => {
       const createKitProducts = (products) =>
         products.map(({ product, quantity }) => ({
           products_kit_products_kitProductIdToproducts: {
-          products_kit_products_kitProductIdToproducts: {
-            connect: {
-              id: product.id
-            }
-          },
-          quantity,
+            products_kit_products_kitProductIdToproducts: {
+              connect: {
+                id: product.id
+              }
+            },
+            quantity,
 
+          }
         }))
 
       const {
