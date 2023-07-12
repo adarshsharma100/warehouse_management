@@ -20,9 +20,15 @@ const CreateProduct = z.object({
   hsnCode: z.string().optional(),
   imageUrl: z.string().optional(),
   gstTaxTypeCode: z.number().optional(),
+  gstTaxTypeCode: z.number().optional(),
   taxCalcType: z.string().optional(),
   brand: z.number().optional(),
   product_categories: z.object({
+    connect: z.object({
+      id: z.number()
+    })
+  }),
+  product_brand: z.object({
     connect: z.object({
       id: z.number()
     })
@@ -73,33 +79,7 @@ export default resolver.pipe(
       //   ...input,
       //   kit
       // },
-      data: {
-        ...input,
-        // kit_products_kit_products_productIdToproducts: {
-        //   create: [{
-        //     products_kit_products_kitProductIdToproducts: {
-        //       connect: {
-        //         id: 396
-
-        //       }
-
-        //     },
-        //     quantity: 5
-
-        //   }, {
-        //     products_kit_products_kitProductIdToproducts: {
-        //       connect: {
-        //         id: 397
-        //       }
-
-        //     },
-
-        //     quantity: 58
-
-        //   }]
-
-        // },
-      },
+      data: { ...input },
       include: {
         product_categories: true,
 

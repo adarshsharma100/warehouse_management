@@ -577,6 +577,7 @@ export const ProductsList = () => {
       const createKitProducts = (products) =>
         products.map(({ product, quantity }) => ({
           products_kit_products_kitProductIdToproducts: {
+          products_kit_products_kitProductIdToproducts: {
             connect: {
               id: product.id
             }
@@ -707,7 +708,12 @@ export const ProductsList = () => {
 
             }
           },
-          brand: brand?.id,
+          product_brand: {
+            connect: {
+              id: brand?.id
+            }
+          },
+          // brand: brand?.id,
           // costPrice,
           product_prices: {
             create: {
@@ -762,7 +768,7 @@ export const ProductsList = () => {
     },
   })
 
-
+  console.log("Formik Data", activeRowData);
   console.log('  formik.errors: ', formik.errors
   );
 
