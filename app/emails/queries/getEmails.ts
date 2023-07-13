@@ -21,25 +21,23 @@ export default resolver.pipe(
       query: (paginateArgs) =>
         db.emails.findMany({
           ...paginateArgs,
-          where: {
-            OR: [
-              {
-                addresses_emails_addressesToaddresses: {
-                  vendor_branches: {
-                    some: {
-                      vendors: {
-                        name: {
-                          contains: "Ka"
-                        }
+          where,
+          orderBy,
+          include: {
+            addresses_emails_addressesToaddresses: {
+              include: {
+                vendor_branches: {
+                  select: {
+                    vendors: {
+                      select: {
+                        name: true
                       }
                     }
                   }
                 }
-              },
-              { email: { contains: "Ka" } }
-            ]
-          },
-          orderBy,
+              }
+            }
+          }
 
         }),
     })

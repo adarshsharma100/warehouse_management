@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState, useReducer } from "react"
+import { Suspense, useEffect, useRef, useState, useReducer, startTransition } from "react"
 import Head from "next/head"
 import { useMutation, usePaginatedQuery, useQuery, invoke } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
@@ -54,11 +54,14 @@ const ITEMS_PER_PAGE = 100
 const initialState = {
   tableRowsCount: 10,
   skipCount: 0,
+  emailNameSearchQuery: ""
 
 };
 
 const reducer = (state, { type, payload }) => {
   switch (type) {
+    case 'UPDATE_EMAIL_NAME_SEARCH_STATE':
+      return { ...state, [payload.key]: payload.value }
     case 'UPDATE_TABLE_ROWS_COUNT':
       return { ...state, tableRowsCount: payload }
     case 'UPDATE_SKIP_COUNT':
@@ -71,7 +74,7 @@ const reducer = (state, { type, payload }) => {
 export const RfqsList = () => {
   const router = useRouter();
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { skipCount, tableRowsCount } = state;
+  const { skipCount, tableRowsCount, emailNameSearchQuery } = state;
 
 
   const antiCSRFToken = getAntiCSRFToken()
@@ -90,11 +93,29 @@ export const RfqsList = () => {
   const [{ emails },] = useQuery(getEmails, {
     orderBy: { id: "asc" },
     where: {
+      OR: [
+        {
+          addresses_emails_addressesToaddresses: {
+            vendor_branches: {
+              every: {
+                vendors: {
+                  name: {
+                    contains: emailNameSearchQuery ?? undefined
+                  }
+                }
+              }
+            }
+          }
+        },
+        { email: { contains: emailNameSearchQuery ?? undefined } }
+      ]
 
     }
   })
 
-  console.log('emails: ', emails);
+  console.log('emails123: ', emails);
+  console.log('emailNameSearchQuery: ', emailNameSearchQuery);
+
 
 
   const [{ purchase_orders }, { error: getPoError }] = useQuery(getPurchase_orders, {
@@ -264,11 +285,14 @@ export const RfqsList = () => {
     return data
   }
 
-  const optionsForVendorEmails = emails.map(({ id, email, addresses }) => {
+  const optionsForVendorEmails = emails.map(({ id, email, addresses_emails_addressesToaddresses }) => {
+    const { vendor_branches } = addresses_emails_addressesToaddresses;
+
     return {
-      name: email,
+      name: `${vendor_branches[0]?.vendors?.name ? vendor_branches[0].vendors.name : ''}-${email}`,
       value: id,
-      addresses
+      // email
+
     }
   })
 
@@ -670,6 +694,8 @@ export const RfqsList = () => {
 
   }, [itemList])
 
+  console.log("search query", formik.values.rfq_email)
+
   return (
     <>
       <Head>
@@ -1063,7 +1089,6 @@ export const RfqsList = () => {
                 <div className="col-12">
                   <h6 className="mb-4">Send To Emails:</h6>
                 </div>
-
                 <span className="p-float-label w-full">
                   <AutoComplete
                     // className="w-4"
@@ -1075,12 +1100,17 @@ export const RfqsList = () => {
                     field="name"
                     multiple
                     onChange={async (e) => {
+                      console.log("e.value", e.value);
+
                       await formik.setValues({ ...formik.values, rfq_email: e.value })
+                      startTransition(() => {
+                        dispatch({ type: "UPDATE_EMAIL_NAME_SEARCH_STATE", payload: { key: "emailNameSearchQuery", value: e.value.name }, })
+                      });
                     }}
                     aria-label="Vendor-Emails"
                     dropdownAriaLabel="Select Email"
                   />
-                  <label htmlFor="autocomplete">Emails</label>
+                  {/* <label htmlFor="autocomplete">Emails</label> */}
                 </span>
 
                 <div className="col-12 mt-5">
