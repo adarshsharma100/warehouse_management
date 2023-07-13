@@ -82,6 +82,7 @@ export const Purchase_ordersList = () => {
 
   const [{ vendors }, { error: getVenorsError }] = useQuery(getVendors, {
     orderBy: { id: "asc" },
+    where: {},
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })

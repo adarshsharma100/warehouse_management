@@ -514,7 +514,8 @@ const CreateNewPo = React.forwardRef((props, ref) => {
       const initialState = values?.length
       let count = initialState >= 5 ? 1 : 5 - values?.length
 
-      const emptyFields = arrayFillCopy(count, initialItemState)
+      // const emptyFields = arrayFillCopy(count, initialItemState)
+      const emptyFields = arrayFillCopy(1, initialItemState)
 
       setItemList([...values, ...emptyFields])
     }
@@ -524,6 +525,8 @@ const CreateNewPo = React.forwardRef((props, ref) => {
   const updateFormValues = async (fields) => {
     await formik.setValues({ ...formik.values, ...fields })
   }
+
+  console.log("filterProductOptions", filterProductOptions);
 
   return (
     <div
@@ -535,7 +538,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
       {creatingPO && <LoaderFullScreen />}
       {UpdatingPO && <LoaderFullScreen />}
       <div className={`card`}>
-        <form onSubmit={formik.handleSubmit} on className="p-fluid ">
+        <form onSubmit={formik.handleSubmit} className="p-fluid ">
           <div className="flex justify-content-between">
             {/* <h5>{`${poEditState ? "Update" : "Create"} PO`}</h5> */}
             <h5>{`${readOnlyForm ? "PO-Details" : poEditState ? "UPDATE-PO" : "CREATE-PO"}`}</h5>
@@ -956,8 +959,10 @@ const CreateNewPo = React.forwardRef((props, ref) => {
 
                         let itemsLength = !e.value?.name ? false : true
                         await formik.setValues({ ...formik.values, itemsLength })
+                        const _filteredData = data.filter((eachData) => eachData?.product_name)
+                        console.log("Data", data);
 
-                        setItemList(data)
+                        setItemList(_filteredData)
                       }}
                       aria-label="products"
                       dropdownAriaLabel="Select Product"
@@ -999,20 +1004,22 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                   </span>
                 </div>
                 <div className="field col-6 lg:col-1 mt-2">
-                  <span className="p-buttonset">
-                    {i === itemList.length - 1 && (
+                  <span >
+                    {/* {i === itemList.length - 1 && (
                       <Button type="button" label="+" onClick={addFields} />
-                    )}
-                    {itemList.length > 1 && (
-                      <Button
-                        type="button"
-                        label="-"
-                        className="p-button-secondary"
-                        onClick={(e) => {
-                          removeFields(i)
-                        }}
-                      />
-                    )}
+                    )} */}
+                    {/* {itemList.length > 1 && ( */}
+                    <Button
+                      type="button"
+                      icon="pi pi-times"
+                      style={{ fontSize: "0.3rem" }}
+                      disabled={itemList.length === 1 ? true : false}
+                      className="p-button-secondary"
+                      onClick={(e) => {
+                        removeFields(i)
+                      }}
+                    />
+                    {/* )} */}
                   </span>
                 </div>
               </div>

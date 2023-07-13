@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState, useReducer, startTransition } from "react"
+import { Suspense, useEffect, useRef, useState, useReducer, startTransition, useCallback } from "react"
 import Head from "next/head"
 import { useMutation, usePaginatedQuery, useQuery, invoke } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
@@ -90,6 +90,8 @@ export const RfqsList = () => {
     take: tableRowsCount
 
   })
+
+  console.log("rfqs", rfqs);
   const [{ emails },] = useQuery(getEmails, {
     orderBy: { id: "asc" },
     where: {
@@ -155,6 +157,7 @@ export const RfqsList = () => {
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
   const goToNextPage = () => router.push({ query: { page: page + 1 } })
   const [rfqDialog, setRfqDialog] = useState(false)
+  const [isInclude, setIsInclude] = useState(false)
   const [amendingRfq, setAmendingRfq] = useState(false)
   const initialRfqState = {
     rfqNumber: "",
@@ -367,7 +370,7 @@ export const RfqsList = () => {
   // }, [])
 
 
-  console.log("selectedColumns", selectedColumns)
+  console.log("selectedColumns", productsSuggestions)
 
   const renderHeader = () => {
     return (
@@ -405,24 +408,23 @@ export const RfqsList = () => {
   }
   const header1 = renderHeader()
 
-  const addFields = () => {
-    let newfield = initialItemList
+  // const handleAddItemListChange = () => {
+  //   arrayFillCopy
+  // }
 
-    setItemList([...itemList, newfield])
-  }
   const removeFields = (index) => {
     setItemList(itemList.filter((data, i) => index !== i))
   }
 
   const handleFormChange = (e: any, i: number) => {
     let data = [...itemList];
+    console.log('data: ', data);
+
     let totalValue;
     e.target ? (data[i][e.target.name] = e.value) : (data[i][e.originalEvent.target.name] = e.value)
     setItemList(data)
 
   }
-
-  console.log("setTotalTargetPrice", totalTargetPrice)
 
   const rowExpansionTemplate = (data) => {
     return (
@@ -642,6 +644,14 @@ export const RfqsList = () => {
 
   const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={rfqsCount} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
 
+  const handleCheckIncludeProductName = useCallback((name, index) => {
+    console.log("index", index);
+    if (productsSuggestions !== null) {
+      const _isInclude = productsSuggestions.map(item => item.name).includes(name)
+      setIsInclude(_isInclude)
+    }
+  }, [productsSuggestions])
+
   useEffect(() => {
     const defaultColumns = columns.filter(col => !["updatedAt", "rfq.rfqNumber"].includes(col.field)).map(col => col.field)
     setSelectedColumns(defaultColumns)
@@ -694,7 +704,14 @@ export const RfqsList = () => {
 
   }, [itemList])
 
-  console.log("search query", formik.values.rfq_email)
+  useEffect(() => {
+    if (isInclude) {
+      let newfield = initialItemList
+      setItemList([...itemList, newfield])
+      setIsInclude(false)
+    }
+
+  }, [initialItemList, isInclude, itemList])
 
   return (
     <>
@@ -804,8 +821,8 @@ export const RfqsList = () => {
                 onClick={async () => {
                   setRfqEditState(false)
                   await formik.setValues({ ...initialRfqState })
-                  const fiveFields = arrayFillCopy(5, initialItemList)
-                  setItemList(fiveFields)
+                  const initialFields = arrayFillCopy(1, initialItemList)
+                  setItemList(initialFields)
                   setRfqDialog(true)
                   setRFQCodeChecked(true)
                   setReadOnlyForm(false)
@@ -923,6 +940,7 @@ export const RfqsList = () => {
                       tooltip="Amend RFQ"
                       tooltipOptions={{ position: "top" }}
                       onClick={async (e) => {
+                        console.log("Ammend Click", e)
                         await formik.setFieldValue("rfqNumber", "")
                         e.preventDefault()
                         setAmendingRfq(true)
@@ -1151,11 +1169,28 @@ export const RfqsList = () => {
                                 let itemsLength = !e.value?.name ? false : true
                                 await formik.setValues({ ...formik.values, itemsLength })
 
-                                setItemList(data)
+                                console.log('data: ', data);
+
+                                const filter = data?.filter(e => e?.product_name)
+                                setItemList([...filter, initialItemList]);
+
+
+
+
                               }}
+                              // onSelect={(event) => {
+                              //   if (i === itemList.indexOf(event.value.name)) {
+                              //     alert(true)
+                              //   }
+
+                              //   handleCheckIncludeProductName(event.value.name, i)
+
+
+
+                              // }}
                               aria-label="products"
                               dropdownAriaLabel="Select Product"
-                            //   className={classNames({ "p-invalid": isFormFieldValid("name") })}
+
                             />
 
 
@@ -1172,11 +1207,9 @@ export const RfqsList = () => {
                               value={Number(ele.costPrice)}
                               disabled={readOnlyForm || mailSent}
                               onChange={(e) => handleFormChange(e, i)}
-                            // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+
                             />
-                            <label
-                            // className="labelpos_1"
-                            >
+                            <label>
                               Target price(excluding GST)
                             </label>
                           </span>
@@ -1213,10 +1246,8 @@ export const RfqsList = () => {
                               value={ele.last_po_price}
 
                             />
-                            <label
-                            // className="labelpos_1"
-                            // className={classNames({ "p-error": isFormFieldValid("name") })}
-                            >
+                            <label>
+
                               Last PO Price
                             </label>
                           </span>
@@ -1262,28 +1293,30 @@ export const RfqsList = () => {
                         {/* {getFormErrorMessage("name")} */}
                       </div>
                       <div className="field col-6 lg:col-1">
-                        <div className="field">
-                          {!readOnlyForm && <span className="p-buttonset ">
-                            {i === itemList.length - 1 && (
+                        {/* <div className="field"> */}
+                        {!readOnlyForm && <span >
+                          {/* {i === itemList.length - 1 && (
                               <Button type="button" label="+" onClick={addFields} />
-                            )}
-                            {itemList.length > 1 && (
-                              <Button
-                                type="button"
-                                label="x"
-                                className="p-button-secondary"
-                                onClick={(e) => {
-                                  removeFields(i)
-                                }}
-                              />
-                            )}
-                          </span>}
-                        </div>
+                            )} */}
+                          {/* {itemList.length > 1 && ( */}
+                          <Button
+                            type="button"
+                            icon="pi pi-times"
+                            style={{ fontSize: "0.8rem" }}
+                            className="p-button-secondary"
+                            disabled={itemList.length === 1 ? true : false}
+                            onClick={(e) => {
+                              removeFields(i)
+                            }}
+                          />
+                          {/* )} */}
+                        </span>}
+                        {/* </div> */}
                       </div>
                     </div>
                   </>
                 ))}
-                <div className="m-auto text-2xl">{getFormErrorMessage("itemsLength")}</div>
+
                 <div className="col-12 grid">
                   <div className="col-12 lg:col-4" />
                   <div className="col-12 lg:col-1 mt-1">
@@ -1293,6 +1326,7 @@ export const RfqsList = () => {
                     <InputNumber value={totalTargetPrice} disabled />
                   </div>
                 </div>
+                <div className="m-auto text-2xl">{getFormErrorMessage("itemsLength")}</div>
               </div>
 
               <div className="flex mx-4 justify-content-end ">
@@ -1318,7 +1352,7 @@ export const RfqsList = () => {
                       expectedDod: "",
                       rfq_email: [],
                     })
-                    const fiveFields = arrayFillCopy(5, initialItemList)
+                    const fiveFields = arrayFillCopy(1, initialItemList)
                     setItemList(fiveFields)
                     setAmendingRfq(false)
 
