@@ -635,6 +635,7 @@ export const ProductsList = () => {
               }
             },
             quantity,
+
           }
         }))
 
