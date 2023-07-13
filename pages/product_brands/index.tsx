@@ -1,4 +1,4 @@
-import { Suspense, useState, useReducer } from "react";
+import { Suspense, useState, useReducer, useRef } from "react";
 import Head from "next/head";
 import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
 import Layout from 'layouts/Layout'
@@ -14,6 +14,9 @@ import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { Paginator } from "primereact/paginator";
 import Loading from "components/loading";
+import { MultiSelect } from "primereact/multiselect";
+import { initialFilterRules } from "app/constants";
+import { FilterMatchMode } from "primereact/api";
 
 const initialproductBrand = {
   name: '',
@@ -110,6 +113,38 @@ export const Product_brandsList = () => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
 
+
+  // === Add export code
+  const dt = useRef(null);
+  const exportColumns = columns.map((col) => ({ title: col.header, dataKey: col.field }));
+
+  const exportExcel = () => {
+    import('xlsx').then((xlsx) => {
+      const worksheet = xlsx.utils.json_to_sheet(product_brands);
+      const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
+      const excelBuffer = xlsx.write(workbook, {
+        bookType: 'xlsx',
+        type: 'array'
+      });
+
+      saveAsExcelFile(excelBuffer, 'products');
+    });
+  };
+
+  const saveAsExcelFile = (buffer, fileName) => {
+    import('file-saver').then((module) => {
+      if (module && module.default) {
+        let EXCEL_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+        let EXCEL_EXTENSION = '.xlsx';
+        const data = new Blob([buffer], {
+          type: EXCEL_TYPE
+        });
+
+        module.default.saveAs(data, fileName + '_export_' + new Date().getTime() + EXCEL_EXTENSION);
+      }
+    });
+  };
+
   const columnComponents = selectedColumns.map((col) => {
     return (
       <Column
@@ -130,6 +165,69 @@ export const Product_brandsList = () => {
 
   const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={total_product_brands} rowsPerPageOptions={[5, 10, 15]} onPageChange={handlePageChange} />
 
+  // const [filters, setFilters] = useState<any>()
+  // const [globalFilterValue, setGlobalFilterValue] = useState("")
+
+
+
+  const initialColumnFilters = {
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    name: initialFilterRules.andContains,
+  }
+
+  const [filters, setFilters] = useState(initialColumnFilters);
+  const [globalFilterValue, setGlobalFilterValue] = useState("");
+
+  const clearFilter = () => {
+    setFilters(initialColumnFilters)
+    setGlobalFilterValue("")
+  }
+  const onGlobalFilterChange = (e) => {
+    const value = e.target.value
+    let _filters1 = { ...filters }
+    _filters1["global"].value = value
+
+    setFilters(_filters1)
+    setGlobalFilterValue(value)
+  }
+
+
+  const renderHeader = () => {
+    return (
+      <div className="flex justify-content-end">
+        <div className="flex gap-4">
+          <span className="p-input-icon-left">
+            <i className="pi pi-search" />
+            <InputText
+              value={globalFilterValue}
+              onChange={onGlobalFilterChange}
+              placeholder="Keyword Search"
+            />
+          </span>
+          <Button
+            type="button"
+            icon="pi pi-filter-slash"
+            label="Clear"
+            className="p-button-outlined"
+            onClick={clearFilter}
+          />
+
+          <Button
+            type="button"
+            icon="pi pi-file-excel"
+            label="Export as XLSX"
+            // severity="success"
+            rounded onClick={exportExcel}
+            tooltip="Export Data"
+            tooltipOptions={{ position: 'top' }}
+          />
+
+        </div>
+      </div>
+    )
+  }
+
+  const productsBrandsTableHeader = renderHeader()
 
   return (
     <div>
@@ -137,14 +235,23 @@ export const Product_brandsList = () => {
         <title>ProductBrands</title>
       </Head>
 
-      <div className='card'>
+      <div className='card flex justify-content-between '>
         <h2 className='mb-0'>Product Brands</h2>
+        <Button
+          icon='pi pi-plus'
+          label="Add Product Brands"
+          onClick={() => {
+            formik.resetForm()
+            setUpdateBrand(false)
+            setProductBrandDiolog(!productBrandDiolog)
+          }}
+        />
       </div>
 
       <form className="p-fluid" onSubmit={formik.handleSubmit}>
         {productBrandDiolog &&
           <div className="card">
-            {updateBrand ? <h3>Update Product Brand</h3> : <h3>Create Product Brand</h3>}
+            {updateBrand ? <h3>Update Product Brand - {formik.values.name}</h3> : <h3>Create Product Brand</h3>}
             <div className="formgrid grid">
               {[
                 { type: 'text', label: 'Name', field: 'name' },
@@ -200,18 +307,6 @@ export const Product_brandsList = () => {
         }
       </form>
 
-      <div className="flex justify-content-end ">
-        <Button
-          icon='pi pi-plus'
-          label="Add Product Brands"
-          onClick={() => {
-            formik.resetForm()
-            setUpdateBrand(false)
-            setProductBrandDiolog(!productBrandDiolog)
-          }}
-        />
-      </div>
-
       <div className="col-12 card mt-4">
         <DataTable
           value={product_brands}
@@ -220,11 +315,21 @@ export const Product_brandsList = () => {
           className="text-s datatable-responsive"
           responsiveLayout="scroll"
           filterDisplay="menu"
+          filters={filters} 
+          header={productsBrandsTableHeader}
           footer={pagination}
+          onRowClick={async (e) => {
+            setActiveProductBrand({ ...e.data })
+            setProductBrandDiolog(true)
+            setUpdateBrand(true)
+            await formik.setValues({
+              ...e.data
+            })
+          }}
         >
           {columnComponents}
 
-          <Column
+          {/* <Column
             header="Action"
             body={(rowData) => {
               return (
@@ -243,7 +348,7 @@ export const Product_brandsList = () => {
                 </div>
               )
             }}
-          />
+          /> */}
         </DataTable>
 
       </div>

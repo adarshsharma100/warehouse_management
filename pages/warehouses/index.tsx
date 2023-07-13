@@ -16,8 +16,9 @@ import CreateWarehouse from 'app/warehouses/mutations/createWarehouse';
 import UpdateWarehouse from 'app/warehouses/mutations/updateWarehouse';
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
-import { tsuccess } from "app/constants";
+import { initialFilterRules, tsuccess } from "app/constants";
 import { Toast } from "primereact/toast";
+import { FilterMatchMode } from "primereact/api";
 
 const ITEMS_PER_PAGE = 100;
 const initialWarehouse = {
@@ -25,7 +26,6 @@ const initialWarehouse = {
   description: ''
 }
 const columns = [
-  { field: "name", header: "Name" },
   { field: "description", header: "Description" },
 ]
 
@@ -45,13 +45,14 @@ export const WarehousesList = () => {
     take: undefined
   })
   console.log('warehouses: ', warehouses);
+
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } });
   const goToNextPage = () => router.push({ query: { page: page + 1 } });
   const [createWareHouse] = useMutation(CreateWarehouse)
   const [updateWarehouse] = useMutation(UpdateWarehouse)
   const [active, setActive] = useState(false)
   const [warehouse, setWareHouse] = useState(initialWarehouse)
-  const [selectedColumns, setSelectedColumns] = useState(columns)
+  const [selectedColumns] = useState(columns)
   const [activeWarehouse, setActiveWarehouse] = useState({})
   console.log('activeWarehouse: ', activeWarehouse);
   const [updateWareHouse, setUpdateWareHouse] = useState(false)
@@ -125,6 +126,38 @@ export const WarehousesList = () => {
 
 
 
+
+  const dt = useRef(null);
+  const exportColumns = columns.map((col) => ({ title: col.header, dataKey: col.field }));
+
+  const exportExcel = () => {
+    import('xlsx').then((xlsx) => {
+      const worksheet = xlsx.utils.json_to_sheet(warehouses);
+      const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
+      const excelBuffer = xlsx.write(workbook, {
+        bookType: 'xlsx',
+        type: 'array'
+      });
+
+      saveAsExcelFile(excelBuffer, 'products');
+    });
+  };
+
+  const saveAsExcelFile = (buffer, fileName) => {
+    import('file-saver').then((module) => {
+      if (module && module.default) {
+        let EXCEL_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+        let EXCEL_EXTENSION = '.xlsx';
+        const data = new Blob([buffer], {
+          type: EXCEL_TYPE
+        });
+
+        module.default.saveAs(data, fileName + '_export_' + new Date().getTime() + EXCEL_EXTENSION);
+      }
+    });
+  };
+
+
   const columnComponents = selectedColumns.map((col) => {
     return (
       <Column
@@ -136,10 +169,67 @@ export const WarehousesList = () => {
       />
     )
   })
-  const handleRowClick = (e) => {
-    const warehouseId = e.data.id;
-    router.push(`/warehouses/${warehouseId}`);
-  };
+
+
+
+  const initialColumnFilters = {
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    name: initialFilterRules.andContains,
+    description: initialFilterRules.andContains,
+  }
+
+  const [filters, setFilters] = useState(initialColumnFilters);
+  const [globalFilterValue, setGlobalFilterValue] = useState("");
+
+  const clearFilter = () => {
+    setFilters(initialColumnFilters)
+    setGlobalFilterValue("")
+  }
+  const onGlobalFilterChange = (e) => {
+    const value = e.target.value
+    let _filters1 = { ...filters }
+    _filters1["global"].value = value
+
+    setFilters(_filters1)
+    setGlobalFilterValue(value)
+  }
+
+  const renderHeader = () => {
+    return (
+      <div className="flex justify-content-end">
+        <div className="flex gap-4">
+          <span className="p-input-icon-left">
+            <i className="pi pi-search" />
+            <InputText
+              value={globalFilterValue}
+              onChange={onGlobalFilterChange}
+              placeholder="Keyword Search"
+            />
+          </span>
+          <Button
+            type="button"
+            icon="pi pi-filter-slash"
+            label="Clear"
+            className="p-button-outlined"
+            onClick={clearFilter}
+          />
+
+          <Button
+            type="button"
+            icon="pi pi-file-excel"
+            label="Export as XLSX"
+            // severity="success"
+            rounded onClick={exportExcel}
+            tooltip="Export Data"
+            tooltipOptions={{ position: 'top' }}
+          />
+
+        </div>
+      </div>
+    )
+  }
+  const warehouseTableHeader = renderHeader()
+
 
   return (
     <div>
@@ -167,7 +257,7 @@ export const WarehousesList = () => {
       <form className="p-fluid" onSubmit={formik.handleSubmit}>
         {active &&
           <div className="card">
-            {editWarehouse ? <h2>Update Warehouse</h2> : <h2>Create Warehouse</h2>}
+            {editWarehouse ? <h2>Update Warehouse - {formik.values.name}</h2> : <h2>Create Warehouse</h2>}
 
             <div className="formgrid grid">
               {[
@@ -224,10 +314,8 @@ export const WarehousesList = () => {
           </div>}
       </form>
 
-      <div className=" justify-content-end">
 
-      </div>
-      <div className="col-12 card">
+      <div className="col-12 card mt-3">
         <DataTable
           value={warehouses}
           showGridlines
@@ -235,11 +323,32 @@ export const WarehousesList = () => {
           className="text-s datatable-responsive"
           responsiveLayout="scroll"
           // filterDisplay="menu"
-          onRowClick={handleRowClick}
+          filters={filters}
+          header={warehouseTableHeader}
+          onRowClick={async (e) => {
+            setActiveWarehouse({ ...e.data })
+            setActive(true)
+            setEditWarehouse(true)
+            setUpdateWareHouse(true)
+            await formik.setValues({
+              ...e.data
+            })
+          }}
         >
-
-          {columnComponents}
           <Column
+            header='Name'
+            field="name"
+            filter
+            filterPlaceholder="Search by Name"
+            body={(rowData) => (
+              <Link href={`/warehouses/${rowData.id}`}>
+                <a>{rowData.name}</a>
+              </Link>
+            )}
+          />
+          {columnComponents}
+
+          {/* <Column
             header="Action"
             body={(rowData) => {
               return (
@@ -259,7 +368,7 @@ export const WarehousesList = () => {
                 </div>
               )
             }}
-          />
+          /> */}
         </DataTable>
       </div>
 

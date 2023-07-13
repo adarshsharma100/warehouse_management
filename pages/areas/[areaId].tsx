@@ -19,9 +19,10 @@ import createShelf from "app/shelves/mutations/createShelf";
 import { DataTable } from "primereact/datatable";
 import getShelves from "app/shelves/queries/getShelves";
 import { Column } from "primereact/column";
-import { createSearchFunction, tsuccess } from "app/constants";
+import { createSearchFunction, initialFilterRules, tsuccess } from "app/constants";
 import updateShelf from "app/shelves/mutations/updateShelf";
 import { Toast } from "primereact/toast";
+import { FilterMatchMode } from "primereact/api";
 
 const initialShelf = {
   sellable: '',
@@ -182,6 +183,38 @@ export const Area = () => {
   }
   console.log(formik.values, "formik.values")
 
+
+
+  const dt = useRef(null);
+  const exportColumns = columns.map((col) => ({ title: col.header, dataKey: col.field }));
+
+  const exportExcel = () => {
+    import('xlsx').then((xlsx) => {
+      const worksheet = xlsx.utils.json_to_sheet(area?.shelves);
+      const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
+      const excelBuffer = xlsx.write(workbook, {
+        bookType: 'xlsx',
+        type: 'array'
+      });
+
+      saveAsExcelFile(excelBuffer, 'products');
+    });
+  };
+
+  const saveAsExcelFile = (buffer, fileName) => {
+    import('file-saver').then((module) => {
+      if (module && module.default) {
+        let EXCEL_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+        let EXCEL_EXTENSION = '.xlsx';
+        const data = new Blob([buffer], {
+          type: EXCEL_TYPE
+        });
+
+        module.default.saveAs(data, fileName + '_export_' + new Date().getTime() + EXCEL_EXTENSION);
+      }
+    });
+  };
+
   const columnComponents = selectedColumns.map((col) => {
     return (
       <Column
@@ -200,7 +233,69 @@ export const Area = () => {
 
 
 
+  const initialColumnFilters = {
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    number: initialFilterRules.andContains,
+    length: initialFilterRules.andContains,
+    width: initialFilterRules.andContains,
+    loadingStrength: initialFilterRules.andContains,
+    reach: initialFilterRules.andContains,
+    "shelf_type.name": initialFilterRules.andContains,
+    sellable: initialFilterRules.andContains,
+  }
 
+  const [filters, setFilters] = useState(initialColumnFilters);
+  const [globalFilterValue, setGlobalFilterValue] = useState("");
+
+  const clearFilter = () => {
+    setFilters(initialColumnFilters)
+    setGlobalFilterValue("")
+  }
+  const onGlobalFilterChange = (e) => {
+    const value = e.target.value
+    let _filters1 = { ...filters }
+    _filters1["global"].value = value
+
+    setFilters(_filters1)
+    setGlobalFilterValue(value)
+  }
+
+
+  const renderHeader = () => {
+    return (
+      <div className="flex justify-content-end">
+        <div className="flex gap-4">
+          <span className="p-input-icon-left">
+            <i className="pi pi-search" />
+            <InputText
+              value={globalFilterValue}
+              onChange={onGlobalFilterChange}
+              placeholder="Keyword Search"
+            />
+          </span>
+          <Button
+            type="button"
+            icon="pi pi-filter-slash"
+            label="Clear"
+            className="p-button-outlined"
+            onClick={clearFilter}
+          />
+
+          <Button
+            type="button"
+            icon="pi pi-file-excel"
+            label="Export as XLSX"
+            // severity="success"
+            rounded onClick={exportExcel}
+            tooltip="Export Data"
+            tooltipOptions={{ position: 'top' }}
+          />
+
+        </div>
+      </div>
+    )
+  }
+  const areasTableHeader = renderHeader()
 
 
   return (
@@ -228,7 +323,7 @@ export const Area = () => {
       <form className="p-fluid" onSubmit={formik.handleSubmit}>
         {active &&
           <div className="card">
-            {checkUpdate ? <h2>Update Shelf</h2> : <h2>Create Shelf</h2>}
+            {checkUpdate ? <h2>Update Shelf - {formik.values.number}</h2> : <h2>Create Shelf</h2>}
             <div className="formgrid grid">
               {[
                 // { type: 'text', label: 'Sellable', field: 'sellable' },
@@ -344,10 +439,26 @@ export const Area = () => {
           className="text-s datatable-responsive"
           responsiveLayout="scroll"
           filterDisplay="menu"
+          filters={filters}
+          header={areasTableHeader}
+          onRowClick={async (e) => {
+            setRowDataStore({ ...e.data })
+            setCheckUpdate(true)
+            setActive(true);
+            setEditAreas(true);
+            setUpdateShelfs(true);
+            const _sellable = e.data.sellable ? { label: 'True', value: true } : { label: 'False', value: false }
+            console.log('_sellable: ', _sellable);
+            await formik.setValues({
+              ...e.data,
+              sellable: _sellable,
+              shelfType: e.data.shelf_type
+            })
+          }}
 
         >
           {columnComponents}
-          <Column
+          {/* <Column
             header="Action"
             body={(rowData) => {
               console.log('rowData: ', rowData)
@@ -374,7 +485,7 @@ export const Area = () => {
                 </div>
               )
             }}
-          />
+          /> */}
         </DataTable>
       </div>
     </>
