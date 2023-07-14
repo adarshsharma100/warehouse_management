@@ -18,6 +18,11 @@ const CreatePurchase_order = z.object({
   po_sentto: z.unknown(),
   purchase_orders: z.unknown(),
   rfq_purchase_orders_rfqTorfq: z.unknown(),
+  warehouse: z.object({
+    connect: z.object({
+      id: z.number()
+    })
+  }).optional()
 })
 
 export default resolver.pipe(
@@ -32,6 +37,8 @@ export default resolver.pipe(
       },
       include: {
         po_products: true,
+
+
       },
     })
 

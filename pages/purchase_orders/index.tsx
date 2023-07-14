@@ -458,10 +458,11 @@ export const Purchase_ordersList = () => {
             <Button
               icon="pi pi-plus"
               label="Create PO"
+              style={ }
               onClick={() => {
                 Po?.current?.setReadOnlyForm(false)
                 Po?.current?.formik.resetForm()
-                const fiveFields = arrayFillCopy(5, initialItemState)
+                const fiveFields = arrayFillCopy(1, initialItemState)
                 setPoEditState(false)
                 setPurchaseDialog(true)
                 Po?.current?.setPurchaseDetails(
@@ -471,7 +472,8 @@ export const Purchase_ordersList = () => {
                 Po?.current?.setShowPriorList(false)
 
               }}
-            ></Button>
+
+            />
           </div>
           {poErrorMsgs.map((ele, i) => (
             <ErrorCard ErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />

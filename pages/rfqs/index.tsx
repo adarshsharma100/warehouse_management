@@ -167,12 +167,15 @@ export const RfqsList = () => {
     itemsLength: false,
     agreement: "",
     id: "",
-    status: "Created"
+    status: "Created",
+    ammendedFrom: null,
+    // ammendedRFQNumberCount: 0
   }
   const [rfqDetails, setRfqDetails] = useState(initialRfqState)
   const [rfqEditState, setRfqEditState] = useState(false)
   const [readOnlyForm, setReadOnlyForm] = useState(true)
   const [totalTargetPrice, setTotalTargetPrice] = useState(0)
+  const [ammendedRFQNumberCount, setAmmendedRFQNumberCount] = useState(0)
 
   const initialItemList = {
     product_id: "",
@@ -713,6 +716,8 @@ export const RfqsList = () => {
 
   }, [initialItemList, isInclude, itemList])
 
+  console.log("formik values", formik.values);
+
   return (
     <>
       <Head>
@@ -940,7 +945,18 @@ export const RfqsList = () => {
                       tooltip="Amend RFQ"
                       tooltipOptions={{ position: "top" }}
                       onClick={async (e) => {
-                        console.log("Ammend Click", e)
+                        // if (formik.values.ammendedFrom === null) {
+                        //   await formik.setFieldValue("ammendedRFQNumberCount", formik.values.ammendedRFQNumberCount + 1)
+
+                        //   await formik.setFieldValue("rfqNumber", `${formik.values.rfqNumber}_${formik.values.ammendedRFQNumberCount}`)
+                        // } else {
+                        //   if (formik.values.ammendedFrom !== null) {
+                        //     await formik.setFieldValue("ammendedRFQNumberCount", formik.values.ammendedRFQNumberCount + 1)
+                        //     const _rfqNumber = `${formik.values.rfqNumber}_${formik.values.ammendedRFQNumberCount}`
+                        //     await formik.setFieldValue("rfqNumber", _rfqNumber)
+                        //   }
+                        // }
+
                         await formik.setFieldValue("rfqNumber", "")
                         e.preventDefault()
                         setAmendingRfq(true)
@@ -962,7 +978,8 @@ export const RfqsList = () => {
                       <InputText
                         id="rfqNumber"
                         name="rfqNumber"
-                        value={RFQCodechecked ? "Auto Generated" : formik.values.rfqNumber}
+                        value={formik.values.rfqNumber}
+                        // value={RFQCodechecked ? "Auto Generated" : formik.values.rfqNumber}
                         onChange={formik.handleChange}
                         disabled={RFQCodechecked}
                         autoFocus
@@ -1386,6 +1403,9 @@ export const RfqsList = () => {
               rowExpansionTemplate={rowExpansionTemplate}
               filters={filters}
               header={header1}
+              scrollable={true}
+              scrollHeight="300px"
+              headerStyle={{ position: 'sticky', top: '0' }}
               filterDisplay="menu"
               emptyMessage="No Results found."
               onRowClick={async (e) => {
@@ -1410,12 +1430,14 @@ export const RfqsList = () => {
                   }
                 )
                 setItemList(active)
-                const { rfqNumber, description: rfq_description, expectedDod, id, agreement, status } = e.data
+                const { rfqNumber, description: rfq_description, expectedDod, id, agreement, status, ammendedFrom } = e.data
 
                 // const _expectedDod = moment(expectedDod).toDate()
                 const sentToEmails = e.data.rfq_sentto.map(({ emails: { email } }) => email)
 
+
                 await formik.setValues({
+
                   rfqNumber: rfqNumber,
                   rfq_description,
                   id,
@@ -1424,6 +1446,8 @@ export const RfqsList = () => {
                   rfq_email: sentToEmails,
                   expectedDod,
                   status,
+                  ammendedFrom
+
                 })
 
                 setRfqDialog(true)
