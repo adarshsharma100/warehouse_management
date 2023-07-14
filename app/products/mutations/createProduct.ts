@@ -2,16 +2,6 @@ import { resolver } from "@blitzjs/rpc"
 import db from "db"
 import { z } from "zod"
 
-const productSchema = z.object({
-  create: z.object({
-    products_kit_products_kitProductIdToproducts: z.object({
-      connect: z.object({
-        id: z.number()
-      })
-    }),
-    quantity: z.number()
-  })
-});
 
 const CreateProduct = z.object({
   name: z.string().min(3).max(45).transform((str) => str.trim()),
@@ -58,7 +48,16 @@ const CreateProduct = z.object({
     })
   }),
   sku: z.string(),
-  kit_products_kit_products_productIdToproducts: z.unknown()
+  kit_products_kit_products_productIdToproducts: z.object({
+    create: z.array(z.object({
+      products_kit_products_kitProductIdToproducts: z.object({
+        connect: z.object({
+          id: z.number()
+        })
+      }),
+      quantity: z.number()
+    }))
+  }).optional()
 
   // category: z.number(),
 })
