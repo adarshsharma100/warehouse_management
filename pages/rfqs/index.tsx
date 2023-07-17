@@ -169,13 +169,13 @@ export const RfqsList = () => {
     id: "",
     status: "Created",
     ammendedFrom: null,
-    // ammendedRFQNumberCount: 0
+    ammendedRFQNumberCount: 0
   }
   const [rfqDetails, setRfqDetails] = useState(initialRfqState)
   const [rfqEditState, setRfqEditState] = useState(false)
   const [readOnlyForm, setReadOnlyForm] = useState(true)
   const [totalTargetPrice, setTotalTargetPrice] = useState(0)
-  const [ammendedRFQNumberCount, setAmmendedRFQNumberCount] = useState(0)
+  const [checkAmmendedFrom, setCheckAmmendedFrom] = useState([])
 
   const initialItemList = {
     product_id: "",
@@ -876,11 +876,12 @@ export const RfqsList = () => {
                       onClick={async (e) => {
                         e.preventDefault()
 
+
                         try {
                           const rfqDetails = await invoke(getRfq, {
                             id: activeRow?.id
-                          })
 
+                          })
 
                           const productsToPo = getRemainingPoProducts(rfqDetails)
 
@@ -939,32 +940,39 @@ export const RfqsList = () => {
                       tooltip="Send RFQ"
                       tooltipOptions={{ position: "top" }}
                     />
-                    <Button
+                    {checkAmmendedFrom.length === 0 && <Button
                       icon="bi bi-file-text"
                       className="m-1"
                       tooltip="Amend RFQ"
                       tooltipOptions={{ position: "top" }}
                       onClick={async (e) => {
-                        // if (formik.values.ammendedFrom === null) {
-                        //   await formik.setFieldValue("ammendedRFQNumberCount", formik.values.ammendedRFQNumberCount + 1)
+                        const { ammendedRFQNumberCount, rfqNumber, ammendedFrom } = formik.values;
+                        let _ammendedRFQNumberCount;
+                        let _rfqNumber;
 
-                        //   await formik.setFieldValue("rfqNumber", `${formik.values.rfqNumber}_${formik.values.ammendedRFQNumberCount}`)
-                        // } else {
-                        //   if (formik.values.ammendedFrom !== null) {
-                        //     await formik.setFieldValue("ammendedRFQNumberCount", formik.values.ammendedRFQNumberCount + 1)
-                        //     const _rfqNumber = `${formik.values.rfqNumber}_${formik.values.ammendedRFQNumberCount}`
-                        //     await formik.setFieldValue("rfqNumber", _rfqNumber)
-                        //   }
-                        // }
 
-                        await formik.setFieldValue("rfqNumber", "")
+                        if (rfqNumber.includes("_")) {
+                          _rfqNumber = rfqNumber.split('_');
+                          _ammendedRFQNumberCount = Number(_rfqNumber.slice(-1)) + 1;
+                          await formik.setFieldValue("rfqNumber", `${_rfqNumber[0]}_${_ammendedRFQNumberCount}`)
+                        } else {
+                          if (ammendedFrom === null && ammendedRFQNumberCount === 0) {
+                            _ammendedRFQNumberCount = ammendedRFQNumberCount + 1;
+                          } else {
+                            if (ammendedFrom !== null && ammendedRFQNumberCount === 0) {
+                              _ammendedRFQNumberCount = ammendedRFQNumberCount + 2
+                            }
+                          }
+                          await formik.setFieldValue("rfqNumber", `${rfqNumber}_${_ammendedRFQNumberCount}`)
+                        }
+                        await formik.setFieldValue("ammendedRFQNumberCount", _ammendedRFQNumberCount);
                         e.preventDefault()
                         setAmendingRfq(true)
                         setRfqEditState(false)
                         setReadOnlyForm(false)
                         setMailSent(false)
                       }}
-                    />
+                    />}
 
                   </div>
                 )}
@@ -1195,16 +1203,6 @@ export const RfqsList = () => {
 
 
                               }}
-                              // onSelect={(event) => {
-                              //   if (i === itemList.indexOf(event.value.name)) {
-                              //     alert(true)
-                              //   }
-
-                              //   handleCheckIncludeProductName(event.value.name, i)
-
-
-
-                              // }}
                               aria-label="products"
                               dropdownAriaLabel="Select Product"
 
@@ -1231,7 +1229,7 @@ export const RfqsList = () => {
                             </label>
                           </span>
                         </div>
-                        {/* {getFormErrorMessage("name")} */}
+
                       </div>
                       <div className="col-12 lg:col-1">
                         <div className="field">
@@ -1242,16 +1240,16 @@ export const RfqsList = () => {
                               disabled={readOnlyForm || mailSent}
                               value={Number(ele.quantity)}
                               onChange={(e) => handleFormChange(e, i)}
-                            // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+
                             />
                             <label
-                            // className={classNames({ "p-error": isFormFieldValid("name") })}
+
                             >
                               Quantity
                             </label>
                           </span>
                         </div>
-                        {/* {getFormErrorMessage("name")} */}
+
                       </div>
                       <div className="col-12 lg:col-1">
                         <div className="field">
@@ -1269,7 +1267,7 @@ export const RfqsList = () => {
                             </label>
                           </span>
                         </div>
-                        {/* {getFormErrorMessage("name")} */}
+
                       </div>
                       <div className="col-12 lg:col-1">
                         <div className="field">
@@ -1282,7 +1280,7 @@ export const RfqsList = () => {
 
                             />
                             <label>
-                              Lastest Quantity
+                              Last PO Quantity
                             </label>
                           </span>
                         </div>
@@ -1312,10 +1310,7 @@ export const RfqsList = () => {
                       <div className="field col-6 lg:col-1">
                         {/* <div className="field"> */}
                         {!readOnlyForm && <span >
-                          {/* {i === itemList.length - 1 && (
-                              <Button type="button" label="+" onClick={addFields} />
-                            )} */}
-                          {/* {itemList.length > 1 && ( */}
+
                           <Button
                             type="button"
                             icon="pi pi-times"
@@ -1411,6 +1406,12 @@ export const RfqsList = () => {
               onRowClick={async (e) => {
                 console.log('rowdata: ', e.data);
                 const rfqSenttoExists = Boolean(e.data.rfq_sentto.length)
+                const { rfqs } = await invoke(getRfqs, {
+                  where: {
+                    ammendedFrom: e.data.id
+                  }
+                })
+                setCheckAmmendedFrom(rfqs);
 
                 setMailSent(rfqSenttoExists)
 
@@ -1446,7 +1447,8 @@ export const RfqsList = () => {
                   rfq_email: sentToEmails,
                   expectedDod,
                   status,
-                  ammendedFrom
+                  ammendedFrom,
+                  ammendedRFQNumberCount: 0
 
                 })
 

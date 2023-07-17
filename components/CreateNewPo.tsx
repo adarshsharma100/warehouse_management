@@ -885,6 +885,23 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               </span>
               {getFormErrorMessage("po_value")}
             </div>
+            {showPriorList && <div className="field col-12 lg:col-4 mt-2">
+              <span className="p-float-label">
+                <InputText
+                  id="rfq_number"
+                  disabled={true}
+                  value={rfq?.rfqNumber ?? "-"}
+                  autoFocus
+                />
+                <label
+                  htmlFor="rfq_number"
+
+                >
+                  RFQ Number
+                </label>
+              </span>
+
+            </div>}
             {/* {amendingPO && (
               <div className="field col-12 mt-2">
                 <span className="p-float-label">

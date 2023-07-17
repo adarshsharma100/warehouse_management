@@ -800,7 +800,7 @@ export const VendorsList = () => {
     id: i + 1,
   }))
 
-  console.log("formik", formik.errors)
+  console.log("formik", vendorEditState)
 
   return (
     <div className="grid w-full mr-0" ref={scrollToTop}>
@@ -926,7 +926,7 @@ export const VendorsList = () => {
                             onChange={formik.handleChange}
                             autoFocus
                             className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
-                            disabled={!vendorEditState}
+                            disabled={vendorEditState === true && ele.field === "code" ? true : false}
                           />
 
                         ) : ele.type === "number" ? (
