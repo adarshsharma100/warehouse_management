@@ -86,6 +86,7 @@ export const Inventory_productsList = () => {
     orderBy: { id: "asc" },
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
+    where: undefined
   })
 
   const productOptions = products.map(({ id: product_id, name, sku, description }) => {
@@ -122,6 +123,11 @@ export const Inventory_productsList = () => {
     "product.sku": initialFilterRules.andContains,
     "product.name": initialFilterRules.andContains,
     "product.product_types.type": initialFilterRules.andContains,
+    good_stock: initialFilterRules.andContains,
+    bad_stock: initialFilterRules.andContains,
+    block_stock: initialFilterRules.andContains,
+    available_stock: initialFilterRules.andContains,
+
 
   }
   const [filters, setFilters] = useState(initialFilters)
@@ -159,23 +165,29 @@ export const Inventory_productsList = () => {
     {
       field: "good_stock",
       header: "Good-Stock",
-      filterField: "",
+      filter: true,
+      filterPlaceholder: "Search by Good stock",
       body: (rowdata) => findQuantityByShelfType("Good", rowdata.shelves)
-      // filter: true,
-      // filterPlaceholder: "Search by Type"
+
     },
     {
       field: "bad_stock",
       header: "Bad-Stock",
+      filter: true,
+      filterPlaceholder: "Search by bad stock",
       body: (rowdata) => findQuantityByShelfType("Bad", rowdata.shelves)
     },
     {
       field: "block_stock",
       header: "Block-Stock",
+      filter: true,
+      filterPlaceholder: "Search by Block stock",
     },
     {
       field: "available_stock",
       header: "Available-Stock",
+      filter: true,
+      filterPlaceholder: "Search by Available stock",
     },
     {
       field: "size",
@@ -338,6 +350,7 @@ export const Inventory_productsList = () => {
 
     }, {})
   )
+  console.log(inventoryTableData, 'inventoryTableData')
 
   const findQuantityByShelfType = (shelfType, shelves) => {
     const qty = shelves.reduce((acc, { shelf_type: { name }, quantity }) => name === shelfType ? acc + quantity : acc, 0)
@@ -434,6 +447,39 @@ export const Inventory_productsList = () => {
     setErrorMsgs(msgArray)
   }
 
+
+  // Add export file code
+  const dt = useRef(null);
+  const exportColumns = columns.map((col) => ({ title: col.header, dataKey: col.field }));
+
+  const exportExcel = () => {
+    import('xlsx').then((xlsx) => {
+      const worksheet = xlsx.utils.json_to_sheet(inventoryTableData);
+      const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
+      const excelBuffer = xlsx.write(workbook, {
+        bookType: 'xlsx',
+        type: 'array'
+      });
+
+      saveAsExcelFile(excelBuffer, 'products');
+    });
+  };
+
+  const saveAsExcelFile = (buffer, fileName) => {
+    import('file-saver').then((module) => {
+      if (module && module.default) {
+        let EXCEL_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+        let EXCEL_EXTENSION = '.xlsx';
+        const data = new Blob([buffer], {
+          type: EXCEL_TYPE
+        });
+
+        module.default.saveAs(data, fileName + '_export_' + new Date().getTime() + EXCEL_EXTENSION);
+      }
+    });
+  };
+
+
   const columnComponents = columns.reduce((acc, curr) => {
     if (selectedColumns.includes(curr.field))
       return [
@@ -513,6 +559,7 @@ export const Inventory_productsList = () => {
 
           </div>
         </div>
+
         <div
           className={`col-12 ${errorProducts.length
             ? "visible scalein animation-duration-200"
@@ -734,7 +781,19 @@ export const Inventory_productsList = () => {
           </div>
         </div>
 
-        <div className="col-12">
+        <div className=" w-full mr-0 flex justify-content-end ">
+          <Button
+            type="button"
+            icon="pi pi-file-excel"
+            label="Export as XLSX"
+            // severity="success"
+            onClick={exportExcel}
+            tooltip="Export Data"
+            tooltipOptions={{ position: 'top' }}
+          />
+        </div>
+
+        <div className="col-12 mt-3">
 
           <div className="card">
             <DataTable

@@ -51,6 +51,7 @@ import { Paginator } from "primereact/paginator"
 import { Image } from 'primereact/image';
 import { Galleria } from "primereact/galleria";
 import { object } from "zod"
+import { connect } from "http2";
 
 const constantTokens = {
   storageAccountName: process.env.NEXT_PUBLIC_STORAGERESOURCENAME,
@@ -220,7 +221,9 @@ const columns = [
   },
   {
     field: "gstTaxTypeCode",
-    header: "Gst Code"
+    header: "Gst Code",
+    filter: true,
+    filterPlaceholder: "Search by GST",
   },
   {
     field: "hsnCode",
@@ -230,7 +233,7 @@ const columns = [
     field: "product_prices.averageCostPrice",
     header: "Average Cost Price",
     filter: true,
-    filterPlaceholder: "Search by Price",
+    filterPlaceholder: "Search by Cost Price",
     body: (rowData) => <div className="hideLargeContent">{rowData.product_prices?.averageCostPrice !== null ? rowData.product_prices?.averageCostPrice : "N/A"}</div>
   },
   {
@@ -293,12 +296,16 @@ const initialColumnFilters = {
   global: { value: null, matchMode: FilterMatchMode.CONTAINS },
   sku: initialFilterRules.andContains,
   name: initialFilterRules.andContains,
-  "product_types.type": initialFilterRules.andContains,
+  gstTaxTypeCode: initialFilterRules.andContains,
+  description: initialFilterRules.andContains,
   updatedAT: initialFilterRules.dateIs,
   createdAT: initialFilterRules.dateIs,
   costPrice: initialFilterRules.andContains,
   agreement: initialFilterRules.andContains,
   status: initialFilterRules.andContains,
+  "product_types.type": initialFilterRules.andContains,
+  "product_prices.averageCostPrice": initialFilterRules.andContains,
+  "product_prices.sellingPrice": initialFilterRules.andContains,
 }
 
 const reducer = (state, { type, payload }) => {
@@ -317,6 +324,7 @@ export const ProductsList = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
   console.log("state", state);
   const { skipCount, tableRowsCount } = state;
+
 
   // USE QUERY
   // <===START===>
@@ -386,6 +394,37 @@ export const ProductsList = () => {
   const scrolToTop = useRef<HTMLDivElement>(null)
   const clearUpload = useRef<FileUpload>(null)
 
+  // === Add export code
+  const dt = useRef(null);
+  const exportColumns = columns.map((col) => ({ title: col.header, dataKey: col.field }));
+
+  const exportExcel = () => {
+    import('xlsx').then((xlsx) => {
+      const worksheet = xlsx.utils.json_to_sheet(products);
+      const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
+      const excelBuffer = xlsx.write(workbook, {
+        bookType: 'xlsx',
+        type: 'array'
+      });
+
+      saveAsExcelFile(excelBuffer, 'products');
+    });
+  };
+
+  const saveAsExcelFile = (buffer, fileName) => {
+    import('file-saver').then((module) => {
+      if (module && module.default) {
+        let EXCEL_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+        let EXCEL_EXTENSION = '.xlsx';
+        const data = new Blob([buffer], {
+          type: EXCEL_TYPE
+        });
+
+        module.default.saveAs(data, fileName + '_export_' + new Date().getTime() + EXCEL_EXTENSION);
+      }
+    });
+  };
+
   const columnComponents = columns.reduce((acc, curr) => {
     if (selectedColumns.includes(curr.field))
       return [
@@ -399,6 +438,7 @@ export const ProductsList = () => {
           filterPlaceholder={curr?.filterPlaceholder}
           dataType={curr?.dataType}
           filterElement={curr?.filterElement}
+
         />
       ];
     return acc;
@@ -460,10 +500,22 @@ export const ProductsList = () => {
             className="p-button-outlined"
             onClick={clearFilter}
           />
+
+          <Button
+            type="button"
+            icon="pi pi-file-excel"
+            label="Export as XLSX"
+            // severity="success"
+            rounded onClick={exportExcel}
+            tooltip="Export Data"
+            tooltipOptions={{ position: 'top' }}
+          />
+
         </div>
       </div>
     )
   }
+
   const productsTableHeader = renderHeader()
   const searchCategory = createSearchFunction(product_categories, setCategorySuggestions)
   const uploadOption = { style: { display: "none" } }
@@ -587,6 +639,7 @@ export const ProductsList = () => {
           }
         }))
 
+
       const {
         name,
         description,
@@ -633,8 +686,6 @@ export const ProductsList = () => {
 
       const removedKitProducts = kit_products?.filter(({ id }) => !existingKitIds?.includes(id))
       // console.log('removedKitProducts: ', removedKitProducts?.map(product => product.id),);
-
-
 
 
       if (activeProduct) {
@@ -690,9 +741,6 @@ export const ProductsList = () => {
           })
 
       }
-
-
-
 
       await createProductMutation(
         {
@@ -938,7 +986,9 @@ export const ProductsList = () => {
           <div>
 
             <div className="flex justify-content-between">
-              <h4>{activeProduct ? "Update" : "Create"} Product</h4>
+              {/* <h4>{activeProduct ? "Update Product " : "Create Product"} </h4> */}
+            {activeProduct ? <h3>Update Product - {formik.values.sku}</h3> : <h3>Create Product</h3>}
+
               <h4 className="mt-0">{activeProduct &&
                 <Button
                   icon="pi pi-pencil"
