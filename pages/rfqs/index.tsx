@@ -134,12 +134,19 @@ export const RfqsList = () => {
 
   const [selectedRfqs, setSelectedRfqs] = useState(null);
   const [sendDialog, setSendDialog] = useState(false)
+  const [filteredSelectedProductID, setFilteredSelectedProductID] = useState([]);
   const [createRFQMutation, { isLoading: creatingRfq, error: createRFQMutationError }] =
     useMutation(createRfq)
   const [updateRFQMutation, { isLoading: updatingRfq, error: updateRFQMutationError }] =
     useMutation(updateRfq)
 
-  const productOptions = products.map(
+  const productOptions = products.filter(({ id }) => {
+    if (!filteredSelectedProductID.includes(id)) {
+      return true
+    } else {
+      return false
+    }
+  }).map(
     ({ id, name, sku, vendor_products, costPrice }) => {
       return {
         name: `${sku} - ${name}`,
@@ -149,6 +156,8 @@ export const RfqsList = () => {
       }
     }
   )
+
+  console.log("filteredSelectedProductID", filteredSelectedProductID);
   const [productsSuggestions, setProductsSuggestions] = useState<any>(null)
   const searchProducts = createSearchFunction(productOptions, setProductsSuggestions)
   const menu = useRef<Menu>(null)
@@ -175,6 +184,8 @@ export const RfqsList = () => {
   const [rfqEditState, setRfqEditState] = useState(false)
   const [readOnlyForm, setReadOnlyForm] = useState(true)
   const [totalTargetPrice, setTotalTargetPrice] = useState(0)
+  const [productDiscount, setProductDiscount] = useState(null)
+
   const [checkAmmendedFrom, setCheckAmmendedFrom] = useState([])
 
   const initialItemList = {
@@ -204,7 +215,7 @@ export const RfqsList = () => {
   const scrollToRfq = useRef<HTMLHeadingElement>(null)
   const [rfqStatusSuggestions, setrfqStatusSuggestions] = useState<any>(null)
   const [mailSent, setMailSent] = useState(false)
-  const rfqStatus = ["Created", "Processing", "Completed"]
+  const rfqStatus = ["Created", "Processing", "Completed", "Sent"]
     .map((term) => ({ name: term, value: term }))
   const searchStatus = createSearchFunction(rfqStatus, setrfqStatusSuggestions)
 
@@ -644,6 +655,29 @@ export const RfqsList = () => {
     dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
   }
 
+  const handleUpdateDiscountItemListClick = () => {
+    if (productDiscount) {
+      console.log("Product discount useEffect is working");
+      const discount = productDiscount / 100;
+      let totalValue = 0;
+
+      const updatedItemList = itemList.map((eachList) => {
+        const { costPrice, quantity, last_po_price } = eachList;
+        if (!isNaN(costPrice) && !isNaN(quantity) && quantity !== "") {
+          const discountedPrice = last_po_price * (1 - discount);
+          totalValue += costPrice * quantity;
+          return { ...eachList, costPrice: discountedPrice.toFixed(2) };
+        }
+        return eachList;
+      });
+
+      setItemList(updatedItemList);
+      setTotalTargetPrice(totalValue);
+
+    }
+
+  }
+
 
   const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={rfqsCount} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
 
@@ -695,7 +729,7 @@ export const RfqsList = () => {
     let _totalValue = 0;
     const itemListTotal = itemList.map((eachList) => {
       const { costPrice, quantity } = eachList;
-      console.log("costPrice", isNaN(costPrice));
+
       console.log("quantity", quantity);
       console.log("totalValue", _totalValue)
       if (!isNaN(costPrice) && !isNaN(quantity)) {
@@ -706,6 +740,10 @@ export const RfqsList = () => {
     setTotalTargetPrice(_totalValue)
 
   }, [itemList])
+
+  console.log("productDiscount", productDiscount);
+
+
 
   useEffect(() => {
     if (isInclude) {
@@ -1122,7 +1160,7 @@ export const RfqsList = () => {
                         htmlFor="agreement"
                         className={classNames({ "p-error": isFormFieldValid("agreement") })}
                       >
-                        Agreement
+                        Terms
                       </label>
                     </span>
                     {getFormErrorMessage("agreement")}
@@ -1131,6 +1169,7 @@ export const RfqsList = () => {
 
                 <div className="col-12">
                   <h6 className="mb-4">Send To Emails:</h6>
+
                 </div>
                 <span className="p-float-label w-full">
                   <AutoComplete
@@ -1155,8 +1194,36 @@ export const RfqsList = () => {
                   />
                   {/* <label htmlFor="autocomplete">Emails</label> */}
                 </span>
+                <div className="col-12 flex justify-content-end mt-3">
 
-                <div className="col-12 mt-5">
+                  <span className="p-float-label ">
+                    <InputNumber
+                      value={productDiscount}
+                      onChange={(event) => setProductDiscount(event.value)}
+                      suffix="%"
+                      min={1}
+                      max={100}
+                      // style={{ width: "60%" }}
+                      disabled={itemList.length === 1}
+                    />
+                    <label htmlFor="productDiscount">
+                      Discount
+                    </label>
+                  </span>
+
+                  <span>
+                    <Button
+                      type="button"
+                      label="Apply"
+                      style={{ fontSize: "0.8rem", padding: "0.2rem" }}
+                      className="p-button-secondary ml-2 mt-2"
+                      disabled={itemList.length === 1}
+                      onClick={handleUpdateDiscountItemListClick}
+
+                    />
+                  </span>
+                </div>
+                <div className="col-12 mt-3">
                   <h6>Select Products:</h6>
                 </div>
                 {itemList.map((ele, i) => (
@@ -1178,8 +1245,9 @@ export const RfqsList = () => {
                               onChange={async (e) => {
                                 let product_id = typeof e.value === "string" ? "" : e.value?.id
                                 let name = typeof e.value === "string" ? e.value : e.value?.name
-                                let costPrice = typeof e.value === "string" ? 0 : e.value?.costPrice
                                 let data = [...itemList]
+                                const _filteredSelectedProductID = [...filteredSelectedProductID, product_id]
+                                setFilteredSelectedProductID(_filteredSelectedProductID)
 
                                 const lastPo = LatestPO(purchase_orders, product_id)
 
