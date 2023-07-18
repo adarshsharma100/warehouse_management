@@ -82,6 +82,7 @@ export const Purchase_ordersList = () => {
 
   const [{ vendors }, { error: getVenorsError }] = useQuery(getVendors, {
     orderBy: { id: "asc" },
+    where: {},
     skip: ITEMS_PER_PAGE * page,
     take: ITEMS_PER_PAGE,
   })
@@ -257,6 +258,8 @@ export const Purchase_ordersList = () => {
                       field={col?.field}
                       header={col?.header}
                       body={col?.body}
+                    // style={{ padding: "0.8rem" }}
+
                     />))
                 }
 
@@ -323,7 +326,7 @@ export const Purchase_ordersList = () => {
 
   const renderHeader = () => {
     return (
-      <div className="flex ">
+      <div className="flex">
         <div className="flex-grow-1">
           <MultiSelect
 
@@ -333,7 +336,8 @@ export const Purchase_ordersList = () => {
               value: field
             }))}
             onChange={(e) => setSelectedColumns(e.value)}
-            style={{ width: "20em" }}
+            style={{ width: "20em", height: "2.6rem" }}
+
           />
         </div>
 
@@ -346,6 +350,8 @@ export const Purchase_ordersList = () => {
             value={globalFilterValue}
             onChange={onGlobalFilterChange}
             placeholder="Keyword Search"
+            style={{ height: "2.6rem" }}
+
           />
         </span>
         <Button
@@ -353,6 +359,8 @@ export const Purchase_ordersList = () => {
           icon="pi pi-filter-slash"
           label="Clear"
           className="p-button-outlined ml-3"
+          style={{ height: "2.4rem" }}
+
           onClick={clearFilter}
         />
       </div>
@@ -378,6 +386,7 @@ export const Purchase_ordersList = () => {
           filterField={curr?.filterField}
           filterElement={curr?.filterElement}
           dataType={curr?.dataType}
+          style={{ padding: "0.6rem 0.6rem" }}
         />
       ];
     return acc;
@@ -449,18 +458,19 @@ export const Purchase_ordersList = () => {
           </div>
         </Dialog>
 
-        <div className="col-12">
-          <div className="card flex justify-content-between align-items-center">
+        <div className="col-12 p-1">
+          <div className="card flex justify-content-between align-items-center mb-0 px-2 py-3">
             <h4 ref={scrollToPo} className="mb-0">
               Purchase Orders
             </h4>
             <Button
               icon="pi pi-plus"
               label="Create PO"
+              className="py-1 px-2"
               onClick={() => {
                 Po?.current?.setReadOnlyForm(false)
                 Po?.current?.formik.resetForm()
-                const fiveFields = arrayFillCopy(5, initialItemState)
+                const fiveFields = arrayFillCopy(1, initialItemState)
                 setPoEditState(false)
                 setPurchaseDialog(true)
                 Po?.current?.setPurchaseDetails(
@@ -470,7 +480,8 @@ export const Purchase_ordersList = () => {
                 Po?.current?.setShowPriorList(false)
 
               }}
-            ></Button>
+
+            />
           </div>
           {poErrorMsgs.map((ele, i) => (
             <ErrorCard ErrorMsgs={ele} closeErrorBox={removeErrorBox} value={i} key={i} />
@@ -505,8 +516,7 @@ export const Purchase_ordersList = () => {
             <DataTable
               value={purchase_orders}
               showGridlines
-              scrollable
-              scrollHeight="300px"
+
               // header={renderHeader}
               stripedRows
               className="text-s datatable-responsive"
@@ -520,6 +530,9 @@ export const Purchase_ordersList = () => {
               rowExpansionTemplate={rowExpansionTemplate}
               filters={filters}
               header={header1}
+              scrollable
+              scrollHeight="300px"
+
               filterDisplay="menu"
               footer={pagination}
               // globalFilterFields={["products_sku"]}
@@ -532,9 +545,13 @@ export const Purchase_ordersList = () => {
                 setPurchaseDialog(true)
                 Po.current?.setReadOnlyForm(true)
               }}
+              pt={{
+                table: { style: { minWidth: '50rem' } }
+              }}
+              pt
             >
 
-              <Column expander={true} style={{ width: "3em" }} />
+              <Column expander={true} style={{ width: "3em", padding: "0.6rem 0.6rem" }} />
               {columnComponents}
 
             </DataTable>

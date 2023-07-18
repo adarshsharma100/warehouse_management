@@ -63,10 +63,12 @@ export const Vendor_productsList = () => {
 
   const [{ vendor_products, count: total_vendor_products }, { refetch, isLoading }] = usePaginatedQuery(getVendor_products, {
     orderBy: { id: "desc" },
-    where: {},
+    where: { status: "Active" },
     skip: skipCount,
     take: tableRowsCount
   })
+
+  console.log("vendor_products", vendor_products);
 
   const [{ vendors }, { error: vp_VendorFetchingError, isLoading: isVendorsLoading }] = useQuery(
     getVendors,
@@ -85,11 +87,14 @@ export const Vendor_productsList = () => {
           },
           {
             sku: { contains: productSearchQuery ?? undefined },
-          }
+          },
+
 
         ]
       }
     })
+
+  console.log("Products", products);
 
 
   const toast = useRef(null)
@@ -125,6 +130,24 @@ export const Vendor_productsList = () => {
   const goToNextPage = () => router.push({ query: { page: page + 1 } })
   const [productEditState, setProductEditState] = useState(false)
 
+  // const _filteredVendorName = vendor_products.filter((eachVendor) => {
+
+  //   if (formik?.values) {
+  //     // console.log("ecahVendor", eachVendor);
+  //     console.log("In formik if")
+  //     if (eachVendor.vendors.name === formik.values.vendor.name) {
+  //       console.log("ecahVendor", eachVendor);
+  //       return true
+  //     } else {
+  //       return false
+  //     }
+
+  //   }
+
+
+  // })
+  // console.log("_filteredVendorName", _filteredVendorName);
+
   const productOptions = products.map(({ id, sku, name }) => {
     return { name: ` ${sku} - ${name} `, id }
   })
@@ -151,6 +174,12 @@ export const Vendor_productsList = () => {
     { name: 'Active' },
     { name: 'Inactive' },
   ];
+
+  const priorityOptions = [
+    { name: 'High', value: 30 },
+    { name: 'Medium', value: 20 },
+    { name: 'Low', value: 10 }
+  ]
 
   const [selectedColumns, setSelectedColumns] = useState(columns)
 
@@ -353,6 +382,8 @@ export const Vendor_productsList = () => {
     name: "Vendor-catalog-format.csv",
   }
 
+
+
   const formik = useFormik({
     initialValues: newProduct,
     validationSchema: Yup.object().shape({
@@ -371,6 +402,8 @@ export const Vendor_productsList = () => {
         id
 
       } = data
+
+      console.log("Data Vendor", data);
       if (editState) {
         await updateVendorMutation(
           {
@@ -412,6 +445,8 @@ export const Vendor_productsList = () => {
       formik.resetForm()
     },
   })
+
+  console.log("Formik data", formik.values)
 
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
@@ -616,22 +651,25 @@ export const Vendor_productsList = () => {
             </div>
             <div className="field col-12 md:col-3 lg:col-3 mt-4">
               <span className="p-float-label">
-                <InputNumber
-                  id="priority"
-                  name="priority"
+                <Dropdown
                   disabled={readOnly}
-                  value={formik?.values?.priority}
-                  onChange={(e) => formik.setValues({ ...formik.values, priority: e.value })}
-                  autoFocus
-                  className={classNames({ "p-invalid": isFormFieldValid("priority") })}
+                  value={formik.values.priority}
+                  onChange={formik.handleChange}
+                  options={priorityOptions}
+                  optionLabel="name"
+                  placeholder="Priority"
+                  className="w-full"
+                  id="priority"
                 />
                 <label
-                  htmlFor="priority"
+                  htmlFor={"type"}
                   className={classNames({ "p-error": isFormFieldValid("priority") })}
                 >
                   Priority
                 </label>
               </span>
+
+
               {getFormErrorMessage("priority")}
             </div>
             <div className="field col-12 md:col-3 lg:col-3 mt-4">

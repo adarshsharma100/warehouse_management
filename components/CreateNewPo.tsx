@@ -10,6 +10,7 @@ import {
 import { useCurrentUser } from "app/core/hooks/useCurrentUser"
 import createNotifications_sent from "app/notifications_sents/mutations/createNotifications_sent"
 import getPo_statuses from "app/po_statuses/queries/getPo_statuses"
+import getWarehouses from "app/warehouses/queries/getWarehouses"
 import getPo_terms from "app/po_terms/queries/getPo_terms"
 import createPurchase_order from "app/purchase_orders/mutations/createPurchase_order"
 import updatePurchase_order from "app/purchase_orders/mutations/updatePurchase_order"
@@ -25,7 +26,7 @@ import { InputNumber } from "primereact/inputnumber"
 import { InputText } from "primereact/inputtext"
 import { InputTextarea } from "primereact/inputtextarea"
 import { classNames } from "primereact/utils"
-import React, { useEffect, useRef, useState } from "react"
+import React, { startTransition, useEffect, useRef, useState } from "react"
 import * as Yup from "yup"
 import LoaderFullScreen from "./LoaderFullScreen"
 
@@ -51,6 +52,23 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     userId
   } = props
 
+  const initialPurchaseState = {
+    vendor_vendor_id: "",
+    po_code: "",
+    po_description: "",
+    expiry_date: "",
+    expected_delivery: "",
+    from_party: null,
+    terms: "",
+    rfq_id: "",
+    itemsLength: false,
+    purchase_order_status: "",
+    vendor_Emails: [],
+    agreement: "",
+    piNumber: "",
+    piDate: ""
+  }
+
   const [{ po_statuses }, { error: PO_statusError }] = useQuery(
     getPo_statuses,
     {
@@ -63,24 +81,22 @@ const CreateNewPo = React.forwardRef((props, ref) => {
       orderBy: { id: "asc" },
     }
   )
-  const initialPurchaseState = {
-    vendor_vendor_id: "",
-    po_code: "",
-    po_description: "",
-    expiry_date: "",
-    expected_delivery: "",
-    from_party: "",
-    terms: "",
-    rfq_id: "",
-    itemsLength: false,
-    purchase_order_status: "",
-    vendor_Emails: [],
-    agreement: "",
-    piNumber: "",
-    piDate: ""
-  }
+
 
   const [purchaseDetails, setPurchaseDetails] = useState(initialPurchaseState)
+  const [fromPartyQuery, setFromPartyQuery] = useState('');
+
+  const [{ warehouses }] = useQuery(getWarehouses,
+
+    {
+      orderBy: { id: "asc" },
+      where: { name: { contains: fromPartyQuery ?? undefined } },
+      take: undefined,
+      skip: undefined
+    }
+  )
+
+  console.log('warehouses: ', warehouses);
 
   const [createPurchaseOrderMutation, { isLoading: creatingPO, error: creatingMutationError }] =
     useMutation(createPurchase_order)
@@ -113,7 +129,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
   const [termsSuggetions, setTermsSuggetions] = useState<any>(null)
   const agreementTermsEnum = ["Approved", "Waiting For Approval"]
   const [poValue, setPoValue] = useState("")
-  const fromParty = [{ name: "TIF-Banaswadi" }, { name: "TIF-Rajajinagar" }, { name: "TIF-Hennur" }]
+  // const fromParty = [{ name: "TIF-Banaswadi" }, { name: "TIF-Rajajinagar" }, { name: "TIF-Hennur" }]
 
   const productOptions = products.map(({ id, name, vendor_products, costPrice, sku }) => {
     return {
@@ -127,6 +143,12 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     return {
       name: ` ${code}: ${name}`,
       vendor_id: id
+    }
+  })
+  const fromPartyOptions = warehouses.map(({ name, id }) => {
+    return {
+      name,
+      id
     }
   })
   const handleFormChange = (e: any, i: number) => {
@@ -217,10 +239,12 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     })
   }
 
+  console.log("fromPartyOptions", fromPartyOptions);
+
   const searchProducts = createSearchFunction(filterProductOptions, setProductsSuggestions)
   const searchVendor = createSearchFunction(vendorOptions, setVendorSuggestions)
   const searchPoStatuses = createSearchFunction(po_statuses, setPoStatuses)
-  const searchFromParty = createSearchFunction(fromParty, setFromPartySuggetions)
+  const searchFromParty = createSearchFunction(fromPartyOptions, setFromPartySuggetions)
   const searchTerms = createSearchFunction(poTerms, setTermsSuggetions)
   const router = useRouter()
   const findProductVpID = (i, list) => {
@@ -265,6 +289,8 @@ const CreateNewPo = React.forwardRef((props, ref) => {
         amendedFrom,
       } = data
 
+      console.log("data", data);
+
       const newProducts = productList.filter((ele) => !ele.id)
       const existingProducts = productList.filter((ele) => ele.id)
 
@@ -291,6 +317,11 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               piDate: piDate || null,
               status: purchase_order_status.id,
               po_term: terms.id,
+              warehouses: {
+                connect: {
+                  id: from_party?.id
+                }
+              },
               po_products: {
                 create: newProducts.map((ele, i) => ({
                   quantity: Number(ele.quantity),
@@ -389,8 +420,14 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                   },
                 })),
               },
+
               po_sentto: {
                 create: vendorEmailIds
+              },
+              warehouse: {
+                connect: {
+                  id: from_party?.id
+                }
               }
             },
             {
@@ -514,7 +551,8 @@ const CreateNewPo = React.forwardRef((props, ref) => {
       const initialState = values?.length
       let count = initialState >= 5 ? 1 : 5 - values?.length
 
-      const emptyFields = arrayFillCopy(count, initialItemState)
+      // const emptyFields = arrayFillCopy(count, initialItemState)
+      const emptyFields = arrayFillCopy(1, initialItemState)
 
       setItemList([...values, ...emptyFields])
     }
@@ -524,6 +562,9 @@ const CreateNewPo = React.forwardRef((props, ref) => {
   const updateFormValues = async (fields) => {
     await formik.setValues({ ...formik.values, ...fields })
   }
+
+  console.log("filterProductOptions", filterProductOptions);
+  console.log("formik.value", formik.values);
 
   return (
     <div
@@ -535,7 +576,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
       {creatingPO && <LoaderFullScreen />}
       {UpdatingPO && <LoaderFullScreen />}
       <div className={`card`}>
-        <form onSubmit={formik.handleSubmit} on className="p-fluid ">
+        <form onSubmit={formik.handleSubmit} className="p-fluid ">
           <div className="flex justify-content-between">
             {/* <h5>{`${poEditState ? "Update" : "Create"} PO`}</h5> */}
             <h5>{`${readOnlyForm ? "PO-Details" : poEditState ? "UPDATE-PO" : "CREATE-PO"}`}</h5>
@@ -801,7 +842,10 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                   dropdown
                   field="name"
                   onChange={async (e) => {
-                    let from_party = typeof e.value === "string" ? e.value : e.value.name
+                    let from_party = typeof e.value === "string" ? e.value : e.value
+                    startTransition(() => {
+                      setFromPartyQuery(from_party.name)
+                    })
 
                     await formik.setValues({
                       ...formik.values,
@@ -841,6 +885,23 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               </span>
               {getFormErrorMessage("po_value")}
             </div>
+            {showPriorList && <div className="field col-12 lg:col-4 mt-2">
+              <span className="p-float-label">
+                <InputText
+                  id="rfq_number"
+                  disabled={true}
+                  value={rfq?.rfqNumber ?? "-"}
+                  autoFocus
+                />
+                <label
+                  htmlFor="rfq_number"
+
+                >
+                  RFQ Number
+                </label>
+              </span>
+
+            </div>}
             {/* {amendingPO && (
               <div className="field col-12 mt-2">
                 <span className="p-float-label">
@@ -956,8 +1017,10 @@ const CreateNewPo = React.forwardRef((props, ref) => {
 
                         let itemsLength = !e.value?.name ? false : true
                         await formik.setValues({ ...formik.values, itemsLength })
+                        const _filteredData = data.filter((eachData) => eachData?.product_name)
+                        console.log("Data", data);
 
-                        setItemList(data)
+                        setItemList(_filteredData)
                       }}
                       aria-label="products"
                       dropdownAriaLabel="Select Product"
@@ -999,20 +1062,22 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                   </span>
                 </div>
                 <div className="field col-6 lg:col-1 mt-2">
-                  <span className="p-buttonset">
-                    {i === itemList.length - 1 && (
+                  <span >
+                    {/* {i === itemList.length - 1 && (
                       <Button type="button" label="+" onClick={addFields} />
-                    )}
-                    {itemList.length > 1 && (
-                      <Button
-                        type="button"
-                        label="-"
-                        className="p-button-secondary"
-                        onClick={(e) => {
-                          removeFields(i)
-                        }}
-                      />
-                    )}
+                    )} */}
+                    {/* {itemList.length > 1 && ( */}
+                    <Button
+                      type="button"
+                      icon="pi pi-times"
+                      style={{ fontSize: "0.3rem" }}
+                      disabled={itemList.length === 1 ? true : false}
+                      className="p-button-secondary"
+                      onClick={(e) => {
+                        removeFields(i)
+                      }}
+                    />
+                    {/* )} */}
                   </span>
                 </div>
               </div>

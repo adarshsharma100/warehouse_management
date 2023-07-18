@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState, useReducer } from "react"
+import { Suspense, useEffect, useRef, useState, useReducer, startTransition, useCallback } from "react"
 import Head from "next/head"
 import { useMutation, usePaginatedQuery, useQuery, invoke } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
@@ -54,11 +54,14 @@ const ITEMS_PER_PAGE = 100
 const initialState = {
   tableRowsCount: 10,
   skipCount: 0,
+  emailNameSearchQuery: ""
 
 };
 
 const reducer = (state, { type, payload }) => {
   switch (type) {
+    case 'UPDATE_EMAIL_NAME_SEARCH_STATE':
+      return { ...state, [payload.key]: payload.value }
     case 'UPDATE_TABLE_ROWS_COUNT':
       return { ...state, tableRowsCount: payload }
     case 'UPDATE_SKIP_COUNT':
@@ -71,7 +74,7 @@ const reducer = (state, { type, payload }) => {
 export const RfqsList = () => {
   const router = useRouter();
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { skipCount, tableRowsCount } = state;
+  const { skipCount, tableRowsCount, emailNameSearchQuery } = state;
 
 
   const antiCSRFToken = getAntiCSRFToken()
@@ -87,9 +90,35 @@ export const RfqsList = () => {
     take: tableRowsCount
 
   })
+
+  console.log("rfqs", rfqs);
   const [{ emails },] = useQuery(getEmails, {
     orderBy: { id: "asc" },
+    where: {
+      OR: [
+        {
+          addresses_emails_addressesToaddresses: {
+            vendor_branches: {
+              every: {
+                vendors: {
+                  name: {
+                    contains: emailNameSearchQuery ?? undefined
+                  }
+                }
+              }
+            }
+          }
+        },
+        { email: { contains: emailNameSearchQuery ?? undefined } }
+      ]
+
+    }
   })
+
+  console.log('emails123: ', emails);
+  console.log('emailNameSearchQuery: ', emailNameSearchQuery);
+
+
 
   const [{ purchase_orders }, { error: getPoError }] = useQuery(getPurchase_orders, {
     orderBy: { id: "desc" }, // Do not change the order this will affect on LatestPO function
@@ -105,12 +134,19 @@ export const RfqsList = () => {
 
   const [selectedRfqs, setSelectedRfqs] = useState(null);
   const [sendDialog, setSendDialog] = useState(false)
+  const [filteredSelectedProductID, setFilteredSelectedProductID] = useState([]);
   const [createRFQMutation, { isLoading: creatingRfq, error: createRFQMutationError }] =
     useMutation(createRfq)
   const [updateRFQMutation, { isLoading: updatingRfq, error: updateRFQMutationError }] =
     useMutation(updateRfq)
 
-  const productOptions = products.map(
+  const productOptions = products.filter(({ id }) => {
+    if (!filteredSelectedProductID.includes(id)) {
+      return true
+    } else {
+      return false
+    }
+  }).map(
     ({ id, name, sku, vendor_products, costPrice }) => {
       return {
         name: `${sku} - ${name}`,
@@ -120,6 +156,8 @@ export const RfqsList = () => {
       }
     }
   )
+
+  console.log("filteredSelectedProductID", filteredSelectedProductID);
   const [productsSuggestions, setProductsSuggestions] = useState<any>(null)
   const searchProducts = createSearchFunction(productOptions, setProductsSuggestions)
   const menu = useRef<Menu>(null)
@@ -128,6 +166,7 @@ export const RfqsList = () => {
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } })
   const goToNextPage = () => router.push({ query: { page: page + 1 } })
   const [rfqDialog, setRfqDialog] = useState(false)
+  const [isInclude, setIsInclude] = useState(false)
   const [amendingRfq, setAmendingRfq] = useState(false)
   const initialRfqState = {
     rfqNumber: "",
@@ -137,11 +176,17 @@ export const RfqsList = () => {
     itemsLength: false,
     agreement: "",
     id: "",
-    status: "Created"
+    status: "Created",
+    ammendedFrom: null,
+    ammendedRFQNumberCount: 0
   }
   const [rfqDetails, setRfqDetails] = useState(initialRfqState)
   const [rfqEditState, setRfqEditState] = useState(false)
   const [readOnlyForm, setReadOnlyForm] = useState(true)
+  const [totalTargetPrice, setTotalTargetPrice] = useState(0)
+  const [productDiscount, setProductDiscount] = useState(null)
+
+  const [checkAmmendedFrom, setCheckAmmendedFrom] = useState([])
 
   const initialItemList = {
     product_id: "",
@@ -149,7 +194,9 @@ export const RfqsList = () => {
     costPrice: "",
     product_name: "",
     last_po_price: "-",
+    last_purchase_quantity: "",
     last_vendor: "",
+
     avg_price: "-",
   }
 
@@ -168,7 +215,7 @@ export const RfqsList = () => {
   const scrollToRfq = useRef<HTMLHeadingElement>(null)
   const [rfqStatusSuggestions, setrfqStatusSuggestions] = useState<any>(null)
   const [mailSent, setMailSent] = useState(false)
-  const rfqStatus = ["Created", "Processing", "Completed"]
+  const rfqStatus = ["Created", "Processing", "Completed", "Sent"]
     .map((term) => ({ name: term, value: term }))
   const searchStatus = createSearchFunction(rfqStatus, setrfqStatusSuggestions)
 
@@ -235,7 +282,9 @@ export const RfqsList = () => {
     )
     console.log('lastProductPrice: ', lastProductPrice);
 
-
+    const purchaseQuantity = lastProductPrice?.po_products?.find(
+      (ele) => ele.vendor_products.products.id === num
+    ).quantity
     const vendor = lastProductPrice?.vendors?.name
     const poId = lastProductPrice?.id
     const productPrice = lastProductPrice?.po_products?.find(
@@ -246,17 +295,21 @@ export const RfqsList = () => {
       poId,
       vendor: vendor ?? "NA",
       productPrice: productPrice ?? "NA",
+      purchaseQuantity: purchaseQuantity ?? "NA"
     }
 
 
     return data
   }
 
-  const optionsForVendorEmails = emails.map(({ id, email, addresses }) => {
+  const optionsForVendorEmails = emails.map(({ id, email, addresses_emails_addressesToaddresses }) => {
+    const { vendor_branches } = addresses_emails_addressesToaddresses;
+
     return {
-      name: email,
+      name: `${vendor_branches[0]?.vendors?.name ? vendor_branches[0].vendors.name : ''}-${email}`,
       value: id,
-      addresses
+      // email
+
     }
   })
 
@@ -305,6 +358,8 @@ export const RfqsList = () => {
 
 
 
+
+
   const columnComponents = columns.reduce((acc, curr) => {
     if (selectedColumns.includes(curr.field))
       return [
@@ -323,13 +378,13 @@ export const RfqsList = () => {
     return acc;
   }, []);
 
-  useEffect(() => {
-    const defaultColumns = columns.filter(col => !["updatedAt", "rfq.rfqNumber"].includes(col.field)).map(col => col.field)
-    setSelectedColumns(defaultColumns)
-  }, [])
+  // useEffect(() => {
+  //   const defaultColumns = columns.filter(col => !["updatedAt", "rfq.rfqNumber"].includes(col.field)).map(col => col.field)
+  //   setSelectedColumns(defaultColumns)
+  // }, [])
 
 
-  console.log("selectedColumns", selectedColumns)
+  console.log("selectedColumns", productsSuggestions)
 
   const renderHeader = () => {
     return (
@@ -367,19 +422,22 @@ export const RfqsList = () => {
   }
   const header1 = renderHeader()
 
-  const addFields = () => {
-    let newfield = initialItemList
+  // const handleAddItemListChange = () => {
+  //   arrayFillCopy
+  // }
 
-    setItemList([...itemList, newfield])
-  }
   const removeFields = (index) => {
     setItemList(itemList.filter((data, i) => index !== i))
   }
 
   const handleFormChange = (e: any, i: number) => {
-    let data = [...itemList]
+    let data = [...itemList];
+    console.log('data: ', data);
+
+    let totalValue;
     e.target ? (data[i][e.target.name] = e.value) : (data[i][e.originalEvent.target.name] = e.value)
     setItemList(data)
+
   }
 
   const rowExpansionTemplate = (data) => {
@@ -585,10 +643,63 @@ export const RfqsList = () => {
 
   const emailsuggestions = createSearchFunction(optionsForVendorEmails, setVendorEmailSuggestions)
 
+  const removeErrorBox = (i) => {
+    const msgArray = [...rfqErrorMsgs]
+    msgArray.splice(i, 1)
+    setRfqErrorMsgs(msgArray)
+  }
+
+  const handlePageChange = async (event) => {
+
+    dispatch({ type: "UPDATE_SKIP_COUNT", payload: event.first })
+    dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
+  }
+
+  const handleUpdateDiscountItemListClick = () => {
+    if (productDiscount) {
+      console.log("Product discount useEffect is working");
+      const discount = productDiscount / 100;
+      let totalValue = 0;
+
+      const updatedItemList = itemList.map((eachList) => {
+        const { costPrice, quantity, last_po_price } = eachList;
+        if (!isNaN(costPrice) && !isNaN(quantity) && quantity !== "") {
+          const discountedPrice = last_po_price * (1 - discount);
+          totalValue += costPrice * quantity;
+          return { ...eachList, costPrice: discountedPrice.toFixed(2) };
+        }
+        return eachList;
+      });
+
+      setItemList(updatedItemList);
+      setTotalTargetPrice(totalValue);
+
+    }
+
+  }
+
+
+  const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={rfqsCount} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
+
+  const handleCheckIncludeProductName = useCallback((name, index) => {
+    console.log("index", index);
+    if (productsSuggestions !== null) {
+      const _isInclude = productsSuggestions.map(item => item.name).includes(name)
+      setIsInclude(_isInclude)
+    }
+  }, [productsSuggestions])
+
+  useEffect(() => {
+    const defaultColumns = columns.filter(col => !["updatedAt", "rfq.rfqNumber"].includes(col.field)).map(col => col.field)
+    setSelectedColumns(defaultColumns)
+  }, [])
+
   useEffect(() => {
     const currentItemsIds = itemList.map(({ rfq_products_id }) => rfq_products_id)
     setCurrentRfqitemsID([...currentItemsIds])
   }, [rfqDialog])
+
+  console.log("itemList", itemList);
 
   useEffect(() => {
     const ErrorArray = [
@@ -614,21 +725,36 @@ export const RfqsList = () => {
 
   ])
 
-  const removeErrorBox = (i) => {
-    const msgArray = [...rfqErrorMsgs]
-    msgArray.splice(i, 1)
-    setRfqErrorMsgs(msgArray)
-  }
+  useEffect(() => {
+    let _totalValue = 0;
+    const itemListTotal = itemList.map((eachList) => {
+      const { costPrice, quantity } = eachList;
 
-  const handlePageChange = async (event) => {
+      console.log("quantity", quantity);
+      console.log("totalValue", _totalValue)
+      if (!isNaN(costPrice) && !isNaN(quantity)) {
+        _totalValue = _totalValue + (costPrice * quantity)
+      }
 
-    dispatch({ type: "UPDATE_SKIP_COUNT", payload: event.first })
-    dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
-  }
+    })
+    setTotalTargetPrice(_totalValue)
+
+  }, [itemList])
+
+  console.log("productDiscount", productDiscount);
 
 
-  const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={rfqsCount} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
 
+  useEffect(() => {
+    if (isInclude) {
+      let newfield = initialItemList
+      setItemList([...itemList, newfield])
+      setIsInclude(false)
+    }
+
+  }, [initialItemList, isInclude, itemList])
+
+  console.log("formik values", formik.values);
 
   return (
     <>
@@ -738,8 +864,8 @@ export const RfqsList = () => {
                 onClick={async () => {
                   setRfqEditState(false)
                   await formik.setValues({ ...initialRfqState })
-                  const fiveFields = arrayFillCopy(5, initialItemList)
-                  setItemList(fiveFields)
+                  const initialFields = arrayFillCopy(1, initialItemList)
+                  setItemList(initialFields)
                   setRfqDialog(true)
                   setRFQCodeChecked(true)
                   setReadOnlyForm(false)
@@ -788,11 +914,12 @@ export const RfqsList = () => {
                       onClick={async (e) => {
                         e.preventDefault()
 
+
                         try {
                           const rfqDetails = await invoke(getRfq, {
                             id: activeRow?.id
-                          })
 
+                          })
 
                           const productsToPo = getRemainingPoProducts(rfqDetails)
 
@@ -851,20 +978,39 @@ export const RfqsList = () => {
                       tooltip="Send RFQ"
                       tooltipOptions={{ position: "top" }}
                     />
-                    <Button
+                    {checkAmmendedFrom.length === 0 && <Button
                       icon="bi bi-file-text"
                       className="m-1"
                       tooltip="Amend RFQ"
                       tooltipOptions={{ position: "top" }}
                       onClick={async (e) => {
-                        await formik.setFieldValue("rfqNumber", "")
+                        const { ammendedRFQNumberCount, rfqNumber, ammendedFrom } = formik.values;
+                        let _ammendedRFQNumberCount;
+                        let _rfqNumber;
+
+
+                        if (rfqNumber.includes("_")) {
+                          _rfqNumber = rfqNumber.split('_');
+                          _ammendedRFQNumberCount = Number(_rfqNumber.slice(-1)) + 1;
+                          await formik.setFieldValue("rfqNumber", `${_rfqNumber[0]}_${_ammendedRFQNumberCount}`)
+                        } else {
+                          if (ammendedFrom === null && ammendedRFQNumberCount === 0) {
+                            _ammendedRFQNumberCount = ammendedRFQNumberCount + 1;
+                          } else {
+                            if (ammendedFrom !== null && ammendedRFQNumberCount === 0) {
+                              _ammendedRFQNumberCount = ammendedRFQNumberCount + 2
+                            }
+                          }
+                          await formik.setFieldValue("rfqNumber", `${rfqNumber}_${_ammendedRFQNumberCount}`)
+                        }
+                        await formik.setFieldValue("ammendedRFQNumberCount", _ammendedRFQNumberCount);
                         e.preventDefault()
                         setAmendingRfq(true)
                         setRfqEditState(false)
                         setReadOnlyForm(false)
                         setMailSent(false)
                       }}
-                    />
+                    />}
 
                   </div>
                 )}
@@ -878,7 +1024,8 @@ export const RfqsList = () => {
                       <InputText
                         id="rfqNumber"
                         name="rfqNumber"
-                        value={RFQCodechecked ? "Auto Generated" : formik.values.rfqNumber}
+                        value={formik.values.rfqNumber}
+                        // value={RFQCodechecked ? "Auto Generated" : formik.values.rfqNumber}
                         onChange={formik.handleChange}
                         disabled={RFQCodechecked}
                         autoFocus
@@ -1013,7 +1160,7 @@ export const RfqsList = () => {
                         htmlFor="agreement"
                         className={classNames({ "p-error": isFormFieldValid("agreement") })}
                       >
-                        Agreement
+                        Terms
                       </label>
                     </span>
                     {getFormErrorMessage("agreement")}
@@ -1022,8 +1169,8 @@ export const RfqsList = () => {
 
                 <div className="col-12">
                   <h6 className="mb-4">Send To Emails:</h6>
-                </div>
 
+                </div>
                 <span className="p-float-label w-full">
                   <AutoComplete
                     // className="w-4"
@@ -1035,21 +1182,54 @@ export const RfqsList = () => {
                     field="name"
                     multiple
                     onChange={async (e) => {
+                      console.log("e.value", e.value);
+
                       await formik.setValues({ ...formik.values, rfq_email: e.value })
+                      startTransition(() => {
+                        dispatch({ type: "UPDATE_EMAIL_NAME_SEARCH_STATE", payload: { key: "emailNameSearchQuery", value: e.value.name }, })
+                      });
                     }}
                     aria-label="Vendor-Emails"
                     dropdownAriaLabel="Select Email"
                   />
-                  <label htmlFor="autocomplete">Emails</label>
+                  {/* <label htmlFor="autocomplete">Emails</label> */}
                 </span>
+                <div className="col-12 flex justify-content-end mt-3">
 
-                <div className="col-12 mt-5">
+                  <span className="p-float-label ">
+                    <InputNumber
+                      value={productDiscount}
+                      onChange={(event) => setProductDiscount(event.value)}
+                      suffix="%"
+                      min={1}
+                      max={100}
+                      // style={{ width: "60%" }}
+                      disabled={itemList.length === 1}
+                    />
+                    <label htmlFor="productDiscount">
+                      Discount
+                    </label>
+                  </span>
+
+                  <span>
+                    <Button
+                      type="button"
+                      label="Apply"
+                      style={{ fontSize: "0.8rem", padding: "0.2rem" }}
+                      className="p-button-secondary ml-2 mt-2"
+                      disabled={itemList.length === 1}
+                      onClick={handleUpdateDiscountItemListClick}
+
+                    />
+                  </span>
+                </div>
+                <div className="col-12 mt-3">
                   <h6>Select Products:</h6>
                 </div>
                 {itemList.map((ele, i) => (
                   <>
                     <div className="col-12 grid mt-1" key={`RFQ-product-${i}`}>
-                      <div className="col-12 lg:col-6">
+                      <div className="col-12 lg:col-4">
                         <div className="field">
                           <div className="p-float-label">
                             <AutoComplete
@@ -1065,38 +1245,43 @@ export const RfqsList = () => {
                               onChange={async (e) => {
                                 let product_id = typeof e.value === "string" ? "" : e.value?.id
                                 let name = typeof e.value === "string" ? e.value : e.value?.name
-                                let costPrice = typeof e.value === "string" ? 0 : e.value?.costPrice
                                 let data = [...itemList]
+                                const _filteredSelectedProductID = [...filteredSelectedProductID, product_id]
+                                setFilteredSelectedProductID(_filteredSelectedProductID)
 
                                 const lastPo = LatestPO(purchase_orders, product_id)
 
                                 data[i].product_name = name
                                 data[i].product_id = product_id
-                                data[i].costPrice = costPrice
+                                data[i].quantity = lastPo.purchaseQuantity
+                                data[i].costPrice = lastPo.productPrice
                                 data[i].last_po_price = lastPo.productPrice
                                 data[i].last_vendor = lastPo.vendor
+                                data[i].last_purchase_quantity = lastPo.purchaseQuantity
 
                                 let itemsLength = !e.value?.name ? false : true
                                 await formik.setValues({ ...formik.values, itemsLength })
 
-                                setItemList(data)
+                                console.log('data: ', data);
+
+                                const filter = data?.filter(e => e?.product_name)
+                                setItemList([...filter, initialItemList]);
+
+
+
+
                               }}
                               aria-label="products"
                               dropdownAriaLabel="Select Product"
-                            //   className={classNames({ "p-invalid": isFormFieldValid("name") })}
+
                             />
 
-                            <label
-                              htmlFor="name"
-                            //   className={classNames({ "p-error": isFormFieldValid("name") })}
-                            >
-                              Select Product
-                            </label>
+
                           </div>
                         </div>
                       </div>
 
-                      <div className="col-12 lg:col-1">
+                      <div className="col-12 lg:col-2">
                         <div className="field">
                           <span className="p-float-label ">
                             <InputNumber
@@ -1105,16 +1290,14 @@ export const RfqsList = () => {
                               value={Number(ele.costPrice)}
                               disabled={readOnlyForm || mailSent}
                               onChange={(e) => handleFormChange(e, i)}
-                            // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+
                             />
-                            <label
-                            // className="labelpos_1"
-                            >
-                              Target price
+                            <label>
+                              Target price(excluding GST)
                             </label>
                           </span>
                         </div>
-                        {/* {getFormErrorMessage("name")} */}
+
                       </div>
                       <div className="col-12 lg:col-1">
                         <div className="field">
@@ -1125,16 +1308,16 @@ export const RfqsList = () => {
                               disabled={readOnlyForm || mailSent}
                               value={Number(ele.quantity)}
                               onChange={(e) => handleFormChange(e, i)}
-                            // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+
                             />
                             <label
-                            // className={classNames({ "p-error": isFormFieldValid("name") })}
+
                             >
                               Quantity
                             </label>
                           </span>
                         </div>
-                        {/* {getFormErrorMessage("name")} */}
+
                       </div>
                       <div className="col-12 lg:col-1">
                         <div className="field">
@@ -1144,14 +1327,28 @@ export const RfqsList = () => {
                               name="last_po_price"
                               disabled
                               value={ele.last_po_price}
-                              onChange={(e) => handleFormChange(e, i)}
-                            // className={classNames({ "p-invalid": isFormFieldValid("name") })}
+
                             />
-                            <label
-                            // className="labelpos_1"
-                            // className={classNames({ "p-error": isFormFieldValid("name") })}
-                            >
+                            <label>
+
                               Last PO Price
+                            </label>
+                          </span>
+                        </div>
+
+                      </div>
+                      <div className="col-12 lg:col-1">
+                        <div className="field">
+                          <span className="p-float-label">
+                            <InputText
+                              id="last_purchase_quantity"
+                              name="last_purchase_quantity"
+                              disabled
+                              value={Number(ele.last_purchase_quantity)}
+
+                            />
+                            <label>
+                              Last PO Quantity
                             </label>
                           </span>
                         </div>
@@ -1179,27 +1376,36 @@ export const RfqsList = () => {
                         {/* {getFormErrorMessage("name")} */}
                       </div>
                       <div className="field col-6 lg:col-1">
-                        <div className="field">
-                          {!readOnlyForm && <span className="p-buttonset ">
-                            {i === itemList.length - 1 && (
-                              <Button type="button" label="+" onClick={addFields} />
-                            )}
-                            {itemList.length > 1 && (
-                              <Button
-                                type="button"
-                                label="x"
-                                className="p-button-secondary"
-                                onClick={(e) => {
-                                  removeFields(i)
-                                }}
-                              />
-                            )}
-                          </span>}
-                        </div>
+                        {/* <div className="field"> */}
+                        {!readOnlyForm && <span >
+
+                          <Button
+                            type="button"
+                            icon="pi pi-times"
+                            style={{ fontSize: "0.8rem" }}
+                            className="p-button-secondary"
+                            disabled={itemList.length === 1 ? true : false}
+                            onClick={(e) => {
+                              removeFields(i)
+                            }}
+                          />
+                          {/* )} */}
+                        </span>}
+                        {/* </div> */}
                       </div>
                     </div>
                   </>
                 ))}
+
+                <div className="col-12 grid">
+                  <div className="col-12 lg:col-4" />
+                  <div className="col-12 lg:col-1 mt-1">
+                    Total Value:
+                  </div>
+                  <div className="col-12 lg:col-2">
+                    <InputNumber value={totalTargetPrice} disabled />
+                  </div>
+                </div>
                 <div className="m-auto text-2xl">{getFormErrorMessage("itemsLength")}</div>
               </div>
 
@@ -1226,7 +1432,7 @@ export const RfqsList = () => {
                       expectedDod: "",
                       rfq_email: [],
                     })
-                    const fiveFields = arrayFillCopy(5, initialItemList)
+                    const fiveFields = arrayFillCopy(1, initialItemList)
                     setItemList(fiveFields)
                     setAmendingRfq(false)
 
@@ -1260,11 +1466,20 @@ export const RfqsList = () => {
               rowExpansionTemplate={rowExpansionTemplate}
               filters={filters}
               header={header1}
+              scrollable={true}
+              scrollHeight="300px"
+              headerStyle={{ position: 'sticky', top: '0' }}
               filterDisplay="menu"
               emptyMessage="No Results found."
               onRowClick={async (e) => {
                 console.log('rowdata: ', e.data);
                 const rfqSenttoExists = Boolean(e.data.rfq_sentto.length)
+                const { rfqs } = await invoke(getRfqs, {
+                  where: {
+                    ammendedFrom: e.data.id
+                  }
+                })
+                setCheckAmmendedFrom(rfqs);
 
                 setMailSent(rfqSenttoExists)
 
@@ -1284,12 +1499,14 @@ export const RfqsList = () => {
                   }
                 )
                 setItemList(active)
-                const { rfqNumber, description: rfq_description, expectedDod, id, agreement, status } = e.data
+                const { rfqNumber, description: rfq_description, expectedDod, id, agreement, status, ammendedFrom } = e.data
 
                 // const _expectedDod = moment(expectedDod).toDate()
                 const sentToEmails = e.data.rfq_sentto.map(({ emails: { email } }) => email)
 
+
                 await formik.setValues({
+
                   rfqNumber: rfqNumber,
                   rfq_description,
                   id,
@@ -1298,6 +1515,9 @@ export const RfqsList = () => {
                   rfq_email: sentToEmails,
                   expectedDod,
                   status,
+                  ammendedFrom,
+                  ammendedRFQNumberCount: 0
+
                 })
 
                 setRfqDialog(true)
