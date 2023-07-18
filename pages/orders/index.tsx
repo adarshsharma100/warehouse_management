@@ -24,7 +24,7 @@ import { OverlayPanel } from 'primereact/overlaypanel';
 import { Badge } from "primereact/badge";
 import { Tooltip } from "primereact/tooltip";
 import { Paginator } from "primereact/paginator";
-import { Suspense, useEffect, useReducer, useRef, useState } from "react";
+import { Suspense, useEffect, useReducer, useRef, useState, startTransition } from "react";
 import * as Yup from "yup";
 import AddressComponent from "../../components/AddressComponent";
 
@@ -259,11 +259,18 @@ export const OrdersList = () => {
   const [{ customers }] = useQuery(getCustomers, {
     orderBy: { id: "asc" },
     skip: undefined,
-    where: {},
+    where: {
+      OR: [
+        {
+          firstName: { contains: selectedCustomerName ?? undefined }
+        },
+        {
+          companyName: { contains: selectedCustomerName ?? undefined }
+        }
+      ]
 
-    // where: {
-    //   firstName: { contains: selectedCustomerName ?? undefined }
-    // },
+
+    },
     take: undefined
   })
 
@@ -1407,13 +1414,10 @@ export const OrdersList = () => {
                         const selectedCustomer = e.value;
                         console.log("customer e.value", e.value);
                         console.log("customer e.value", typeof e.value);
-
-
-                        // setSelectedCustomerName(selectedCustomer);
-
                         let name = typeof e.value === "string" ? e.value : e.value?.name
-
-
+                        startTransition(() => {
+                          setSelectedCustomerName(name)
+                        })
                         await formik.setValues({
                           ...formik.values,
                           name,
