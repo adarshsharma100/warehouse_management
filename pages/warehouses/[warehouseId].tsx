@@ -18,7 +18,8 @@ import getAreas from "app/areas/queries/getAreas";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { Toast } from "primereact/toast";
-import { tsuccess } from "app/constants";
+import { initialFilterRules, tsuccess } from "app/constants";
+import { FilterMatchMode } from "primereact/api";
 
 // import deleteWarehouse from "src/warehouses/mutations/deleteWarehouse";
 
@@ -28,7 +29,6 @@ const initialAreas = {
   description: ''
 }
 const columns = [
-  { field: "name", header: "Name" },
   { field: "description", header: "Description" },
 ]
 
@@ -111,6 +111,40 @@ export const Warehouse = () => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
 
+
+
+
+  const dt = useRef(null);
+  const exportColumns = columns.map((col) => ({ title: col.header, dataKey: col.field }));
+
+  const exportExcel = () => {
+    import('xlsx').then((xlsx) => {
+      const worksheet = xlsx.utils.json_to_sheet(areas);
+      const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
+      const excelBuffer = xlsx.write(workbook, {
+        bookType: 'xlsx',
+        type: 'array'
+      });
+
+      saveAsExcelFile(excelBuffer, 'products');
+    });
+  };
+
+  const saveAsExcelFile = (buffer, fileName) => {
+    import('file-saver').then((module) => {
+      if (module && module.default) {
+        let EXCEL_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+        let EXCEL_EXTENSION = '.xlsx';
+        const data = new Blob([buffer], {
+          type: EXCEL_TYPE
+        });
+
+        module.default.saveAs(data, fileName + '_export_' + new Date().getTime() + EXCEL_EXTENSION);
+      }
+    });
+  };
+
+
   const columnComponents = selectedColumns.map((col) => {
     return (
       <Column
@@ -132,6 +166,68 @@ export const Warehouse = () => {
   useEffect(() => {
     setAreas(warehouse?.areas_areas_warehouseTowarehouse)
   }, [warehouse])
+
+
+
+
+
+  const initialColumnFilters = {
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    name: initialFilterRules.andContains,
+    description: initialFilterRules.andContains,
+  }
+
+  const [filters, setFilters] = useState(initialColumnFilters);
+  const [globalFilterValue, setGlobalFilterValue] = useState("");
+
+  const clearFilter = () => {
+    setFilters(initialColumnFilters)
+    setGlobalFilterValue("")
+  }
+  const onGlobalFilterChange = (e) => {
+    const value = e.target.value
+    let _filters1 = { ...filters }
+    _filters1["global"].value = value
+
+    setFilters(_filters1)
+    setGlobalFilterValue(value)
+  }
+
+  const renderHeader = () => {
+    return (
+      <div className="flex justify-content-end">
+        <div className="flex gap-4">
+          <span className="p-input-icon-left">
+            <i className="pi pi-search" />
+            <InputText
+              value={globalFilterValue}
+              onChange={onGlobalFilterChange}
+              placeholder="Keyword Search"
+            />
+          </span>
+          <Button
+            type="button"
+            icon="pi pi-filter-slash"
+            label="Clear"
+            className="p-button-outlined"
+            onClick={clearFilter}
+          />
+
+          <Button
+            type="button"
+            icon="pi pi-file-excel"
+            label="Export as XLSX"
+            // severity="success"
+            rounded onClick={exportExcel}
+            tooltip="Export Data"
+            tooltipOptions={{ position: 'top' }}
+          />
+
+        </div>
+      </div>
+    )
+  }
+  const warehouseIDTableHeader = renderHeader()
 
 
   return (
@@ -158,7 +254,7 @@ export const Warehouse = () => {
       <form className="p-fluid" onSubmit={formik.handleSubmit}>
         {active &&
           <div className="card ">
-            {editAreas ? <h2>Update Areas</h2> : <h2>Create Areas</h2>}
+            {editAreas ? <h2>Update Areas - {formik.values.name}</h2> : <h2>Create Areas</h2>}
             <div className="formgrid grid">
               {[
                 { type: 'text', label: 'Name', field: 'name' },
@@ -231,31 +327,32 @@ export const Warehouse = () => {
           className="text-s datatable-responsive"
           responsiveLayout="scroll"
           filterDisplay="menu"
-          onRowClick={handleRowClick}
+          // onRowClick={handleRowClick}
+          filters={filters}
+          header={warehouseIDTableHeader}
+          onRowClick={async (e) => {
+            setActiveAreas({ ...e.data })
+            setActive(true)
+            setEditAreas(true)
+            setUpdateAreas(true)
+            await formik.setValues({
+              ...e.data
+            })
+          }}
         >
-
-          {columnComponents}
           <Column
-            header="Action"
-            body={(rowData) => {
-              return (
-                <div>
-                  <Button
-                    icon="pi pi-pencil"
-                    onClick={async () => {
-                      setActiveAreas({ ...rowData })
-                      setActive(true)
-                      setEditAreas(true)
-                      setUpdateAreas(true)
-                      await formik.setValues({
-                        ...rowData
-                      })
-                    }}
-                  />
-                </div>
-              )
-            }}
+            header='Name'
+            field="name"
+            filter
+            filterPlaceholder="Search by Name"
+            body={(rowData) => (
+              <Link href={`/areas/${rowData.id}`}>
+                <a>{rowData.name}</a>
+              </Link>
+            )}
           />
+          {columnComponents}
+
         </DataTable>
       </div>
 
