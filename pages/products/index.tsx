@@ -88,6 +88,7 @@ const columns = [
     filter: true,
     filterPlaceholder: "Search by Type"
   },
+
   {
     field: "kit_products_kit_products_productIdToproducts",
     header: "Kit Products",
@@ -629,14 +630,13 @@ export const ProductsList = () => {
       const createKitProducts = (products) =>
         products.map(({ product, quantity }) => ({
           products_kit_products_kitProductIdToproducts: {
-            products_kit_products_kitProductIdToproducts: {
-              connect: {
-                id: product.id
-              }
+            connect: {
+              id: product.id
             },
-            quantity,
 
-          }
+
+          },
+          quantity
         }))
 
 
@@ -662,7 +662,7 @@ export const ProductsList = () => {
         taxCalcuation,
       } = data
 
-      console.log("kitProducts", kitProducts);
+      console.log("data", data);
 
       // const tagsValue = tags.map(({ value }) => value)
 
@@ -757,7 +757,7 @@ export const ProductsList = () => {
 
             }
           },
-          product_brand: {
+          product_brand: brand?.id && {
             connect: {
               id: brand?.id
             }
@@ -987,7 +987,7 @@ export const ProductsList = () => {
 
             <div className="flex justify-content-between">
               {/* <h4>{activeProduct ? "Update Product " : "Create Product"} </h4> */}
-            {activeProduct ? <h3>Update Product - {formik.values.sku}</h3> : <h3>Create Product</h3>}
+              {activeProduct ? <h3>Update Product - {formik.values.sku}</h3> : <h3>Create Product</h3>}
 
               <h4 className="mt-0">{activeProduct &&
                 <Button

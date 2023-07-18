@@ -20,9 +20,8 @@ const CreateProduct = z.object({
   hsnCode: z.string().optional(),
   imageUrl: z.string().optional(),
   gstTaxTypeCode: z.number().optional(),
-  gstTaxTypeCode: z.number().optional(),
   taxCalcType: z.string().optional(),
-  brand: z.number().optional(),
+  // brand: z.number().optional(),
   product_categories: z.object({
     connect: z.object({
       id: z.number()
@@ -32,7 +31,7 @@ const CreateProduct = z.object({
     connect: z.object({
       id: z.number()
     })
-  }),
+  }).optional(),
   // costPrice: z.number(),
   product_prices: z.object({
     create: z.object({
@@ -72,6 +71,7 @@ export default resolver.pipe(
   resolver.zod(CreateProduct),
   resolver.authorize(),
   async (input) => {
+    console.log('input: ', input);
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const product = await db.products.create({
 
