@@ -225,7 +225,7 @@ export const RfqsList = () => {
   const [rfqStatusSuggestions, setrfqStatusSuggestions] = useState<any>(null)
   const [mailSent, setMailSent] = useState(false)
   console.log('mailSent: ', mailSent);
-  const rfqStatus = ["Created", "Processing", "Completed", "Sent", "Cancelled"]
+  const rfqStatus = ["Created", "Processing", "Completed", "Sent", "Cancelled", "Force Completed"]
     .map((term) => ({ name: term, value: term }))
   const searchStatus = createSearchFunction(rfqStatus, setrfqStatusSuggestions)
 
@@ -968,16 +968,18 @@ export const RfqsList = () => {
                   <div className="flex justify-content-center align-items-center col-7 p-0 ml-3">
                     <h5 className="mr-2 m-0">
 
-                      Status
+                      Status :
                     </h5>
-                    <span>
-                      <AutoComplete
+
+                    {/* {(formik.values.status !== "Processing" && formik.values.status !== "Sent") ? */}
+                    <h5 style={{ fontWeight: "bold" }} className="m-0">{formik.values.status}</h5>
+                    {/* <AutoComplete
                         id="status"
                         // disabled={fieldDisable}
                         value={formik.values?.status}
                         suggestions={rfqStatusSuggestions}
                         completeMethod={searchStatus}
-                        disabled={formik.values.status === "Processing" || formik.values.status === "Sent" ? false : true}
+                        // disabled={formik.values.status === "Processing" || formik.values.status === "Sent" ? false : true}
                         dropdown
                         field="name"
                         onChange={async (e) => {
@@ -990,13 +992,13 @@ export const RfqsList = () => {
                         }}
                         aria-label="Agreement Terms"
                         dropdownAriaLabel="Agreement Terms"
-                        className={formik.values.status === "Processing" || formik.values.status === "Sent" ? "" : "highlight-status-disabled"}
+                      // className={formik.values.status === "Processing" || formik.values.status === "Sent" ? "" : "highlight-status-disabled"}
 
-                      />
+                      />} */}
 
 
-                    </span>
-                    {getFormErrorMessage("status")}
+
+                    {/* {getFormErrorMessage("status")} */}
                   </div>
                 </div>
 
@@ -1063,6 +1065,7 @@ export const RfqsList = () => {
                                       tsuccess("Updated", `${rfqNumber} is now ${status}`))
                                     await refetch()
 
+
                                   },
                                 }
                               )
@@ -1075,6 +1078,79 @@ export const RfqsList = () => {
                       tooltip="Create PO"
                       tooltipOptions={{ position: "top" }}
                     />
+                    {formik.values.status === "Created" || formik.values.status === "Sent" ?
+                      <Button
+                        icon="bi bi-x-octagon"
+                        className="m-1"
+                        tooltip="Cancel"
+                        tooltipOptions={{ position: "top" }}
+                        onClick={async (e) => {
+                          e.preventDefault()
+                          // e.stopPropagation()
+                          try {
+                            await updateRFQMutation(
+                              {
+                                id: formik.values.id,
+                                status: "Cancelled"
+                              },
+                              {
+                                onSuccess: async (data) => {
+                                  const rfqNumber = data?.rfqNumber
+                                  const status = data?.status
+
+                                  toast?.current.show(
+                                    tsuccess("Updated", `${rfqNumber} is now ${status}`))
+                                  await refetch()
+                                  setRfqDialog(false)
+
+                                },
+                              }
+                            )
+
+                          } catch (error) {
+                            console.log('error: ', error);
+                          }
+
+                        }}
+                      /> : null
+                    }
+                    {formik.values.status === "Processing" &&
+                      <Button
+                        icon="bi bi-check2-square"
+                        className="m-1"
+                        tooltip="Force Complete"
+                        tooltipOptions={{ position: "top" }}
+                        onClick={async (e) => {
+                          e.preventDefault()
+                          // e.stopPropagation()
+                          try {
+                            await updateRFQMutation(
+                              {
+                                id: formik.values.id,
+                                status: "Force_Completed"
+                              },
+                              {
+                                onSuccess: async (data) => {
+                                  const rfqNumber = data?.rfqNumber
+                                  const status = data?.status
+
+                                  toast?.current.show(
+                                    tsuccess("Updated", `${rfqNumber} is now ${status}`))
+                                  await refetch()
+                                  setRfqDialog(false)
+
+                                },
+                              }
+                            )
+
+                          } catch (error) {
+                            console.log('error: ', error);
+                          }
+
+                        }}
+
+                      />
+                    }
                     <Button
                       // label="Edit"
                       icon="pi pi-send"
@@ -1604,7 +1680,7 @@ export const RfqsList = () => {
               onRowClick={async (e) => {
                 console.log('rowdata: ', e.data);
                 const rfqSenttoExists = Boolean(e.data.rfq_sentto.length)
-                const { rfqs } = await invoke(getRfqs, {
+                const { rfqs, } = await invoke(getRfqs, {
                   where: {
                     ammendedFrom: e.data.id
                   }

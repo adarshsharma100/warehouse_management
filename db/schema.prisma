@@ -879,4 +879,5 @@ enum rfq_status {
   Processing
   Sent
   Cancelled
+  Force_Completed @map("Force Completed")
 }
