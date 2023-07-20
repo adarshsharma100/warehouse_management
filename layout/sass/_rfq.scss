@@ -6,6 +6,7 @@
   font-size: 12px;
   letter-spacing: 0.3px;
 }
+
 .status-active {
   background: #c8e6c9;
   color: #256029;
@@ -15,6 +16,7 @@
   background: #ffcdd2;
   color: #c63737;
 }
+
 .error-card {
   border: 2px solid #a5b4fc;
   padding: 1rem;
@@ -61,4 +63,18 @@
 .hideLargeContent:hover {
   height: auto;
   white-space: initial;
+}
+
+.highlight-status-disabled {
+  // border-color: #256029;
+  border: 2px solid #5e77f2;
+  border-radius: 8px;
+  box-shadow: 2px 2px 2px 1px #5e77f2;
+  // color: #de9a2e;
+}
+
+.highlight-status-disabled .p-inputtext:disabled {
+  color: #14B8A6;
+  font-weight: bold;
+  opacity: 0.6;
 }

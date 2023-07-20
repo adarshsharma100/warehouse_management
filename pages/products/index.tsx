@@ -902,6 +902,56 @@ export const ProductsList = () => {
     []
   );
 
+  // const fileUploadHeaderTemplate = () => {
+  //   return (
+  //     <div className="flex align-items-between flex-column">
+  //       <h5>Upload Image</h5>
+  //     </div>
+  //   )
+  // }
+
+  const emptyImageUploadFileTemplate = () => {
+    return (
+      <div className="flex align-items-center flex-column">
+        <i className="pi pi-image mt-3 p-3" style={{ fontSize: '3em', borderRadius: '50%', backgroundColor: 'var(--surface-b)', color: '#A5B4FC', opacity: "0.4" }}></i>
+        <span style={{ fontSize: '1.2em', color: 'var(--text-color-secondary)' }} className="my-3">
+          Upload Product Image Here
+        </span>
+      </div>
+    );
+  };
+
+  const getShortFileName = (fullName, maxLength = 15) => {
+    if (fullName.length <= maxLength) {
+      return fullName;
+    }
+
+    const fileName = fullName.substring(0, maxLength);
+    const extension = fullName.substring(fullName.lastIndexOf("."));
+
+    return `${fileName}...${extension}`;
+  };
+
+  const eachFileItemTemplate = (file, props) => {
+    const shortFileName = getShortFileName(file.name);
+    console.log('file: ', file);
+
+    return (
+      <div className="flex flex-row justify-content-center align-items-center p-0">
+        <div className="flex align-items-center col-6" style={{ width: '40%' }}>
+          <Image alt={file.name} role="presentation" src={file.objectURL} width={"100%"} />
+          <span className="flex flex-column text-left ml-1">
+            {shortFileName}
+            {/* <small>{new Date().toLocaleDateString()}</small> */}
+          </span>
+        </div>
+        <div className="px-1 py-1 col-2">{props.formatSize}</div>
+        {/* <Tag value={props.formatSize} severity="warning" className="px-1 py-1 col-2" /> */}
+        <Button type="button" icon="pi pi-trash" className="p-button-outlined rounded p-button-danger col-4 w-2rem" onClick={() => onTemplateRemove(file, props.onRemove)} />
+      </div>
+    );
+  };
+
 
   console.log("setFilteredKitSuggestions", filteredKitSuggestions);
   console.log("filteredKitId", filteredKitId);
@@ -974,7 +1024,7 @@ export const ProductsList = () => {
       </div>
 
       <div
-        className={`col-12 ${productDialog
+        className={`flex col-12 ${productDialog
           ? "visible scalein animation-duration-200"
           : "hidden scaleout animation-duration-200"
           }`}
@@ -1017,25 +1067,7 @@ export const ProductsList = () => {
             }
 
 
-            {/* <div className="flex justify-content-center align-item-center">
-              <FileUpload
-                name="product_image"
-                url="./upload.php"
-                // onUpload={(event) => console.log("File Upload", event)}
-                customUpload
-                uploadHandler={uploadHandler}
-                onSelect={async (e) => {
-                  console.log("event", e.files[0]);
-                  setImageUploadObject(e.files[0]);
-                  setImageUploadArray([...imageUploadArray, e.files[0]]);
-                }}
 
-                onRemove={handleOnRemoveImageArrayChange}
-                multiple
-                accept="image/*"
-                maxFileSize={1000000}
-              />
-            </div> */}
             <form
               onSubmit={formik.handleSubmit}
               className="p-fluid"
@@ -1214,7 +1246,9 @@ export const ProductsList = () => {
                                 forceSelection
                                 field="name"
                                 value={product}
+
                                 onChange={async (e) => {
+
                                   await formik.setFieldValue("kitProducts", formik.values.kitProducts.map((kitProduct, i) => {
                                     const _filteredKitProductId = [...filteredKitProductId, e.value?.id];
                                     setFilteredKitProductId(_filteredKitProductId);
@@ -1296,11 +1330,13 @@ export const ProductsList = () => {
                 </div>}
 
               </div>
-              {productDialog ? <div className="flex justify-content-center align-item-center">
+              {productDialog ? <div className="col-12">
+
+                {/* <span className="p-float-label"> */}
+
                 <FileUpload
                   name="product_image"
                   url="./upload.php"
-                  // onUpload={(event) => console.log("File Upload", event)}
                   customUpload
                   uploadHandler={uploadHandler}
                   onSelect={async (e) => {
@@ -1311,16 +1347,21 @@ export const ProductsList = () => {
                     // setImageUploadArray([...imageUploadArray, e.files[0]]);
                   }}
                   onClear={() => setImageUploadArray([])}
-
+                  className="product-image-file-upload"
                   onRemove={handleOnRemoveImageArrayChange}
                   multiple
                   accept="image/*"
                   maxFileSize={1000000}
                   uploadOptions={uploadOption}
-
+                  emptyTemplate={emptyImageUploadFileTemplate}
+                  itemTemplate={eachFileItemTemplate}
+                // headerTemplate={fileUploadHeaderTemplate}
 
 
                 />
+                {/* <label htmlFor="product_image">Upload Product Image</label> */}
+                {/* </span> */}
+
               </div> : null}
               <div className="flex mt-4 justify-content-end">
                 {productEditState && <Button

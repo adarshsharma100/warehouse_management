@@ -31,7 +31,24 @@ export default resolver.pipe(
             },
             rfq_sentto: {
               include: {
-                emails: true,
+                emails: {
+                  include: {
+                    addresses_emails_addressesToaddresses: {
+                      include: {
+                        vendor_branches: {
+                          include: {
+                            vendors: true
+                          }
+                        }
+
+                      }
+                    }
+                  }
+                },
+
+
+
+
               },
             },
             rfq: true,

@@ -657,7 +657,7 @@ export const Vendor_productsList = () => {
                   onChange={formik.handleChange}
                   options={priorityOptions}
                   optionLabel="name"
-                  placeholder="Priority"
+                  placeholder="Preference"
                   className="w-full"
                   id="priority"
                 />
@@ -665,7 +665,7 @@ export const Vendor_productsList = () => {
                   htmlFor={"type"}
                   className={classNames({ "p-error": isFormFieldValid("priority") })}
                 >
-                  Priority
+                  Preference
                 </label>
               </span>
 

@@ -845,12 +845,6 @@ enum contact_number_type {
   other
 }
 
-enum rfq_status {
-  Completed
-  Created
-  Processing
-}
-
 enum shipment_priority {
   LOW
   NORMAL
@@ -877,4 +871,12 @@ enum products_status {
 enum putaway_status {
   Completed
   Pending
+}
+
+enum rfq_status {
+  Completed
+  Created
+  Processing
+  Sent
+  Cancelled
 }

@@ -48,6 +48,7 @@ import getRfq from "app/rfqs/queries/getRfq"
 import { constants } from "zlib"
 import { dateFilterTemplate } from "components/FilterTemplates"
 import { Paginator } from "primereact/paginator"
+import { L, e } from "@blitzjs/auth/dist/index-c7aa9db2"
 
 const ITEMS_PER_PAGE = 100
 
@@ -70,6 +71,8 @@ const reducer = (state, { type, payload }) => {
       throw new Error(`Unhandled action type: ${type}`);
   }
 }
+
+const vendorMap = {}
 
 export const RfqsList = () => {
   const router = useRouter();
@@ -183,8 +186,12 @@ export const RfqsList = () => {
   const [rfqDetails, setRfqDetails] = useState(initialRfqState)
   const [rfqEditState, setRfqEditState] = useState(false)
   const [readOnlyForm, setReadOnlyForm] = useState(true)
+
+  console.log('readOnlyForm: ', readOnlyForm);
+  const [duplicateRFQForm, setDuplicateRFQForm] = useState(false)
   const [totalTargetPrice, setTotalTargetPrice] = useState(0)
   const [productDiscount, setProductDiscount] = useState(null)
+  const [selectedVendorsWithEmails, setSelectedVendorsWithEmails] = useState([])
 
   const [checkAmmendedFrom, setCheckAmmendedFrom] = useState([])
 
@@ -212,10 +219,13 @@ export const RfqsList = () => {
   const [currentRfqitemsID, setCurrentRfqitemsID] = useState([])
   const [rfqErrorMsgs, setRfqErrorMsgs] = useState([])
   const [RFQCodechecked, setRFQCodeChecked] = useState<boolean>(true)
+  console.log('RFQCodechecked: ', RFQCodechecked);
+
   const scrollToRfq = useRef<HTMLHeadingElement>(null)
   const [rfqStatusSuggestions, setrfqStatusSuggestions] = useState<any>(null)
   const [mailSent, setMailSent] = useState(false)
-  const rfqStatus = ["Created", "Processing", "Completed", "Sent"]
+  console.log('mailSent: ', mailSent);
+  const rfqStatus = ["Created", "Processing", "Completed", "Sent", "Cancelled"]
     .map((term) => ({ name: term, value: term }))
   const searchStatus = createSearchFunction(rfqStatus, setrfqStatusSuggestions)
 
@@ -384,7 +394,7 @@ export const RfqsList = () => {
   // }, [])
 
 
-  console.log("selectedColumns", productsSuggestions)
+  console.log("selectedColumns", selectedVendorsWithEmails);
 
   const renderHeader = () => {
     return (
@@ -441,11 +451,70 @@ export const RfqsList = () => {
   }
 
   const rowExpansionTemplate = (data) => {
+    console.log('data: ', data);
+
+    const group = data.rfq_sentto.reduce((acc, curr) => {
+
+      const vendorName = curr?.emails?.addresses_emails_addressesToaddresses?.vendor_branches[0]?.vendors.name
+      console.log('group vendorName: ', vendorName);
+      if (acc[vendorName]) {
+        console.log('group if: ');
+        acc[vendorName] = [...acc[vendorName], curr.emails]
+      } else {
+        console.log('group else: ');
+        return {
+          ...acc,
+          [vendorName]: [curr.emails]
+        }
+      }
+      return acc
+    }, {})
+    const vendorNameWithEmailsArray = Object.entries(group)
+
+
+
     return (
       <div className="w-full expandTable">
 
-        <h3>Sent To:</h3>
-        {data.rfq_sentto.map(({ emails: { email } }, i) => <Chip className="mr-3" key={i} label={email} />)}
+        {data.rfq_sentto.length > 0 ? <h3>Sent To:</h3> : null}
+        <div className="flex flex-column ">
+          {vendorNameWithEmailsArray?.map((eachMail, index) => {
+            return (
+              <div className="flex flex-row col-5" key={index}>
+
+                <span className="col-4">{eachMail[0]}</span>
+                <div className="flex flex-row p-1">
+                  {eachMail[1]?.map((eachEmail) => {
+                    return (
+                      <Chip className="p-2 ml-1" label={eachEmail.email} key={eachEmail} />
+                    )
+                  }
+                  )}
+                </div>
+
+                {/* <Chip className="p-1  mb-2 w-20rem col-6"
+                  template={
+                    <div className="flex flex-column  p-2">
+                      {eachMail[1]?.map((eachEmail) => {
+                        return (
+                          <div key={eachEmail}>{eachEmail.email}</div>
+                        )
+                      })}
+
+                    </div>
+                  }
+
+
+                /> */}
+              </div>
+            )
+          })}
+        </div>
+
+
+
+
+        {/* {data.rfq_sentto.map(({ emails: { email } }, i) => <Chip className="mr-3" key={i} label={email} />)} */}
         <h3>Products List:</h3>
         <DataTable
           value={data.rfq_products}
@@ -517,7 +586,9 @@ export const RfqsList = () => {
         ? rfq_email?.map((mail, i) => ({
           emails: {
             connect: {
-              id: mail?.value ?? findEmailId(mail)
+              id: mail?.value ?? findEmailId(mail),
+
+
             }
           }
         }))
@@ -886,27 +957,65 @@ export const RfqsList = () => {
         >
           <div className={` card `}>
             <form className="p-fluid" onSubmit={formik.handleSubmit}>
-              <div className="flex justify-content-between">
-                <h5 className="mb-3">{`
-            ${readOnlyForm ? `${formik.values.rfqNumber}` : rfqEditState
-                    ? `Update - ${formik.values.rfqNumber}` : amendingRfq
-                      ? "Amend- RFQ" : "Create - RFQ"}
-            `}</h5>
+              <div className="flex justify-content-between col-12 p-2 mb-3">
+                <div className="flex justify-content-between align-items-center col-7 mt-0 p-0">
+                  <h5 className=" m-0 col-5 p-0">
+                    {`${readOnlyForm ? `${formik.values.rfqNumber}` : rfqEditState
+                      ? `Update - ${formik.values.rfqNumber} ` : amendingRfq
+                        ? "Amend- RFQ" : "Create - RFQ"}`
+                    }
+                  </h5>
+                  <div className="flex justify-content-center align-items-center col-7 p-0 ml-3">
+                    <h5 className="mr-2 m-0">
+
+                      Status
+                    </h5>
+                    <span>
+                      <AutoComplete
+                        id="status"
+                        // disabled={fieldDisable}
+                        value={formik.values?.status}
+                        suggestions={rfqStatusSuggestions}
+                        completeMethod={searchStatus}
+                        disabled={formik.values.status === "Processing" || formik.values.status === "Sent" ? false : true}
+                        dropdown
+                        field="name"
+                        onChange={async (e) => {
+                          let status = typeof e.value === "string" ? e.value : e.value.name
+
+                          await formik.setValues({
+                            ...formik.values,
+                            status
+                          })
+                        }}
+                        aria-label="Agreement Terms"
+                        dropdownAriaLabel="Agreement Terms"
+                        className={formik.values.status === "Processing" || formik.values.status === "Sent" ? "" : "highlight-status-disabled"}
+
+                      />
+
+
+                    </span>
+                    {getFormErrorMessage("status")}
+                  </div>
+                </div>
 
                 {readOnlyForm && (
-                  <div>
-                    <Button
+                  <div className="flex justify-content-end align-items-center col-5 p-0">
+                    {formik.values.status === "Created" && <Button
                       // label="Edit"
                       icon="pi pi-pencil"
                       className="m-1"
                       onClick={async (e) => {
                         e.preventDefault()
                         setReadOnlyForm(false)
-                        setRfqEditState(true)
+                        // setRfqEditState(true)
+                        // setRFQCodeChecked(false)
+                        setMailSent(false)
                       }}
                       tooltip="Edit Form"
                       tooltipOptions={{ position: "top" }}
-                    />
+                    />}
                     <Button
                       // label="Edit"
                       icon="pi pi-plus"
@@ -978,7 +1087,7 @@ export const RfqsList = () => {
                       tooltip="Send RFQ"
                       tooltipOptions={{ position: "top" }}
                     />
-                    {checkAmmendedFrom.length === 0 && <Button
+                    {checkAmmendedFrom.length === 0 && formik.values.status !== "Created" && <Button
                       icon="bi bi-file-text"
                       className="m-1"
                       tooltip="Amend RFQ"
@@ -1011,6 +1120,25 @@ export const RfqsList = () => {
                         setMailSent(false)
                       }}
                     />}
+                    {formik.values.status !== "Created" && <Button
+                      // label="Edit"
+                      icon="pi pi-copy"
+                      className="m-1"
+                      onClick={async (e) => {
+                        e.preventDefault()
+                        setRfqDialog(true)
+                        setRFQCodeChecked(true)
+                        setReadOnlyForm(false)
+                        // setRfqEditState(true)
+                        setDuplicateRFQForm(true)
+                        setMailSent(false)
+                        await formik.setFieldValue("rfqNumber", "")
+                        console.log("Click formik", formik.values)
+
+                      }}
+                      tooltip="Duplicate RFQ"
+                      tooltipOptions={{ position: "top" }}
+                    />}
 
                   </div>
                 )}
@@ -1039,6 +1167,7 @@ export const RfqsList = () => {
                       </label>
                     </span>
                     {getFormErrorMessage("rfqNumber")}
+
                     <div className="field-checkbox mb-5 mt-2">
                       <Checkbox
                         // style={{ width: "0.1rem", height: "0rem" }}
@@ -1108,7 +1237,7 @@ export const RfqsList = () => {
                   </div>
                 </div>
 
-                <div className="col-12 lg:col-4">
+                {/* <div className="col-12 lg:col-4">
                   <div className="field">
                     <div className="p-float-label">
                       <AutoComplete
@@ -1117,7 +1246,7 @@ export const RfqsList = () => {
                         value={formik.values?.status}
                         suggestions={rfqStatusSuggestions}
                         completeMethod={searchStatus}
-                        disabled={readOnlyForm}
+                        disabled
                         dropdown
                         field="name"
                         onChange={async (e) => {
@@ -1142,7 +1271,7 @@ export const RfqsList = () => {
                     </div>
                     {getFormErrorMessage("status")}
                   </div>
-                </div>
+                </div> */}
 
                 <div className="col-12 lg:col-4">
                   <div className="field">
@@ -1167,11 +1296,11 @@ export const RfqsList = () => {
                   </div>
                 </div>
 
-                <div className="col-12">
+                {!duplicateRFQForm && <div className="col-12">
                   <h6 className="mb-4">Send To Emails:</h6>
 
-                </div>
-                <span className="p-float-label w-full">
+                </div>}
+                {!duplicateRFQForm && <span className="p-float-label w-full">
                   <AutoComplete
                     // className="w-4"
                     style={{ minWidth: "33%" }}
@@ -1193,7 +1322,7 @@ export const RfqsList = () => {
                     dropdownAriaLabel="Select Email"
                   />
                   {/* <label htmlFor="autocomplete">Emails</label> */}
-                </span>
+                </span>}
                 <div className="col-12 flex justify-content-end mt-3">
 
                   <span className="p-float-label ">
@@ -1426,6 +1555,7 @@ export const RfqsList = () => {
                     e.preventDefault()
                     setRfqDialog(false)
                     setRfqEditState(false)
+                    setMailSent(false)
                     setRfqDetails({
                       rfqNumber: "",
                       rfq_description: "",
