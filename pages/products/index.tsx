@@ -358,7 +358,10 @@ export const ProductsList = () => {
   // <===START===>
   const [antiCSRFToken, setAntiCSRFToken] = useState<any>(null)
   const [productDialog, setProductDialog] = useState(false)
+  console.log('productDialog: ', productDialog);
   const [productEditState, setProductEditState] = useState(false)
+  console.log('productEditState: ', productEditState);
+
   const [activeProduct, setActiveProduct] = useState(true)
   const [activeRowData, setActiveRowData] = useState({})
   const [errorProducts, setErrorProducts] = useState([])
@@ -1024,7 +1027,7 @@ export const ProductsList = () => {
       </div>
 
       <div
-        className={`flex col-12 ${productDialog
+        className={`col-12 ${productDialog
           ? "visible scalein animation-duration-200"
           : "hidden scaleout animation-duration-200"
           }`}
@@ -1036,7 +1039,7 @@ export const ProductsList = () => {
           <div>
 
             <div className="flex justify-content-between">
-              {/* <h4>{activeProduct ? "Update Product " : "Create Product"} </h4> */}
+
               {activeProduct ? <h3>Update Product - {formik.values.sku}</h3> : <h3>Create Product</h3>}
 
               <h4 className="mt-0">{activeProduct &&
