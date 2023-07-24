@@ -1251,17 +1251,22 @@ export const ProductsList = () => {
                                 value={product}
 
                                 onChange={async (e) => {
-
-                                  await formik.setFieldValue("kitProducts", formik.values.kitProducts.map((kitProduct, i) => {
+                                  const addKitProducts = formik.values.kitProducts.map((kitProduct, i) => {
                                     const _filteredKitProductId = [...filteredKitProductId, e.value?.id];
                                     setFilteredKitProductId(_filteredKitProductId);
+
                                     if (i !== index)
                                       return kitProduct
                                     return {
                                       ...kitProduct,
                                       product: e.value,
                                     }
-                                  }))
+                                  })
+                                  const _filteredAddKitProducts = addKitProducts.filter((each) => each?.product?.name || each?.product);
+                                  await formik.setFieldValue("kitProducts", [..._filteredAddKitProducts, {
+                                    "product": undefined,
+                                    "quantity": 1
+                                  }])
                                 }}
                               />
                               <label
@@ -1308,23 +1313,19 @@ export const ProductsList = () => {
                               <small className="p-error">{formik.errors.kitProducts?.[index]?.quantity}</small>
                             }
                           </div>
-                          {productEditState && <div className="field col-1 p-buttonset mt-5" style={{ height: "fit-content" }}>
-                            {index !== formik.values.kitProducts.length - 1 && <Button
+                          {productEditState && <div className="field col-1  mt-5" style={{ height: "fit-content" }}>
+
+                            <Button
+                              type="button"
                               className="p-button-secondary"
-                              icon="pi pi-trash"
+                              icon="pi pi-times"
+                              disabled={formik.values.kitProducts.length === 1 ? true : false}
                               onClick={async (e) => {
                                 e.preventDefault()
                                 await formik.setFieldValue("kitProducts", formik.values.kitProducts.filter((data, i) => index !== i))
                               }}
-                            />}
-                            <Button icon="pi pi-plus-circle" onClick={async (event) => {
-                              event.preventDefault()
-                              await formik.setFieldValue("kitProducts", formik.values.kitProducts.reduce((acc, curr, i) => {
-                                if (index !== i)
-                                  return [...acc, curr]
-                                return [...acc, curr, { product: undefined, quantity: 1 }]
-                              }, []))
-                            }} />
+                            />
+
                           </div>}
                         </>
                       ))}
