@@ -1,8 +1,8 @@
-import { Suspense, useEffect, useRef, useState, useReducer } from "react"
+import { Suspense, useEffect, useRef, useState, useReducer, useCallback } from "react"
 import { Routes } from "@blitzjs/next"
 import Head from "next/head"
 import Link from "next/link"
-import { usePaginatedQuery, useQuery } from "@blitzjs/rpc"
+import { usePaginatedQuery, useQuery, invoke } from "@blitzjs/rpc"
 import { useRouter } from "next/router"
 import getPurchase_orders from "app/purchase_orders/queries/getPurchase_orders"
 import Layout from "layouts/Layout"
@@ -167,6 +167,9 @@ export const Purchase_ordersList = () => {
   const [poEditState, setPoEditState] = useState(false)
   const scrollToPo = useRef<HTMLHeadingElement>(null)
   const [rfq, setRfq] = useState({ rfqNumber: "", rfqId: "" })
+  const [allRfqDetails, setAllRfqDetails] = useState([]);
+  const [allPODetails, setAllPODetails] = useState([]);
+
   const toast = useRef(null)
   const Po = useRef<CreateNewPo>(null)
 
@@ -370,7 +373,15 @@ export const Purchase_ordersList = () => {
 
   const refetchFuns = [refetch,]
 
+  // const getPODetailsWithRFQID = useCallback(async () => {
+  //   if (rfq?.rfqId) {
+  //     const { purchase_orders } = await invoke(getPurchase_orders, {
+  //       rfq: rfq.rfqId
+  //     })
+  //     console.log("purchase_orders", purchase_orders)
+  //   }
 
+  // }, [rfq])
 
   const columnComponents = columns.reduce((acc, curr) => {
     if (selectedColumns.includes(curr.field))
@@ -392,6 +403,13 @@ export const Purchase_ordersList = () => {
     return acc;
   }, []);
 
+  const compareRFQPO = () => {
+    if (allPODetails && allRfqDetails) {
+      if (allRfqDetails.length > allPODetails.length) return "Not Complete"
+      else if (allRfqDetails.length === allPODetails.length) return "Complete"
+    }
+  }
+
 
 
   useEffect(() => {
@@ -402,6 +420,35 @@ export const Purchase_ordersList = () => {
   return (
     <>
       <Head><title>Purchase Order</title></Head>
+      <Button
+        icon="pi pi-plus"
+        label="GET PO"
+        className="py-1 px-2"
+        onClick={async () => {
+          const { purchase_orders } = await invoke(getPurchase_orders, {
+            where: {
+              rfqId: 232
+            },
+            include: {
+              rfq: true
+            }
+
+          })
+          const rfq_details = purchase_orders[0]?.rfq?.rfq_products;
+          const _allPODetails = purchase_orders.reduce((accumulator, current) => {
+            const { po_products } = current;
+            if (po_products) {
+              accumulator = accumulator.concat(po_products);
+            }
+            return accumulator;
+          }, []);
+          setAllPODetails(_allPODetails);
+          setAllRfqDetails(rfq_details);
+
+
+        }}
+
+      />
 
       <div className="grid w-full mr-0">
         <Toast ref={toast} />

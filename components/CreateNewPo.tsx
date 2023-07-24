@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@blitzjs/rpc"
+import { useMutation, useQuery, invoke } from "@blitzjs/rpc"
 import {
   arrayFillCopy,
   calenderDateFormat,
@@ -12,6 +12,7 @@ import createNotifications_sent from "app/notifications_sents/mutations/createNo
 import getPo_statuses from "app/po_statuses/queries/getPo_statuses"
 import getWarehouses from "app/warehouses/queries/getWarehouses"
 import getPo_terms from "app/po_terms/queries/getPo_terms"
+import getPurchase_orders from "app/purchase_orders/queries/getPurchase_orders"
 import createPurchase_order from "app/purchase_orders/mutations/createPurchase_order"
 import updatePurchase_order from "app/purchase_orders/mutations/updatePurchase_order"
 import { useFormik } from "formik"
@@ -112,6 +113,8 @@ const CreateNewPo = React.forwardRef((props, ref) => {
   const [pastVendors, setPastVendors] = useState([])
   const [readOnlyForm, setReadOnlyForm] = useState(true)
   const [amendingPO, setAmendingPO] = useState(false)
+  const [allRfqDetails, setAllRfqDetails] = useState([]);
+  const [allPODetails, setAllPODetails] = useState([]);
   React.useImperativeHandle(ref, () => ({
     setReadOnlyForm,
     formik,
@@ -256,6 +259,13 @@ const CreateNewPo = React.forwardRef((props, ref) => {
         === Number(list[i]?.products_product_id)
     )[0].id
     return Number(vpId)
+  }
+
+  const compareRFQPO = () => {
+    if (allPODetails && allRfqDetails) {
+      if (allRfqDetails.length > allPODetails.length) return "Not Complete"
+      else if (allRfqDetails.length === allPODetails.length) return "Complete"
+    }
   }
 
   const formik = useFormik({
@@ -431,13 +441,32 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               }
             },
             {
-              onSuccess: async ({ po_products }) => {
+              onSuccess: async (data) => {
+                console.log('data: ', data);
                 const productIds = itemList.map(data => data.products_product_id).filter(data => data)
 
                 setShowPriorList(false)
                 setPriorList([])
                 setAmendingPO(false)
+                const { purchase_orders } = await invoke(getPurchase_orders, {
+                  where: {
+                    rfqId: 232
+                  },
+                  include: {
+                    rfq: true
+                  }
 
+                })
+                const rfq_details = purchase_orders[0]?.rfq?.rfq_products;
+                const _allPODetails = purchase_orders.reduce((accumulator, current) => {
+                  const { po_products } = current;
+                  if (po_products) {
+                    accumulator = accumulator.concat(po_products);
+                  }
+                  return accumulator;
+                }, []);
+                setAllPODetails(_allPODetails);
+                setAllRfqDetails(rfq_details);
                 toast?.current.show(tsuccess(null, "PO Created Successfully"))
                 if (router.query.hasOwnProperty("rfqdata")) {
                   const { rfqdata } = router.query;
@@ -1009,6 +1038,17 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                         let name = typeof e.value === "string" ? e.value : e.value?.name
                         let price_per_unit = typeof e.value === "string" ? e.value : e.value?.Price
                         let data = [...itemList]
+                        // const i = data.findIndex((item) => item?.product_name === name);
+                        // if (i === -1) {
+                        //   data.push({
+                        //     product_name: name,
+                        //     products_product_id: product_id,
+                        //     price_per_unit: price_per_unit,
+                        //     quantity: "",
+                        //   });
+                        // } else {
+                        //   data[i].quantity = "";
+                        // }
 
                         data[i].product_name = name
                         data[i].products_product_id = product_id
@@ -1017,10 +1057,16 @@ const CreateNewPo = React.forwardRef((props, ref) => {
 
                         let itemsLength = !e.value?.name ? false : true
                         await formik.setValues({ ...formik.values, itemsLength })
-                        const _filteredData = data.filter((eachData) => eachData?.product_name)
-                        console.log("Data", data);
 
-                        setItemList(_filteredData)
+                        // const _filteredAddKitProducts = data.filter((each) => each?.product);
+                        // setItemList([..._filteredAddKitProducts, {
+                        //   "product": undefined,
+                        //   "quantity": 1
+                        // }])
+                        const _filteredData = data.filter((each) => each?.product_name)
+
+
+                        setItemList([..._filteredData, { product_name: "", quantity: 1 }])
                       }}
                       aria-label="products"
                       dropdownAriaLabel="Select Product"

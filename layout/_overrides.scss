@@ -1,9 +1,10 @@
 //Suggested location to add your overrides so that migration would be easy by just updating the SASS folder in the future
-.p-datatable .p-datatable-tbody > tr > td {
+.p-datatable .p-datatable-tbody>tr>td {
   padding: 0.3rem 1.5rem !important;
 }
-.expandTable .p-datatable .p-datatable-tbody > tr > td,
-.p-datatable-wrapper .p-datatable-table .p-datatable-tbody > tr > td {
+
+.expandTable .p-datatable .p-datatable-tbody>tr>td,
+.p-datatable-wrapper .p-datatable-table .p-datatable-tbody>tr>td {
   padding: 1rem 1rem !important;
 }
 
@@ -12,9 +13,16 @@
     text-align: center !important;
   }
 }
+
 .labelpos_1 {
   top: -1.4rem !important;
 }
+
 .p-datatable-footer {
   padding: 0;
+}
+
+.vertical-file-upload .p-fileupload-files {
+  display: flex;
+  flex-direction: column;
 }

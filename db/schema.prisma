@@ -430,40 +430,40 @@ model products {
 }
 
 model purchase_orders {
-  id                           Int               @id @default(autoincrement())
-  poNumber                     String            @unique(map: "poNumber_UNIQUE") @db.VarChar(45)
-  agreement                    String?           @db.VarChar(100)
-  description                  String?           @db.VarChar(45)
-  expectedDod                  DateTime?         @db.DateTime(0)
-  rejectedReason               String?           @db.VarChar(45)
-  expiryDate                   DateTime?
-  approvedOn                   DateTime?         @db.DateTime(0)
-  createdAT                    DateTime          @default(now()) @db.DateTime(0)
-  updatedAT                    DateTime          @default(now()) @db.DateTime(0)
-  rfq                          Int?
-  vendor                       Int
-  status                       Int
-  po_term                      Int
-  approvedBy                   Int?
-  amendedFrom                  Int?
-  piNumber                     String?           @unique(map: "piNumber_UNIQUE") @db.VarChar(45)
-  piDate                       DateTime?         @db.DateTime(0)
-  warehouseId                  Int?
-  grn                          grn[]
-  po_products                  po_products[]
-  po_sentto                    po_sentto[]
-  po_status                    po_status         @relation(fields: [status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_po_status1")
-  purchase_orders              purchase_orders?  @relation("purchase_ordersTopurchase_orders", fields: [amendedFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_purchase_orders1")
-  other_purchase_orders        purchase_orders[] @relation("purchase_ordersTopurchase_orders")
-  rfq_purchase_orders_rfqTorfq rfq?              @relation("purchase_orders_rfqTorfq", fields: [rfq], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_rfq1")
-  po_terms                     po_terms          @relation(fields: [po_term], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_terms1")
-  user                         user?             @relation(fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_user1")
-  vendors                      vendors           @relation(fields: [vendor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_vendors1")
-  warehouse                    warehouse?        @relation(fields: [warehouseId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_warehouse1")
+  id                    Int               @id @default(autoincrement())
+  poNumber              String            @unique(map: "poNumber_UNIQUE") @db.VarChar(45)
+  agreement             String?           @db.VarChar(100)
+  description           String?           @db.VarChar(45)
+  expectedDod           DateTime?         @db.DateTime(0)
+  rejectedReason        String?           @db.VarChar(45)
+  expiryDate            DateTime?
+  approvedOn            DateTime?         @db.DateTime(0)
+  createdAT             DateTime          @default(now()) @db.DateTime(0)
+  updatedAT             DateTime          @default(now()) @db.DateTime(0)
+  rfqId                 Int?
+  vendor                Int
+  status                Int
+  po_term               Int
+  approvedBy            Int?
+  amendedFrom           Int?
+  piNumber              String?           @unique(map: "piNumber_UNIQUE") @db.VarChar(45)
+  piDate                DateTime?         @db.DateTime(0)
+  warehouseId           Int?
+  grn                   grn[]
+  po_products           po_products[]
+  po_sentto             po_sentto[]
+  po_status             po_status         @relation(fields: [status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_po_status1")
+  purchase_orders       purchase_orders?  @relation("purchase_ordersTopurchase_orders", fields: [amendedFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_purchase_orders1")
+  other_purchase_orders purchase_orders[] @relation("purchase_ordersTopurchase_orders")
+  rfq                   rfq?              @relation(fields: [rfqId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_rfq1")
+  po_terms              po_terms          @relation(fields: [po_term], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_terms1")
+  user                  user?             @relation(fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_user1")
+  vendors               vendors           @relation(fields: [vendor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_vendors1")
+  warehouse             warehouse?        @relation(fields: [warehouseId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_warehouse1")
 
   @@index([status], map: "fk_purchase_orders_po_status1_idx")
   @@index([amendedFrom], map: "fk_purchase_orders_purchase_orders1_idx")
-  @@index([rfq], map: "fk_purchase_orders_rfq1_idx")
+  @@index([rfqId], map: "fk_purchase_orders_rfq1_idx")
   @@index([po_term], map: "fk_purchase_orders_terms1_idx")
   @@index([approvedBy], map: "fk_purchase_orders_user1_idx")
   @@index([vendor], map: "fk_purchase_orders_vendors1_idx")
@@ -471,20 +471,20 @@ model purchase_orders {
 }
 
 model rfq {
-  id                                       Int               @id @default(autoincrement())
-  rfqNumber                                String            @unique(map: "rfqNumber_UNIQUE") @db.VarChar(45)
-  description                              String?           @db.VarChar(100)
-  status                                   rfq_status        @default(Created)
-  expectedDod                              DateTime?
-  agreement                                String?           @db.VarChar(45)
-  createdAt                                DateTime          @default(now()) @db.DateTime(0)
-  updatedAt                                DateTime          @default(now()) @db.DateTime(0)
-  ammendedFrom                             Int?
-  purchase_orders_purchase_orders_rfqTorfq purchase_orders[] @relation("purchase_orders_rfqTorfq")
-  rfq                                      rfq?              @relation("rfqTorfq", fields: [ammendedFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_rfq1")
-  other_rfq                                rfq[]             @relation("rfqTorfq")
-  rfq_products                             rfq_products[]    @relation("rfq_products_rfqTorfq")
-  rfq_sentto                               rfq_sentto[]      @relation("rfq_sentto_rfqTorfq")
+  id              Int               @id @default(autoincrement())
+  rfqNumber       String            @unique(map: "rfqNumber_UNIQUE") @db.VarChar(45)
+  description     String?           @db.VarChar(100)
+  status          rfq_status        @default(Created)
+  expectedDod     DateTime?
+  agreement       String?           @db.VarChar(45)
+  createdAt       DateTime          @default(now()) @db.DateTime(0)
+  updatedAt       DateTime          @default(now()) @db.DateTime(0)
+  ammendedFrom    Int?
+  purchase_orders purchase_orders[]
+  rfq             rfq?              @relation("rfqTorfq", fields: [ammendedFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_rfq1")
+  other_rfq       rfq[]             @relation("rfqTorfq")
+  rfq_products    rfq_products[]    @relation("rfq_products_rfqTorfq")
+  rfq_sentto      rfq_sentto[]      @relation("rfq_sentto_rfqTorfq")
 
   @@index([ammendedFrom], map: "fk_rfq_rfq1_idx")
 }
@@ -845,12 +845,6 @@ enum contact_number_type {
   other
 }
 
-enum rfq_status {
-  Completed
-  Created
-  Processing
-}
-
 enum shipment_priority {
   LOW
   NORMAL
@@ -877,4 +871,13 @@ enum products_status {
 enum putaway_status {
   Completed
   Pending
+}
+
+enum rfq_status {
+  Completed
+  Created
+  Processing
+  Sent
+  Cancelled
+  Force_Completed @map("Force Completed")
 }
