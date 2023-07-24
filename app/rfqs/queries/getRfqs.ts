@@ -52,7 +52,7 @@ export default resolver.pipe(
               },
             },
             rfq: true,
-            purchase_orders_purchase_orders_rfqTorfq: {
+            purchase_orders: {
               include: {
                 po_products: {
                   include: {
