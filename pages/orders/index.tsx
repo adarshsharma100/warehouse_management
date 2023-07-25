@@ -1505,7 +1505,7 @@ export const OrdersList = () => {
 
   const orderItemColumn = [
     { field: "price", header: 'Price', body: (rowData) => rowData.price || "-" },
-    { field: "AvailableQuantity", header: 'AvailableQuantity', body: (rowData) => `AvailableQuantity - ${rowData.availableInventory}` || `AvailableQuantity - ${rowData.availableInventory}` },
+    { field: "AvailableQuantity", header: 'AvailableQuantity', body: (rowData) => rowData.availableInventory ||  rowData.availableInventory },
     { field: "quantity", header: 'Quantity', body: (rowData) => rowData.quantity || "-" },
     { field: "rowTotal", header: 'Row Total', body: (rowData) => rowData.price * rowData.quantity || "-" },
   ]
@@ -2010,12 +2010,14 @@ export const OrdersList = () => {
                     showGridlines
                     stripedRows
                     editMode="cell"
+                    className="p-10 text-red-400"
                   >
                     <Column
                       header='ID'
+                      className="reduce-column"
                       body={(ele, { rowIndex }) => (
                         <div key={rowIndex} className=" ">
-                          <span className="bg-primary border-circle w-2rem h-2rem flex align-items-center justify-content-center mt-3 ml-2">{rowIndex + 1}</span>
+                          <span className="bg-primary border-circle w-2rem h-2rem flex align-items-center justify-content-center ">{rowIndex + 1}</span>
                         </div>
 
                       )}
@@ -2024,10 +2026,11 @@ export const OrdersList = () => {
                     <Column
                       header="Products"
                       label='name'
+                      className="remove-column"
                       body={(ele, { rowIndex }) => {
                         console.log('index', rowIndex)
                         return (
-                          <div className=" mt-3">
+                          <div className="">
 
                             <div className="">
                               <AutoComplete
@@ -2180,12 +2183,12 @@ export const OrdersList = () => {
 
                     <Column
                       header='Remove'
+                      className="reduce-column"
                       body={(ele, { rowIndex }) => (
                         <div key={rowIndex} className="">
-                          <div className="mt-3">
+                          <div className="">
                             <Button
                               icon="pi pi-times"
-                              className="p-2 m-1"
                               className="p-button-secondary"
                               onClick={() => handleRemoveInput(rowIndex)}
                               style={{ height: '35px' }}

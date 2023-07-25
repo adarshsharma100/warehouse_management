@@ -131,3 +131,10 @@
 .overlay-panel:hover {
   display: block;
 }
+
+.reduce-column {
+  width: 60px; 
+}
+.reduce-column .p-datatable-tbody td {
+  padding: 0px !important; 
+}

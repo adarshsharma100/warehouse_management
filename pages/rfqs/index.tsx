@@ -49,6 +49,9 @@ import { constants } from "zlib"
 import { dateFilterTemplate } from "components/FilterTemplates"
 import { Paginator } from "primereact/paginator"
 import { L, e } from "@blitzjs/auth/dist/index-c7aa9db2"
+import { ColumnGroup } from 'primereact/columngroup';
+import { Row } from 'primereact/row';
+import { TreeTable } from 'primereact/treetable';
 
 const ITEMS_PER_PAGE = 100
 
@@ -827,6 +830,69 @@ export const RfqsList = () => {
 
   console.log("formik values", formik.values);
 
+
+
+
+  // RFQ ITEMS DATATABLE 
+  const onCellEditComplete = (e) => {
+    const { rowData, newValue, field, originalEvent: event } = e;
+    console.log('newValue: ', newValue, rowData, field);
+    if (['costPrice', 'quantity'].includes(field)) {
+      if (newValue?.trim().length > 0) {
+        rowData[field] = newValue
+
+        const updatedOrderItems = itemList.map((item, itemIndex) => {
+
+          if (item.id === rowData.id) {
+            return { ...item, [field]: newValue };
+          }
+          return item;
+        });
+
+        formik.setValues({
+          ...formik.values,
+          itemList: updatedOrderItems,
+        });
+
+
+      } else {
+        event.preventDefault();
+      }
+    }
+  };
+
+  const textEditor = (options) => {
+
+    return (
+      <InputText
+        type="text"
+        value={options.value}
+        onChange={(e) => options.editorCallback(e.target.value)}
+
+      />
+    );
+  };
+
+
+
+  const rfqItemColumn = [
+    { field: "costPrice", header: 'Target price(excluding GST)', body: (rowData) => rowData.costPrice || "-" },
+    { field: "quantity", header: 'Quantity', body: (rowData) => rowData.quantity || "-" },
+    { field: "last_po_price", header: 'Last PO Price', body: (rowData) => rowData.last_po_price || "-" },
+    { field: "last_purchase_quantity", header: 'Last PO Quantity', body: (rowData) => rowData.last_purchase_quantity || "-" },
+    { field: "last_vendor", header: 'Last Vendor', body: (rowData) => rowData.last_vendor || "-" },
+  ]
+
+
+
+  const footerGroup = (
+    <ColumnGroup>
+        <Row>
+            <Column footer={`Total: ${totalTargetPrice}`} colSpan={3} footerStyle={{ textAlign: 'right' }}/>
+        </Row>
+    </ColumnGroup>
+);
+
   return (
     <>
       <Head>
@@ -1397,7 +1463,8 @@ export const RfqsList = () => {
                   />
                   {/* <label htmlFor="autocomplete">Emails</label> */}
                 </span>}
-                <div className="col-12 flex justify-content-end mt-3">
+
+                {/* <div className="col-12 flex justify-content-end mt-3">
 
                   <span className="p-float-label ">
                     <InputNumber
@@ -1555,7 +1622,6 @@ export const RfqsList = () => {
                             </label>
                           </span>
                         </div>
-                        {/* {getFormErrorMessage("name")} */}
                       </div>
 
                       <div className="col-12 lg:col-2">
@@ -1567,19 +1633,17 @@ export const RfqsList = () => {
                               value={ele.last_vendor}
                               disabled
                               onChange={(e) => handleFormChange(e, i)}
-                            // className={classNames({ "p-invalid": isFormFieldValid("name") })}
                             />
                             <label
-                            // className={classNames({ "p-error": isFormFieldValid("name") })}
                             >
                               Last Vendor
                             </label>
                           </span>
                         </div>
-                        {/* {getFormErrorMessage("name")} */}
+                       
                       </div>
                       <div className="field col-6 lg:col-1">
-                        {/* <div className="field"> */}
+                      
                         {!readOnlyForm && <span >
 
                           <Button
@@ -1592,9 +1656,9 @@ export const RfqsList = () => {
                               removeFields(i)
                             }}
                           />
-                          {/* )} */}
+                         
                         </span>}
-                        {/* </div> */}
+                       
                       </div>
                     </div>
                   </>
@@ -1608,7 +1672,177 @@ export const RfqsList = () => {
                   <div className="col-12 lg:col-2">
                     <InputNumber value={totalTargetPrice} disabled />
                   </div>
+                </div> */}
+
+
+                {/* Datatable  */}
+                <div className="col-12 flex justify-content-end mt-5">
+
+                  <span className="p-float-label ">
+                    <InputNumber
+                      value={productDiscount}
+                      onChange={(event) => setProductDiscount(event.value)}
+                      suffix="%"
+                      min={1}
+                      max={100}
+                    // style={{ width: "60%" }}
+                    // disabled={itemList.length === 1}
+                    />
+                    <label htmlFor="productDiscount">
+                      Discount
+                    </label>
+                  </span>
+
+                  <span>
+                    <Button
+                      type="button"
+                      label="Apply"
+                      // style={{ fontSize: "0.8rem", padding: "0.2rem" }}
+                      style={{ height: '32px' }}
+                      className="p-button-secondary ml-2 mt-1"
+                      disabled={itemList.length === 1}
+                      onClick={handleUpdateDiscountItemListClick}
+
+                    />
+                  </span>
                 </div>
+
+                <div className="col-12 mt-4">
+                  <h3>RFQ Items</h3>
+
+                  <DataTable
+                    value={itemList}
+                    showGridlines
+                    stripedRows
+                    editMode="cell"
+                    footerColumnGroup={footerGroup}
+                  >
+                    <Column
+                      header='ID'
+                      className="reduce-column"
+                      body={(ele, { rowIndex }) => (
+                        <div key={rowIndex} className=" ">
+                          <span className="bg-primary border-circle w-2rem h-2rem flex align-items-center justify-content-center">{rowIndex + 1}</span>
+                        </div>
+                      )}
+                    />
+
+                    <Column
+                      header='Product'
+                      label='name'
+                      body={(ele, { rowIndex }) => {
+                        console.log('rowIndex: ', rowIndex);
+                        return (
+                          <div className="">
+                            <AutoComplete
+                              id="name"
+                              name="name"
+                              value={ele.product_name}
+                              suggestions={productsSuggestions}
+                              completeMethod={searchProducts}
+                              disabled={readOnlyForm || mailSent}
+                              dropdown
+                              field="name"
+                              onChange={async (e) => {
+                                let product_id = typeof e.value === "string" ? "" : e.value?.id
+                                let name = typeof e.value === "string" ? e.value : e.value?.name
+                                let data = [...itemList]
+                                console.log('data ++: ', data);
+
+                                const _filteredSelectedProductID = [...filteredSelectedProductID, product_id]
+                                console.log('_filteredSelectedProductID: ', _filteredSelectedProductID);
+                                setFilteredSelectedProductID(_filteredSelectedProductID)
+
+                                const lastPo = LatestPO(purchase_orders, product_id)
+
+                                data[rowIndex].product_name = name
+                                data[rowIndex].product_id = product_id
+                                data[rowIndex].quantity = lastPo.purchaseQuantity
+                                data[rowIndex].costPrice = lastPo.productPrice
+                                data[rowIndex].last_po_price = lastPo.productPrice
+                                data[rowIndex].last_vendor = lastPo.vendor
+                                data[rowIndex].last_purchase_quantity = lastPo.purchaseQuantity
+
+                                let itemsLength = !e.value?.name ? false : true
+                                console.log('itemsLength: ', itemsLength);
+                                await formik.setValues({ ...formik.values, itemsLength })
+
+                                console.log('data: ', data);
+
+                                const filter = data?.filter(e => e?.product_name)
+                                setItemList([...filter, initialItemList]);
+                                console.log('filter:+++ ', filter);
+
+                              }}
+                              aria-label="products"
+                              dropdownAriaLabel="Select Product"
+                            />
+                          </div>
+                        )
+
+                      }}
+                    />
+
+                    {rfqItemColumn.map((i) => {
+                      return (
+                        <Column
+                          key={i.field}
+                          field={i.field}
+                          header={i.header}
+                          body={i.body}
+                          editor={i.field === 'costPrice' || i.field === 'quantity' ? textEditor : null}
+                          onCellEditComplete={i.field === 'costPrice' || i.field === 'quantity' ? onCellEditComplete : null}
+
+                        />
+                      )
+                    })}
+
+                    <Column
+                      header="Remove"
+                      className="reduce-column"
+                      body={(ele, { rowIndex }) => {
+                        return (
+                          <div className="field col-6 lg:col-1">
+                            {!readOnlyForm && <span >
+                              <Button
+                                type="button"
+                                icon="pi pi-times"
+                                // style={{ fontSize: "0.8rem" }}
+                                style={{ height: '35px' }}
+                                className="p-button-secondary"
+                                disabled={itemList.length === 1 ? true : false}
+                                onClick={(e) => {
+                                  removeFields(rowIndex)
+                                }}
+                              />
+                            </span>}
+                          </div>
+                        )
+                      }}
+                    />
+
+                  </DataTable>
+                  {/* <div className="col-12">
+                    <div className="col-12 flex justify-content-end mt-5">
+
+                      <span className="p-float-label ">
+                        <InputNumber value={totalTargetPrice} disabled />
+                        <label htmlFor="productDiscount">
+                          Total Value:
+                        </label>
+                      </span>
+
+                    </div>
+
+                  </div> */}
+
+                </div>
+
+
+
+
+
+
                 <div className="m-auto text-2xl">{getFormErrorMessage("itemsLength")}</div>
               </div>
 
