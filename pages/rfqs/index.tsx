@@ -883,7 +883,7 @@ export const RfqsList = () => {
     { field: "last_vendor", header: 'Last Vendor', body: (rowData) => rowData.last_vendor || "-" },
   ]
 
-
+ 
 
   const footerGroup = (
     <ColumnGroup>

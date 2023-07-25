@@ -31,6 +31,8 @@ import { classNames } from "primereact/utils"
 import React, { startTransition, useEffect, useRef, useState } from "react"
 import * as Yup from "yup"
 import LoaderFullScreen from "./LoaderFullScreen"
+import { DataTable } from "primereact/datatable"
+import { Column } from "primereact/column"
 
 const CreateNewPo = React.forwardRef((props, ref) => {
   const {
@@ -510,6 +512,10 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                 }
 
               },
+              onError: (error) => {
+                console.log('error: ', error);
+
+              }
             }
           )
           setPurchaseDialog(false)
@@ -527,6 +533,8 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     },
   })
 
+
+  console.log('formik.error', formik.values.error)
 
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
@@ -629,6 +637,58 @@ const CreateNewPo = React.forwardRef((props, ref) => {
   console.log("all products", products);
   console.log("po statuses", po_statuses);
   console.log("active row", activeRow)
+
+
+  // PO ITEMS DATATABLE 
+  const onCellEditComplete = (e) => {
+    const { rowData, newValue, field, originalEvent: event } = e;
+    console.log('newValue: ', typeof newValue, );
+    if (['price_per_unit', 'quantity'].includes(field)) {
+      if (newValue?.trim().length > 0) {
+        const intValue = parseInt(newValue, 10);
+        
+
+        rowData[field] = intValue
+
+        const updatedOrderItems = itemList.map((item, itemIndex) => {
+
+          if (item.id === rowData.id) {
+            return { ...item, [field]: intValue };
+          }
+          return item;
+        });
+
+        formik.setValues({
+          ...formik.values,
+          itemList: updatedOrderItems,
+        });
+
+
+      } else {
+        event.preventDefault();
+      }
+    }
+  };
+
+  const textEditor = (options) => {
+
+    return (
+      <InputText
+        type="text"
+        value={options.value}
+        onChange={(e) => options.editorCallback(e.target.value)}
+
+      />
+    );
+  };
+
+
+
+  const poItemColumn = [
+    { field: "price_per_unit", header: 'Price per unit', body: (rowData) => rowData.price_per_unit || "-" },
+    { field: "quantity", header: 'Quantity', body: (rowData) => rowData.quantity || "-" },
+  ]
+
 
   return (
     <div
@@ -1055,7 +1115,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
 
               </div>
             )}
-            <div className="col-12 mt-3 mb-3 ">
+            {/* <div className="col-12 mt-3 mb-3 ">
               <h6>Select Products</h6>
               <hr />
             </div>
@@ -1143,10 +1203,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                 </div>
                 <div className="field col-6 lg:col-1 mt-2">
                   <span >
-                    {/* {i === itemList.length - 1 && (
-                      <Button type="button" label="+" onClick={addFields} />
-                    )} */}
-                    {/* {itemList.length > 1 && ( */}
+
                     <Button
                       type="button"
                       icon="pi pi-times"
@@ -1157,11 +1214,118 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                         removeFields(i)
                       }}
                     />
-                    {/* )} */}
+
                   </span>
                 </div>
               </div>
-            ))}
+            ))} */}
+
+
+            <div className="col-12 mt-3">
+              <h3>PO Items</h3>
+              <DataTable
+                value={itemList}
+                showGridlines
+                stripedRows
+                editMode="cell"
+              >
+                <Column
+                  header='ID'
+                  className="reduce-column"
+                  body={(ele, { rowIndex }) => (
+                    <div key={rowIndex} className=" ">
+                      <span className="bg-primary border-circle w-2rem h-2rem flex align-items-center justify-content-center">{rowIndex + 1}</span>
+                    </div>
+                  )}
+                />
+
+                <Column
+                  header='Product'
+                  body={(ele, { rowIndex }) => {
+                    return (
+                      <div className="">
+                        <AutoComplete
+                          disabled={readOnlyForm}
+                          id="name"
+                          name="name"
+                          value={ele.product_name}
+                          suggestions={ProductsSuggestions}
+                          completeMethod={searchProducts}
+                          dropdown
+                          field="name"
+                          onChange={async (e) => {
+                            let product_id = typeof e.value === "string" ? "" : e.value?.product_id
+                            let name = typeof e.value === "string" ? e.value : e.value?.name
+                            let price_per_unit = typeof e.value === "string" ? e.value : e.value?.Price
+                            let data = [...itemList]
+
+                            data[rowIndex].product_name = name
+                            data[rowIndex].products_product_id = product_id
+                            data[rowIndex].price_per_unit = price_per_unit
+                            data[rowIndex].quantity = ""
+
+                            let itemsLength = !e.value?.name ? false : true
+                            await formik.setValues({ ...formik.values, itemsLength })
+
+                            const _filteredData = data.filter((each) => each?.product_name)
+                            setItemList([..._filteredData, { product_name: "", quantity: 1 }])
+                          }}
+                          aria-label="products"
+                          dropdownAriaLabel="Select Product"
+                        />
+                      </div>
+                    )
+                  }}
+                />
+
+
+                {poItemColumn.map((i) => {
+                  return (
+                    <Column
+                      key={i.field}
+                      field={i.field}
+                      header={i.header}
+                      body={i.body}
+                      editor={i.field === 'price_per_unit' || i.field === 'quantity' ? textEditor : null}
+                      onCellEditComplete={i.field === 'price_per_unit' || i.field === 'quantity' ? onCellEditComplete : null}
+
+                    />
+                  )
+                })}
+
+                <Column
+                  header='Remove'
+                  className="reduce-column"
+                  body={(ele, { rowIndex }) => {
+                    return (
+                      <div className="field col-6 lg:col-1 mt-2">
+                        <span >
+
+                          <Button
+                            type="button"
+                            icon="pi pi-times"
+                            style={{ fontSize: "0.3rem" }}
+                            disabled={itemList.length === 1 ? true : false}
+                            className="p-button-secondary"
+                            onClick={(e) => {
+                              removeFields(rowIndex)
+                            }}
+                          />
+
+                        </span>
+                      </div>
+                    )
+                  }}
+
+                />
+
+              </DataTable>
+
+            </div>
+
+
+
+
             <div className="m-auto text-2xl">{getFormErrorMessage("itemsLength")}</div>
           </div>
           <Divider />
