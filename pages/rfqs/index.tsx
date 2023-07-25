@@ -359,7 +359,7 @@ export const RfqsList = () => {
     const _rfq = rfqs.find(rfq => rfq.id === rfqId)
     console.log('_rfq: ', _rfq);
 
-    const po = _rfq?.purchase_orders_purchase_orders_rfqTorfq?.find(po => po.po_products.find(({ vendor_products: { product } }) => product === num))
+    const po = _rfq?.purchase_orders?.find(po => po.po_products.find(({ vendor_products: { product } }) => product === num))
 
 
     return po
@@ -1024,16 +1024,12 @@ export const RfqsList = () => {
                       className="m-1"
                       onClick={async (e) => {
                         e.preventDefault()
-
-
                         try {
                           const rfqDetails = await invoke(getRfq, {
                             id: activeRow?.id
 
                           })
-
                           const productsToPo = getRemainingPoProducts(rfqDetails)
-
                           if (productsToPo.length) {
                             const { id, rfqNumber } = activeRow
                             const rfqdata = {
@@ -1072,6 +1068,8 @@ export const RfqsList = () => {
                             }
                           }
                         } catch (error) {
+                          alert(error)
+                          console.log('error: ', error);
 
                         }
                       }}

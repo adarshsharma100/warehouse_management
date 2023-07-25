@@ -17,7 +17,7 @@ const CreatePurchase_order = z.object({
   po_products: z.unknown(),
   po_sentto: z.unknown(),
   purchase_orders: z.unknown(),
-  rfq_purchase_orders_rfqTorfq: z.unknown(),
+  rfq: z.unknown(),
   warehouse: z.object({
     connect: z.object({
       id: z.number()

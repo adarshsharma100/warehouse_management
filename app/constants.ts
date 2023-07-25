@@ -1568,7 +1568,7 @@ export const tWarn = (summary, detail) => {
 export const createSearchFunction = (Options, setFilteredSuggestions) => {
   return function search(event) {
     setTimeout(() => {
-      let _filteredSuggestions 
+      let _filteredSuggestions
       if (!event.query.trim().length) {
         _filteredSuggestions = [...Options]
       } else {
@@ -1649,7 +1649,7 @@ export const toDateObj = (dateObj) => moment(dateObj, "DD-MM-YYYY").toDate()
 
 export const getRemainingPoProducts = (rfqDetails) => {
   const rfqProducts = rfqDetails?.rfq_products
-  const purchaseOrders = rfqDetails?.purchase_orders_purchase_orders_rfqTorfq
+  const purchaseOrders = rfqDetails?.purchase_orders
 
   const getpoProducts = purchaseOrders
     ?.flatMap(({ po_products }) => po_products)

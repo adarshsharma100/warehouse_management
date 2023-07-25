@@ -18,7 +18,7 @@ export default resolver.pipe(resolver.zod(GetRfq), resolver.authorize(), async (
           products: true,
         },
       },
-      purchase_orders_purchase_orders_rfqTorfq: {
+      purchase_orders: {
         select: {
           po_products: {
             select: {
