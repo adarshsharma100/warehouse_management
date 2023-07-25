@@ -888,8 +888,7 @@ export const RfqsList = () => {
   const footerGroup = (
     <ColumnGroup>
         <Row>
-            <Column footer="Totals:" colSpan={3} footerStyle={{ textAlign: 'right' }}/>
-            <Column footer={totalTargetPrice} />
+            <Column footer={`Total: ${totalTargetPrice}`} colSpan={3} footerStyle={{ textAlign: 'right' }}/>
         </Row>
     </ColumnGroup>
 );
