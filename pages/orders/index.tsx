@@ -178,6 +178,7 @@ export const OrdersList = () => {
     skip: skipCount,
     take: tableRowsCount,
   });
+  console.log(' orders: ', orders);
 
   const [{ po_terms }] = useQuery(getPo_terms, {
     orderBy: { id: 'asc' },
@@ -281,15 +282,31 @@ export const OrdersList = () => {
 
   const gstTotal = 0;
 
-  const orderItemsOptions = products.filter((product) => !selectedOrderItemValue?.includes(product.id)).map(({ id, name, sku, description, gstTaxTypeCode }) => {
-    return {
-      name: `${sku} - ${name} `,
-      id,
-      description,
-      sku,
-      gstTaxTypeCode,
-    }
-  })
+  // const orderItemsOptions = products.filter((product) => !selectedOrderItemValue?.includes(product.id)).map(({ id, name, sku, description, gstTaxTypeCode }) => {
+  //   return {
+  //     name: `${sku} - ${name} `,
+  //     id,
+  //     description,
+  //     sku,
+  //     gstTaxTypeCode,
+  //   }
+  // })
+  // console.log('orderItemsOptions: ', orderItemsOptions);
+
+  const orderItemsOptions = products
+    .filter((product) => !selectedOrderItemValue?.includes(product.id))
+    .map(({ id, name, sku, description, gstTaxTypeCode }) => {
+      return {
+        name: `${sku} - ${name} `,
+        id,
+        description,
+        sku,
+        gstTaxTypeCode,
+      };
+    });
+
+
+
   // console.log('gstTotal: ', gstTotal);
 
 
@@ -299,12 +316,14 @@ export const OrdersList = () => {
 
 
   const [orderItemsSuggestions, setOderItemsSuggestions] = useState<any>(null)
+  console.log('orderItemsSuggestions: ', orderItemsSuggestions);
 
 
   const customerOptions = customers?.map((customer) => ({
     ...customer,
     name: `${customer?.firstName}${customer?.companyName ? `- ${customer?.companyName}` : ""}`
   }))
+
 
 
   // const paymentTermsOption = po_terms.map((val) => {
@@ -329,6 +348,7 @@ export const OrdersList = () => {
 
   const searchOrderStatus = createSearchFunction(orderStatusOption, setOderStatusSuggestions)
   const searchOrderItems = createSearchFunction(orderItemsOptions, setOderItemsSuggestions)
+
   // const searchCustomers = createSearchFunction(customerOptions, setCustomerOptionsSuggestions)
   const searchGateway = createSearchFunction(gatewayOptions, setGatewayOptionsSuggestions)
   const searchPayment = createSearchFunction(paymentOptions, setPaymentOptionsSuggestions)
@@ -765,6 +785,9 @@ export const OrdersList = () => {
     }
   })
 
+
+  console.log("orderItems", formik?.values.orderItems)
+
   // console.log(formik.errors, 'formik.error')
   // console.log('orderItem', orderItemsDetails)
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
@@ -775,19 +798,6 @@ export const OrdersList = () => {
 
   const handleAddInput = () => {
     formik.setFieldValue("orderItems", [...formik.values.orderItems, { id: '', name: '', quantity: '', price: '' }]);
-  };
-
-  const handleRemoveInput = (index) => {
-    const _filteredDeleteItemOptions = selectedOrderItemValue.filter((value) => value !== formik.values.orderItems[index]?.id)
-    setSelectedOrderItemValue(_filteredDeleteItemOptions);
-
-
-    if (formik.values.orderItems.length === 1) {
-      return;
-    }
-    const newInputsItems = [...formik.values.orderItems];
-    newInputsItems.splice(index, 1);
-    formik.setFieldValue("orderItems", newInputsItems);
   };
 
 
@@ -809,26 +819,6 @@ export const OrdersList = () => {
     return newInputsItems;
 
   };
-
-
-  // const handleInputChange = async (event, index) => {
-  //   const { name, value } = event.target;
-
-  //   const newInputsItems = [...formik.values.orderItems];
-  //   newInputsItems[index][name] = value;
-
-  //   const selectedProduct = newInputsItems[index];
-  //   const sellingPrice = product_prices.find((price) => price.productId === selectedProduct.id)?.sellingPrice || 0;
-
-  //   newInputsItems[index].price = sellingPrice;
-
-  //   const totalPrice = newInputsItems.reduce((acc, curr) => {
-  //     return acc + curr.price * curr.quantity;
-  //   }, 0);
-
-  //   formik.setValues({ ...formik.values, orderItems: newInputsItems, totalPrice: totalPrice });
-  //   return newInputsItems;
-  // };
 
   const [verificationStatus, setVerificationStatus] = useState(false);
   const inventory_productName = inventory_products.map((val) => val.products.name)
@@ -1154,32 +1144,44 @@ export const OrdersList = () => {
   const discountHandleSubmit = (event) => {
     const { value } = event.target;
     formik.handleChange(event);
-    formik.setFieldValue("discountAmount", parseFloat(value));
+
+    // Check if the discount value is a valid number or empty string
+    const discountValue = parseFloat(value);
+    const isDiscountValid = !isNaN(discountValue);
+
+    if (isDiscountValid) {
+      formik.setFieldValue("discountAmount", discountValue);
+    } else {
+      formik.setFieldValue("discountAmount", 0);
+    }
+
     const totalPrice = formik.values.totalPrice;
-    if (value > totalPrice) {
+    if (isDiscountValid && discountValue > totalPrice) {
       toast.current.show({ severity: 'error', summary: 'Discount amount should be less than the total price.', life: 3000 });
-      formik.setFieldValue("discountAmount", "");
+      formik.setFieldValue("discountAmount", 0);
     }
   };
 
-  // console.log('type off', typeof formik.values.discountAmount)
 
   const totalPriceAmount = (formik.values.orderItems.reduce(
     (total, ele) => total + ele.price * ele.quantity + (ele.price * ele.quantity * ele.gst) / 100,
+
     0
   ) - formik.values.discountAmount);
 
 
-  const totalGST = (formik.values.orderItems.reduce(
-    (total, ele) => total + (ele.gst),
+
+  const totalGST = formik.values.orderItems.reduce(
+    (total, ele) => {
+      const itemGST = (ele.price * ele.quantity * ele.gst) / 100;
+      return isNaN(itemGST) ? total : total + itemGST;
+    },
     0
-  ));
+  );
+
 
   const handleTabMenuOrderDataChange = (event) => {
     const { id, label, status } = event.value;
-    // const _filteredOrderData = status === "all" ? orders : orders.filter(order => order.orderStatus === id);
-    // console.log("_filteredOrderData", _filteredOrderData);
-    // setAllOrders(Object.assign([], _filteredOrderData));
     dispatch({ type: 'UPDATE_STATUS_ID', payload: id })
     dispatch({ type: 'UPDATE_STATUS_NAME', payload: status ?? label })
   }
@@ -1203,6 +1205,8 @@ export const OrdersList = () => {
     const { addresses: { contact_number, emails_emails_addressesToaddresses,
       areaStreet, buildingNumber, cityCountryProvince, landmarkName, pincode, state },
       firstName, lastName } = customers;
+
+
 
     return (
       <div className="w-30rem">
@@ -1230,10 +1234,100 @@ export const OrdersList = () => {
   }
 
   const handleShowProducts = ({ order_items }) => {
+    // return (
+    //   <div className="product-column">
+    //     {order_items.length > 2 ?
+    //       <>
+    //         <div
+    //           className="product-header"
+
+    //         >
+    //           <Button
+    //             label={`Products(${order_items.length})`}
+    //             className="p-button-link"
+    //             onMouseEnter={handleMouseEnter}
+    //           // onMouseLeave={handleMouseLeave}
+
+    //           />
+    //         </div>
+    //         <div className="overlay-panel">
+    //           <OverlayPanel ref={productDisplayRef} showCloseIcon  >
+    //             <div style={{
+    //               maxHeight: '200px',
+    //               overflowY: 'auto',
+    //               overflowX: 'hidden'
+    //             }}>
+    //               {/* <Tooltip target=".product-header" autoHide={true} >
+    //             <div style={{
+    //               maxHeight: '200px',
+    //               overflow: 'auto',
+    //             }}> */}
+    //               {order_items.map((product, i) => {
+    //                 const { quantity, products: { name, sku } } = product;
+    //                 return (
+
+    //                   <div key={i} >
+
+    //                     {[{ prop: "Name", value: name },
+    //                     { prop: "SKU", value: sku },
+    //                     { prop: "Quantity", value: quantity }
+    //                     ].map(({ prop, value }, index) => (
+
+    //                       <div key={index} className="grid">
+
+    //                         <label className="font-semibold col-4">{prop}:</label>
+    //                         <div className="col">
+    //                           {value?.toString()}
+    //                         </div>
+
+    //                       </div>
+
+
+
+    //                     ))}
+    //                     {i !== order_items.length - 1 && (
+    //                       <Divider align="center" type="dashed" style={{ borderTop: '1px solid #ddd' }} />
+    //                     )}
+    //                   </div>
+
+
+    //                 )
+    //               })}
+    //             </div>
+    //           </OverlayPanel>
+    //         </div>
+
+
+    //       </>
+    //       : order_items.length === 2 && order_items.length !== 0 ?
+    //         <OverlayPanel ref={productDisplayRef} className="w-20rem">
+    //           {order_items.map((product, i) => {
+    //             const { quantity, products: { name, sku } } = product;
+    //             return (
+    //               <div key={i} className="pt-2 pb-2">
+    //                 {[{ prop: "Name", value: name },
+    //                 { prop: "SKU", value: sku },
+    //                 { prop: "Quantity", value: quantity }
+    //                 ].map(({ prop, value }, index) => (
+    //                   <div key={index} className="grid">
+    //                     <label className="font-semibold col-4">{prop}:</label>
+    //                     <div className="col">
+    //                       {value?.toString()}
+    //                     </div>
+    //                   </div>
+    //                 ))}
+    //               </div>
+    //             )
+    //           })}
+    //         </OverlayPanel> :
+    //         <div className="hideLargeContent">No Product is found</div>}
+    //   </div>
+    // )
+
     return (
-      <div className="product-column">
+      <div>
         {order_items.length > 2 ?
-          <>
+          <div>
             <div
               className="product-header"
 
@@ -1292,37 +1386,39 @@ export const OrdersList = () => {
                 </div>
               </OverlayPanel>
             </div>
-
-
-          </>
-          : order_items.length === 2 && order_items.length !== 0 ?
-            <OverlayPanel ref={productDisplayRef} className="w-20rem">
+          </div>
+          : order_items.length < 3 && order_items.length > 0 ?
+            <div className="w-20rem">
               {order_items.map((product, i) => {
                 const { quantity, products: { name, sku } } = product;
                 return (
-                  <div key={i} className="pt-2 pb-2">
+
+                  <div key={i} >
+
                     {[{ prop: "Name", value: name },
                     { prop: "SKU", value: sku },
                     { prop: "Quantity", value: quantity }
                     ].map(({ prop, value }, index) => (
                       <div key={index} className="grid">
+
                         <label className="font-semibold col-4">{prop}:</label>
                         <div className="col">
                           {value?.toString()}
                         </div>
+
                       </div>
                     ))}
+                    {i !== order_items.length - 1 && (
+                      <Divider align="center" type="dashed" style={{ borderTop: '1px solid #ddd' }} />
+                    )}
                   </div>
                 )
               })}
-            </OverlayPanel> :
-            <div className="hideLargeContent">No Product is found</div>}
-
-
+            </div>
+            : <div className="hideLargeContent">-</div>
+        }
       </div>
     )
-
-
 
   }
 
@@ -1337,6 +1433,118 @@ export const OrdersList = () => {
 
   console.log("_orders", allOrders);
   console.log('formik.values: ', formik.values.name);
+
+
+
+  // Crete DataTable
+
+  const calculateSubtotal = () => {
+    const totalPrice = formik.values.orderItems.reduce(
+      (total, ele) => total + ele.price * ele.quantity,
+      0
+    ) - formik.values.discountAmount;
+
+    formik.setFieldValue("totalPrice", totalPrice);
+  };
+
+  const calculateTotal = () => {
+    const totalPriceAmount = formik.values.orderItems.reduce(
+      (total, ele) => {
+        const priceWithGst = ele.gst ? ele.price * ele.quantity * (1 + ele.gst / 100) : ele.price * ele.quantity;
+        console.log('price: ', priceWithGst);
+        return total + priceWithGst
+      },
+      0
+    ) - formik.values.discountAmount
+    return totalPriceAmount;
+  };
+  console.log('calculateTotal: ', calculateTotal());
+
+
+  const dataTableOrderdata = formik.values.orderItems;
+  console.log('dataTableOrderdata: ', dataTableOrderdata);
+
+  const onCellEditComplete = (e) => {
+    const { rowData, newValue, field, originalEvent: event } = e;
+    console.log('newValue: ', newValue, rowData, field);
+    if (['price', 'quantity'].includes(field)) {
+      if (newValue?.trim().length > 0) {
+        rowData[field] = newValue
+
+        const updatedOrderItems = formik.values.orderItems.map((item, itemIndex) => {
+
+          if (item.id === rowData.id) {
+            return { ...item, [field]: newValue };
+          }
+          return item;
+        });
+
+        formik.setValues({
+          ...formik.values,
+          orderItems: updatedOrderItems,
+        });
+
+        calculateSubtotal();
+      } else {
+        event.preventDefault();
+      }
+    }
+  };
+
+  const textEditor = (options) => {
+
+    return (
+      <InputText
+        type="text"
+        value={options.value}
+        onChange={(e) => options.editorCallback(e.target.value)}
+
+      />
+    );
+  };
+
+  const orderItemColumn = [
+    { field: "price", header: 'Price', body: (rowData) => rowData.price || "-" },
+    { field: "AvailableQuantity", header: 'AvailableQuantity', body: (rowData) => `AvailableQuantity - ${rowData.availableInventory}` || `AvailableQuantity - ${rowData.availableInventory}` },
+    { field: "quantity", header: 'Quantity', body: (rowData) => rowData.quantity || "-" },
+    { field: "rowTotal", header: 'Row Total', body: (rowData) => rowData.price * rowData.quantity || "-" },
+  ]
+
+  const [isProductSelected, setIsProductSelected] = useState(false);
+  console.log('isProductSelected: ', isProductSelected);
+
+
+  const handleRemoveInput = (index) => {
+    const _filteredDeleteItemOptions = selectedOrderItemValue.filter((value) => value !== formik.values.orderItems[index]?.id)
+    setSelectedOrderItemValue(_filteredDeleteItemOptions);
+
+
+    if (formik.values.orderItems.length === 1) {
+      return;
+    }
+    const newInputsItems = [...formik.values.orderItems];
+    newInputsItems.splice(index, 1);
+    formik.setFieldValue("orderItems", newInputsItems);
+  };
+
+
+
+
+  const initialItemList = {
+    id: '',
+    name: '',
+    quantity: '',
+    price: '',
+    availableInventory: ''
+  }
+
+  const [itemList, setItemList] = useState([
+    {
+      ...initialItemList,
+    },
+  ])
+
+
 
   return (
 
@@ -1570,7 +1778,7 @@ export const OrdersList = () => {
                   </div >
                 }
 
-                <div className="with-border col-12">
+                {/* <div className="with-border col-12">
                   <div className=" ">
                     <h3 >Order Items</h3>
                     {formik.values.orderItems.map((ele, index) => (
@@ -1604,8 +1812,8 @@ export const OrdersList = () => {
                                   shelf: inventory?.shelf?.blockedShelfIds[0],
                                   gst: selectedProductGST, // Add the GST value to the order item
                                 };
-                                const totalAmount = ele.price * ele.quantity;
-                                const totalAmountWithGST = totalAmount + (totalAmount * ele.gst) / 100;
+                                // const totalAmount = ele.price * ele.quantity;
+                                // const totalAmountWithGST = totalAmount + (totalAmount * ele.gst) / 100;
 
                                 await formik.setValues({
                                   ...formik.values,
@@ -1628,7 +1836,7 @@ export const OrdersList = () => {
 
                         </div>
 
-                        <div className="field col-12 lg:col-3 md:col-6 mt-2 ">
+                        <div className=" ">
                           <span className="p-float-label">
                             <InputText
                               // disabled={true}
@@ -1650,7 +1858,7 @@ export const OrdersList = () => {
                           </span>
                         </div>
 
-                        <div className="field col-12 lg:col-3 md:col-6 mt-2 ">
+                        <div className=" ">
                           <span className="p-float-label">
                             <InputText
                               className=''
@@ -1791,7 +1999,284 @@ export const OrdersList = () => {
                     </span>
                   </div>
 
+                </div> */}
+
+
+                <div className="col-12 ">
+                  <h3 >Order Items</h3>
+
+                  <DataTable
+                    value={formik.values.orderItems}
+                    showGridlines
+                    stripedRows
+                    editMode="cell"
+                  >
+                    <Column
+                      header='ID'
+                      body={(ele, { rowIndex }) => (
+                        <div key={rowIndex} className=" ">
+                          <span className="bg-primary border-circle w-2rem h-2rem flex align-items-center justify-content-center mt-3 ml-2">{rowIndex + 1}</span>
+                        </div>
+
+                      )}
+                    />
+
+                    <Column
+                      header="Products"
+                      label='name'
+                      body={(ele, { rowIndex }) => {
+                        console.log('index', rowIndex)
+                        return (
+                          <div className=" mt-3">
+
+                            <div className="">
+                              <AutoComplete
+                                id="name"
+                                value={ele?.name}
+                                name="name"
+                                dropdown
+                                forceSelection
+                                suggestions={orderItemsSuggestions}
+                                completeMethod={searchOrderItems}
+                                field="name" 
+                                onChange={async (e) => {
+                                  const selectedProduct = e.value;
+                                  console.log("e.value", e.value);
+                                  setSelectedOrderItemValue([...selectedOrderItemValue, e.value?.id])
+                                  const selectedProductGST = selectedProduct?.gstTaxTypeCode || 0;
+                                  const inventory = await isInStock(selectedProduct?.sku);
+                                  const sellingPrice = product_prices.find((price) => price.productId === selectedProduct?.id)?.sellingPrice || 0;
+
+                                  const filterEmptyProducts = formik.values.orderItems.filter((product) => product.name)
+                                  console.log('filterEmptyProducts _filter ', formik.values.orderItems);
+                                  console.log('filterEmptyProducts: ', filterEmptyProducts);
+                                  const _orderItemInput = [...filterEmptyProducts];
+                                  console.log('_orderItemInput: ', _orderItemInput);
+
+                                  const lastOrderItem = _orderItemInput[_orderItemInput.length - 1];
+                                  console.log('lastOrderItem: ', lastOrderItem);
+
+
+                                  _orderItemInput[rowIndex] = {
+                                    ..._orderItemInput[rowIndex],
+                                    ...selectedProduct,
+                                    price: sellingPrice,
+                                    availableInventory: inventory?.availableQuantity,
+                                    shelf: inventory?.shelf?.blockedShelfIds[0],
+                                    gst: selectedProductGST,
+                                  };
+                                  await formik.setValues({
+                                    ...formik.values,
+                                    orderItems: [..._orderItemInput,
+                                    {
+                                      id: '',
+                                      name: '',
+                                      quantity: '',
+                                      price: '',
+                                      availableInventory: ''
+                                    }]
+
+                                  });
+
+
+                                  // const filterValue = formik.values.orderItems.filter((val, index) => {
+                                  //   const existingOrderItems = formik.values.orderItems;
+
+                                  //   if (existingOrderItems[rowIndex]?.name === "") {
+                                  //     console.log('TRUE ++: true');
+                                  //     console.log("TRUE ++:", existingOrderItems.length);
+                                  //   } else {
+                                  //     console.log("TRUE ++: false ");
+                                  //     console.log("TRUE ++:", existingOrderItems.length);
+
+                                  //     existingOrderItems[rowIndex] = {
+                                  //       ...existingOrderItems[rowIndex],
+                                  //       ...selectedProduct,
+                                  //       price: sellingPrice,
+                                  //       availableInventory: inventory?.availableQuantity,
+                                  //       shelf: inventory?.shelf?.blockedShelfIds[0],
+                                  //       gst: selectedProductGST,
+                                  //     };
+                                  //   }
+
+                                  // })
+
+
+                                  // console.log('filterValue: ', filterValue);
+
+                                  // await formik.setValues({
+                                  //   ...formik.values,
+                                  //   orderItems: existingOrderItems,
+                                  // });
+
+
+                                  setIsProductSelected(!!e.value);
+
+                                  const totalAmount = ele.price * ele.quantity;
+                                  const totalAmountWithGST = totalAmount + (totalAmount * ele.gst) / 100;
+
+                                  // _orderItemInput[rowIndex] = {
+                                  //   ..._orderItemInput[rowIndex],
+                                  //   ...selectedProduct,
+                                  //   price: sellingPrice,
+                                  //   availableInventory: inventory?.availableQuantity,
+                                  //   shelf: inventory?.shelf?.blockedShelfIds[0],
+                                  //   gst: selectedProductGST,
+                                  // };
+
+                                  // await formik.setValues({
+                                  //   ...formik.values,
+                                  //   orderItems: _orderItemInput,
+                                  // });
+
+                                }}
+
+
+
+                                aria-label="products"
+                                dropdownAriaLabel="Select Product"
+                                className={classNames({ "p-invalid": isFormFieldValid("name") })}
+
+                              />
+                            </div>
+
+
+                          </div>
+                        )
+                      }}
+                    />
+
+                    {orderItemColumn.map((i) => {
+                      return (
+                        <Column
+                          key={i.field}
+                          field={i.field}
+                          header={i.header}
+                          body={i.body}
+                          editor={i.field === "price" || i.field === 'quantity' ? textEditor : null}
+                          onCellEditComplete={i.field === "price" || i.field === 'quantity' ? onCellEditComplete : null}
+                        />
+                      )
+                    })}
+                    {/* <Column
+                      header='Row Total'
+                      body={(ele, { rowIndex }) => (
+                        <div key={rowIndex} className="mt-3 ">
+                          <div className="">
+                            <InputText
+                              className=''
+                              id="rowTotal"
+                              type='text'
+                              name='rowTotal'
+                              value={(ele.price * ele.quantity)}
+                              disabled
+                            />
+
+                          </div>
+                        </div>
+                      )}
+                    /> */}
+
+
+                    <Column
+                      header='Remove'
+                      body={(ele, { rowIndex }) => (
+                        <div key={rowIndex} className="">
+                          <div className="mt-3">
+                            <Button
+                              icon="pi pi-times"
+                              className="p-2 m-1"
+                              className="p-button-secondary"
+                              onClick={() => handleRemoveInput(rowIndex)}
+                              style={{ height: '35px' }}
+                              disabled={formik.values.orderItems.length === 1 ? true : false}
+                            />
+                          </div>
+
+                        </div>
+                      )}
+                    />
+
+                  </DataTable>
+
+                  <div className="col-12">
+                    <div className="field mt-1 flex justify-content-end mt-4">
+                      <span className="p-float-label ">
+                        <InputText
+                          disabled={true}
+                          id={"totalPrice"}
+                          name={"totalPrice"}
+                          value={formik.values.totalPrice}
+                          autoFocus
+                          className={classNames({ "p-invalid ": isFormFieldValid("description") })}
+                        />
+                        <label
+                          htmlFor={"totalPrice"}
+                          className={classNames({ "p-error": isFormFieldValid("sku") })}
+                        >
+                          Sub Total
+                        </label>
+                      </span>
+                      {getFormErrorMessage("totalPrice")}
+                    </div>
+
+                    <div className="field mt-1 flex justify-content-end mt-4">
+                      <span className="p-float-label">
+                        <InputText
+                          className=''
+                          type='text'
+                          name='gstTaxTypeCode'
+                          value={formik.values.gstTaxTypeCode}
+                          onChange={() => { }}
+                          disabled
+                        />
+                        <label
+                          htmlFor="gstTaxTypeCode"
+                          className={classNames({ "p-error": isFormFieldValid("gstTaxTypeCode") })}>
+                          GST: {totalGST}₹
+                        </label>
+                      </span>
+                    </div>
+
+                    <div className="field mt-1 flex justify-content-end mt-4">
+                      <span className="p-float-label">
+                        <InputText
+                          className=''
+                          type='text'
+                          name='discountAmount'
+                          value={formik.values.discountAmount}
+                          onChange={discountHandleSubmit}
+                        />
+                        <label
+                          htmlFor="discountAmount"
+                          className={classNames({ "p-error": isFormFieldValid("discountAmount") })}>
+                          Discount Amount
+                        </label>
+                      </span>
+                    </div>
+
+
+                    <div className="field mt-1 flex justify-content-end mt-4">
+                      <span className="p-float-label">
+                        <InputText
+                          disabled
+                          className=''
+                          type='text'
+                          name='total'
+                          value={calculateTotal()}
+
+                        />
+                        <label
+                          htmlFor="discountAmount"
+                          className={classNames({ "p-error": isFormFieldValid("discountAmount") })}>
+                          <span className="green_color">Total Amount</span>
+                        </label>
+                      </span>
+                    </div>
+                  </div>
+
                 </div>
+
 
                 <div className="col-12">
                   <h3>Payment Method </h3>
@@ -1920,20 +2405,17 @@ export const OrdersList = () => {
               </div>
 
             </form>
-          </div>
-        </div>
+          </div >
+        </div >
       }
+
       {/* <div className="col-12">
         <JobStatus id={jobId} title={"Order Fetching Job"} />
       </div> */}
 
 
-
-
       <div className="col-12">
-
         <div className="card">
-
           <div className="col-12">
             <TabMenu
               model={[{ label: "ALL" }, ...tabMenuItems]}
@@ -1946,7 +2428,6 @@ export const OrdersList = () => {
             value={orders}
             responsiveLayout="scroll"
             // scrollable
-            showGridlines
             header={renderHeader}
             stripedRows
             className="text-s datatable-responsive"
@@ -1997,7 +2478,6 @@ export const OrdersList = () => {
               header="Channel"
               // className="text-center"
               body={(rowdata) => rowdata.shopifyId ? "SH" : "IH"}
-
             />
 
 
@@ -2014,6 +2494,7 @@ export const OrdersList = () => {
               header="Customer"
               body={handleCustomerDetailsRender}
             />
+
             {/* <Column
               field=""
               header="Customer Contact Number"
@@ -2053,13 +2534,11 @@ export const OrdersList = () => {
                   </div>
                 )
               }}
-
             /> */}
+
             <Column
               field="gateway"
               header="Payment Method"
-
-
             />
             <Column
               field="gstNumber"
@@ -2091,7 +2570,6 @@ export const OrdersList = () => {
                 else
                   return (
                     <pre>
-
                       <Dropdown
                         value={rowData.orderStatus}
                         options={order_statuses}
@@ -2108,9 +2586,6 @@ export const OrdersList = () => {
                             }
                           })
                         }}
-
-
-
                       />
                     </pre>
                   )
@@ -2200,9 +2675,8 @@ export const OrdersList = () => {
           </DataTable>
 
         </div>
-
       </div>
-    </div>
+    </div >
 
   )
 };

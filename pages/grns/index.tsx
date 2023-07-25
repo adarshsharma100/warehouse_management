@@ -34,7 +34,7 @@ export const GrnsList = () => {
   const router = useRouter()
   // const page = Number(router.query.page) || 0
   const [{ grns }, { error: getGrnsError, refetch: refetchGrn }] = useQuery(getGrns, {
-    orderBy: { grn_id: "asc" },
+    orderBy: { id: "asc" },
   })
   const [{ grn_statuses }] = useQuery(getGrn_statuses, {
     orderBy: { id: "asc" },
