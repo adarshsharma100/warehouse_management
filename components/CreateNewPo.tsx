@@ -15,6 +15,7 @@ import getPo_terms from "app/po_terms/queries/getPo_terms"
 import getPurchase_orders from "app/purchase_orders/queries/getPurchase_orders"
 import createPurchase_order from "app/purchase_orders/mutations/createPurchase_order"
 import updatePurchase_order from "app/purchase_orders/mutations/updatePurchase_order"
+import updateRfq from "app/rfqs/mutations/updateRfq"
 import { useFormik } from "formik"
 import { useRouter } from "next/router"
 import { AutoComplete } from "primereact/autocomplete"
@@ -50,6 +51,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     refetchFuns,
     setSendPoDialog,
     rfq,
+    setRfq,
     userId
   } = props
 
@@ -103,6 +105,8 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     useMutation(createPurchase_order)
   const [updatePurchaseOrderMutation, { isLoading: UpdatingPO, error: updatingMutationError }] =
     useMutation(updatePurchase_order)
+  const [updateRFQMutation, { isLoading: updatingRfq, error: updateRFQMutationError }] =
+    useMutation(updateRfq)
 
   const user = useCurrentUser()
   const { id, role, name, email } = user
@@ -127,6 +131,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
   const [filterProductOptions, setFilterProductOptions] = useState<any>(null)
   const [vendorSuggestions, setVendorSuggestions] = useState<any>(null)
   const [ProductsSuggestions, setProductsSuggestions] = useState<any>(null)
+  console.log('ProductsSuggestions: ', ProductsSuggestions);
   const [poStatuses, setPoStatuses] = useState<any>(null)
   const [fromPartySuggetions, setFromPartySuggetions] = useState<any>(null)
   const [termsSuggetions, setTermsSuggetions] = useState<any>(null)
@@ -261,13 +266,6 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     return Number(vpId)
   }
 
-  const compareRFQPO = () => {
-    if (allPODetails && allRfqDetails) {
-      if (allRfqDetails.length > allPODetails.length) return "Not Complete"
-      else if (allRfqDetails.length === allPODetails.length) return "Complete"
-    }
-  }
-
   const formik = useFormik({
     initialValues: purchaseDetails,
     validationSchema: Yup.object().shape({
@@ -394,7 +392,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               expiryDate: expiry_date,
               piNumber: piNumber || null,
               piDate: piDate || null,
-              rfq_purchase_orders_rfqTorfq: rfq.rfqId ? {
+              rfq: rfq.rfqId ? {
                 connect: rfq.rfqId && {
                   id: rfq.rfqId
                 }
@@ -448,25 +446,53 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                 setShowPriorList(false)
                 setPriorList([])
                 setAmendingPO(false)
-                const { purchase_orders } = await invoke(getPurchase_orders, {
-                  where: {
-                    rfqId: 232
-                  },
-                  include: {
-                    rfq: true
-                  }
+                if (data.rfqId !== null || data.rfqId !== undefined) {
+                  const { purchase_orders } = await invoke(getPurchase_orders, {
+                    where: {
+                      rfqId: data.rfqId
+                    },
+                    include: {
+                      rfq: true
+                    }
 
-                })
-                const rfq_details = purchase_orders[0]?.rfq?.rfq_products;
-                const _allPODetails = purchase_orders.reduce((accumulator, current) => {
-                  const { po_products } = current;
-                  if (po_products) {
-                    accumulator = accumulator.concat(po_products);
+                  })
+                  const rfq_details = purchase_orders[0]?.rfq?.rfq_products;
+                  console.log('allrfq_details: ', rfq_details);
+                  const _allPODetails = purchase_orders.reduce((accumulator, current) => {
+
+                    const { po_products } = current;
+                    if (po_products) {
+                      accumulator = accumulator.concat(po_products);
+                    }
+                    return accumulator;
+                  }, []);
+                  console.log('all_allPODetails: ', _allPODetails);
+                  if (rfq_details?.length === _allPODetails.length) {
+                    // alert("Completed")
+                    await updateRFQMutation(
+                      {
+                        id: data?.rfqId,
+                        status: "Completed",
+                      },
+                      {
+                        onSuccess: async (data) => {
+                          const rfqNumber = data?.rfqNumber
+                          const status = data?.status
+
+                          toast?.current.show(
+                            tsuccess("Updated", `${rfqNumber} is now ${status}`))
+                          // await refetch()
+
+
+                        },
+                      }
+                    )
                   }
-                  return accumulator;
-                }, []);
-                setAllPODetails(_allPODetails);
-                setAllRfqDetails(rfq_details);
+                  setAllPODetails(_allPODetails);
+                  setAllRfqDetails(rfq_details);
+
+                }
+
                 toast?.current.show(tsuccess(null, "PO Created Successfully"))
                 if (router.query.hasOwnProperty("rfqdata")) {
                   const { rfqdata } = router.query;
@@ -490,6 +516,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
           formik.resetForm()
           setPriorList([])
           setShowPriorList(false)
+          setRfq({ rfqNumber: "", rfqId: "" })
         } catch (error) {
           console.log("error: ", error)
         }
@@ -559,7 +586,11 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     ])
 
     const vendorID = formik.values.vendor_vendor_id
-    const filterProducts = productOptions.filter((ele) => ele.vendorID.includes(Number(vendorID)))
+    const _productOptions = productOptions;
+    console.log('productOptions: ', productOptions);
+    const filterProducts = _productOptions.filter((ele) => ele.vendorID.includes(Number(vendorID)))
+    console.log('filterProducts: ', filterProducts);
+
 
     setFilterProductOptions(filterProducts)
     if (!poEditState) {
@@ -592,8 +623,12 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     await formik.setValues({ ...formik.values, ...fields })
   }
 
-  console.log("filterProductOptions", filterProductOptions);
-  console.log("formik.value", formik.values);
+
+  // console.log("filterProductOptions", filterProductOptions);
+  // console.log("formik.value", formik.values);
+  console.log("all products", products);
+  console.log("po statuses", po_statuses);
+  console.log("active row", activeRow)
 
   return (
     <div
@@ -608,9 +643,14 @@ const CreateNewPo = React.forwardRef((props, ref) => {
         <form onSubmit={formik.handleSubmit} className="p-fluid ">
           <div className="flex justify-content-between">
             {/* <h5>{`${poEditState ? "Update" : "Create"} PO`}</h5> */}
-            <h5>{`${readOnlyForm ? "PO-Details" : poEditState ? "UPDATE-PO" : "CREATE-PO"}`}</h5>
+            <h5 className="col-3">{`${readOnlyForm ? "PO-Details" : poEditState ? "UPDATE-PO" : "CREATE-PO"}`}</h5>
+            <div className="col-3">
+              <span>Status: </span>
+              <span>{!poEditState ? po_statuses[0]?.name : null}</span>
+              <span>{activeRow && activeRow?.po_status?.name}</span>
+            </div>
             {poEditState && (
-              <div>
+              <div className="col-6 flex justify-content-end">
                 {activeRow?.po_status?.name !== 'Approved' && <Button
                   disabled={false}
                   icon="pi pi-pencil"
@@ -1006,7 +1046,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                 <Button
                   type="button"
                   icon="pi pi-thumbs-up"
-                  label="Continue"
+                  label="Continue without adding"
                   className="p-button-warning p-button-sm w-auto ml-3"
                   onClick={async (e) => {
                     setShowPriorList(false)
@@ -1025,30 +1065,23 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                   <div className="p-float-label">
                     <AutoComplete
                       disabled={readOnlyForm}
+                      className="new-po-select-dropdown"
                       id="name"
                       name="name"
                       value={ele.product_name}
-                      suggestions={ProductsSuggestions}
+                      suggestions={ProductsSuggestions?.length === 0 ? productOptions : ProductsSuggestions}
                       completeMethod={searchProducts}
                       //   forceSelection //
                       dropdown
+                      // style={{ width: '100px' }}
                       field="name"
                       onChange={async (e) => {
                         let product_id = typeof e.value === "string" ? "" : e.value?.product_id
                         let name = typeof e.value === "string" ? e.value : e.value?.name
                         let price_per_unit = typeof e.value === "string" ? e.value : e.value?.Price
+                        const existingIndex = itemList.findIndex((item) => item.product_name === name);
                         let data = [...itemList]
-                        // const i = data.findIndex((item) => item?.product_name === name);
-                        // if (i === -1) {
-                        //   data.push({
-                        //     product_name: name,
-                        //     products_product_id: product_id,
-                        //     price_per_unit: price_per_unit,
-                        //     quantity: "",
-                        //   });
-                        // } else {
-                        //   data[i].quantity = "";
-                        // }
+                        console.log('data: ', data);
 
                         data[i].product_name = name
                         data[i].products_product_id = product_id
@@ -1057,16 +1090,17 @@ const CreateNewPo = React.forwardRef((props, ref) => {
 
                         let itemsLength = !e.value?.name ? false : true
                         await formik.setValues({ ...formik.values, itemsLength })
+                        const _filteredData = data.filter((eachData) => eachData.product_name)
 
-                        // const _filteredAddKitProducts = data.filter((each) => each?.product);
-                        // setItemList([..._filteredAddKitProducts, {
-                        //   "product": undefined,
-                        //   "quantity": 1
-                        // }])
-                        const _filteredData = data.filter((each) => each?.product_name)
+                        setItemList([..._filteredData, {
+                          product_name: "",
+                          products_product_id: "",
+                          price_per_unit: undefined,
+                          quantity: ""
+                        }])
+                        // console.log("Data", data);
 
 
-                        setItemList([..._filteredData, { product_name: "", quantity: 1 }])
                       }}
                       aria-label="products"
                       dropdownAriaLabel="Select Product"
@@ -1091,7 +1125,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                       value={ele.price_per_unit}
                       onChange={(e) => handleFormChange(e, i)}
                     />
-                    <label>Price per unit</label>
+                    <label htmlFor="price_per_unit">Price per unit</label>
                   </span>
                 </div>
                 <div className="field col-12 lg:col-2 mt-2">
@@ -1104,7 +1138,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                       onChange={(e) => handleFormChange(e, i)}
                       required={ele?.product_name}
                     />
-                    <label className="mr-2">Quantity</label>
+                    <label className="mr-2" htmlFor="quantity">Quantity</label>
                   </span>
                 </div>
                 <div className="field col-6 lg:col-1 mt-2">

@@ -221,7 +221,6 @@ export const Purchase_ordersList = () => {
                 // header={renderHeader}
                 stripedRows
                 className="text-s datatable-responsive w-full mt-5"
-
               // paginator
               // currentPageReportTemplate={PAGINATION_VARIABLES.currentPageReportTemplate}
               // rows={PAGINATION_VARIABLES.rows}
@@ -332,7 +331,6 @@ export const Purchase_ordersList = () => {
       <div className="flex">
         <div className="flex-grow-1">
           <MultiSelect
-
             value={selectedColumns}
             options={columns?.map(({ header, field }) => ({
               label: header,
@@ -343,10 +341,6 @@ export const Purchase_ordersList = () => {
 
           />
         </div>
-
-
-
-
         <span className="p-input-icon-left">
           <i className="pi pi-search" />
           <InputText
@@ -373,16 +367,6 @@ export const Purchase_ordersList = () => {
 
   const refetchFuns = [refetch,]
 
-  // const getPODetailsWithRFQID = useCallback(async () => {
-  //   if (rfq?.rfqId) {
-  //     const { purchase_orders } = await invoke(getPurchase_orders, {
-  //       rfq: rfq.rfqId
-  //     })
-  //     console.log("purchase_orders", purchase_orders)
-  //   }
-
-  // }, [rfq])
-
   const columnComponents = columns.reduce((acc, curr) => {
     if (selectedColumns.includes(curr.field))
       return [
@@ -403,14 +387,18 @@ export const Purchase_ordersList = () => {
     return acc;
   }, []);
 
-  const compareRFQPO = () => {
-    if (allPODetails && allRfqDetails) {
-      if (allRfqDetails.length > allPODetails.length) return "Not Complete"
-      else if (allRfqDetails.length === allPODetails.length) return "Complete"
+  console.log('allRfqDetails: ', allRfqDetails);
+  console.log('allPODetails: ', allPODetails);
+
+  useEffect(() => {
+    if (allPODetails.length > 1 && allRfqDetails.length > 1) {
+      if (allRfqDetails.length > allPODetails.length) alert("Not Complete")
+
+      else if (allRfqDetails.length === allPODetails.length) alert("Complete")
+
     }
-  }
 
-
+  }, [allPODetails, allRfqDetails])
 
   useEffect(() => {
     const defaultColumns = columns.filter(col => !["description"].includes(col.field)).map(col => col.field)
@@ -420,14 +408,14 @@ export const Purchase_ordersList = () => {
   return (
     <>
       <Head><title>Purchase Order</title></Head>
-      <Button
+      {/* <Button
         icon="pi pi-plus"
         label="GET PO"
         className="py-1 px-2"
         onClick={async () => {
           const { purchase_orders } = await invoke(getPurchase_orders, {
             where: {
-              rfqId: 232
+              rfqId: 237
             },
             include: {
               rfq: true
@@ -448,7 +436,7 @@ export const Purchase_ordersList = () => {
 
         }}
 
-      />
+      /> */}
 
       <div className="grid w-full mr-0">
         <Toast ref={toast} />
@@ -585,6 +573,8 @@ export const Purchase_ordersList = () => {
               // globalFilterFields={["products_sku"]}
               emptyMessage="No Results found."
               onRowClick={async (e) => {
+                console.log('row data: ', e.data);
+
                 scrollToPo?.current?.scrollIntoView()
                 setPoEditState(true)
                 setActiveRow(e.data)
