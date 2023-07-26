@@ -28,15 +28,19 @@ export default resolver.pipe(
           ...paginateArgs,
           where,
           orderBy,
+          
           include: {
             order_items: {
               include: {
                 products: true,
+                
+                
               },
             },
             order_status: true,
             shopify: true,
             shipment: true,
+            
 
             addresses_orders_billingAddressIdToaddresses: true,
             addresses_orders_shippingAddressIdToaddresses: true,
