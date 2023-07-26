@@ -174,6 +174,7 @@ export const RfqsList = () => {
   const [rfqDialog, setRfqDialog] = useState(false)
   const [isInclude, setIsInclude] = useState(false)
   const [amendingRfq, setAmendingRfq] = useState(false)
+  console.log('amendingRfq: ', amendingRfq);
   const initialRfqState = {
     rfqNumber: "",
     rfq_description: "",
@@ -188,11 +189,13 @@ export const RfqsList = () => {
   }
   const [rfqDetails, setRfqDetails] = useState(initialRfqState)
   const [rfqEditState, setRfqEditState] = useState(false)
+  console.log('rfqEditState: ', rfqEditState);
   const [readOnlyForm, setReadOnlyForm] = useState(true)
 
   console.log('readOnlyForm: ', readOnlyForm);
   const [duplicateRFQForm, setDuplicateRFQForm] = useState(false)
   const [totalTargetPrice, setTotalTargetPrice] = useState(0)
+  console.log('totalTargetPrice: ', totalTargetPrice);
   const [productDiscount, setProductDiscount] = useState(null)
   const [selectedVendorsWithEmails, setSelectedVendorsWithEmails] = useState([])
 
@@ -218,6 +221,7 @@ export const RfqsList = () => {
 
 
   const [activeRow, setActiveRow] = useState({})
+  console.log('activeRow: ', activeRow);
   const [expandedRows, setExpandedRows] = useState(null)
   const [currentRfqitemsID, setCurrentRfqitemsID] = useState([])
   const [rfqErrorMsgs, setRfqErrorMsgs] = useState([])
@@ -607,8 +611,8 @@ export const RfqsList = () => {
 
         try {
           const updatRfqStatus = updateRFQMutation({
-            id: activeRow.id,
-            rfqNumber,
+            id: activeRow?.id,
+            // rfqNumber,
             description: rfq_description,
             expectedDod,
             agreement,
@@ -626,6 +630,8 @@ export const RfqsList = () => {
               updateMany: itemList.map((ele) => ({
                 where: {
                   id: ele.rfq_products_id,
+                  
+
                 },
                 data: {
                   price: Number(ele.costPrice),
@@ -645,6 +651,7 @@ export const RfqsList = () => {
                 tsuccess("Updated", `${rfqNumber} is now updated successfully`),
 
               )
+              
               setActiveRow({})
               await refetch()
               setRfqDialog(false)
@@ -652,13 +659,17 @@ export const RfqsList = () => {
               setMailSent(false)
             },
             onError: (data) => {
+              console.log('error: ', data);
               const rfqNumber = data?.rfqNumber
               toast?.current.show(
                 tError("Updated", `${rfqNumber} Could not Update`),
               )
+
+              
             },
           })
         } catch (error) {
+          console.log('rfq_UpdateError: ', error);
 
         }
       } else {
@@ -1026,9 +1037,7 @@ export const RfqsList = () => {
               <div className="flex justify-content-between col-12 p-2 mb-3">
                 <div className="flex justify-content-between align-items-center col-7 mt-0 p-0">
                   <h5 className=" m-0 col-5 p-0">
-                    {`${readOnlyForm ? `${formik.values.rfqNumber}` : rfqEditState
-                      ? `Update - ${formik.values.rfqNumber} ` : amendingRfq
-                        ? "Amend- RFQ" : "Create - RFQ"}`
+                    {`${readOnlyForm ? `${formik.values.rfqNumber}` : rfqEditState ? `Update - ${formik.values.rfqNumber} ` : amendingRfq ? "Amend- RFQ" : "Create - RFQ"}`
                     }
                   </h5>
                   <div className="flex justify-content-center align-items-center col-7 p-0 ml-3">
@@ -1077,7 +1086,7 @@ export const RfqsList = () => {
                       onClick={async (e) => {
                         e.preventDefault()
                         setReadOnlyForm(false)
-                        // setRfqEditState(true)
+                        setRfqEditState(true)
                         // setRFQCodeChecked(false)
                         setMailSent(false)
                       }}
@@ -1134,7 +1143,7 @@ export const RfqsList = () => {
                             }
                           }
                         } catch (error) {
-                          alert(error)
+                          
                           console.log('error: ', error);
 
                         }

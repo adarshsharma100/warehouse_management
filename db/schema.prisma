@@ -125,26 +125,28 @@ model emails {
 }
 
 model grn {
-  id              Int             @id @default(autoincrement())
-  grnNumber       String          @unique(map: "grnNumber_UNIQUE") @db.VarChar(45)
-  invoiceNo       String          @unique(map: "invoiceNo_UNIQUE") @db.VarChar(45)
-  invoiceDate     DateTime        @db.DateTime(0)
-  trackingId      String?         @db.VarChar(200)
-  eta             DateTime?       @db.DateTime(0)
-  createdAt       DateTime        @default(now()) @db.DateTime(0)
-  updatedAt       DateTime        @default(now()) @db.DateTime(0)
-  status          Int
-  createdBy       Int
-  purchaseOrder   Int
-  grn_status      grn_status      @relation(fields: [status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_grn_status1")
-  purchase_orders purchase_orders @relation(fields: [purchaseOrder], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_purchase_orders1")
-  user            user            @relation(fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_user1")
-  grn_products    grn_products[]
-  putaway         putaway[]
+  id               Int             @id @default(autoincrement())
+  grnNumber        String          @unique(map: "grnNumber_UNIQUE") @db.VarChar(45)
+  invoiceNo        String          @unique(map: "invoiceNo_UNIQUE") @db.VarChar(45)
+  invoiceDate      DateTime        @db.DateTime(0)
+  trackingId       String?         @db.VarChar(200)
+  eta              DateTime?       @db.DateTime(0)
+  createdAt        DateTime        @default(now()) @db.DateTime(0)
+  updatedAt        DateTime        @default(now()) @db.DateTime(0)
+  status           Int
+  createdBy        Int
+  purchaseOrder    Int
+  vendorShipmentId Int
+  grn_status       grn_status      @relation(fields: [status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_grn_status1")
+  purchase_orders  purchase_orders @relation(fields: [purchaseOrder], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_purchase_orders1")
+  user             user            @relation(fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_user1")
+  grn_products     grn_products[]
+  putaway          putaway[]
 
   @@index([status], map: "fk_grn_grn_status1_idx")
   @@index([purchaseOrder], map: "fk_grn_purchase_orders1_idx")
   @@index([createdBy], map: "fk_grn_user1_idx")
+  @@index([vendorShipmentId], map: "fk_grn_vendor_shipments1_idx")
 }
 
 model grn_products {
@@ -459,7 +461,6 @@ model purchase_orders {
   po_terms              po_terms          @relation(fields: [po_term], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_terms1")
   user                  user?             @relation(fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_user1")
   vendors               vendors           @relation(fields: [vendor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_vendors1")
-  warehouse             warehouse?        @relation(fields: [warehouseId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_warehouse1")
 
   @@index([status], map: "fk_purchase_orders_po_status1_idx")
   @@index([amendedFrom], map: "fk_purchase_orders_purchase_orders1_idx")
@@ -736,14 +737,13 @@ model vendors {
 }
 
 model warehouse {
-  id                               Int               @id @default(autoincrement())
-  name                             String            @db.VarChar(45)
-  description                      String?           @db.VarChar(150)
+  id                               Int        @id @default(autoincrement())
+  name                             String     @db.VarChar(45)
+  description                      String?    @db.VarChar(150)
   addressesId                      Int?
-  areas_areas_warehouseTowarehouse areas[]           @relation("areas_warehouseTowarehouse")
-  purchase_orders                  purchase_orders[]
+  areas_areas_warehouseTowarehouse areas[]    @relation("areas_warehouseTowarehouse")
   shipment                         shipment[]
-  addresses                        addresses?        @relation(fields: [addressesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_warehouse_addresses1")
+  addresses                        addresses? @relation(fields: [addressesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_warehouse_addresses1")
 
   @@index([addressesId], map: "fk_warehouse_addresses1_idx")
 }
@@ -837,6 +837,16 @@ model putaway_products {
   @@index([grnProductId], map: "fk_putaway_products_grn_products1_idx")
   @@index([productsId], map: "fk_putaway_products_products1_idx")
   @@index([putawayId], map: "fk_putaway_products_putaway1_idx")
+}
+
+model vendor_shipments {
+  Id               Int    @id @default(autoincrement())
+  trackingId       String @db.VarChar(100)
+  courier          String @db.VarChar(45)
+  shipmentId       String @db.VarChar(100)
+  purchaseOrdersId Int
+
+  @@index([purchaseOrdersId], map: "fk_vendor_shipments_purchase_orders1_idx")
 }
 
 enum contact_number_type {
