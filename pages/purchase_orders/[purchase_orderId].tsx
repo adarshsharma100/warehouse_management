@@ -108,6 +108,7 @@ export const Purchase_order = () => {
     shortSupply: "",
   }
   const [grnProductsList, setGrnProductsList] = useState([initialGrnProductState])
+  console.log('grnProductsList: ', grnProductsList);
   const searchStatuses = createSearchFunction(grn_statuses, setGrnStatuses)
 
 
@@ -421,6 +422,57 @@ export const Purchase_order = () => {
   }, [purchase_order])
 
 
+
+  // GRN DATATABLES
+
+  const onCellEditComplete = (e) => {
+    const { rowData, newValue, field, originalEvent: event } = e;
+    console.log('newValue: ', newValue, rowData, field);
+    if (['receivedQuantity', 'rejectedQuantity', 'shortSupply'].includes(field)) {
+      if (newValue?.trim().length > 0) {
+        rowData[field] = newValue
+
+        const updatedGRNItems = grnProductsList.map((item, itemIndex) => {
+
+          if (item.id === rowData.id) {
+            return { ...item, [field]: newValue };
+          }
+          return item;
+        });
+
+        formik.setValues({
+          ...formik.values,
+          grnProductsList: updatedGRNItems,
+        });
+
+
+      } else {
+        event.preventDefault();
+      }
+    }
+  };
+
+  const textEditor = (options) => {
+
+    return (
+      <InputText
+        type="text"
+        value={options.value}
+        onChange={(e) => options.editorCallback(e.target.value)}
+
+      />
+    );
+  };
+
+  const grnItemColumn = [
+    { field: "receivedQuantity", header: 'Received Quantity', body: (rowData) => rowData.receivedQuantity || "-" },
+    { field: "rejectedQuantity", header: 'GRN Rejected Quantity', body: (rowData) => rowData.rejectedQuantity || "-" },
+    { field: "qcRejectedQuantity", header: 'QC Rejected Quantity', body: (rowData) => rowData.qcRejectedQuantity || "-" },
+    { field: "shortSupply", header: 'Short Supply', body: (rowData) => rowData.shortSupply || "-" },
+  ]
+
+
+
   return (
     <>
       <Head>
@@ -658,11 +710,10 @@ export const Purchase_order = () => {
                     </div>
                     {getFormErrorMessage("invoiceDate")}
                   </div>
-                  <div className="col-12 mt-3 mb-2 ">
+                  {/* <div className="col-12 mt-3 mb-2 ">
                     <h6>GRN Products</h6>
                     <hr />
                   </div>
-
 
                   {grnProductsList.map((ele, i) => (
                     <div key={`PO-product-${i} `} className="field grid col-12  mt-2">
@@ -734,8 +785,22 @@ export const Purchase_order = () => {
                               handleFormChange(e, i)
                             }}
                           />
-                          <label className="mr-2">Rejected Quantity</label>
+                          <label className="mr-2">GRN Rejected Quantity</label>
                         </span>
+                      </div>
+
+                      <div className="field col-12 lg:col-2 mt-2">
+                        <span className="p-float-label ">
+                          <InputNumber
+                            name="rejectedQuantity"
+                            value={ele.rejectedQuantity || "-"}
+                            onChange={(e) => {
+                              handleFormChange(e, i)
+                            }}
+                          />
+                          <label className="mr-2">QC Rejected Quantity</label>
+                        </span>
+
                       </div>
                       {!updateGrns && <div className="field col-12 lg:col-2 mt-2">
                         <span className="p-float-label ">
@@ -764,7 +829,113 @@ export const Purchase_order = () => {
                         </span>
                       </div>
                     </div>
-                  ))}
+                  ))} */}
+
+                  <div className="col-12 mt-3">
+                    <h6>GRN Products</h6>
+                    <DataTable
+                      value={grnProductsList}
+                      showGridlines
+                      stripedRows
+                      editMode="cell"
+                      selectionMode={grnProductsList.length === 1 ? 'single' : null}
+                    >
+                      <Column
+                        header='ID'
+                        className="reduce-column"
+                        body={(ele, { rowIndex }) => (
+                          <div key={rowIndex} className=" ">
+                            <span className="bg-primary border-circle w-2rem h-2rem flex align-items-center justify-content-center">{rowIndex + 1}</span>
+                          </div>
+                        )}
+                      />
+
+                      <Column
+                        header='Products'
+                        body={(ele, { rowIndex }) => {
+                          return (
+                            <div className="">
+                              <AutoComplete
+                                id="name"
+                                name="name"
+                                value={ele.productName}
+                                // suggestions={ProductsSuggestions}
+                                // completeMethod={searchProducts}
+                                //   forceSelection //
+                                dropdown
+                                field="name"
+                                onChange={async (e) => {
+                                  // console.log("event understand", e.value)
+                                  // let product_id = typeof e.value === "string" ? "" : e.value?.product_id
+                                  // let name = typeof e.value === "string" ? e.value : e.value?.name
+                                  // let price_per_unit = typeof e.value === "string" ? e.value : e.value?.Price
+                                  // let data = [...itemList]
+
+                                  // data[i].product_name = name
+                                  // data[i].products_product_id = product_id
+                                  // data[i].price_per_unit = price_per_unit
+                                  // data[i].quantity = ""
+
+                                  // let itemsLength = !e.value?.name ? false : true
+                                  // await formik.setValues({ ...formik.values, itemsLength })
+
+                                  // setItemList(data)
+                                }}
+                                aria-label="products"
+                                dropdownAriaLabel="Select Product"
+                              //   className={classNames({ "p-invalid": isFormFieldValid("name") })}
+                              />
+
+                            </div>
+                          )
+                        }}
+                      />
+
+                      {grnItemColumn.map((i) => {
+                        return (
+                          <Column
+                            key={i.field}
+                            field={i.field}
+                            header={i.header}
+                            body={i.body}
+                            editor={i.field === 'receivedQuantity' || i.field === 'rejectedQuantity' || i.field === 'qcRejectedQuantity' || i.field === 'shortSupply' ? textEditor : null}
+                            onCellEditComplete={i.field === 'receivedQuantity' || i.field === 'rejectedQuantity' || i.field === 'qcRejectedQuantity' || i.field === 'shortSupply' ? onCellEditComplete : null}
+                          />
+                        )
+                      })}
+
+
+                      {grnProductsList?.length > 1 && (
+                        <Column
+                          header='Remove'
+                          className="reduce-column"
+                          body={(ele, { rowIndex }) => {
+                            return (
+                              <span className="">
+                                {/* {rowIndex === grnProductsList.length - 1 && (
+                                  <Button type="button" icon='pi pi-plus' onClick={addFields} />
+                                )} */}
+                                {grnProductsList.length > 1 && (
+                                  <Button
+                                    type="button"
+                                    icon='pi pi-times'
+                                    className="p-button-secondary"
+                                    onClick={() => {
+                                      removeFields(rowIndex);
+                                    }}
+                                  />
+                                )}
+                              </span>
+                            );
+                          }}
+                        />
+                      )}
+
+
+
+
+                    </DataTable>
+                  </div>
 
                 </div>
 

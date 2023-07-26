@@ -1505,7 +1505,7 @@ export const OrdersList = () => {
 
   const orderItemColumn = [
     { field: "price", header: 'Price', body: (rowData) => rowData.price || "-" },
-    { field: "AvailableQuantity", header: 'AvailableQuantity', body: (rowData) => rowData.availableInventory ||  rowData.availableInventory },
+    { field: "AvailableQuantity", header: 'AvailableQuantity', body: (rowData) => rowData.availableInventory || rowData.availableInventory },
     { field: "quantity", header: 'Quantity', body: (rowData) => rowData.quantity || "-" },
     { field: "rowTotal", header: 'Row Total', body: (rowData) => rowData.price * rowData.quantity || "-" },
   ]
@@ -1999,7 +1999,7 @@ export const OrdersList = () => {
                     </span>
                   </div>
 
-                </div> */}
+                </div>  */}
 
 
                 <div className="col-12 ">
@@ -2041,7 +2041,7 @@ export const OrdersList = () => {
                                 forceSelection
                                 suggestions={orderItemsSuggestions}
                                 completeMethod={searchOrderItems}
-                                field="name" 
+                                field="name"
                                 onChange={async (e) => {
                                   const selectedProduct = e.value;
                                   console.log("e.value", e.value);
@@ -2474,7 +2474,7 @@ export const OrdersList = () => {
                   </div>
                 )
               }}
-            /> */}
+            />  */}
 
             <Column
               field="products.name"
@@ -2543,6 +2543,11 @@ export const OrdersList = () => {
               field="gateway"
               header="Payment Method"
             />
+            <Column
+              field="discountAmount"
+              header="Discount"
+            />
+
             <Column
               field="gstNumber"
               header='GST Number'

@@ -883,15 +883,15 @@ export const RfqsList = () => {
     { field: "last_vendor", header: 'Last Vendor', body: (rowData) => rowData.last_vendor || "-" },
   ]
 
- 
+
 
   const footerGroup = (
     <ColumnGroup>
-        <Row>
-            <Column footer={`Total: ${totalTargetPrice}`} colSpan={3} footerStyle={{ textAlign: 'right' }}/>
-        </Row>
+      <Row>
+        <Column footer={`Total: ${totalTargetPrice}`} colSpan={3} footerStyle={{ textAlign: 'right' }} />
+      </Row>
     </ColumnGroup>
-);
+  );
 
   return (
     <>
@@ -1492,8 +1492,8 @@ export const RfqsList = () => {
 
                     />
                   </span>
-                </div>
-                <div className="col-12 mt-3">
+                </div> */}
+                {/* <div className="col-12 mt-3">
                   <h6>Select Products:</h6>
                 </div>
                 {itemList.map((ele, i) => (
@@ -1822,21 +1822,23 @@ export const RfqsList = () => {
                     />
 
                   </DataTable>
-                  {/* <div className="col-12">
-                    <div className="col-12 flex justify-content-end mt-5">
-
-                      <span className="p-float-label ">
-                        <InputNumber value={totalTargetPrice} disabled />
-                        <label htmlFor="productDiscount">
-                          Total Value:
-                        </label>
-                      </span>
-
-                    </div>
-
-                  </div> */}
 
                 </div>
+
+
+                {/* <div className="col-12">
+                  <div className="col-12 flex justify-content-end mt-5">
+
+                    <span className="p-float-label ">
+                      <InputNumber value={totalTargetPrice} disabled />
+                      <label htmlFor="productDiscount">
+                        Total Value:
+                      </label>
+                    </span>
+
+                  </div>
+
+                </div> */}
 
 
 
