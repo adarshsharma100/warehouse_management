@@ -328,19 +328,13 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               piDate: piDate || null,
               status: purchase_order_status.id,
               po_term: terms.id,
-              // warehouses: {
-              //   connect: {
-              //     id: from_party?.id
+              warehouse: {
+                connect: {
+                  id: from_party?.id
+                }
+              },
 
-              //   }
-              // },
-              // warehouse: {
-              //   connect: {
-              //     // id: from_party?.id
-              //     warehouseId: from_party?.id
-              //   }
-              // },
-              warehouseId: from_party?.id,
+            
               po_products: {
                 create: newProducts.map((ele, i) => ({
                   quantity: Number(ele.quantity),
@@ -384,7 +378,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                 }
               },
               onError: (error) => {
-                alert('Error , OnError')
+                
                 console.log('error: ', error);
 
               }
@@ -393,7 +387,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
           setPurchaseDialog(false)
           formik.resetForm()
         } catch (error) {
-          alert('UpdateError')
+          
           console.log("updation error , ", error)
         }
       } else {
@@ -448,17 +442,16 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               po_sentto: {
                 create: vendorEmailIds
               },
-              // warehouse: {
-              //   connect: {
-              //     // id: from_party?.id
-              //     warehouseId: from_party?.id
-              //   }
-              // },
-              warehouseId:from_party?.id,
+              warehouse: {
+                connect: {
+                  id: from_party?.id
+                }
+              },
+              // warehouseId: from_party?.id,
             },
             {
               onSuccess: async (data) => {
-                alert("Created")
+
                 console.log('data: ', data);
                 const productIds = itemList.map(data => data.products_product_id).filter(data => data)
 
@@ -487,7 +480,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                   }, []);
                   console.log('all_allPODetails: ', _allPODetails);
                   if (rfq_details?.length === _allPODetails.length) {
-                    // alert("Completed")
+                  
                     await updateRFQMutation(
                       {
                         id: data?.rfqId,
@@ -530,7 +523,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
 
               },
               onError: (error) => {
-                alert("Not created ")
+
                 console.log('error: ', error);
 
               }
@@ -649,6 +642,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     await formik.setValues({ ...formik.values, ...fields })
   }
 
+  console.log('formParty' ,formik.values.from_party)
 
   // console.log("filterProductOptions", filterProductOptions);
   // console.log("formik.value", formik.values);
@@ -989,14 +983,15 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                   dropdown
                   field="name"
                   onChange={async (e) => {
+                    console.log('formParty e: ', e);
                     let from_party = typeof e.value === "string" ? e.value : e.value
-                    startTransition(() => {
-                      setFromPartyQuery(from_party.name)
-                    })
+                    // startTransition(() => {
+                    //   setFromPartyQuery(from_party.name)
+                    // })
 
                     await formik.setValues({
                       ...formik.values,
-                      from_party,
+                      from_party: from_party,
                     })
                   }}
                   aria-label="FromParty Options"
