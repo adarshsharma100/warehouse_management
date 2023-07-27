@@ -43,6 +43,7 @@ const columns = [
   { field: "number", header: "Number" },
   { field: "length", header: "Length" },
   { field: "width", header: "Width" },
+  { field: "height", header: "Height" },
   { field: "loadingStrength", header: "Loading Strength" },
   { field: "reach", header: "Reach" },
   { field: "shelf_type.name", header: "Shelf Type" },
