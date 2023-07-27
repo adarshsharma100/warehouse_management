@@ -23,12 +23,16 @@ import { createSearchFunction, initialFilterRules, tsuccess } from "app/constant
 import updateShelf from "app/shelves/mutations/updateShelf";
 import { Toast } from "primereact/toast";
 import { FilterMatchMode } from "primereact/api";
+import { shelves_reach, shelves_loadingStrength } from "@prisma/client";
+import { Dropdown } from "primereact/dropdown";
+
 
 const initialShelf = {
   sellable: '',
   number: '',
   length: '',
   width: '',
+  height: '',
   loadingStrength: '',
   reach: '',
   area: '',
@@ -52,12 +56,14 @@ export const Area = () => {
     // where: undefined,
     // take: undefined
   })
-  const [{ shelves }] = useQuery(getShelves, {
+  const [{ shelves, }] = useQuery(getShelves, {
     orderBy: { id: "asc" },
     skip: undefined,
     where: undefined,
     take: undefined
   })
+
+
   const [createShelfMutation,] = useMutation(createShelf)
   const [updateShelfsMutation] = useMutation(updateShelf)
 
@@ -115,7 +121,7 @@ export const Area = () => {
     }),
 
     onSubmit: async (data) => {
-      const { number, length, width, loadingStrength, reach, area, shelfType, sellable } = data
+      const { number, length, width, loadingStrength, reach, area, shelfType, sellable, height, } = data
       const { id: areaRowId } = rowDataStore
       if (checkUpdate) {
         try {
@@ -124,7 +130,8 @@ export const Area = () => {
             number,
             length: Number(length),
             width: Number(width),
-            loadingStrength: Number(loadingStrength),
+            height: Number(height),
+            loadingStrength,
             reach,
             sellable: sellable?.value,
             shelfType: shelfType?.id
@@ -154,7 +161,8 @@ export const Area = () => {
             number,
             length: Number(length),
             width: Number(width),
-            loadingStrength: Number(loadingStrength),
+            height: Number(height),
+            loadingStrength,
             reach,
             area: areaId,
             shelfType: shelfType?.id
@@ -298,6 +306,24 @@ export const Area = () => {
   const areasTableHeader = renderHeader()
 
 
+  //  Add Dropdown in reach and loading strength 
+  const shelve_Reach = shelves_reach
+
+  const shelves_LoadingStrength = shelves_loadingStrength
+  const [selectedReach, setSelectedReach] = useState(null);
+  const [selectedLoadingStrength, setSelectedLoadingStrength] = useState(null);
+
+  const shelvesLoadingStrength = Object.entries(shelves_loadingStrength).map(([label, value]) => ({
+    label,
+    value,
+  }));
+
+  const shelveReach = Object.entries(shelves_reach).map(([label, value]) => ({
+    label,
+    value,
+  }));
+
+
   return (
     <>
       <Head>
@@ -329,9 +355,10 @@ export const Area = () => {
                 // { type: 'text', label: 'Sellable', field: 'sellable' },
                 { type: 'text', label: 'Number', field: 'number' },
                 { type: 'text', label: 'Length', field: 'length' },
+                { type: 'text', label: 'Height', field: 'height' },
                 { type: 'text', label: 'Width', field: 'width' },
-                { type: 'text', label: 'Loading Strength', field: 'loadingStrength' },
-                { type: 'text', label: 'Reach', field: 'reach' },
+                // { type: 'text', label: 'Loading Strength', field: 'loadingStrength' },
+                // { type: 'text', label: 'Reach', field: 'reach' },
               ].map((ele, i) => {
                 return (
                   <div key={i} className='field col-10 md:col-3 lg:col-3 mt-4'>
@@ -357,10 +384,38 @@ export const Area = () => {
               })
               }
 
-
-
             </div>
+
             <div className="flex">
+
+              <div className="field col-12 md:col-3 lg:col-3">
+                <Dropdown
+                  value={formik.values.loadingStrength}
+                  onChange={(e) => {
+                    formik.setFieldValue('loadingStrength', e.value); // Update loadingStrength field in Formik
+                  }}
+                  // value={selectedLoadingStrength}
+                  // onChange={(e) => setSelectedLoadingStrength(e.target.value)}
+                  options={shelvesLoadingStrength}
+                  optionLabel="value"
+                  placeholder="Select a Loading Strength"
+                />
+              </div>
+
+              <div className="field col-12 md:col-3 lg:col-3">
+                <Dropdown
+                  value={formik.values.reach}
+                  onChange={(e) => {
+                    formik.setFieldValue('reach', e.value); // Update loadingStrength field in Formik
+                  }}
+                  // value={selectedReach}
+                  // onChange={(e) => setSelectedReach(e.target.value)}
+                  options={shelveReach}
+                  optionLabel="value"
+                  placeholder="Select a Reach"
+
+                />
+              </div>
               <AutoComplete
                 className="field col-12 md:col-3 lg:col-3"
                 value={formik.values?.shelfType}
