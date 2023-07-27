@@ -57,6 +57,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
     userId
   } = props
 
+  console.log('poEditState: ', poEditState);
   const initialPurchaseState = {
     vendor_vendor_id: "",
     po_code: "",
@@ -327,11 +328,19 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               piDate: piDate || null,
               status: purchase_order_status.id,
               po_term: terms.id,
-              warehouses: {
-                connect: {
-                  id: from_party?.id
-                }
-              },
+              // warehouses: {
+              //   connect: {
+              //     id: from_party?.id
+
+              //   }
+              // },
+              // warehouse: {
+              //   connect: {
+              //     // id: from_party?.id
+              //     warehouseId: from_party?.id
+              //   }
+              // },
+              warehouseId: from_party?.id,
               po_products: {
                 create: newProducts.map((ele, i) => ({
                   quantity: Number(ele.quantity),
@@ -362,7 +371,6 @@ const CreateNewPo = React.forwardRef((props, ref) => {
             {
               onSuccess: async (data) => {
                 toast?.current.show(tsuccess("Updated", `${po_code} is updated successfully`))
-
                 if (data.status === 3) {
                   await updatePurchaseOrderMutation({
                     id: activeRow?.id,
@@ -375,11 +383,17 @@ const CreateNewPo = React.forwardRef((props, ref) => {
                   })
                 }
               },
+              onError: (error) => {
+                alert('Error , OnError')
+                console.log('error: ', error);
+
+              }
             }
           )
           setPurchaseDialog(false)
           formik.resetForm()
         } catch (error) {
+          alert('UpdateError')
           console.log("updation error , ", error)
         }
       } else {
@@ -434,14 +448,17 @@ const CreateNewPo = React.forwardRef((props, ref) => {
               po_sentto: {
                 create: vendorEmailIds
               },
-              warehouse: {
-                connect: {
-                  id: from_party?.id
-                }
-              }
+              // warehouse: {
+              //   connect: {
+              //     // id: from_party?.id
+              //     warehouseId: from_party?.id
+              //   }
+              // },
+              warehouseId:from_party?.id,
             },
             {
               onSuccess: async (data) => {
+                alert("Created")
                 console.log('data: ', data);
                 const productIds = itemList.map(data => data.products_product_id).filter(data => data)
 
@@ -513,6 +530,7 @@ const CreateNewPo = React.forwardRef((props, ref) => {
 
               },
               onError: (error) => {
+                alert("Not created ")
                 console.log('error: ', error);
 
               }
@@ -642,11 +660,11 @@ const CreateNewPo = React.forwardRef((props, ref) => {
   // PO ITEMS DATATABLE 
   const onCellEditComplete = (e) => {
     const { rowData, newValue, field, originalEvent: event } = e;
-    console.log('newValue: ', typeof newValue, );
+    console.log('newValue: ', typeof newValue,);
     if (['price_per_unit', 'quantity'].includes(field)) {
       if (newValue?.trim().length > 0) {
         const intValue = parseInt(newValue, 10);
-        
+
 
         rowData[field] = intValue
 
