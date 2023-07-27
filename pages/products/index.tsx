@@ -636,8 +636,6 @@ export const ProductsList = () => {
             connect: {
               id: product.id
             },
-
-
           },
           quantity
         }))
@@ -964,6 +962,57 @@ export const ProductsList = () => {
 
   const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={totalProductsCount} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
 
+
+
+  // KIT ITEMS DATATABLE 
+
+  const onCellEditComplete = (e) => {
+    const { rowData, newValue, field, originalEvent: event } = e;
+    console.log('newValue: ', newValue, rowData, field);
+    if (['quantity'].includes(field)) {
+      if (newValue?.trim().length > 0) {
+        rowData[field] = newValue
+
+        const updatedKitItems = formik.values.kitProducts.map((item, itemIndex) => {
+
+          if (item.id === rowData.id) {
+            return { ...item, [field]: newValue };
+          }
+          return item;
+        });
+
+        formik.setValues({
+          ...formik.values,
+          kitProducts: updatedKitItems,
+        });
+
+
+      } else {
+        event.preventDefault();
+      }
+    }
+  };
+
+  const textEditor = (options) => {
+
+    return (
+      <InputText
+        type="text"
+        value={options.value}
+        onChange={(e) => options.editorCallback(e.target.value)}
+
+      />
+    );
+  };
+
+
+  const kitItemColumn = [
+    { field: "quantity", header: 'Quantity', body: (rowData) => rowData.quantity || "-" },
+  ]
+
+
+
+
   return (
     <div className="grid w-full">
       <Toast ref={toast} />
@@ -1231,7 +1280,7 @@ export const ProductsList = () => {
                 </div>
                 {formik.values.type === 2 && <div key="kit_products" className="field col-12">
                   <div className="card surface-ground">
-                    <div className="grid">
+                    {/* <div className="grid">
                       <div className="col-12">
                         <span className="text-lg">Kit Products</span>
                       </div>
@@ -1291,12 +1340,13 @@ export const ProductsList = () => {
                                 value={quantity}
                                 disabled={!productEditState}
                                 onChange={async (e) => {
+                                  console.log('e:value ',typeof e.value);
                                   await formik.setFieldValue("kitProducts", formik.values.kitProducts.map((kitProduct, i) => {
                                     if (i !== index)
                                       return kitProduct
                                     return {
                                       ...kitProduct,
-                                      quantity: e.value,
+                                      quantity: Number(e.value),
                                     }
                                   }))
                                 }}
@@ -1329,7 +1379,107 @@ export const ProductsList = () => {
                           </div>}
                         </>
                       ))}
-                    </div>
+                    </div> */}
+                    <DataTable
+                      value={formik.values.kitProducts}
+                      showGridlines
+                      stripedRows
+                      editMode="cell"
+                    >
+                      <Column
+                        header='ID'
+                        className="reduce-column"
+                        body={(ele, { rowIndex }) => (
+                          <div key={rowIndex} className=" ">
+                            <span className="bg-primary border-circle w-2rem h-2rem flex align-items-center justify-content-center">{rowIndex + 1}</span>
+                          </div>
+                        )}
+                      />
+
+                      <Column
+                        header="Kit Products"
+                        body={(ele, { rowIndex }) => {
+                          return (
+                            <div key={`kit-product-${rowIndex}`} className="">
+                              <AutoComplete
+                                id={`kitProducts[${rowIndex}]?.product`}
+                                name={`kitProducts[${rowIndex}]?.product`}
+                                suggestions={kitSuggestions}
+                                completeMethod={kitSearchCategory}
+                                disabled={!productEditState}
+                                dropdown
+                                forceSelection
+                                field="name"
+                                value={ele.product}
+
+                                onChange={async (e) => {
+                                  const addKitProducts = formik.values.kitProducts.map((kitProduct, i) => {
+                                    const _filteredKitProductId = [...filteredKitProductId, e.value?.id];
+                                    setFilteredKitProductId(_filteredKitProductId);
+
+                                    if (i !== rowIndex)
+                                      return kitProduct
+                                    return {
+                                      ...kitProduct,
+                                      product: e.value,
+                                    }
+                                  })
+                                  const _filteredAddKitProducts = addKitProducts.filter((each) => each?.product?.name || each?.product);
+                                  await formik.setFieldValue("kitProducts", [..._filteredAddKitProducts, {
+                                    "product": undefined,
+                                    "quantity": 1
+                                  }])
+                                }}
+                              />
+
+                              {
+                                formik.errors.kitProducts?.[rowIndex]?.product &&
+                                <small className="p-error">{formik.errors.kitProducts?.[rowIndex]?.product}</small>
+                              }
+                            </div>
+                          )
+                        }}
+                      />
+                      {kitItemColumn.map((i) => {
+                        return (
+                          <Column
+                            key={i.field}
+                            field={i.field}
+                            header={i.header}
+                            body={i.body}
+                            editor={i.field === 'quantity' ? textEditor : null}
+                            onCellEditComplete={i.field === 'quantity' ? onCellEditComplete : null}
+
+                          />
+                        )
+                      })}
+
+                      <Column
+                        header='Remove'
+                        className="reduce-column"
+                        body={(ele, { rowIndex }) => {
+                          return (
+                            <>
+                              {productEditState && <div className="" style={{ height: "fit-content" }}>
+                                <Button
+                                  type="button"
+                                  className="p-button-secondary"
+                                  icon="pi pi-times"
+                                  disabled={formik.values.kitProducts.length === 1 ? true : false}
+                                  onClick={async (e) => {
+                                    e.preventDefault()
+                                    await formik.setFieldValue("kitProducts", formik.values.kitProducts.filter((data, i) => rowIndex !== i))
+                                  }}
+                                />
+
+                              </div>}
+                            </>
+                          )
+                        }}
+
+                      />
+
+                    </DataTable>
                   </div>
                 </div>}
 
