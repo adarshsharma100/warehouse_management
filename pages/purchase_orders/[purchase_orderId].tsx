@@ -494,7 +494,7 @@ export const Purchase_order = () => {
   console.log('trackingIdSuggestions: ', trackingIdSuggestions);
 
   const [tracking, setTracking] = useState<any>(null)
-  console.log('tracking: ', tracking.id);
+  // console.log('tracking: ', tracking.id);
   const searchTracking = createSearchFunction(vendor_shipments, setTracking)
 
 
@@ -657,16 +657,14 @@ export const Purchase_order = () => {
                       suggestions={trackingIdSuggestions.map((ele) => ele.trackingId)}
                       completeMethod={searchTracking}
                       onChange={(e) => {
-                        if (checked) {
-                          const selectedTracking = vendor_shipments.find(
-                            (shipment) => shipment.trackingId === e.value
-                          );
-                          setTracking(selectedTracking);
-                          setShipmentValue(e.value);
-                          formik.setFieldValue('trackingId', e.value);
-                        } else {
-                          formik.handleChange(e);
-                        }
+                        const selectedTracking = vendor_shipments.find(
+                          (shipment) => shipment.trackingId === e.value
+                        );
+                        setTracking(selectedTracking);
+                        setShipmentValue(e.value);
+                        formik.setFieldValue('trackingId', e.value);
+                        formik.handleChange(e);
+
                       }}
                       dropdown
                     />
