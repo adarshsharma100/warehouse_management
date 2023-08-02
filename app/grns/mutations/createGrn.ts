@@ -7,12 +7,13 @@ const CreateGrn = z.object({
   grnNumber: z.string(),
   invoiceNo: z.string(),
   invoiceDate: z.date(),
-  trackingId: z.string(),
-  eta: z.date(),
+  // trackingId: z.string(),
+  // eta: z.date().optional(),
   createdBy: z.number(),
   status: z.unknown(),
   purchaseOrder: z.unknown(),
   grn_products: z.unknown(),
+  vendorShipmentId: z.number(),
   // po_products:z.unknown(),
 })
 

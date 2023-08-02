@@ -26,6 +26,10 @@ import { Calendar } from "primereact/calendar"
 import { Toast } from "primereact/toast"
 import { InputNumber } from "primereact/inputnumber"
 import { Checkbox } from "primereact/checkbox"
+import VendorShipment from "./components/VendorShipment"
+import { InputSwitch } from "primereact/inputswitch"
+import getVendor_shipments from "app/vendor_shipments/queries/getVendor_shipments"
+import { Dialog } from "primereact/dialog"
 
 
 export const Purchase_order = () => {
@@ -142,6 +146,7 @@ export const Purchase_order = () => {
     // user: { name: approvedBy } = { name: "-" }
   } = purchase_order
 
+  console.log('poNumber: ', poNumber);
   let approvedBy = "-";
   if (purchase_order.user) {
     const { name, } = purchase_order?.user
@@ -235,15 +240,11 @@ export const Purchase_order = () => {
     validationSchema: Yup.object().shape({
       invoiceNo: Yup.string().required("*Required"),
       invoiceDate: Yup.date().required('*Required'),
-      eta: Yup.date().required('*Required'),
+      // eta: Yup.date().required('*Required'),
     }),
     onSubmit: async (data) => {
       console.log('data: ', data);
-
-
       const { grnNumber, invoiceNo, invoiceDate, status, createdBy, trackingId, eta }: any = data
-
-
 
       if (updateGrns) {
         try {
@@ -252,8 +253,8 @@ export const Purchase_order = () => {
             grnNumber,
             invoiceNo,
             invoiceDate,
-            trackingId,
-            eta,
+            // trackingId,
+            // eta,
             status: status?.id,
             grn_products: {
               updateMany: grnProductsList.map(({ grnProductId, receivedQuantity, rejectedQuantity, poProduct, }) => ({
@@ -292,10 +293,11 @@ export const Purchase_order = () => {
             grnNumber,
             invoiceNo,
             invoiceDate,
-            trackingId,
+            // trackingId,
             createdBy: userId,
-            eta,
+            // eta,
             status: status?.id,
+            vendorShipmentId: tracking?.id,
             purchaseOrder: purchase_orderId,
             grn_products: {
               create: grnProductsList.map(({
@@ -328,15 +330,14 @@ export const Purchase_order = () => {
         }
 
       }
-
-
-
     }
   })
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
+  console.log('formik.error', formik.errors)
+
 
   const renderGrn = (grn) => {
     const { id,
@@ -473,6 +474,31 @@ export const Purchase_order = () => {
 
 
 
+
+  const [visible, setVisible] = useState(false);
+  const [activeDialog, setActiveDialog] = useState(false)
+  const [checked, setChecked] = useState(false);
+  console.log('activeDialog: ', activeDialog);
+  const [{ vendor_shipments }] = useQuery(getVendor_shipments, {
+    where: undefined,
+    orderBy: undefined,
+    skip: undefined,
+    take: undefined
+  })
+  console.log('vendor_shipments: ', vendor_shipments);
+
+
+  const [shipmentValue, setShipmentValue] = useState('');
+  // console.log('shipmentValue: ', shipmentValue);
+  const trackingIdSuggestions = vendor_shipments.map((shipment) => shipment);
+  console.log('trackingIdSuggestions: ', trackingIdSuggestions);
+
+  const [tracking, setTracking] = useState<any>(null)
+  console.log('tracking: ', tracking.id);
+  const searchTracking = createSearchFunction(vendor_shipments, setTracking)
+
+
+
   return (
     <>
       <Head>
@@ -489,7 +515,7 @@ export const Purchase_order = () => {
               {[
                 { field: "poNumber", value: poNumber },
                 { field: "Description", value: description },
-                { field: "Expected Delivery", value: expectedDod },
+                // { field: "Expected Delivery", value: expectedDod },
                 { field: "Expiry Date", value: expiryDate },
                 { field: "Agreement", value: agreement || `-` },
                 { field: "Term", value: poTerm || `-` },
@@ -553,13 +579,20 @@ export const Purchase_order = () => {
             </div>
           </section>
         </div>
+
+        {/* vendorShipment component  */}
+        <VendorShipment />
+
         <div className="flex justify-content-end px-3 mt-4 ">
           <Button
             label="Create GRN"
             icon='pi pi-plus'
             onClick={async () => {
               setGrnProducts(po_products)
-              setActive(!active);
+              // setActive(!active);
+              setActiveDialog(true)
+              setVisible(true)
+
               setUpdateGrns(false)
               await formik.setValues({
                 ...formik.values, status: {
@@ -573,6 +606,101 @@ export const Purchase_order = () => {
         </div>
 
         <div>
+          {activeDialog &&
+
+            <div>
+              <Dialog header="Create GRN" visible={visible} style={{ width: '50vw' }} onHide={() => { setVisible(false); setActiveDialog(false); setShipmentValue('') }}>
+                {/* <div className="mt-4 flex gap-2 align-items-center justify-content-center">
+                  <InputSwitch checked={checked} onChange={(e) => {
+                    setChecked(e.value);
+                    if (!e.value) {
+                      setShipmentValue('');
+                    }
+                  }} />
+                  <div className="">
+                    {checked ? <p>With Shipment Data</p> : <p>Without Shipment Data</p>}
+                  </div>
+                </div> */}
+                <div>
+                  {/* {checked &&
+                    <div className="p-float-label mt-5">
+                      <AutoComplete
+                        value={shipmentValue}
+                        suggestions={trackingIdSuggestions.map((ele) => ele.trackingId)}
+                        completeMethod={searchTracking}
+                        onChange={(e) => {
+                          if (checked) {
+                            const selectedTracking = vendor_shipments.find(
+                              (shipment) => shipment.trackingId === e.value
+                            );
+                            setTracking(selectedTracking);
+                            setShipmentValue(e.value);
+                            formik.setFieldValue('trackingId', e.value);
+                          } else {
+                            formik.handleChange(e);
+                          }
+                        }}
+                        dropdown
+                      />
+                      <label
+                        htmlFor="purchase_order_status"
+                        className={classNames({ "p-error": isFormFieldValid("purchase_order_status") })}
+                      >
+                        Tracking ID
+                      </label>
+                    </div>
+                  } */}
+
+                  <div className="p-float-label mt-5">
+                    <AutoComplete
+                      value={shipmentValue}
+                      suggestions={trackingIdSuggestions.map((ele) => ele.trackingId)}
+                      completeMethod={searchTracking}
+                      onChange={(e) => {
+                        if (checked) {
+                          const selectedTracking = vendor_shipments.find(
+                            (shipment) => shipment.trackingId === e.value
+                          );
+                          setTracking(selectedTracking);
+                          setShipmentValue(e.value);
+                          formik.setFieldValue('trackingId', e.value);
+                        } else {
+                          formik.handleChange(e);
+                        }
+                      }}
+                      dropdown
+                    />
+                    <label
+                      htmlFor="purchase_order_status"
+                      className={classNames({ "p-error": isFormFieldValid("purchase_order_status") })}
+                    >
+                      Tracking ID
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <Button
+                    className="mt-5"
+                    label="Submit"
+                    onClick={() => {
+                      setActive(true);
+                      setVisible(false);
+                      if (!checked) {
+                        formik.setValues({
+                          ...formik.values,
+                          "trackingId": formik.values['trackingId']
+                        })
+                        // formik.setValues('trackingId', formik.values['trackingId']); // Update formik state with the current value of trackingId
+                      }
+                    }}
+
+                  />
+                </div>
+              </Dialog>
+            </div>
+
+          }
+
           {active &&
             <div className="m-3 p-4 card">
               <div>
@@ -580,6 +708,14 @@ export const Purchase_order = () => {
               </div>
 
               <form className="p-fluid" onSubmit={formik.handleSubmit}>
+                <div className="flex justify-content-center">
+                  <div className="flex gap-2">
+                    <div>Status:</div>
+                    <div>{formik.values.status.name}</div>
+                  </div>
+                </div>
+
+
 
                 <div className="formgrid grid ">
                   <div className="field col-12 lg:col-3 mt-5">
@@ -650,7 +786,9 @@ export const Purchase_order = () => {
                     )
                   })
                   }
-                  <div className="field col-12 lg:col-3 mt-2">
+
+
+                  {/* <div className="field col-12 lg:col-3 mt-2">
                     <div className="p-float-label mt-4">
                       <AutoComplete
                         value={formik?.values?.status}
@@ -670,9 +808,11 @@ export const Purchase_order = () => {
                         GRN Status
                       </label>
                     </div>
-                    {/* {getFormErrorMessage("")} */}
-                  </div>
-                  <div className="field col-12 lg:col-3 mt-2">
+                   
+                  </div> */}
+
+
+                  {/* <div className="field col-12 lg:col-3 mt-2">
                     <div className="p-float-label">
                       <Calendar
                         minDate={new Date()}
@@ -690,16 +830,20 @@ export const Purchase_order = () => {
                       </label>
                     </div>
                     {getFormErrorMessage("eta")}
-                  </div>
-                  <div className="field col-12 lg:col-3 mt-2">
+                  </div> */}
+
+
+                  <div className="field col-12 lg:col-3 mt-5">
                     <div className="p-float-label">
                       <Calendar
-                        minDate={new Date()}
+                        // minDate={new Date()}
+                        maxDate={new Date()}
                         id="invoiceDate"
                         value={formik?.values?.invoiceDate}
                         onChange={formik.handleChange}
                         className={classNames({ "p-invalid": isFormFieldValid("invoiceDate") })}
-                        dateFormat={calenderDateFormat()}
+                        // dateFormat={calenderDateFormat()}
+                        dateFormat="dd/mm/yy"
                       />
                       <label
                         htmlFor="invoiceDate"

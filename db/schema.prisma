@@ -125,22 +125,20 @@ model emails {
 }
 
 model grn {
-  id               Int              @id @default(autoincrement())
-  grnNumber        String           @unique(map: "grnNumber_UNIQUE") @db.VarChar(45)
-  invoiceNo        String           @unique(map: "invoiceNo_UNIQUE") @db.VarChar(45)
-  invoiceDate      DateTime         @db.DateTime(0)
-  trackingId       String?          @db.VarChar(200)
-  eta              DateTime?        @db.DateTime(0)
-  createdAt        DateTime         @default(now()) @db.DateTime(0)
-  updatedAt        DateTime         @default(now()) @db.DateTime(0)
+  id               Int               @id @default(autoincrement())
+  grnNumber        String            @unique(map: "grnNumber_UNIQUE") @db.VarChar(45)
+  invoiceNo        String            @unique(map: "invoiceNo_UNIQUE") @db.VarChar(45)
+  invoiceDate      DateTime          @db.DateTime(0)
+  createdAt        DateTime          @default(now()) @db.DateTime(0)
+  updatedAt        DateTime          @default(now()) @db.DateTime(0)
   status           Int
   createdBy        Int
   purchaseOrder    Int
-  vendorShipmentId Int
-  grn_status       grn_status       @relation(fields: [status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_grn_status1")
-  purchase_orders  purchase_orders  @relation(fields: [purchaseOrder], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_purchase_orders1")
-  user             user             @relation(fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_user1")
-  vendor_shipments vendor_shipments @relation(fields: [vendorShipmentId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_vendor_shipments1")
+  vendorShipmentId Int?
+  grn_status       grn_status        @relation(fields: [status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_grn_status1")
+  purchase_orders  purchase_orders   @relation(fields: [purchaseOrder], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_purchase_orders1")
+  user             user              @relation(fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_user1")
+  vendor_shipments vendor_shipments? @relation(fields: [vendorShipmentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_vendor_shipments1")
   grn_products     grn_products[]
   putaway          putaway[]
 
@@ -845,15 +843,15 @@ model putaway_products {
 }
 
 model vendor_shipments {
-  Id               Int             @id @default(autoincrement())
-  trackingId       String          @db.VarChar(100)
-  courier          String          @db.VarChar(45)
-  shipmentId       String          @db.VarChar(100)
-  purchaseOrdersId Int
-  grn              grn[]
-  purchase_orders  purchase_orders @relation(fields: [purchaseOrdersId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_shipments_purchase_orders1")
+  id              Int             @id @default(autoincrement())
+  trackingId      String          @db.VarChar(100)
+  courier         String          @db.VarChar(45)
+  shipmentId      String          @db.VarChar(100)
+  purchaseOrderId Int
+  grn             grn[]
+  purchase_orders purchase_orders @relation(fields: [purchaseOrderId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_shipments_purchase_orders1")
 
-  @@index([purchaseOrdersId], map: "fk_vendor_shipments_purchase_orders1_idx")
+  @@index([purchaseOrderId], map: "fk_vendor_shipments_purchase_orders1_idx")
 }
 
 enum contact_number_type {
