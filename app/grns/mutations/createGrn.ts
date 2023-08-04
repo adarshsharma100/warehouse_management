@@ -13,7 +13,8 @@ const CreateGrn = z.object({
   status: z.unknown(),
   purchaseOrder: z.unknown(),
   grn_products: z.unknown(),
-  vendorShipmentId: z.number(),
+  vendorShipmentId: z.number().optional(),
+  grnRemarks: z.string().optional(),
   // po_products:z.unknown(),
 })
 
