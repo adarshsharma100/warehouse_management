@@ -108,7 +108,17 @@ export const Purchase_order = () => {
     { type: 'text', label: "QC RejectedQuantity", field: 'qcRejectedQuantity' },
     { type: 'text', label: "QC RejectionRemarks", field: 'qcRejectionRemarks' },
     { type: 'text', label: "Final Quantity", field: 'finalQuantity' },
-    { type: 'text', label: "Short Supply", body: (rowdata) => totalshortSupplyTillDate(po_products, rowdata?.poProduct) },
+    // { type: 'text', label: "Short Supply", body: (rowdata) => totalshortSupplyTillDate(po_products, rowdata?.poProduct) },
+    {
+      type: 'text',
+      label: "Short Supply",
+      body: (rowData) => {
+        const receivedQuantity = rowData.receivedQuantity;
+        const poProductQuantity = rowData.po_products.quantity;
+        return poProductQuantity - receivedQuantity;
+      },
+    },
+    
     { type: 'text', label: "Price", field: 'po_products.price' },
     // { type: 'text', label: "Po Product", field: 'poProduct' },
     // { type: 'text', label: "Grns", field: 'grn' },
@@ -196,7 +206,6 @@ export const Purchase_order = () => {
   }
   const getPoProductQty = (poProducts, poId) => poProducts.find(ele => ele.id === poId)?.quantity
 
-
   const getReceviedGrnProductQty = (poId) => {
     const qty = grn.reduce((acc, curr) => {
       const count = curr.grn_products.find(prod => prod.poProduct === poId)?.receivedQuantity;
@@ -205,11 +214,13 @@ export const Purchase_order = () => {
     return qty
   }
 
-
   const totalshortSupplyTillDate = (poProducts, poId) => {
-    console.log('supply', getPoProductQty(poProducts, poId) - getReceviedGrnProductQty(poId))
+    console.log('supply ++', getPoProductQty(poProducts, poId))
+    console.log('supply ++ receved', getReceviedGrnProductQty(poId))
+
     return getPoProductQty(poProducts, poId) - getReceviedGrnProductQty(poId)
   }
+
 
   const onColumnToggle = (event) => {
     let productsColumn = event.value
@@ -425,7 +436,7 @@ export const Purchase_order = () => {
       reduce((acc, { po_products: { quantity, price } }) => acc + (quantity * price), 0)
 
     return <>
-      <div className="flex flex-column justify-content-end">
+      <div className="flex flex-column justify-content-end mt-2">
         <Button
           tooltip="Edit"
           tooltipOptions={{ position: "top" }}
@@ -525,7 +536,7 @@ export const Purchase_order = () => {
       ['receivedQuantity', 'grnRejectedQuantity', 'qcRejectedQuantity', 'grnRejectionRemarks', 'qcRejectionRemarks',].includes(field)
     ) {
       if (newValue?.trim().length > 0) {
-        if (field === 'grnRejectedQuantity' || field === 'qcRejectedQuantity') {
+        if (field === 'grnRejectedQuantity' || field === 'qcRejectedQuantity' || field === 'receivedQuantity') {
           const intValue = parseInt(newValue, 10);
           rowData[field] = intValue;
         } else {
@@ -563,14 +574,16 @@ export const Purchase_order = () => {
   };
 
   const grnItemColumn = [
+    // { field: "shortSupply", header: 'Short Supply', body: (rowData) => rowData.po_products.quantity - rowData.receivedQuantity || "-" },
     { field: "receivedQuantity", header: 'Received Quantity', body: (rowData) => rowData.receivedQuantity || "-" },
     { field: "grnRejectedQuantity", header: 'GRN Rejected Quantity', body: (rowData) => rowData.grnRejectedQuantity || "-" },
     { field: "grnRejectionRemarks", header: 'GRN Rejection Remarks', body: (rowData) => rowData.grnRejectionRemarks || "-" },
     { field: "qcRejectedQuantity", header: 'QC Rejected Quantity', body: (rowData) => rowData.qcRejectedQuantity || "-" },
     { field: "qcRejectionRemarks", header: 'QC Rejection Remarks', body: (rowData) => rowData.qcRejectionRemarks || "-" },
+    { field: "finalQuantity", header: 'Final Quantity', body: (rowData) => rowData.receivedQuantity - rowData.grnRejectedQuantity - rowData.qcRejectedQuantity || "-" },
   ]
 
-
+  // rowData.po_products.quantity
   const [visible, setVisible] = useState(false);
   const [activeDialog, setActiveDialog] = useState(false)
   const [checked, setChecked] = useState(false);
@@ -701,7 +714,7 @@ export const Purchase_order = () => {
         <Toast ref={toast} />
         <h1>{poNumber}</h1>
 
-        <p>GRN Remark: {displayGrnRemark}</p>
+
         <div className="lg:flex m-3 p-1 card">
           <section className="lg:w-3 p-3 m-2 border-1 border-round border-primary">
             <h3 className="text-center">Details</h3>
@@ -1348,7 +1361,7 @@ export const Purchase_order = () => {
                 <div className="flex justify-content-between gap-5 mt-4">
                   {selectAllChecked ? "" : <Button type="submit" onClick={() => qcHandleSubmit(value)} label="Submit for QC" />}
                   <Button type="submit"
-                    label={selectAllChecked ? "QC Completed" : "SUBMIT"}
+                    label={selectAllChecked ? "Mark as QC Completed" : "SUBMIT"}
                     onClick={() => qcHandleSubmit(value)}
                   />
 
@@ -1379,28 +1392,38 @@ export const Purchase_order = () => {
               console.log('shipmentId: ++', shipmentId);
               const headerText = `${grn.grnNumber} -  Shipment-${shipmentId}`;
 
-              // header={grn.grnNumber}
+
+              const shouldShowButton = grn.grn_status.id === 5 || grn.grn_status.name === 'QC_Complete';
+              console.log('shouldShowButton: ', shouldShowButton);
+
+              const accordionHeader = (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <div>{grn.grnNumber}</div>
+                  <div>Shipment-{shipmentId}</div>
+                  <div className="flex gap-2">
+                    <div>
+                      {shouldShowButton && (
+                        <div className="flex justify-content-end">
+                          <Button icon="pi pi-plus" label="Create PutAway" />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <Button label="A" />
+                    </div>
+                  </div>
+                </div >
+              );
               return (
                 <AccordionTab
                   header={headerText}
-                  pt={{
-                    headertitle: {
-                      className: "w-full"
-                    }
-                  }}
-                  header={
-                    <div
-                      className="flex justify-content-between w-full"
-                      style={{ justifyContent: "between", display:'flex' }}
-                    >
-                      <span>{grn.grnNumber}</span>
-                      <span className="vertical-align-middle">Shipment-${shipmentId}</span>
-                      <Button label="Submit" />
-                    </div>
-                  }
-
                   key={index}
                 >
+                  {shouldShowButton && (
+                    <div className="flex justify-content-end">
+                      <Button icon="pi pi-plus" label="Create PutAway" />
+                    </div>
+                  )}
                   {renderGrn(grn)}
                   <DataTable
                     editMode="cell"

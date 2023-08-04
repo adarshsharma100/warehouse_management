@@ -1,5 +1,6 @@
 import { useParam } from '@blitzjs/next';
 import { useMutation, useQuery } from '@blitzjs/rpc';
+import { tError, tsuccess } from 'app/constants';
 import getPurchase_order from 'app/purchase_orders/queries/getPurchase_order';
 import createVendor_shipment from 'app/vendor_shipments/mutations/createVendor_shipment';
 import getVendor_shipments from 'app/vendor_shipments/queries/getVendor_shipments';
@@ -9,9 +10,11 @@ import { Button } from 'primereact/button';
 import { Column } from 'primereact/column';
 import { DataTable } from 'primereact/datatable';
 import { InputText } from 'primereact/inputtext';
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 
 function VendorShipment() {
+
+  const toast = useRef(null)
     const vendorShipmentDetails = {
         trackingId: "",
         shipmentId: "",
@@ -54,12 +57,12 @@ function VendorShipment() {
                         }
                     }, {
                         onSuccess: (data) => {
-                            alert("Created")
+                            toast?.current.show(tsuccess("Created Shipment"))
                             setActiveVendor(!activeVendor)
                             console.log('data: ', data);
                         },
                         onError: (error) => {
-                            alert('Error:')
+                            toast?.current.show(tError("Error", ))
                             console.log('error: ', error);
                         }
                     }
@@ -196,7 +199,7 @@ function VendorShipment() {
                 >
                     <Column
                         header='Sl No.'
-                        style={{width:"70px"}}
+                        style={{ width: "70px" }}
                         body={(ele, { rowIndex }) => (
                             <div key={rowIndex} className=" ">
                                 <span className="bg-primary border-circle w-2rem h-2rem flex align-items-center justify-content-center">{rowIndex + 1}</span>
