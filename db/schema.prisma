@@ -96,7 +96,6 @@ model customers {
   shopifyId   String?   @db.VarChar(45)
   companyName String?   @db.VarChar(50)
   display     Int?      @default(0) @db.TinyInt
-  display     Int?      @default(0) @db.TinyInt
   addresses   addresses @relation(fields: [addressesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_customers_addresses1")
   orders      orders[]
 
@@ -110,7 +109,6 @@ model dimensions {
   height   Float?     @db.Float
   weight   Float?     @db.Float
   packages packages[]
-  products products[]
   products products[]
   shipment shipment?
 }
@@ -252,17 +250,11 @@ model jobs {
 model kit_products {
   id                                           Int      @id @default(autoincrement())
   productId                                    Int
-  productId                                    Int
   quantity                                     Int
   kitProductId                                 Int
   products_kit_products_productIdToproducts    products @relation("kit_products_productIdToproducts", fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products1")
   products_kit_products_kitProductIdToproducts products @relation("kit_products_kitProductIdToproducts", fields: [kitProductId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products2")
-  kitProductId                                 Int
-  products_kit_products_productIdToproducts    products @relation("kit_products_productIdToproducts", fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products1")
-  products_kit_products_kitProductIdToproducts products @relation("kit_products_kitProductIdToproducts", fields: [kitProductId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products2")
 
-  @@index([productId], map: "fk_kit_products_products1_idx")
-  @@index([kitProductId], map: "fk_kit_products_products2_idx")
   @@index([productId], map: "fk_kit_products_products1_idx")
   @@index([kitProductId], map: "fk_kit_products_products2_idx")
 }
@@ -401,7 +393,6 @@ model po_terms {
   name            String?           @db.VarChar(45)
   description     String?           @db.LongText
   orders          orders[]
-  orders          orders[]
   purchase_orders purchase_orders[]
 }
 
@@ -459,26 +450,20 @@ model products {
   updatedAT                                        DateTime?            @default(now()) @db.DateTime(0)
   customDuty                                       String?              @db.VarChar(45)
   gstTaxTypeCode                                   Int?
-  gstTaxTypeCode                                   Int?
   taxCalcType                                      String?              @db.VarChar(45)
   status                                           products_status      @default(Active)
   category                                         Int?
   brand                                            Int?
   type                                             Int
   dimensionsId                                     Int
-  dimensionsId                                     Int
   inventory_products                               inventory_products[]
-  kit_products_kit_products_productIdToproducts    kit_products[]       @relation("kit_products_productIdToproducts")
-  kit_products_kit_products_kitProductIdToproducts kit_products[]       @relation("kit_products_kitProductIdToproducts")
   kit_products_kit_products_productIdToproducts    kit_products[]       @relation("kit_products_productIdToproducts")
   kit_products_kit_products_kitProductIdToproducts kit_products[]       @relation("kit_products_kitProductIdToproducts")
   order_items                                      order_items[]
   product_prices                                   product_prices?
-  product_prices                                   product_prices?
   product_tags                                     product_tags[]
   product_brand                                    product_brand?       @relation(fields: [brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_brands2")
   product_categories                               product_categories?  @relation(fields: [category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_category")
-  dimensions                                       dimensions           @relation(fields: [dimensionsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_dimensions1")
   dimensions                                       dimensions           @relation(fields: [dimensionsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_dimensions1")
   product_types                                    product_types        @relation(fields: [type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_product_types1")
   putaway_products                                 putaway_products[]
@@ -490,7 +475,6 @@ model products {
   @@index([category], map: "fk_products_category_idx")
   @@index([dimensionsId], map: "fk_products_dimensions1_idx")
   @@index([type], map: "fk_products_product_types1_idx")
-  @@index([dimensionsId], map: "fk_products_dimensions1_idx")
 }
 
 model purchase_orders {
@@ -543,10 +527,10 @@ model putaway {
   updatedAt        DateTime?          @default(now()) @db.DateTime(0)
   quantity         Int?
   pendingQuantity  Int?
-  grnId            Int
+  grnId            Int?
   createdBy        Int
   putawaytypeId    Int
-  grn              grn                @relation(fields: [grnId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_grn1")
+  grn              grn?               @relation(fields: [grnId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_grn1")
   putaway_types    putaway_types      @relation(fields: [putawaytypeId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_putaway_types1")
   user             user               @relation(fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_user1")
   putaway_products putaway_products[]
@@ -793,7 +777,6 @@ model user {
   jobs              jobs[]
   purchase_orders   purchase_orders[]
   putaway           putaway[]
-  putaway           putaway[]
   session           session[]
   token             token[]
   user_roles        user_roles[]
@@ -932,9 +915,4 @@ enum vendors_status {
 enum products_status {
   Active
   Inactive
-}
-
-enum putaway_status {
-  Completed
-  Pending
 }

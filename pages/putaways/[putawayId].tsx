@@ -15,6 +15,7 @@ import { Button } from "primereact/button";
 import { TabPanel, TabView } from "primereact/tabview";
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
+import { Checkbox } from "primereact/checkbox";
 
 const putawayData = [
   {
@@ -52,12 +53,39 @@ export const Putaway = () => {
     />
   ));
 
-  const [isChecked, setIsChecked] = useState(false);
+  const [selectPutawayProducts, setSelectPutawayProducts] = useState([])
+  console.log('selectPutawayProducts: ', selectPutawayProducts);
+  const handleCheckboxChange = (e, rowData) => {
+    const selectedRow = rowData; // You can modify this based on your data structure
+    const selectedIndex = selectPutawayProducts.findIndex(
+      (row) => row === selectedRow
+    );
 
-  const handleCheckboxChange = () => {
-    setIsChecked(!isChecked);
+    let newSelectedRows = [];
+
+    if (selectedIndex === -1) {
+      // If the row is not already selected, add it to the selection
+      newSelectedRows = [...selectPutawayProducts, selectedRow];
+    } else {
+      // If the row is already selected, remove it from the selection
+      newSelectedRows = selectPutawayProducts.filter(
+        (row) => row !== selectedRow
+      );
+    }
+
+    setSelectPutawayProducts(newSelectedRows);
   };
 
+  // Function to render the checkbox for each row
+  const renderCheckbox = (rowData) => {
+    const isChecked = selectPutawayProducts.includes(rowData);
+    return (
+      <Checkbox
+        onChange={(e) => handleCheckboxChange(e, rowData)} // Call handleCheckboxChange here
+        checked={isChecked}
+      />
+    );
+  };
 
   return (
     <div>
@@ -106,17 +134,18 @@ export const Putaway = () => {
           showGridlines
           stripedRows
           className="text-s datatable-responsive"
+          selectionMode='multiple'
+          selection={selectPutawayProducts}
+          onSelectionChange={(e) => setSelectPutawayProducts(e.value)}
+          // onSelectionChange={(e) => handleCheckboxChange(e.value)}
+
         >
           <Column
             selectionMode="multiple"
             headerStyle={{ width: '3rem' }}
-          >
-            <input
-              type="checkbox"
-              checked={isChecked}
-              onChange={handleCheckboxChange}
-            />
-          </Column>
+            body={renderCheckbox}
+          />
+
           {columns}
 
         </DataTable>
