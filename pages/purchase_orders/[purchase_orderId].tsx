@@ -103,12 +103,6 @@ export const Purchase_order = () => {
     { type: 'text', label: "Item SKU", field: 'po_products.vendor_products.products.sku' },
     { type: 'text', label: "Vendor SKU", field: 'po_products.vendor_products.sku' },
     { type: 'text', label: "Received Quantity", field: 'receivedQuantity' },
-    { type: 'text', label: "GRN RejectedQuantity", field: 'grnRejectedQuantity' },
-    { type: 'text', label: "GRN RejectionRemarks", field: 'grnRejectionRemarks' },
-    { type: 'text', label: "QC RejectedQuantity", field: 'qcRejectedQuantity' },
-    { type: 'text', label: "QC RejectionRemarks", field: 'qcRejectionRemarks' },
-    { type: 'text', label: "Final Quantity", field: 'finalQuantity' },
-    // { type: 'text', label: "Short Supply", body: (rowdata) => totalshortSupplyTillDate(po_products, rowdata?.poProduct) },
     {
       type: 'text',
       label: "Short Supply",
@@ -118,7 +112,13 @@ export const Purchase_order = () => {
         return poProductQuantity - receivedQuantity;
       },
     },
-    
+    { type: 'text', label: "GRN RejectedQuantity", field: 'grnRejectedQuantity' },
+    { type: 'text', label: "GRN RejectionRemarks", field: 'grnRejectionRemarks' },
+    { type: 'text', label: "QC RejectedQuantity", field: 'qcRejectedQuantity' },
+    { type: 'text', label: "QC RejectionRemarks", field: 'qcRejectionRemarks' },
+    { type: 'text', label: "Final Quantity", field: 'finalQuantity' },
+    // { type: 'text', label: "Short Supply", body: (rowdata) => totalshortSupplyTillDate(po_products, rowdata?.poProduct) },
+
     { type: 'text', label: "Price", field: 'po_products.price' },
     // { type: 'text', label: "Po Product", field: 'poProduct' },
     // { type: 'text', label: "Grns", field: 'grn' },
@@ -576,6 +576,14 @@ export const Purchase_order = () => {
   const grnItemColumn = [
     // { field: "shortSupply", header: 'Short Supply', body: (rowData) => rowData.po_products.quantity - rowData.receivedQuantity || "-" },
     { field: "receivedQuantity", header: 'Received Quantity', body: (rowData) => rowData.receivedQuantity || "-" },
+    {
+      field: "shortSupply",
+      header: "Short Supply",
+      body: (rowData) => {
+        const shortSupply = rowData.po_products.quantity - rowData.receivedQuantity;
+        return shortSupply >= 0 ? shortSupply : "-";
+      },
+    },
     { field: "grnRejectedQuantity", header: 'GRN Rejected Quantity', body: (rowData) => rowData.grnRejectedQuantity || "-" },
     { field: "grnRejectionRemarks", header: 'GRN Rejection Remarks', body: (rowData) => rowData.grnRejectionRemarks || "-" },
     { field: "qcRejectedQuantity", header: 'QC Rejected Quantity', body: (rowData) => rowData.qcRejectedQuantity || "-" },
@@ -1389,17 +1397,18 @@ export const Purchase_order = () => {
             {grnList?.map((grn, index) => {
               console.log('grn: ', grn);
               const shipmentId = getShipmentIdByVendorShipmentId(grn.vendorShipmentId);
+              
               console.log('shipmentId: ++', shipmentId);
-              const headerText = `${grn.grnNumber} -  Shipment-${shipmentId}`;
-
+              const headerText = `${grn.grnNumber} -  Shipment-${shipmentId} -  Status-`;
 
               const shouldShowButton = grn.grn_status.id === 5 || grn.grn_status.name === 'QC_Complete';
               console.log('shouldShowButton: ', shouldShowButton);
 
               const accordionHeader = (
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <div>{grn.grnNumber}</div>
-                  <div>Shipment-{shipmentId}</div>
+                  <div>GrnID-{grn.grnNumber}-</div>
+                  <div>-Shipment-{shipmentId}--</div>
+                  <div>Status-{grn.grn_status.name}</div>
                   <div className="flex gap-2">
                     <div>
                       {shouldShowButton && (
@@ -1409,21 +1418,22 @@ export const Purchase_order = () => {
                       )}
                     </div>
                     <div>
-                      <Button label="A" />
+                      {/* {renderGrn(grn)} */}
                     </div>
                   </div>
                 </div >
               );
               return (
                 <AccordionTab
-                  header={headerText}
+                  // header={headerText}
+                  header={accordionHeader}
                   key={index}
                 >
-                  {shouldShowButton && (
+                  {/* {shouldShowButton && (
                     <div className="flex justify-content-end">
                       <Button icon="pi pi-plus" label="Create PutAway" />
                     </div>
-                  )}
+                  )} */}
                   {renderGrn(grn)}
                   <DataTable
                     editMode="cell"
