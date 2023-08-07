@@ -625,8 +625,7 @@ export const ProductsList = () => {
     initialValues: initialProductDetails,
     validate: validateZodSchema(Product),
     onSubmit: async (data) => {
-      console.log(data);
-      // alert(data);
+      console.log('formdata: ', data);
 
       //function to create new kit products
 
@@ -964,7 +963,7 @@ export const ProductsList = () => {
 
 
 
-  // KIT ITEMS DATATABLE 
+  // KIT ITEMS DATATABLE
 
   const onCellEditComplete = (e) => {
     const { rowData, newValue, field, originalEvent: event } = e;

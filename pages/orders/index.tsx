@@ -361,10 +361,10 @@ export const OrdersList = () => {
       let _filteredSuggestions
       if (!event.query.trim().length) {
         _filteredSuggestions = [...cities]
-        // 
+        //
       } else {
         _filteredSuggestions = cities.filter((element) => {
-          // 
+          //
           return element.city.toLowerCase().startsWith(event.query.toLowerCase())
         })
       }
@@ -486,7 +486,7 @@ export const OrdersList = () => {
 
 
   const handleRowClick = async (e) => {
-    // 
+    //
     // const onclickClass = e.originalEvent.target.classList[0]
 
     const onclickClass = e.target.classList[0]
@@ -518,7 +518,7 @@ export const OrdersList = () => {
 
 
     // const _quantity = e.data.order_items.quantity
-    // 
+    //
 
     await formik.setValues({
       ...e.data,
@@ -996,8 +996,8 @@ export const OrdersList = () => {
 
   const [selectedOrder, setSelectedOrder] = useState([]);
   const [checkVerified, setCheckVerified] = useState(false)
-  // 
-  // 
+  //
+  //
 
   useEffect(() => {
 
@@ -1426,7 +1426,7 @@ export const OrdersList = () => {
 
 
 
-  //  checked customer 
+  //  checked customer
   const [displayChecked, setDisplayChecked] = useState(false);
   console.log('displayChecked: ', displayChecked);
   console.log("orders", orders);
@@ -2712,7 +2712,7 @@ const OrdersPage = () => {
 
 export default OrdersPage;
 
-// sample data received onsubmit 
+// sample data received onsubmit
 /**{
     "name": "select",
     "firstName": "select",
