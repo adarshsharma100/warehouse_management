@@ -127,6 +127,7 @@ export const Purchase_order = () => {
   const [productsColumn, setProductsColumn] = useState(grnProductColumn)
   const [activeGrn, setActiveGrn] = useState({})
   const [updateGrns, setUpdateGrns] = useState(false)
+  
   const initialGrnProductState = {
     receivedQuantity: "",
     grnRejectedQuantity: 0,
@@ -532,9 +533,7 @@ export const Purchase_order = () => {
   const onCellEditComplete = (e) => {
     const { rowData, newValue, field, originalEvent: event } = e;
     console.log('newValue: ', newValue, rowData, field);
-    if (
-      ['receivedQuantity', 'grnRejectedQuantity', 'qcRejectedQuantity', 'grnRejectionRemarks', 'qcRejectionRemarks',].includes(field)
-    ) {
+    if (['receivedQuantity', 'grnRejectedQuantity', 'qcRejectedQuantity', 'grnRejectionRemarks', 'qcRejectionRemarks',].includes(field)) {
       if (newValue?.trim().length > 0) {
         if (field === 'grnRejectedQuantity' || field === 'qcRejectedQuantity' || field === 'receivedQuantity') {
           const intValue = parseInt(newValue, 10);
@@ -545,9 +544,12 @@ export const Purchase_order = () => {
         }
 
         const updatedGRNItems = grnProductsList.map((item) => {
+          console.log('here:+++ ', item.id, rowData.id);
           if (item.id === rowData.id) {
+            console.log('here!!++')
             return { ...item, [field]: rowData[field] };
           }
+          console.log('here!!')
           return item;
         });
 
@@ -576,14 +578,14 @@ export const Purchase_order = () => {
   const grnItemColumn = [
     // { field: "shortSupply", header: 'Short Supply', body: (rowData) => rowData.po_products.quantity - rowData.receivedQuantity || "-" },
     { field: "receivedQuantity", header: 'Received Quantity', body: (rowData) => rowData.receivedQuantity || "-" },
-    {
-      field: "shortSupply",
-      header: "Short Supply",
-      body: (rowData) => {
-        const shortSupply = rowData.po_products.quantity - rowData.receivedQuantity;
-        return shortSupply >= 0 ? shortSupply : "-";
-      },
-    },
+    // {
+    //   field: "shortSupply",
+    //   header: "Short Supply",
+    //   body: (rowData) => {
+    //     const shortSupply = rowData.po_products.quantity - rowData.receivedQuantity;
+    //     return shortSupply >= 0 ? shortSupply : "-";
+    //   },
+    // },
     { field: "grnRejectedQuantity", header: 'GRN Rejected Quantity', body: (rowData) => rowData.grnRejectedQuantity || "-" },
     { field: "grnRejectionRemarks", header: 'GRN Rejection Remarks', body: (rowData) => rowData.grnRejectionRemarks || "-" },
     { field: "qcRejectedQuantity", header: 'QC Rejected Quantity', body: (rowData) => rowData.qcRejectedQuantity || "-" },
@@ -1244,12 +1246,6 @@ export const Purchase_order = () => {
                         headerStyle={{ width: '3rem' }}
                         checked={isAllRowsSelected()}
                         onChange={(e) => handleSelectAll(e)}
-                      // header={() => (
-                      //   <Checkbox
-                      //     checked={selectAllChecked}
-                      //     onChange={(e) => handleSelectAll(e)}
-                      //   />
-                      // )}
                       />
                       <Column
                         header='Products'

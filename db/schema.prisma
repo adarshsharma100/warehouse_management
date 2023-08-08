@@ -150,20 +150,19 @@ model grn {
 }
 
 model grn_products {
-  id                  Int                @id @default(autoincrement())
+  id                  Int         @id @default(autoincrement())
   receivedQuantity    Int
   grnRejectedQuantity Int?
-  grnRejectionRemarks String?            @db.VarChar(255)
+  grnRejectionRemarks String?     @db.VarChar(255)
   qcRejectedQuantity  Int?
-  qcRejectionRemarks  String?            @db.VarChar(255)
+  qcRejectionRemarks  String?     @db.VarChar(255)
   poProduct           Int
   grnId               Int
-  qcComplete          Int?               @default(0) @db.TinyInt
+  qcComplete          Int?        @default(0) @db.TinyInt
   shortSupply         Int?
   finalQuantity       Int?
-  grn                 grn                @relation(fields: [grnId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_products_grn1")
-  po_products         po_products        @relation(fields: [poProduct], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_products_po_products1")
-  putaway_products    putaway_products[]
+  grn                 grn         @relation(fields: [grnId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_products_grn1")
+  po_products         po_products @relation(fields: [poProduct], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_products_po_products1")
 
   @@index([grnId], map: "fk_grn_products_grn1_idx")
   @@index([poProduct], map: "fk_grn_products_po_products1_idx")
@@ -523,10 +522,8 @@ model putaway {
   id               Int                @id @default(autoincrement())
   putawayNumber    String?            @db.VarChar(45)
   status           putaway_status?
-  createdAt        DateTime?          @db.DateTime(0)
+  createdAt        DateTime?          @default(now()) @db.DateTime(0)
   updatedAt        DateTime?          @default(now()) @db.DateTime(0)
-  quantity         Int?
-  pendingQuantity  Int?
   grnId            Int?
   createdBy        Int
   putawaytypeId    Int
@@ -541,18 +538,18 @@ model putaway {
 }
 
 model putaway_products {
-  id              Int          @id @default(autoincrement())
-  grnProductId    Int
-  pendingQuantity Int?
-  putawayId       Int
-  productsId      Int
-  grn_products    grn_products @relation(fields: [grnProductId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_products_grn_products1")
-  products        products     @relation(fields: [productsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_products_products1")
-  putaway         putaway      @relation(fields: [putawayId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_products_putaway1")
+  id         Int       @id @default(autoincrement())
+  quanity    Int?
+  putawayId  Int
+  shelvesId  Int?
+  productsId Int?
+  products   products? @relation(fields: [productsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_products_products1")
+  putaway    putaway   @relation(fields: [putawayId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_products_putaway1")
+  shelves    shelves?  @relation(fields: [shelvesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_products_shelves1")
 
-  @@index([grnProductId], map: "fk_putaway_products_grn_products1_idx")
   @@index([productsId], map: "fk_putaway_products_products1_idx")
   @@index([putawayId], map: "fk_putaway_products_putaway1_idx")
+  @@index([shelvesId], map: "fk_putaway_products_shelves1_idx")
 }
 
 model putaway_types {
@@ -679,6 +676,7 @@ model shelves {
   shelfType          Int
   height             Int
   inventory_products inventory_products[]
+  putaway_products   putaway_products[]
   areas              areas                    @relation(fields: [area], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_areas1")
   shelf_type         shelf_type               @relation(fields: [shelfType], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_shelf_type1")
 

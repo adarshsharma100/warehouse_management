@@ -229,23 +229,19 @@ export const PutawaysList = () => {
                 id:9
               }
             },
-            grn: {
-              connect: {
-                id: Number(grnId)
-              }
-            },
-            if (grnId) {
-              putawayData.grn = {
-                connect: {
-                  id: Number(grnId)
-                }
-              };
-            },
+            // grn: {
+            //   connect: {
+            //     // id: Number(grnId)
+            //     // id:10
+            //   }
+            // },
+            
           }, {
             onSuccess: async (data) => {
-              console.log('data: ', data);
+              console.log('data: onSuccess', data);
               alert("Created")
               toast?.current?.show(tsuccess("Created", `Putaway is now Created`))
+              router.push(`/putaways/${data.id}`)
             },
             onError: (error) => {
               alert('Error')
