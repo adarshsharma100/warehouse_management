@@ -31,7 +31,8 @@ export default resolver.pipe(
                   include:{
                     vendor_products:{
                       include:{
-                        products:true
+                        products:true,
+                        vendors:true,
                       }
                     }
                   }

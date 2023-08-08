@@ -124,7 +124,7 @@ export const Putaway = () => {
             status: 'Completed',
 
             putaway_products: {
-              update: putawayItemDetails?.map(({id, quantity }) => ({
+              update: putawayItemDetails?.map(({ id, quantity }) => ({
                 id,
                 data: {
                   quantity: 23,
@@ -238,8 +238,20 @@ export const Putaway = () => {
 
   const grnColumns = [
     // { field: "qcComplete", header: "QC Complete", body: (rowData) => rowData.qcComplete === 1 ? 'True' : 'False' },
-    // { field: "receivedQuantity", header: "Received Quantity" },
-    // { field: "qcRejectedQuantity", header: "QC Rejected Quantity" },
+    // { field: "quantity", header: "Quantity", body: (rowData) => rowData.quantity || "-" },
+    // { field: "shelfCode", header: "Shelf Code" },
+    // { field: "inventoryType", header: "Inventory Type" },
+    { field: "finalQuantity", header: "Total Quantity" ,body: (rowData) => rowData.finalQuantity || "-" },
+    { field: "qcRejectedQuantity", header: "QC Rejected Quantity" },
+  ]
+
+  const pendingColumn = [
+    { field: "quantity", header: "Quantity", body: (rowData) => rowData.quantity || "-" },
+    { field: "shelfCode", header: "Shelf Code" },
+    { field: "inventoryType", header: "Inventory Type" },
+  ]
+
+  const completeColumn = [
     { field: "quantity", header: "Quantity", body: (rowData) => rowData.quantity || "-" },
     { field: "shelfCode", header: "Shelf Code" },
     { field: "inventoryType", header: "Inventory Type" },
@@ -257,6 +269,8 @@ export const Putaway = () => {
       filterPlaceholder="Search...."
     />
   ));
+
+
 
 
   const findPutawayTypeNameById = (putawayTypeId, putawayTypes) => {
@@ -336,7 +350,7 @@ export const Putaway = () => {
         alert('not QC_Completed ')
       }
     } else {
-      alert('QC_Completed--')
+      alert('select checkbox for QC_Completed--')
     }
   };
 
@@ -397,80 +411,10 @@ export const Putaway = () => {
                 <Button
                   label="Click here!"
                   type="submit"
-                  // onClick={() => { setUpdate(true); setActiveUpdatePutaways(true) }}
+                // onClick={() => { setUpdate(true); setActiveUpdatePutaways(true) }}
                 />
               </form>
             </div>
-
-            {/* <div className="col-12">
-              {update &&
-                <form onSubmit={formik.handleSubmit}>
-
-                  <div className="col-12 card mt-4">
-                    <h3>{activeUpdatePutaways ? 'Update Putaways' : 'Create Putaways'}</h3>
-                    <div className="formgrid grid">
-
-                      {[
-                        { field: 'quantity', header: 'Quantity' },
-                      ].map((ele, i) => {
-                        return (
-                          <div key={`${ele.header}`} className="field col-12 lg:col-2 md:col-6 mt-4">
-                            <span className="p-float-label">
-                              <InputText
-                                id={ele.field}
-                                name={ele.field}
-                                value={formik.values[ele.field]}
-                                onChange={formik.handleChange}
-                                autoFocus
-                                className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
-                              />
-                              <label
-                                htmlFor={ele.header}
-                                className={classNames({ "p-error": isFormFieldValid(ele.field) })}
-                              >
-                                {ele.header}
-                              </label>
-                            </span>
-                            {getFormErrorMessage(ele.field)}
-                          </div>
-                        )
-                      })}
-
-
-
-                    </div>
-
-
-                    <div className="flex justify-content-end">
-                      <Button
-                        type="submit"
-                        className="mr-2"
-                        label="UPDATE"
-                      />
-                      <Button
-                        className="p-button-secondary flex-grow-0"
-                        style={{ maxWidth: "50%" }}
-                        type="button"
-                        label="CANCEL"
-                        onClick={() => {
-                          formik.resetForm()
-                          // setCreateDialog(false)
-                          setActiveUpdatePutaways(false)
-                          // setActive(!active)
-                          // setEditWarehouse(false)
-                          // setUpdateWareHouse(false)
-                        }}
-                      />
-                    </div>
-                  </div>
-
-
-                </form>
-              }
-            </div> */}
-
-
-
             <TabView>
               <TabPanel header="Pending">
                 <DataTable
@@ -505,13 +449,13 @@ export const Putaway = () => {
                   <Column field="po_products.vendor_products.products.name" header="Name" />
                   <Column field="po_products.vendor_products.products.sku" header="SKU" />
                   {/* {columnsComponents} */}
-                  {grnColumns.map((i) => {
+                  {pendingColumn.map((i) => {
                     return (
                       <Column
                         key={i.field}
                         field={i.field}
                         header={i.header}
-                        // body={i.body}
+                        body={i.body}
                         editor={i.field === 'quantity' ? textEditor : null}
                         onCellEditComplete={i.field === 'quantity' ? onCellEditComplete : null}
                       />
@@ -542,7 +486,18 @@ export const Putaway = () => {
                   />
                   <Column field="po_products.vendor_products.products.name" header="Name" />
                   <Column field="po_products.vendor_products.products.sku" header="SKU" />
-                  {columnsComponents}
+                  {/* {columnsComponents} */}
+
+                  {completeColumn.map((i) => {
+                    return (
+                      <Column
+                        key={i.field}
+                        field={i.field}
+                        header={i.header}
+                        body={i.body}
+                      />
+                    )
+                  })}
 
                 </DataTable>
               </TabPanel>
@@ -586,6 +541,9 @@ export const Putaway = () => {
                   />
                   <Column field="po_products.vendor_products.products.name" header="Name" />
                   <Column field="po_products.vendor_products.products.sku" header="SKU" />
+                  <Column field="po_products.vendor_products.sku" header="Vendor SKU" />
+
+
                   {columnsComponents}
 
                 </DataTable>
@@ -599,7 +557,7 @@ export const Putaway = () => {
                   </div>
                   <div>
                     <p>{filteredPutawayData.map((ele) => ele.grnNumber)}</p>
-                    <p> x{filteredPutawayData.map((ele) => ele.purchaseOrder)}</p>
+                    <p>{filteredPutawayData.map((ele) => ele.purchaseOrder)}</p>
                     <p>{getStatusName(filteredPutawayData[0]?.status)}</p>
                   </div>
                 </div>
