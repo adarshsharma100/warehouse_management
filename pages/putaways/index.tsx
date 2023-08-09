@@ -22,6 +22,8 @@ import { tError, tsuccess } from "app/constants";
 import { Dropdown } from "primereact/dropdown";
 import { connect } from "http2";
 import { Dialog } from "primereact/dialog";
+import { Toast } from "primereact/toast";
+import { useCurrentUser } from "app/core/hooks/useCurrentUser";
 
 
 
@@ -44,6 +46,10 @@ export const PutawaysList = () => {
   const router = useRouter();
   const page = Number(router.query.page) || 0;
   const toast = useRef(null)
+  const user = useCurrentUser()
+  const { id, role, name, email } = user
+  console.log('user:@ ', user.id);
+  
   // const [{  hasMore }] = usePaginatedQuery(getPutaways, {
   //   orderBy: { id: "asc" },
   //   skip: ITEMS_PER_PAGE * page,
@@ -162,12 +168,12 @@ export const PutawaysList = () => {
   const formik = useFormik({
     initialValues: putawayDetails,
     validationSchema: Yup.object().shape({
-      // putawayNumber: Yup.string().required("*Required"),
+      putawayTypeId: Yup.object().required("*Required"),
     }),
     onSubmit: async (data) => {
       console.log('onSubmit data: ', data);
 
-      const { putawayNumber, pendingQuantity, quantity, status, grnId, createdBy, putawayTypeId, user, grn, } = data
+      const { putawayNumber, pendingQuantity, quantity, status, grnId, createdBy, putawayTypeId, grn, } = data
 
       const { id: avtivePutawayID } = activePutawayData
 
@@ -176,8 +182,8 @@ export const PutawaysList = () => {
           await updatePutaway({
             id: avtivePutawayID,
             putawayNumber,
-            pendingQuantity: Number(pendingQuantity),
-            quantity: Number(quantity),
+            // pendingQuantity: Number(pendingQuantity),
+            // quantity: Number(quantity),
             status,
             user: {
               connect: {
@@ -212,11 +218,11 @@ export const PutawaysList = () => {
         try {
           await createPutaway({
             // putawayNumber: `Putaway#${Math.floor(Math.random() * 100000)}`,
-            
+
             putawayNumber,
-            pendingQuantity: Number(pendingQuantity),
-            quantity: Number(quantity),
-            status:'Pending',
+            // pendingQuantity: Number(pendingQuantity),
+            // quantity: Number(quantity),
+            status: 'Pending',
 
             putaway_types: {
               connect: {
@@ -226,7 +232,7 @@ export const PutawaysList = () => {
             user: {
               connect: {
                 // id: Number(createdBy)
-                id:9
+                id:Number(user?.id)
               }
             },
             // grn: {
@@ -235,22 +241,22 @@ export const PutawaysList = () => {
             //     // id:10
             //   }
             // },
-            
+
           }, {
             onSuccess: async (data) => {
               console.log('data: onSuccess', data);
-              alert("Created")
+              // alert("Created")
               toast?.current?.show(tsuccess("Created", `Putaway is now Created`))
               router.push(`/putaways/${data.id}`)
             },
             onError: (error) => {
-              alert('Error')
+              // alert('Error')
               toast?.current?.show(tError("Error", `Putaway is not Created`))
               console.log('error: onError', error)
             }
           })
         } catch (error) {
-          alert('err')
+          // alert('err')
           toast?.current?.show(tError("Created", `Putaway is not Created`))
           console.log('error: catch', error)
         }
@@ -266,6 +272,7 @@ export const PutawaysList = () => {
 
   return (
     <div>
+      <Toast ref={toast} />
       <div className="col-12 card flex justify-content-between align-items-center m-0">
         <h2 className="mt-2">Putaway</h2>
         <Button
@@ -283,30 +290,28 @@ export const PutawaysList = () => {
 
         {createDialog &&
           // <Dialog header="Create Putaway" visible={createDialog} style={{ width: '50vw', height: '40vh' }} onHide={() => setCreateDialog(false)}>
-          <>
+            <>
             <h3>Create Putaways</h3>
-
-            <div className="field mt-4">
-              <div className="p-float-label">
+            <div className="field col-12 lg:col-2 md:col-6 mt-3">
+            {/* <div className="field mt-4"> */}
+              <span className="p-float-label">
                 <Dropdown
                   value={selectedPutawayType}
+                  placeholder="Select a Putaway type"
+                  options={putaway_types} optionLabel="name"
                   onChange={(e) => {
                     formik.setFieldValue("putawayTypeId", e.value);
                     setSelectedPutawayType(e.value);
                   }}
-                  options={putaway_types} optionLabel="name"
-                  placeholder="Select a Putaway type"
                   className="w-full" />
                 <label
                   htmlFor="putaway_types"
                   className={classNames({ "p-error": isFormFieldValid("putaway_types") })}
                 >
-
-                  * Putaway Types
+                  *Putaway Types
                 </label>
-              </div>
-              {getFormErrorMessage("putaway_types")}
-
+              </span>
+              {getFormErrorMessage("putawayTypeId")}
             </div>
             <div className="flex justify-content-end" style={{ marginTop: '10rem' }}>
               <Button
@@ -316,7 +321,7 @@ export const PutawaysList = () => {
                 label="Create Putaway"
               />
             </div>
-          </>
+            </>
           // </Dialog>
         }
 

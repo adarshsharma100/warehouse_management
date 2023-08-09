@@ -24,12 +24,15 @@ export default resolver.pipe(
       count: () => db.putaway.count({ where }),
       query: (paginateArgs) =>
         db.putaway.findMany({ ...paginateArgs, where, orderBy ,
+          // include:{
+          //   putaway_products: true
+          // }
           include:{
             putaway_products: {
               include:{
                 putaway:true,
-                products:true,
-                shelves:true,
+                // products:true,
+                // shelves:true,
               }
             }
           }

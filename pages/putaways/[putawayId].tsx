@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Routes } from "@blitzjs/next";
 import Head from "next/head";
 import Link from "next/link";
@@ -32,6 +32,8 @@ import classNames from "classnames";
 import { InputText } from "primereact/inputtext";
 import getPutaways from "app/putaways/queries/getPutaways";
 import { log } from "console";
+import { createSearchFunction, tError, tWarn, tsuccess } from "app/constants";
+import { Toast } from "primereact/toast";
 
 const putawayData = [
   {
@@ -122,37 +124,36 @@ export const Putaway = () => {
           await updatePutaway({
             id: putawayId,
             status: 'Completed',
-
             putaway_products: {
-              update: putawayItemDetails?.map(({ id, quantity }) => ({
-                // id,
-                // data: {
-                  quantity: Number(quantity),
-                // },
+              // create: [{ quantity: 10, }, { quantity: 11, }, { quantity: 12, }]?.map(({ id, quantity }) => ({
+              //   quantity: Number(quantity),
+              // })),
+              create: pendingData?.map(({ id, quantity }) => ({
+                quantity: Number(quantity),
               })),
             },
-
-            // quantity: putawayItemDetails?.map(({quantity}) => { Number(quantity)})
-
             // quantity: Number(quantity),
-            // grn: {
-            //   connect: {
-            //     // id: Number(grnId)
-            //     id: selectedGRN?.id
-            //   }
-            // },
+            grn: {
+              connect: {
+                // id: Number(grnId)
+                id: selectedGRN?.id
+              }
+            },
           }, {
             onSuccess: (data) => {
-              alert("Update")
+              toast?.current?.show(tsuccess("Updated", `Putaway is now Updated`))
+
             },
             onError: (error) => {
               console.log('error: ', error);
-              alert('Error update')
+              toast?.current?.show(tError("Error", `Putaway is not Updated`))
+
             }
           })
         } catch (error) {
           console.log('error: ', error);
-          alert('Update Error')
+          toast?.current?.show(tError("Error", `Putaway is not Updated`))
+
         }
       }
       else {
@@ -235,12 +236,13 @@ export const Putaway = () => {
     // { field: "quantity", header: "Quantity", body: (rowData) => rowData.quantity || "-" },
     // { field: "shelfCode", header: "Shelf Code" },
     // { field: "inventoryType", header: "Inventory Type" },
-    { field: "finalQuantity", header: "Total Quantity" ,body: (rowData) => rowData.finalQuantity || "-" },
+    { field: "finalQuantity", header: "Total Quantity", body: (rowData) => rowData.finalQuantity || "-" },
     { field: "qcRejectedQuantity", header: "QC Rejected Quantity" },
   ]
 
   const pendingColumn = [
     { field: "quantity", header: "Quantity", body: (rowData) => rowData.quantity || "-" },
+    { field: "availableQuantity", header: "Available Quantity", },
     { field: "shelfCode", header: "Shelf Code" },
     { field: "inventoryType", header: "Inventory Type" },
   ]
@@ -291,7 +293,9 @@ export const Putaway = () => {
   console.log('selectedGRN: ', selectedGRN);
 
   const grnSearch = () => {
-    setGrnValue(grns?.map((val) => val.grnNumber))
+    // setGrnValue(grns?.map((val) => val.grnNumber))
+    const grn_number = grns?.map((val) => val.grnNumber)
+    setGrnValue(grn_number)
   }
 
   const handelGrnChange = (e) => {
@@ -310,8 +314,35 @@ export const Putaway = () => {
   }, [selectedGRN]);
 
   // Status 5 means qcCompleted
+
+
+
+
+
+
+  const grn_numbers = grns.map(grn => grn.grnNumber);
+  console.log('grn_numbers: ', grn_numbers);
+  const [selectedGrn, setSelectedGrn] = useState(null);
+
+  const handleSelect = (e) => {
+    setSelectedGrn(e.value);
+    console.log('Selected GRN:', e.value); // Log the selected value
+    // onSelect(e.value); // Uncomment this line if needed
+  };
+  // const [categorySuggestions, setCategorySuggestions] = useState<any>(null)
+  // const searchCategory = createSearchFunction(grns, setCategorySuggestions)
+
+
+
+
+
+
+
+
+
+
+
   const [selectGrnProducts, setSelectGrnProducts] = useState([])
-  console.log('selectGrnProducts: ', selectGrnProducts);
 
   const handleSelectionChange = (e) => {
     console.log('e:++ ', e);
@@ -341,10 +372,12 @@ export const Putaway = () => {
         setFilteredPutawayData([]);
         setSelectGrn({})
       } else {
-        alert('not QC_Completed ')
+        toast?.current?.show(tWarn("Warning", `not QC_Completed`))
+
       }
     } else {
-      alert('select checkbox for QC_Completed--')
+      toast?.current?.show(tWarn("Warning", `select checkbox for QC_Completed--`))
+
     }
   };
 
@@ -383,8 +416,23 @@ export const Putaway = () => {
   const putawayArray = Object.entries(putaway).map(([key, value]) => ({ key, value }));
   console.log('putawayArray: ', putawayArray);
 
+
+
+
+  // add new dropdown
+  const [categorySuggestions, setCategorySuggestions] = useState([]);
+  const [selectGrnNumber, setSelectGrnNumber] = useState(null)
+  console.log('selectGrnProducts: ', selectGrnProducts);
+  console.log('categorySuggestions: ', categorySuggestions);
+  const searchCategory = createSearchFunction(grns, setCategorySuggestions)
+
+  const handelChange = (event) => {
+    setSelectGrnNumber(event.value.grnNumber);
+  };
+  const toast = useRef(null)
   return (
     <div>
+      <Toast ref={toast} />
       <Head>
         {/* <title>Putaway {putaway.id}</title> */}
       </Head>
@@ -405,7 +453,7 @@ export const Putaway = () => {
                 <Button
                   label="Click here!"
                   type="submit"
-                onClick={() => { setUpdate(true); setActiveUpdatePutaways(true) }}
+                  onClick={() => { setUpdate(true); setActiveUpdatePutaways(true) }}
                 />
               </form>
             </div>
@@ -557,20 +605,46 @@ export const Putaway = () => {
                 </div>
               </div>
             </div>
+
             <div className="mt-5">
               <span className="p-float-label">
                 <AutoComplete
                   value={selectGrn ? selectGrn.grnNumber : ''}
+                  dropdown
                   suggestions={grnValue}
                   completeMethod={grnSearch}
                   onChange={handelGrnChange}
-                  dropdown
                 />
                 <label>
                   Select GRN
                 </label>
               </span>
             </div>
+            {/* <div className="mt-5">
+              <span className="p-float-label">
+                <AutoComplete
+                  value={selectedGrn}
+                  dropdown
+                  suggestions={categorySuggestions}
+                  // suggestions={selectGrnNumber}
+                  completeMethod={searchCategory}
+                  // completeMethod={(e) => {
+                  //   const filteredGrns = grn_numbers.filter(grn => grn.toLowerCase().includes(e.query.toLowerCase()));
+                  //   console.log('filteredGrns: ', filteredGrns);
+                  //   return filteredGrns;
+                  // }}
+                  field="grnNumber"
+                  placeholder="Search for GRN..."
+                  // onChange={(e) => {
+                  //   // const filteredGrns = grn_numbers.filter(grn => grn.toLowerCase().includes(e.query.toLowerCase()));
+                  //   //   console.log('filteredGrns: ', filteredGrns);
+                  //   //   return filteredGrns;
+                  // }}
+                 
+                />
+              </span>
+
+            </div> */}
 
 
             <div className="flex align-items-center justify-content-end gap-4">

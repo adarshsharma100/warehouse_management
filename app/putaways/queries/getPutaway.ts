@@ -20,7 +20,7 @@ export default resolver.pipe(
           putaway_products: {
             include: {
               putaway: true,
-              products: true,
+              // products: true,
               shelves: true,
             }
           }

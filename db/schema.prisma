@@ -219,6 +219,7 @@ model inventory_products {
   inventory_history inventory_history[]
   products          products            @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_products1")
   shelves           shelves             @relation(fields: [shelf], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_shelfs1")
+  putaway_products  putaway_products[]
 
   @@unique([product, shelf], map: "product_shelf")
   @@index([product], map: "fk_inventory_products_products1_idx")
@@ -465,7 +466,6 @@ model products {
   product_categories                               product_categories?  @relation(fields: [category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_category")
   dimensions                                       dimensions           @relation(fields: [dimensionsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_dimensions1")
   product_types                                    product_types        @relation(fields: [type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_product_types1")
-  putaway_products                                 putaway_products[]
   quality_ckeck_quality_ckeck_productsToproducts   quality_ckeck[]      @relation("quality_ckeck_productsToproducts")
   rfq_products                                     rfq_products[]
   vendor_products                                  vendor_products[]
@@ -538,18 +538,18 @@ model putaway {
 }
 
 model putaway_products {
-  id         Int       @id @default(autoincrement())
-  quanity    Int?
-  putawayId  Int
-  shelvesId  Int?
-  productsId Int?
-  products   products? @relation(fields: [productsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_products_products1")
-  putaway    putaway   @relation(fields: [putawayId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_products_putaway1")
-  shelves    shelves?  @relation(fields: [shelvesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_products_shelves1")
+  id                 Int                 @id @default(autoincrement())
+  quantity           Int
+  putawayId          Int
+  shelvesId          Int?
+  inventoryProductId Int?
+  inventory_products inventory_products? @relation(fields: [inventoryProductId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_products_inventory_products1")
+  putaway            putaway             @relation(fields: [putawayId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_products_putaway1")
+  shelves            shelves?            @relation(fields: [shelvesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_products_shelves1")
 
-  @@index([productsId], map: "fk_putaway_products_products1_idx")
   @@index([putawayId], map: "fk_putaway_products_putaway1_idx")
   @@index([shelvesId], map: "fk_putaway_products_shelves1_idx")
+  @@index([inventoryProductId], map: "fk_putaway_products_inventory_products1_idx")
 }
 
 model putaway_types {
