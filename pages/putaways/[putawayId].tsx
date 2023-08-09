@@ -125,10 +125,10 @@ export const Putaway = () => {
 
             putaway_products: {
               update: putawayItemDetails?.map(({ id, quantity }) => ({
-                id,
-                data: {
-                  quantity: 23,
-                },
+                // id,
+                // data: {
+                  quantity: Number(quantity),
+                // },
               })),
             },
 
@@ -158,7 +158,6 @@ export const Putaway = () => {
       else {
         console.log('error', 'Comming in else')
       }
-
     }
   })
 
@@ -219,11 +218,6 @@ export const Putaway = () => {
   };
 
 
-
-
-
-
-
   const textEditor = (options) => {
     return (
       <InputText
@@ -237,7 +231,7 @@ export const Putaway = () => {
 
 
   const grnColumns = [
-    // { field: "qcComplete", header: "QC Complete", body: (rowData) => rowData.qcComplete === 1 ? 'True' : 'False' },
+    { field: "qcComplete", header: "QC Complete", body: (rowData) => rowData.qcComplete === 1 ? 'True' : 'False' },
     // { field: "quantity", header: "Quantity", body: (rowData) => rowData.quantity || "-" },
     // { field: "shelfCode", header: "Shelf Code" },
     // { field: "inventoryType", header: "Inventory Type" },
@@ -411,7 +405,7 @@ export const Putaway = () => {
                 <Button
                   label="Click here!"
                   type="submit"
-                // onClick={() => { setUpdate(true); setActiveUpdatePutaways(true) }}
+                onClick={() => { setUpdate(true); setActiveUpdatePutaways(true) }}
                 />
               </form>
             </div>
