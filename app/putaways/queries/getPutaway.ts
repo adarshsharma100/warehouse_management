@@ -22,6 +22,7 @@ export default resolver.pipe(
               putaway: true,
               // products: true,
               shelves: true,
+              
             }
           }
         }

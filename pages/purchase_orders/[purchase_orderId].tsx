@@ -31,16 +31,23 @@ import { InputSwitch } from "primereact/inputswitch"
 import getVendor_shipments from "app/vendor_shipments/queries/getVendor_shipments"
 import { Dialog } from "primereact/dialog"
 import { InputTextarea } from "primereact/inputtextarea"
+import CreatePutaway from 'app/putaways/mutations/createPutaway';
 
 
 export const Purchase_order = () => {
+  const [createPutaway] = useMutation(CreatePutaway)
+
+
+
+
+
+
   const router = useRouter()
   console.log('router: ', router);
   const purchase_orderId = useParam("purchase_orderId", "number")
   const grn_productsId = useParam("grn_productsId", "number")
   const [value, setValue] = useState("")
   const user = useCurrentUser()
-  // const { id: userId, role, name, email } = user
   const { id: userId, role, name, email } = user
 
   const grnDetails = {
@@ -127,7 +134,7 @@ export const Purchase_order = () => {
   const [productsColumn, setProductsColumn] = useState(grnProductColumn)
   const [activeGrn, setActiveGrn] = useState({})
   const [updateGrns, setUpdateGrns] = useState(false)
-  
+
   const initialGrnProductState = {
     receivedQuantity: "",
     grnRejectedQuantity: 0,
@@ -398,9 +405,6 @@ export const Purchase_order = () => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
   console.log('formik.error', formik.errors)
-
-
-
 
   const renderGrn = (grn) => {
     const { id,
@@ -1391,9 +1395,9 @@ export const Purchase_order = () => {
         {grnList?.length > 0 &&
           <Accordion className="m-3">
             {grnList?.map((grn, index) => {
-              console.log('grn: ', grn);
+              console.log('grn:@@@ ', grn);
               const shipmentId = getShipmentIdByVendorShipmentId(grn.vendorShipmentId);
-              
+
               console.log('shipmentId: ++', shipmentId);
               const headerText = `${grn.grnNumber} -  Shipment-${shipmentId} -  Status-`;
 
@@ -1409,7 +1413,50 @@ export const Purchase_order = () => {
                     <div>
                       {shouldShowButton && (
                         <div className="flex justify-content-end">
-                          <Button icon="pi pi-plus" label="Create PutAway" />
+                          <Button
+                            icon="pi pi-plus"
+                            label="Create PutAway"
+                            onClick={async () => {
+                              console.log('grnNumber@@',grn?.grnNumber)
+                              try {
+                                await createPutaway({
+                                  putawayNumber: `Putaway#${Math.floor(Math.random() * 100000)}`,
+                                  status: 'Pending',
+                                  user: {
+                                    connect: {
+                                      id: Number(user?.id)
+                                    }
+                                  },
+                                  putaway_types: {
+                                    connect: {
+                                      id:2
+                                    }
+                                  },
+                                  grn: {
+                                    connect: {
+                                      id: Number(grn?.id)
+                                    }
+                                  },
+                                }, {
+                                  onSuccess: (data) => {
+                                    toast?.current.show(tsuccess("Created", `putaway is created successfully`))
+                                    router.push(`/putaways/${data.id}`)
+                                  },
+                                  onError: (error) => {
+                                    console.log('error:putaway ', error);
+                                    toast?.current.show(tError("Error", `not Created putaway `))
+
+                                  }
+                                })
+
+                              } catch (error) {
+                                console.error('error:putaway ', error);
+
+                              }
+
+                            }}
+
+                          />
                         </div>
                       )}
                     </div>

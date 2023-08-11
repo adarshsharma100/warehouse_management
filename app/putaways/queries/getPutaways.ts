@@ -32,7 +32,7 @@ export default resolver.pipe(
               include:{
                 putaway:true,
                 // products:true,
-                // shelves:true,
+                shelves:true,
               }
             }
           }

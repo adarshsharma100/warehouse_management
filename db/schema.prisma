@@ -547,9 +547,9 @@ model putaway_products {
   putaway            putaway             @relation(fields: [putawayId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_products_putaway1")
   shelves            shelves?            @relation(fields: [shelvesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_products_shelves1")
 
+  @@index([inventoryProductId], map: "fk_putaway_products_inventory_products1_idx")
   @@index([putawayId], map: "fk_putaway_products_putaway1_idx")
   @@index([shelvesId], map: "fk_putaway_products_shelves1_idx")
-  @@index([inventoryProductId], map: "fk_putaway_products_inventory_products1_idx")
 }
 
 model putaway_types {
@@ -568,20 +568,20 @@ model quality_ckeck {
 }
 
 model rfq {
-  id                                 Int               @id @default(autoincrement())
-  rfqNumber                          String            @unique(map: "rfqNumber_UNIQUE") @db.VarChar(45)
-  description                        String?           @db.VarChar(100)
-  status                             rfq_status        @default(Created)
-  expectedDod                        DateTime?
-  agreement                          String?           @db.VarChar(45)
-  createdAt                          DateTime          @default(now()) @db.DateTime(0)
-  updatedAt                          DateTime          @default(now()) @db.DateTime(0)
-  ammendedFrom                       Int?
-  purchase_orders                    purchase_orders[]
-  rfq                                rfq?              @relation("rfqTorfq", fields: [ammendedFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_rfq1")
-  other_rfq                          rfq[]             @relation("rfqTorfq")
-  rfq_products_rfq_products_rfqTorfq rfq_products[]    @relation("rfq_products_rfqTorfq")
-  rfq_sentto_rfq_sentto_rfqTorfq     rfq_sentto[]      @relation("rfq_sentto_rfqTorfq")
+  id              Int               @id @default(autoincrement())
+  rfqNumber       String            @unique(map: "rfqNumber_UNIQUE") @db.VarChar(45)
+  description     String?           @db.VarChar(100)
+  status          rfq_status        @default(Created)
+  expectedDod     DateTime?
+  agreement       String?           @db.VarChar(45)
+  createdAt       DateTime          @default(now()) @db.DateTime(0)
+  updatedAt       DateTime          @default(now()) @db.DateTime(0)
+  ammendedFrom    Int?
+  purchase_orders purchase_orders[]
+  rfq             rfq?              @relation("rfqTorfq", fields: [ammendedFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_rfq1")
+  other_rfq       rfq[]             @relation("rfqTorfq")
+  rfq_products    rfq_products[]    @relation("rfq_products_rfqTorfq")
+  rfq_sentto      rfq_sentto[]      @relation("rfq_sentto_rfqTorfq")
 
   @@index([ammendedFrom], map: "fk_rfq_rfq1_idx")
 }

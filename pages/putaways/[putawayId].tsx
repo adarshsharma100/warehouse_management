@@ -34,6 +34,8 @@ import getPutaways from "app/putaways/queries/getPutaways";
 import { log } from "console";
 import { createSearchFunction, tError, tWarn, tsuccess } from "app/constants";
 import { Toast } from "primereact/toast";
+import { useCurrentUser } from "app/core/hooks/useCurrentUser";
+import { OverlayPanel } from "primereact/overlaypanel";
 
 const putawayData = [
   {
@@ -59,6 +61,11 @@ const putawayData = [
 
 
 export const Putaway = () => {
+  const toast = useRef(null)
+  const user = useCurrentUser()
+  const { id, role, name, email } = user
+  console.log('user:@ ', user.id);
+
 
   const putawayId = useParam("putawayId", "number");
   console.log('putawayId: ', putawayId);
@@ -118,24 +125,18 @@ export const Putaway = () => {
     onSubmit: async (data) => {
       console.log('data: ', data);
       const { putawayNumber, pendingQuantity, quantity, status, grnId, createdBy, putawayTypeId, user, grn, } = data
-
       if (activeUpdatePutaways) {
         try {
           await updatePutaway({
             id: putawayId,
             status: 'Completed',
             putaway_products: {
-              // create: [{ quantity: 10, }, { quantity: 11, }, { quantity: 12, }]?.map(({ id, quantity }) => ({
-              //   quantity: Number(quantity),
-              // })),
               create: pendingData?.map(({ id, quantity }) => ({
                 quantity: Number(quantity),
               })),
             },
-            // quantity: Number(quantity),
             grn: {
               connect: {
-                // id: Number(grnId)
                 id: selectedGRN?.id
               }
             },
@@ -153,7 +154,6 @@ export const Putaway = () => {
         } catch (error) {
           console.log('error: ', error);
           toast?.current?.show(tError("Error", `Putaway is not Updated`))
-
         }
       }
       else {
@@ -167,6 +167,9 @@ export const Putaway = () => {
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
+
+
+  //  Editable Datatable 
 
   const [putawayItemDetails] = useState([initialPutawayDetails])
   console.log('putawayItemDetails: ', putawayItemDetails);
@@ -194,22 +197,8 @@ export const Putaway = () => {
           return product;
         });
         console.log('updatedPutawayProducts: ', updatedPutawayProducts);
-
-        // const updatedPutaway = { ...putaway, putaway_products: updatedPutawayProducts };
-
-        // const updatePutawayItems = putawayItemDetails.map((item) => {
-        //   console.log('item:@@ ', item.id, rowData.id);
-
-        //   if (item.id === rowData.id) {
-        //     return { ...item, [field]: rowData[field] };
-        //   }
-        //   return item;
-        // })
-        // console.log('updatedPutaway: ', updatePutawayItems);
-
         formik.setValues({
           ...formik.values,
-          // putawayItemDetails: updatePutawayItems
         });
       } else {
         event.preventDefault();
@@ -242,8 +231,8 @@ export const Putaway = () => {
 
   const pendingColumn = [
     { field: "quantity", header: "Quantity", body: (rowData) => rowData.quantity || "-" },
-    { field: "availableQuantity", header: "Available Quantity", },
-    { field: "shelfCode", header: "Shelf Code" },
+    // { field: "availableQuantity", header: "Available Quantity", },
+    // { field: "shelfCode", header: "Shelf Code" },
     { field: "inventoryType", header: "Inventory Type" },
   ]
 
@@ -252,7 +241,6 @@ export const Putaway = () => {
     { field: "shelfCode", header: "Shelf Code" },
     { field: "inventoryType", header: "Inventory Type" },
   ]
-
   const [selectedColumns] = useState(grnColumns)
 
   const columnsComponents = selectedColumns?.map((key) => (
@@ -265,9 +253,6 @@ export const Putaway = () => {
       filterPlaceholder="Search...."
     />
   ));
-
-
-
 
   const findPutawayTypeNameById = (putawayTypeId, putawayTypes) => {
     const putawayType = putawayTypes.find((type) => type.id === putawayTypeId);
@@ -304,7 +289,6 @@ export const Putaway = () => {
     setSelectedGRN(selectGrn);
   }
 
-
   useEffect(() => {
     if (selectedGRN) {
       setFilteredPutawayData([selectedGRN]);
@@ -315,34 +299,12 @@ export const Putaway = () => {
 
   // Status 5 means qcCompleted
 
-
-
-
-
-
   const grn_numbers = grns.map(grn => grn.grnNumber);
   console.log('grn_numbers: ', grn_numbers);
-  const [selectedGrn, setSelectedGrn] = useState(null);
-
-  const handleSelect = (e) => {
-    setSelectedGrn(e.value);
-    console.log('Selected GRN:', e.value); // Log the selected value
-    // onSelect(e.value); // Uncomment this line if needed
-  };
-  // const [categorySuggestions, setCategorySuggestions] = useState<any>(null)
-  // const searchCategory = createSearchFunction(grns, setCategorySuggestions)
-
-
-
-
-
-
-
-
-
 
 
   const [selectGrnProducts, setSelectGrnProducts] = useState([])
+
 
   const handleSelectionChange = (e) => {
     console.log('e:++ ', e);
@@ -357,9 +319,8 @@ export const Putaway = () => {
   };
 
 
-
   const [pendingData, setPendingData] = useState([]);
-  const [completeData, setCompleteData] = useState([])
+
   console.log('pendingData: ', pendingData);
 
   const handleAddToPutaway = () => {
@@ -380,56 +341,29 @@ export const Putaway = () => {
 
     }
   };
-
-  // const handleAddToPutaway = () => {
-  //   if (selectGrnProducts.length > 0) {
-  //     const allQcCompleted = selectGrnProducts.every((product) => product.qcComplete === 1);
-  //     if (allQcCompleted) {
-  //       const completedItems = selectGrnProducts.filter(item => item.status === "Completed");
-  //       const pendingItems = selectGrnProducts.filter(item => item.status !== "Completed");
-
-  //       setPendingData(prevPendingData => [...prevPendingData, ...pendingItems]);
-  //       setCompleteData(prevPutawayData => [...prevPutawayData, ...completedItems]);
-
-  //       setSelectGrnProducts([]);
-  //       setFilteredPutawayData([]);
-  //       setSelectGrn({});
-  //     } else {
-  //       alert('Not QC Completed');
-  //     }
-  //   } else {
-  //     alert('QC Completed');
-  //   }
-  // };
-
-
   const getStatusName = (statusId) => {
     const status = grn_statuses.find((s) => s.id === statusId);
     return status ? status.name : '-';
   };
 
+  // Completed Tab
+  const [completeData, setCompleteData] = useState([])
+  console.log('completeData: ', completeData);
+
+  useEffect(() => {
+    if (putaway.status === 'Completed') {
+      // Assuming you have an array of completed putaway products in the putaway object
+      const completedProducts = putaway.putaway_products;
+
+      // Update the completeData state with the completed products
+      setCompleteData(completedProducts);
+    }
+  }, [putaway.status, putaway.putaway_products]);
 
 
-  //  Editable Datatable 
 
-  const [update, setUpdate] = useState(false)
-  const putawayArray = Object.entries(putaway).map(([key, value]) => ({ key, value }));
-  console.log('putawayArray: ', putawayArray);
+  const [selectedValues, setSelectedValues] = useState({});
 
-
-
-
-  // add new dropdown
-  const [categorySuggestions, setCategorySuggestions] = useState([]);
-  const [selectGrnNumber, setSelectGrnNumber] = useState(null)
-  console.log('selectGrnProducts: ', selectGrnProducts);
-  console.log('categorySuggestions: ', categorySuggestions);
-  const searchCategory = createSearchFunction(grns, setCategorySuggestions)
-
-  const handelChange = (event) => {
-    setSelectGrnNumber(event.value.grnNumber);
-  };
-  const toast = useRef(null)
   return (
     <div>
       <Toast ref={toast} />
@@ -441,7 +375,13 @@ export const Putaway = () => {
         {/* <h2 className="mt-2">Putaway / PT0035</h2> */}
         <h2 className="mt-2">{putaway.putawayNumber}</h2>
 
-
+        <form onSubmit={formik.handleSubmit}>
+          <Button
+            label="Update Putaway"
+            type="submit"
+            onClick={() => { setActiveUpdatePutaways(true) }}
+          />
+        </form>
       </div>
 
 
@@ -449,13 +389,7 @@ export const Putaway = () => {
         <div className="left" style={{ width: '83%' }}>
           <div className="mt-2">
             <div className="flex justify-content-end">
-              <form onSubmit={formik.handleSubmit}>
-                <Button
-                  label="Click here!"
-                  type="submit"
-                  onClick={() => { setUpdate(true); setActiveUpdatePutaways(true) }}
-                />
-              </form>
+
             </div>
             <TabView>
               <TabPanel header="Pending">
@@ -490,6 +424,107 @@ export const Putaway = () => {
                   />
                   <Column field="po_products.vendor_products.products.name" header="Name" />
                   <Column field="po_products.vendor_products.products.sku" header="SKU" />
+                  <Column
+                    field="inventory_products"
+                    header="Avliable Quantity"
+                    body={(rowData) => {
+                      const inventoryRef = useRef(null);
+                      const handleMouseEnter = (event) => {
+                        if (inventoryRef.current) {
+                          inventoryRef.current.toggle(event);
+                        }
+                      };
+                      if (
+                        rowData.po_products &&
+                        rowData.po_products.vendor_products &&
+                        rowData.po_products.vendor_products.products &&
+                        rowData.po_products.vendor_products.products.inventory_products &&
+                        rowData.po_products.vendor_products.products.inventory_products.length > 0
+                      ) {
+                        const inventoryProducts = rowData.po_products.vendor_products.products.inventory_products;
+                        if (inventoryProducts.length <= 2) {
+                          return inventoryProducts
+                            .map((item) => `Shelves: ${item.shelves?.number} , Quantity: ${item.quantity}`)
+                            .join("; ");
+                        }
+                        return (
+                          <div>
+                            <Button
+                              className="p-button-link"
+                              onMouseEnter={handleMouseEnter}
+                              label={`Avaliable Quantity (${inventoryProducts.length})`}
+                            />
+
+                            <div className="overlay-panel">
+                              <OverlayPanel ref={inventoryRef} showCloseIcon>
+                                <div style={{
+                                  maxHeight: '200px',
+                                  overflowY: 'auto',
+                                  overflowX: 'hidden'
+                                }}>
+                                  {inventoryProducts.map((item, index) => {
+                                    return (
+                                      <div key={index} style={{ fontSize: '15px', marginTop: '8px' }}>
+                                        <div className="flex gap-3">
+                                          Shelves: {item.shelves?.number},
+                                          Quantity: {item.quantity}
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              </OverlayPanel>
+
+                            </div>
+                          </div>
+                        );
+                      } else {
+                        return "-";
+                      }
+                    }}
+                  />
+
+                  <Column
+                    header="Shelf Code"
+                    body={(rowData) => {
+                      if (
+                        rowData.po_products &&
+                        rowData.po_products.vendor_products &&
+                        rowData.po_products.vendor_products.products &&
+                        rowData.po_products.vendor_products.products.inventory_products
+                      ) {
+                        const inventoryProducts = rowData.po_products.vendor_products.products.inventory_products;
+
+                        const dropdownOptions = inventoryProducts.map((item) => ({
+                          label: `${item.shelves?.number} -  ${item.quantity}`,
+                          value: `${item.shelves?.number} -  ${item.quantity}`,
+                        }));
+
+                        return (
+                          <Dropdown
+                            value={selectedValues[rowData.id] || dropdownOptions[0].value} 
+                            options={dropdownOptions}
+                            style={{ width: '100%' }}
+                            onChange={(e) => {
+                              const updatedValues = { ...selectedValues };
+                              updatedValues[rowData.id] = e.value; 
+                              setSelectedValues(updatedValues);
+                            }}
+                          />
+                        );
+                      } else {
+                        return "-";
+                      }
+                    }}
+                  />
+                
+
+
+
+
+
+
+
                   {/* {columnsComponents} */}
                   {pendingColumn.map((i) => {
                     return (
@@ -510,7 +545,7 @@ export const Putaway = () => {
               <TabPanel header="Completed">
                 <DataTable
                   // value={completeData}
-                  value={pendingData}
+                  value={completeData}
                   responsiveLayout="scroll"
                   showGridlines
                   stripedRows

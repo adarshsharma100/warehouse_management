@@ -114,8 +114,6 @@ const columns = [
             <div className="product-column">
               <div
                 className="product-header"
-
-
               // onMouseLeave={handleMouseLeave}
               >
                 <Button
@@ -152,7 +150,6 @@ const columns = [
                       )
                     })}
                   </div>
-
 
                 </OverlayPanel>
 
