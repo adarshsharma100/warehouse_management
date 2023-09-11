@@ -143,7 +143,7 @@ export const Putaway = () => {
           }, {
             onSuccess: (data) => {
               toast?.current?.show(tsuccess("Updated", `Putaway is now Updated`))
-
+              console.log('error: ', data);
             },
             onError: (error) => {
               console.log('error: ', error);
@@ -268,30 +268,32 @@ export const Putaway = () => {
 
   // GRN dropdown 
 
-  const [grnValue, setGrnValue] = useState([])
-  const [selectedGRN, setSelectedGRN] = useState(null);
   const [filteredPutawayData, setFilteredPutawayData] = useState([]);
-  const [selectGrn, setSelectGrn] = useState({})
-  console.log('selectGrn: ', selectGrn);
+  const [selectedGRN, setSelectedGRN] = useState(null);
+  const [filteredGRNs, setFilteredGRNs] = useState([]);
+  const [grnValue, setGrnValue] = useState('');
 
-  console.log('filteredPutawayData: ', filteredPutawayData);
-  console.log('selectedGRN: ', selectedGRN);
-
-  const grnSearch = () => {
-    // setGrnValue(grns?.map((val) => val.grnNumber))
-    const grn_number = grns?.map((val) => val.grnNumber)
-    setGrnValue(grn_number)
-  }
-
-  const handelGrnChange = (e) => {
-    const selectGrn = grns.find((val) => val.grnNumber === e.value)
-    setSelectGrn(selectGrn)
+  const handleGrnChange = (e) => {
+    const selectGrn = grns.find((val) => val.grnNumber === e.value.grnNumber)
+    console.log('selectGrn: == ', selectGrn);
+    setGrnValue(e.value);
     setSelectedGRN(selectGrn);
-  }
+  };
+
+  const filterGRNs = (event) => {
+    const query = event.query.toLowerCase();
+    const filteredGRNs = grns.filter((grn) =>
+      grn.grnNumber.toLowerCase().includes(query)
+    );
+    setFilteredGRNs(filteredGRNs);
+  };
+
 
   useEffect(() => {
     if (selectedGRN) {
+      console.log('selectedGRN:88 ', selectedGRN);
       setFilteredPutawayData([selectedGRN]);
+
     } else {
       setFilteredPutawayData([]);
     }
@@ -304,6 +306,7 @@ export const Putaway = () => {
 
 
   const [selectGrnProducts, setSelectGrnProducts] = useState([])
+  console.log('selectGrnProducts: ', selectGrnProducts);
 
 
   const handleSelectionChange = (e) => {
@@ -327,11 +330,10 @@ export const Putaway = () => {
     if (selectGrnProducts.length > 0) {
       const allQcCompleted = selectGrnProducts.every((product) => product.qcComplete === 1);
       if (allQcCompleted) {
-
         setPendingData((prevPendingData) => [...prevPendingData, ...selectGrnProducts]);
         setSelectGrnProducts([]);
         setFilteredPutawayData([]);
-        setSelectGrn({})
+
       } else {
         toast?.current?.show(tWarn("Warning", `not QC_Completed`))
 
@@ -356,7 +358,7 @@ export const Putaway = () => {
       const completedProducts = putaway.putaway_products;
 
       // Update the completeData state with the completed products
-      setCompleteData(completedProducts);
+      setCompleteData([...completedProducts]);
     }
   }, [putaway.status, putaway.putaway_products]);
 
@@ -379,7 +381,10 @@ export const Putaway = () => {
           <Button
             label="Update Putaway"
             type="submit"
-            onClick={() => { setActiveUpdatePutaways(true) }}
+            onClick={() => {
+              setActiveUpdatePutaways(true)
+
+            }}
           />
         </form>
       </div>
@@ -444,7 +449,7 @@ export const Putaway = () => {
                         const inventoryProducts = rowData.po_products.vendor_products.products.inventory_products;
                         if (inventoryProducts.length <= 2) {
                           return inventoryProducts
-                            .map((item) => `Shelves: ${item.shelves?.number} , Quantity: ${item.quantity}`)
+                            .map((item) => ` ${item.shelves?.number} , ${item.quantity}`)
                             .join("; ");
                         }
                         return (
@@ -466,8 +471,7 @@ export const Putaway = () => {
                                     return (
                                       <div key={index} style={{ fontSize: '15px', marginTop: '8px' }}>
                                         <div className="flex gap-3">
-                                          Shelves: {item.shelves?.number},
-                                          Quantity: {item.quantity}
+                                          {item.shelves?.number} - {item.quantity}
                                         </div>
                                       </div>
                                     )
@@ -502,12 +506,12 @@ export const Putaway = () => {
 
                         return (
                           <Dropdown
-                            value={selectedValues[rowData.id] || dropdownOptions[0].value} 
+                            value={selectedValues[rowData.id] || dropdownOptions[0].value}
                             options={dropdownOptions}
                             style={{ width: '100%' }}
                             onChange={(e) => {
                               const updatedValues = { ...selectedValues };
-                              updatedValues[rowData.id] = e.value; 
+                              updatedValues[rowData.id] = e.value;
                               setSelectedValues(updatedValues);
                             }}
                           />
@@ -517,14 +521,6 @@ export const Putaway = () => {
                       }
                     }}
                   />
-                
-
-
-
-
-
-
-
                   {/* {columnsComponents} */}
                   {pendingColumn.map((i) => {
                     return (
@@ -644,11 +640,13 @@ export const Putaway = () => {
             <div className="mt-5">
               <span className="p-float-label">
                 <AutoComplete
-                  value={selectGrn ? selectGrn.grnNumber : ''}
+                  value={grnValue}
+                  suggestions={filteredGRNs}
+                  completeMethod={filterGRNs}
+                  onChange={handleGrnChange}
+                  placeholder="Select GRN"
+                  field="grnNumber"
                   dropdown
-                  suggestions={grnValue}
-                  completeMethod={grnSearch}
-                  onChange={handelGrnChange}
                 />
                 <label>
                   Select GRN
