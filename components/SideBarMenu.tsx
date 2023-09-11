@@ -83,6 +83,11 @@ const SideBarMenu = () => {
       icon: " pi bi-patch-check",
       command: () => (window.location.href = "/shipments"),
     },
+    {
+      label: "Putaways",
+      icon: " pi bi-patch-check",
+      command: () => (window.location.href = "/putaways"),
+    },
 
   ]
 

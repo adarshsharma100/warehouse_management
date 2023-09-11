@@ -31,16 +31,19 @@ import { InputSwitch } from "primereact/inputswitch"
 import getVendor_shipments from "app/vendor_shipments/queries/getVendor_shipments"
 import { Dialog } from "primereact/dialog"
 import { InputTextarea } from "primereact/inputtextarea"
+import CreatePutaway from 'app/putaways/mutations/createPutaway';
+import updateProduct from "app/products/mutations/updateProduct"
 
 
 export const Purchase_order = () => {
+  const [createPutaway] = useMutation(CreatePutaway)
+
   const router = useRouter()
   console.log('router: ', router);
   const purchase_orderId = useParam("purchase_orderId", "number")
   const grn_productsId = useParam("grn_productsId", "number")
   const [value, setValue] = useState("")
   const user = useCurrentUser()
-  // const { id: userId, role, name, email } = user
   const { id: userId, role, name, email } = user
 
   const grnDetails = {
@@ -69,6 +72,7 @@ export const Purchase_order = () => {
   const [active, setActive] = useState(false)
   const [grnStatuses, setGrnStatuses] = useState([])
   const [grnCodeChecked, setGrnCodeChecked] = useState(true)
+
   const columns = [
     { type: 'text', label: "Grn Number", field: 'grnNumber' },
     { type: 'text', label: "Invoice No", field: 'invoiceNo' },
@@ -99,6 +103,7 @@ export const Purchase_order = () => {
 
 
   ]
+
   const grnProductColumn = [
     { type: 'text', label: "Item SKU", field: 'po_products.vendor_products.products.sku' },
     { type: 'text', label: "Vendor SKU", field: 'po_products.vendor_products.sku' },
@@ -125,8 +130,10 @@ export const Purchase_order = () => {
     // { type: 'text', label: "Grn", field: 'grn' },
   ]
   const [productsColumn, setProductsColumn] = useState(grnProductColumn)
+  console.log('productsColumn: ', productsColumn);
   const [activeGrn, setActiveGrn] = useState({})
   const [updateGrns, setUpdateGrns] = useState(false)
+
   const initialGrnProductState = {
     receivedQuantity: "",
     grnRejectedQuantity: 0,
@@ -144,6 +151,7 @@ export const Purchase_order = () => {
     }),
   }
   const [grnProductsList, setGrnProductsList] = useState([initialGrnProductState])
+
   console.log('grnProductsList: ', grnProductsList);
   const searchStatuses = createSearchFunction(grn_statuses, setGrnStatuses)
 
@@ -302,7 +310,7 @@ export const Purchase_order = () => {
             // eta,
             status: status?.id,
             grn_products: {
-              updateMany: grnProductsList.map(({ grnProductId, receivedQuantity, grnRejectedQuantity, qcRejectedQuantity, poProduct, }) => ({
+              updateMany: grnProductsList.map(({ grnProductId, receivedQuantity, grnRejectedQuantity, qcRejectedQuantity, }) => ({
                 where: {
                   id: grnProductId
                 },
@@ -311,6 +319,7 @@ export const Purchase_order = () => {
                   grnRejectedQuantity,
                   // grnRejectionRemarks,
                   qcRejectedQuantity,
+                  finalQuantity: receivedQuantity - grnRejectedQuantity - qcRejectedQuantity,
                   // qcRejectionRemarks,
                 },
               }))
@@ -331,6 +340,7 @@ export const Purchase_order = () => {
           setActive(false)
           formik.resetForm()
           setGrnProductsList([])
+
         } catch (error) {
           console.log('error: ', error);
         }
@@ -392,14 +402,12 @@ export const Purchase_order = () => {
       }
     }
   })
+
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
   console.log('formik.error', formik.errors)
-
-
-
 
   const renderGrn = (grn) => {
     const { id,
@@ -455,6 +463,7 @@ export const Purchase_order = () => {
                 finalQuantity,
               }))
             setGrnProductsList(_grnprodListFormat)
+
             setActiveGrn(grn)
             setActive(true);
             setUpdateGrns(true)
@@ -496,45 +505,14 @@ export const Purchase_order = () => {
 
 
 
-  // GRN DATATABLES
-
-  // const onCellEditComplete = (e) => {
-  //   const { rowData, newValue, field, originalEvent: event } = e;
-  //   console.log('newValue: ', newValue, rowData, field);
-  //   if (['receivedQuantity', 'grnRejectedQuantity', "qcRejectedQuantity", "grnRejectionRemarks", 'qcRejectionRemarks', 'shortSupply'].includes(field)) {
-  //     if (newValue?.trim().length > 0) {
-  //       const intValue = parseInt(newValue, 10);
+  {/* GRN DATATABLE */ }
 
 
-  //       rowData[field] = intValue
-
-  //       const updatedGRNItems = grnProductsList.map((item, itemIndex) => {
-
-  //         if (item.id === rowData.id) {
-  //           return { ...item, [field]: intValue };
-  //         }
-  //         return item;
-  //       });
-
-  //       formik.setValues({
-  //         ...formik.values,
-  //         grnProductsList: updatedGRNItems,
-  //       });
-
-
-  //     } else {
-  //       event.preventDefault();
-  //     }
-  //   }
-  // };
-
-
-  const onCellEditComplete = (e) => {
+  const onCellEditComplete = async (e) => {
     const { rowData, newValue, field, originalEvent: event } = e;
-    console.log('newValue: ', newValue, rowData, field);
-    if (
-      ['receivedQuantity', 'grnRejectedQuantity', 'qcRejectedQuantity', 'grnRejectionRemarks', 'qcRejectionRemarks',].includes(field)
-    ) {
+    console.log('newValue: ', newValue, rowData, field); 
+    if (['receivedQuantity', 'grnRejectedQuantity', 'qcRejectedQuantity', 'grnRejectionRemarks', 'qcRejectionRemarks',].includes(field)) {
+      
       if (newValue?.trim().length > 0) {
         if (field === 'grnRejectedQuantity' || field === 'qcRejectedQuantity' || field === 'receivedQuantity') {
           const intValue = parseInt(newValue, 10);
@@ -544,22 +522,40 @@ export const Purchase_order = () => {
           rowData[field] = newValue;
         }
 
+        // single product
+        // if (selectedProduct?.id === rowData.id) {
+        //   setSelectedProduct({
+        //     ...selectedProduct,
+        //     [field]: rowData[field],
+        //   });
+        // }
+
         const updatedGRNItems = grnProductsList.map((item) => {
+          console.log('here:+++== ', item.id, rowData.id);
           if (item.id === rowData.id) {
+            console.log('here!!++',item.id , rowData.id)
             return { ...item, [field]: rowData[field] };
           }
+          console.log('here!!')
           return item;
         });
+        
 
         formik.setValues({
           ...formik.values,
           grnProductsList: updatedGRNItems,
         });
+
+
       } else {
         event.preventDefault();
       }
     }
   };
+
+
+
+
 
   const textEditor = (options) => {
 
@@ -575,20 +571,66 @@ export const Purchase_order = () => {
 
   const grnItemColumn = [
     // { field: "shortSupply", header: 'Short Supply', body: (rowData) => rowData.po_products.quantity - rowData.receivedQuantity || "-" },
-    { field: "receivedQuantity", header: 'Received Quantity', body: (rowData) => rowData.receivedQuantity || "-" },
+    // {
+    //   field: "shortSupply",
+    //   header: "Short Supply",
+    //   body: (rowData) => {
+    //     const shortSupply = rowData.po_products.quantity - rowData.receivedQuantity;
+    //     return shortSupply >= 0 ? shortSupply : "-";
+    //   },
+    // },
     {
-      field: "shortSupply",
-      header: "Short Supply",
+      field: "receivedQuantity", header: 'Received Quantity',
+      // body: (rowData) => rowData.receivedQuantity || selectedProduct?.receivedQuantity 
       body: (rowData) => {
-        const shortSupply = rowData.po_products.quantity - rowData.receivedQuantity;
-        return shortSupply >= 0 ? shortSupply : "-";
+        const displayedValue = selectedProduct ? selectedProduct.receivedQuantity : rowData.receivedQuantity || '-';
+        console.log('displayedValue: ', displayedValue);
+        return displayedValue;
+      }
+
+    },
+    {
+      field: "grnRejectedQuantity", header: 'GRN Rejected Quantity',
+      // body: (rowData) => rowData.grnRejectedQuantity || "-" 
+      body: (rowData) => {
+        const displayedValue = selectedProduct ? selectedProduct.grnRejectedQuantity : rowData.grnRejectedQuantity || '-';
+        return displayedValue;
       },
     },
-    { field: "grnRejectedQuantity", header: 'GRN Rejected Quantity', body: (rowData) => rowData.grnRejectedQuantity || "-" },
-    { field: "grnRejectionRemarks", header: 'GRN Rejection Remarks', body: (rowData) => rowData.grnRejectionRemarks || "-" },
-    { field: "qcRejectedQuantity", header: 'QC Rejected Quantity', body: (rowData) => rowData.qcRejectedQuantity || "-" },
-    { field: "qcRejectionRemarks", header: 'QC Rejection Remarks', body: (rowData) => rowData.qcRejectionRemarks || "-" },
-    { field: "finalQuantity", header: 'Final Quantity', body: (rowData) => rowData.receivedQuantity - rowData.grnRejectedQuantity - rowData.qcRejectedQuantity || "-" },
+
+    {
+      field: "grnRejectionRemarks", header: 'GRN Rejection Remarks',
+      // body: (rowData) => rowData.grnRejectionRemarks || "-" 
+      body: (rowData) => {
+        const displayedValue = selectedProduct ? selectedProduct.grnRejectionRemarks : rowData.grnRejectionRemarks || '-';
+        return displayedValue;
+      },
+    },
+    {
+      field: "qcRejectedQuantity", header: 'QC Rejected Quantity',
+      // body: (rowData) => rowData.qcRejectedQuantity || "-"
+      body: (rowData) => {
+        const displayedValue = selectedProduct ? selectedProduct.qcRejectedQuantity : rowData.qcRejectedQuantity || '-';
+        return displayedValue;
+      },
+    },
+    {
+      field: "qcRejectionRemarks", header: 'QC Rejection Remarks',
+      // body: (rowData) => rowData.qcRejectionRemarks || "-" 
+      body: (rowData) => {
+        const displayedValue = selectedProduct ? selectedProduct.qcRejectionRemarks : rowData.qcRejectionRemarks || '-';
+        return displayedValue;
+      },
+    },
+    {
+      field: "finalQuantity", header: 'Final Quantity',
+      // body: (rowData) => rowData.receivedQuantity - rowData.grnRejectedQuantity - rowData.qcRejectedQuantity || "-"
+      body: (rowData) => {
+        const displayedValue = selectedProduct ? selectedProduct.receivedQuantity - selectedProduct.grnRejectedQuantity - selectedProduct.qcRejectedQuantity
+          : rowData.receivedQuantity - rowData.grnRejectedQuantity - rowData.qcRejectedQuantity || "-"
+        return displayedValue;
+      },
+    },
   ]
 
   // rowData.po_products.quantity
@@ -627,23 +669,27 @@ export const Purchase_order = () => {
   // Pull Products from PO
 
   const [pullProducts, setPullProducts] = useState(true)
-
   const handlePullProductsChange = (e) => {
     const shouldPullProducts = e.value;
-    if (!shouldPullProducts) {
-      setGrnProductsList([{}]);
-    } else {
-
-      setGrnProductsList([]);
-    }
     setPullProducts(shouldPullProducts);
+
   };
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  console.log('selectedProduct: ', selectedProduct);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [selectedRowData, setSelectedRowData] = useState(null);
+
+  // Filter products based on user input
+  const filterProducts = (event) => {
+    const query = event.query.toLowerCase();
+    const filtered = grnProductsList.filter(product => product.productName.toLowerCase().includes(query));
+    setFilteredProducts(filtered);
+  }
 
   const [itemProductList, setItemProductsList] = useState([initialGrnProductState])
   const [selectItem, setSelecttItem] = useState([])
   console.log('itemProductList: ', itemProductList);
   const searchProducts = createSearchFunction(itemProductList, setSelecttItem)
-
 
 
   // QC Pending code
@@ -691,6 +737,7 @@ export const Purchase_order = () => {
       const updatedProducts = grnProductsList.map(product => ({ ...product, qcComplete: 1 }));
       setGrnProductsList(updatedProducts);
 
+
     } else {
       if (selectGrnProducts.length >= 1) {
         formik.setFieldValue("status", { id: 4, name: 'QC_Pending', description: null });
@@ -706,10 +753,13 @@ export const Purchase_order = () => {
         formik.setFieldValue("status", { id: 1, name: 'Created', description: null });
         const updatedProducts = grnProductsList.map(product => ({ ...product, qcComplete: 0 }));
         setGrnProductsList(updatedProducts);
+
       }
     }
 
   }
+
+
 
 
   return (
@@ -1089,127 +1139,6 @@ export const Purchase_order = () => {
                     </div>
                   </div>
 
-                  {/* <div className="col-12 mt-3 mb-2 ">
-                    <h6>GRN Products</h6>
-                    <hr />
-                  </div>
-
-                  {grnProductsList.map((ele, i) => (
-                    <div key={`PO-product-${i} `} className="field grid col-12  mt-2">
-                      <div className="field col-12 lg:col-5 mt-2">
-                        <div className="p-float-label">
-                          <AutoComplete
-                            id="name"
-                            name="name"
-                            value={ele.productName}
-                            // suggestions={ProductsSuggestions}
-                            // completeMethod={searchProducts}
-                            //   forceSelection //
-                            dropdown
-                            field="name"
-                            onChange={async (e) => {
-                              // console.log("event understand", e.value)
-                              // let product_id = typeof e.value === "string" ? "" : e.value?.product_id
-                              // let name = typeof e.value === "string" ? e.value : e.value?.name
-                              // let price_per_unit = typeof e.value === "string" ? e.value : e.value?.Price
-                              // let data = [...itemList]
-
-                              // data[i].product_name = name
-                              // data[i].products_product_id = product_id
-                              // data[i].price_per_unit = price_per_unit
-                              // data[i].quantity = ""
-
-                              // let itemsLength = !e.value?.name ? false : true
-                              // await formik.setValues({ ...formik.values, itemsLength })
-
-                              // setItemList(data)
-                            }}
-                            aria-label="products"
-                            dropdownAriaLabel="Select Product"
-                          //   className={classNames({ "p-invalid": isFormFieldValid("name") })}
-                          />
-
-                          <label
-                            htmlFor="name"
-                          //   className={classNames({ "p-error": isFormFieldValid("name") })}
-                          >
-                            Select Product
-                          </label>
-                        </div>
-                      </div>
-
-
-                      <div className="field col-12 lg:col-2 mt-2">
-                        <span className="p-float-label ">
-                          <InputNumber
-                            name="receivedQuantity"
-                            value={ele.receivedQuantity || "-"}
-                            onChange={(e) => {
-                              handleFormChange(e, i)
-
-                              let _grnProductsList = [...grnProductsList]
-                              _grnProductsList[i].shortSupply = totalshortSupplyTillDate(po_products, ele.poProduct) - e.value
-                            }}
-                            required={ele?.productName}
-                          />
-                          <label className="mr-2">Received Quantity</label>
-                        </span>
-                      </div>
-                      <div className="field col-12 lg:col-2 mt-2">
-                        <span className="p-float-label ">
-                          <InputNumber
-                            name="rejectedQuantity"
-                            value={ele.rejectedQuantity || "-"}
-                            onChange={(e) => {
-                              handleFormChange(e, i)
-                            }}
-                          />
-                          <label className="mr-2">GRN Rejected Quantity</label>
-                        </span>
-                      </div>
-
-                      <div className="field col-12 lg:col-2 mt-2">
-                        <span className="p-float-label ">
-                          <InputNumber
-                            name="rejectedQuantity"
-                            value={ele.rejectedQuantity || "-"}
-                            onChange={(e) => {
-                              handleFormChange(e, i)
-                            }}
-                          />
-                          <label className="mr-2">QC Rejected Quantity</label>
-                        </span>
-
-                      </div>
-                      {!updateGrns && <div className="field col-12 lg:col-2 mt-2">
-                        <span className="p-float-label ">
-                          <InputNumber
-                            name="shortSupply"
-                            value={ele.shortSupply || "-"}
-                          />
-                          <label className="mr-2">Short Supply</label>
-                        </span>
-                      </div>}
-                      <div className="field col-6 lg:col-1 mt-2">
-                        <span className="p-buttonset">
-                          {i === grnProductsList.length - 1 && (
-                            <Button type="button" label="+" onClick={addFields} />
-                          )}
-                          {grnProductsList.length > 1 && (
-                            <Button
-                              type="button"
-                              label="-"
-                              className="p-button-secondary"
-                              onClick={(e) => {
-                                removeFields(i)
-                              }}
-                            />
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  ))}  */}
-
                   <div className="col-12 mt-3">
                     <h6>GRN Products</h6>
                     <div className="card flex align-items-center gap-2 ">
@@ -1218,8 +1147,10 @@ export const Purchase_order = () => {
                       </div>
                       <div>Pull Products from PO</div>
                     </div>
-                    <DataTable
-                      value={grnProductsList}
+
+                    {/* <DataTable
+                    value={grnProductsList}
+                      
                       showGridlines
                       stripedRows
                       editMode="cell"
@@ -1227,7 +1158,6 @@ export const Purchase_order = () => {
                       selectionMode='multiple'
                       selection={selectGrnProducts}
                       onSelectionChange={(e) => setSelectGrnProducts(e.value)}
-
                     >
                       <Column
                         header='ID'
@@ -1238,18 +1168,11 @@ export const Purchase_order = () => {
                           </div>
                         )}
                       />
-                      {/* <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column> */}
                       <Column
                         selectionMode="multiple"
                         headerStyle={{ width: '3rem' }}
                         checked={isAllRowsSelected()}
                         onChange={(e) => handleSelectAll(e)}
-                      // header={() => (
-                      //   <Checkbox
-                      //     checked={selectAllChecked}
-                      //     onChange={(e) => handleSelectAll(e)}
-                      //   />
-                      // )}
                       />
                       <Column
                         header='Products'
@@ -1286,6 +1209,7 @@ export const Purchase_order = () => {
                                 //   className={classNames({ "p-invalid": isFormFieldValid("name") })}
                                 />
                               ) : (
+                                
                                 <AutoComplete
                                   id="name"
                                   name="productName"
@@ -1357,11 +1281,134 @@ export const Purchase_order = () => {
                         />
                       )}
 
+                    </DataTable>  */}
+
+                    <DataTable
+                      value={pullProducts ? grnProductsList : [{}]}
+                      showGridlines
+                      stripedRows
+                      editMode="cell"
+                      // selectionMode={grnProductsList.length === 1 ? 'single' : null}
+                      selectionMode='multiple'
+                      selection={selectGrnProducts}
+                      onSelectionChange={(e) => setSelectGrnProducts(e.value)}
+                    >
+                      <Column
+                        header='ID'
+                        className="reduce-column"
+                        body={(ele, { rowIndex }) => (
+                          <div key={rowIndex} className=" ">
+                            <span className="bg-primary border-circle w-2rem h-2rem flex align-items-center justify-content-center">{rowIndex + 1}</span>
+                          </div>
+                        )}
+                      />
+                      <Column
+                        selectionMode="multiple"
+                        headerStyle={{ width: '3rem' }}
+                        checked={isAllRowsSelected()}
+                        onChange={(e) => handleSelectAll(e)}
+                      />
+                      <Column
+                        header='Products'
+                        body={(ele, { rowIndex }) => {
+                          return (
+                            <div className="">
+                              {pullProducts ? (
+                                <AutoComplete
+                                  id="name"
+                                  name="productName"
+                                  value={ele.productName}
+                                  dropdown
+                                  onChange={async (e) => {
+
+                                  }}
+                                  aria-label="products"
+                                  dropdownAriaLabel="Select Product"
+                                />
+                              ) : (
 
 
+                                <AutoComplete
+                                  value={selectedProduct}
+                                  suggestions={filteredProducts}
+                                  completeMethod={filterProducts}
+                                  field="productName"
+                                  onChange={(e) => {
+                                    setSelectedProduct(e.value);
 
+                                  }}
+                                  placeholder="Select product..."
+                                  dropdown
+                                />
+
+
+                              )}
+                            </div>
+                          )
+                        }}
+                      />
+
+                      {grnItemColumn.map((i) => {
+                        return (
+                          <Column
+                            key={i.field}
+                            field={i.field}
+                            header={i.header}
+                            body={i.body}
+                            editor={
+                              i.field === 'receivedQuantity' ||
+                                i.field === 'grnRejectedQuantity' ||
+                                i.field === 'qcRejectedQuantity' ||
+                                i.field === 'grnRejectionRemarks' ||
+                                i.field === 'qcRejectionRemarks' ?
+                                textEditor : null
+                            }
+                            onCellEditComplete={
+                              i.field === 'receivedQuantity' ||
+                                i.field === 'grnRejectedQuantity' ||
+                                i.field === 'qcRejectedQuantity' ||
+                                i.field === 'grnRejectionRemarks' ||
+                                i.field === 'qcRejectionRemarks' ?
+                                onCellEditComplete : null
+                            }
+                          />
+                        )
+                      })}
+
+
+                      {grnProductsList?.length > 1 && (
+                        <Column
+                          header='Remove'
+                          className="reduce-column"
+                          body={(ele, { rowIndex }) => {
+                            return (
+                              <span className="">
+
+                                {grnProductsList.length > 1 && (
+                                  <Button
+                                    type="button"
+                                    icon='pi pi-times'
+                                    className="p-button-secondary"
+                                    onClick={() => {
+                                      removeFields(rowIndex);
+                                    }}
+                                  />
+                                )}
+                              </span>
+                            );
+                          }}
+                        />
+                      )}
 
                     </DataTable>
+
+
+
+
+
+
+
+
                   </div>
 
                 </div>
@@ -1380,6 +1427,7 @@ export const Purchase_order = () => {
                       formik.resetForm()
                       setGrnProductsList([initialGrnProductState])
 
+
                     }}
                     className="p-button-secondary flex-grow-0" />
                 </div>
@@ -1395,9 +1443,9 @@ export const Purchase_order = () => {
         {grnList?.length > 0 &&
           <Accordion className="m-3">
             {grnList?.map((grn, index) => {
-              console.log('grn: ', grn);
+              console.log('grn:@@@ ', grn);
               const shipmentId = getShipmentIdByVendorShipmentId(grn.vendorShipmentId);
-              
+
               console.log('shipmentId: ++', shipmentId);
               const headerText = `${grn.grnNumber} -  Shipment-${shipmentId} -  Status-`;
 
@@ -1405,15 +1453,60 @@ export const Purchase_order = () => {
               console.log('shouldShowButton: ', shouldShowButton);
 
               const accordionHeader = (
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <div>GrnID-{grn.grnNumber}-</div>
-                  <div>-Shipment-{shipmentId}--</div>
-                  <div>Status-{grn.grn_status.name}</div>
+                <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                  <div>GrnID: {grn.grnNumber}</div>
+                  <div>Shipment: {shipmentId}</div>
+                  <div>Remarks: {grn.grnRemarks ? grn.grnRemarks : '-'}</div>
+                  <div>Status: {grn.grn_status.name}</div>
+
                   <div className="flex gap-2">
                     <div>
                       {shouldShowButton && (
                         <div className="flex justify-content-end">
-                          <Button icon="pi pi-plus" label="Create PutAway" />
+                          <Button
+                            icon="pi pi-plus"
+                            label="Create PutAway"
+                            onClick={async () => {
+                              console.log('grnNumber@@', grn?.grnNumber)
+                              try {
+                                await createPutaway({
+                                  putawayNumber: `Putaway#${Math.floor(Math.random() * 100000)}`,
+                                  status: 'Pending',
+                                  user: {
+                                    connect: {
+                                      id: Number(user?.id)
+                                    }
+                                  },
+                                  putaway_types: {
+                                    connect: {
+                                      id: 2
+                                    }
+                                  },
+                                  grn: {
+                                    connect: {
+                                      id: Number(grn?.id)
+                                    }
+                                  },
+                                }, {
+                                  onSuccess: (data) => {
+                                    toast?.current.show(tsuccess("Created", `putaway is created successfully`))
+                                    router.push(`/putaways/${data.id}`)
+                                  },
+                                  onError: (error) => {
+                                    console.log('error:putaway ', error);
+                                    toast?.current.show(tError("Error", `not Created putaway `))
+
+                                  }
+                                })
+
+                              } catch (error) {
+                                console.error('error:putaway ', error);
+
+                              }
+
+                            }}
+
+                          />
                         </div>
                       )}
                     </div>
@@ -1423,6 +1516,7 @@ export const Purchase_order = () => {
                   </div>
                 </div >
               );
+
               return (
                 <AccordionTab
                   // header={headerText}
@@ -1434,6 +1528,8 @@ export const Purchase_order = () => {
                       <Button icon="pi pi-plus" label="Create PutAway" />
                     </div>
                   )} */}
+
+
                   {renderGrn(grn)}
                   <DataTable
                     editMode="cell"
@@ -1451,7 +1547,7 @@ export const Purchase_order = () => {
             })}
           </Accordion>}
 
-      </div>
+      </div >
     </>
   )
 }

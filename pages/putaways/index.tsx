@@ -18,16 +18,20 @@ import UpdatePutaway from 'app/putaways/mutations/updatePutaway';
 import { InputText } from "primereact/inputtext";
 import classNames from "classnames";
 import { useFormik } from "formik";
-import { tsuccess } from "app/constants";
+import { tError, tsuccess } from "app/constants";
 import { Dropdown } from "primereact/dropdown";
 import { connect } from "http2";
+import { Dialog } from "primereact/dialog";
+import { Toast } from "primereact/toast";
+import { useCurrentUser } from "app/core/hooks/useCurrentUser";
 
 
 
 const ITEMS_PER_PAGE = 100;
+const randomPutawayNumber = `Putaway#${Math.floor(Math.random() * 100000)}`;
 
 const initialPutaway = {
-  putawayNumber: "",
+  putawayNumber: randomPutawayNumber,
   pendingQuantity: "",
   quantity: "",
   status: "",
@@ -42,6 +46,10 @@ export const PutawaysList = () => {
   const router = useRouter();
   const page = Number(router.query.page) || 0;
   const toast = useRef(null)
+  const user = useCurrentUser()
+  const { id, role, name, email } = user
+  console.log('user:@ ', user.id);
+  
   // const [{  hasMore }] = usePaginatedQuery(getPutaways, {
   //   orderBy: { id: "asc" },
   //   skip: ITEMS_PER_PAGE * page,
@@ -160,12 +168,12 @@ export const PutawaysList = () => {
   const formik = useFormik({
     initialValues: putawayDetails,
     validationSchema: Yup.object().shape({
-      putawayNumber: Yup.string().required("*Required"),
+      putawayTypeId: Yup.object().required("*Required"),
     }),
     onSubmit: async (data) => {
-      console.log('data: ', data);
+      console.log('onSubmit data: ', data);
 
-      const { putawayNumber, pendingQuantity, quantity, status, grnId, createdBy, putawayTypeId, user, grn, } = data
+      const { putawayNumber, pendingQuantity, quantity, status, grnId, createdBy, putawayTypeId, grn, } = data
 
       const { id: avtivePutawayID } = activePutawayData
 
@@ -174,8 +182,8 @@ export const PutawaysList = () => {
           await updatePutaway({
             id: avtivePutawayID,
             putawayNumber,
-            pendingQuantity: Number(pendingQuantity),
-            quantity: Number(quantity),
+            // pendingQuantity: Number(pendingQuantity),
+            // quantity: Number(quantity),
             status,
             user: {
               connect: {
@@ -190,11 +198,16 @@ export const PutawaysList = () => {
 
           }, {
             onSuccess: () => {
-              alert("Updated ")
+              alert('Updated')
+              toast?.current?.show(tError("updated", 'Putaway is now Updated'))
+
+              // formik.resetForm()
+              // setActiveUpdatePutaways(false)
             },
             onError: (error) => {
               console.log('update error: ', error);
               alert("update error")
+              toast?.current?.show(tError("update error", 'Putaway is not Updated'))
             }
           })
 
@@ -204,10 +217,12 @@ export const PutawaysList = () => {
       } else {
         try {
           await createPutaway({
+            // putawayNumber: `Putaway#${Math.floor(Math.random() * 100000)}`,
+
             putawayNumber,
-            pendingQuantity: Number(pendingQuantity),
-            quantity: Number(quantity),
-            status,
+            // pendingQuantity: Number(pendingQuantity),
+            // quantity: Number(quantity),
+            status: 'Pending',
 
             putaway_types: {
               connect: {
@@ -216,31 +231,40 @@ export const PutawaysList = () => {
             },
             user: {
               connect: {
-                id: Number(createdBy)
+                // id: Number(createdBy)
+                id:Number(user?.id)
               }
             },
-            grn: {
-              connect: {
-                id: Number(grnId)
-              }
-            },
+            // grn: {
+            //   connect: {
+            //     // id: Number(grnId)
+            //     // id:10
+            //   }
+            // },
+
           }, {
             onSuccess: async (data) => {
+              console.log('data: onSuccess', data);
+              // alert("Created")
               toast?.current?.show(tsuccess("Created", `Putaway is now Created`))
+              router.push(`/putaways/${data.id}`)
             },
             onError: (error) => {
-              alert('onError')
-              console.log('Error:', error)
+              // alert('Error')
+              toast?.current?.show(tError("Error", `Putaway is not Created`))
+              console.log('error: onError', error)
             }
           })
         } catch (error) {
-          alert('err')
-          console.log('error:', error)
+          // alert('err')
+          toast?.current?.show(tError("Created", `Putaway is not Created`))
+          console.log('error: catch', error)
         }
       }
     }
   })
 
+  console.log('formik.errors', formik.errors)
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
@@ -248,6 +272,7 @@ export const PutawaysList = () => {
 
   return (
     <div>
+      <Toast ref={toast} />
       <div className="col-12 card flex justify-content-between align-items-center m-0">
         <h2 className="mt-2">Putaway</h2>
         <Button
@@ -261,7 +286,47 @@ export const PutawaysList = () => {
       </div>
 
       <form onSubmit={formik.handleSubmit} className="p-fluid">
+        {/* Create Putaway form  */}
+
         {createDialog &&
+          // <Dialog header="Create Putaway" visible={createDialog} style={{ width: '50vw', height: '40vh' }} onHide={() => setCreateDialog(false)}>
+            <>
+            <h3>Create Putaways</h3>
+            <div className="field col-12 lg:col-2 md:col-6 mt-3">
+            {/* <div className="field mt-4"> */}
+              <span className="p-float-label">
+                <Dropdown
+                  value={selectedPutawayType}
+                  placeholder="Select a Putaway type"
+                  options={putaway_types} optionLabel="name"
+                  onChange={(e) => {
+                    formik.setFieldValue("putawayTypeId", e.value);
+                    setSelectedPutawayType(e.value);
+                  }}
+                  className="w-full" />
+                <label
+                  htmlFor="putaway_types"
+                  className={classNames({ "p-error": isFormFieldValid("putaway_types") })}
+                >
+                  *Putaway Types
+                </label>
+              </span>
+              {getFormErrorMessage("putawayTypeId")}
+            </div>
+            <div className="flex justify-content-end" style={{ marginTop: '10rem' }}>
+              <Button
+                type="submit"
+                onClick={() => console.log('log')}
+                className="mr-2"
+                label="Create Putaway"
+              />
+            </div>
+            </>
+          // </Dialog>
+        }
+
+        {/* Update Putaways */}
+        {activeUpdatePutaways &&
           <div className="col-12 card mt-4">
             <h3>{activeUpdatePutaways ? 'Update Putaways' : 'Create Putaways'}</h3>
             <div className="formgrid grid">
@@ -350,45 +415,12 @@ export const PutawaysList = () => {
 
       </form>
 
+
+
+
+
+
       <div className="mt-2">
-        {/* all data is showing */}
-        {/* <TabView>
-
-          <TabPanel header="All">
-            <div className="col-12 card">
-              <DataTable
-                value={putaways}
-                responsiveLayout="scroll"
-                showGridlines
-                stripedRows
-                className="text-s datatable-responsive"
-              >
-                {columnComponents}
-              </DataTable>
-
-            </div>
-          </TabPanel>
-
-          <TabPanel header="Pending">
-            <div className="col-12 card">
-              <DataTable
-                value={putaways}
-                responsiveLayout="scroll"
-                showGridlines
-                stripedRows
-                className="text-s datatable-responsive"
-              >
-                {columnComponents}
-                <Column
-                  field="putawayNumber"
-                  header='Putaway Number'
-                />
-              </DataTable>
-            </div>
-          </TabPanel>
-
-        </TabView>  */}
-
         {/* Filter putaways based on status  */}
 
         <TabView>
@@ -403,15 +435,14 @@ export const PutawaysList = () => {
                 onRowClick={async (e) => {
                   setActivePutawayData({ ...e.data })
                   console.log('onRow', e.data)
-                  setCreateDialog(true)
                   setActiveUpdatePutaways(true)
                   const selectedPutawayType = putaway_types.find((type) => type.id === e.data.putawaytypeId);
                   console.log('selectedPutawayType: ', selectedPutawayType.name);
 
                   await formik.setValues({
                     ...e.data,
-                    putaway_types: selectedPutawayType? { value: selectedPutawayType.name, label: selectedPutawayType.id }
-: null,
+                    putaway_types: selectedPutawayType ? { value: selectedPutawayType.name, label: selectedPutawayType.id }
+                      : null,
                   })
                 }}
               >

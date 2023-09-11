@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc"
 import db, { Prisma } from "db"
 
 interface GetGrnsInput
-  extends Pick<Prisma.grnFindManyArgs, "where" | "orderBy" | "skip" | "take"> {}
+  extends Pick<Prisma.grnFindManyArgs, "where" | "orderBy" | "skip" | "take"> { }
 
 export default resolver.pipe(
   resolver.authorize(),
@@ -23,6 +23,36 @@ export default resolver.pipe(
           ...paginateArgs,
           where,
           orderBy,
+          include: {
+            user: true,
+            grn_products: {
+              include: {
+                po_products: {
+                  include:{
+                    vendor_products:{
+                      include:{
+                        products:{
+                          include:{
+                            inventory_products:{
+                              include:{
+                                shelves:true
+                              }
+                            }
+                          }
+                        },
+                        vendors:true,
+                        
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            purchase_orders:true,
+
+
+          },
+
         }),
     })
 

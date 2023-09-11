@@ -114,8 +114,6 @@ const columns = [
             <div className="product-column">
               <div
                 className="product-header"
-
-
               // onMouseLeave={handleMouseLeave}
               >
                 <Button
@@ -152,7 +150,6 @@ const columns = [
                       )
                     })}
                   </div>
-
 
                 </OverlayPanel>
 
@@ -340,6 +337,7 @@ export const ProductsList = () => {
   console.log('products: ', products);
   const [{ product_categories }] = useQuery(getProduct_categories, { orderBy: { id: "desc" } })
   const [{ product_brands }] = useQuery(getProduct_brands, { orderBy: { id: "asc" } })
+  console.log('product_categories: ', product_categories);
 
 
   // <===STOP===>

@@ -14,7 +14,20 @@ export default resolver.pipe(
   async ({ id }) => {
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const putaway = await db.putaway.findFirst(
-      {where: { id }});
+      {
+        where: { id },
+        include: {
+          putaway_products: {
+            include: {
+              putaway: true,
+              // products: true,
+              shelves: true,
+              
+            }
+          }
+        }
+
+      });
 
     if (!putaway) throw new NotFoundError();
 

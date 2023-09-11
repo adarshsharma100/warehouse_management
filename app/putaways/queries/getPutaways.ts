@@ -1,6 +1,7 @@
 import { paginate } from "blitz";
 import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
+import { T } from "@blitzjs/auth/dist/index-c7aa9db2";
 
 interface GetPutawaysInput
   extends Pick<
@@ -22,7 +23,20 @@ export default resolver.pipe(
       take,
       count: () => db.putaway.count({ where }),
       query: (paginateArgs) =>
-        db.putaway.findMany({ ...paginateArgs, where, orderBy ,}),
+        db.putaway.findMany({ ...paginateArgs, where, orderBy ,
+          // include:{
+          //   putaway_products: true
+          // }
+          include:{
+            putaway_products: {
+              include:{
+                putaway:true,
+                // products:true,
+                shelves:true,
+              }
+            }
+          }
+        }),
     });
 
     return {
