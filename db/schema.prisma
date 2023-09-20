@@ -29,11 +29,12 @@ model addresses {
 }
 
 model areas {
-  id                                   Int       @id @default(autoincrement())
-  name                                 String    @db.VarChar(45)
-  description                          String?   @db.VarChar(150)
+  id                                   Int         @id @default(autoincrement())
+  name                                 String      @db.VarChar(45)
+  description                          String?     @db.VarChar(150)
   warehouse                            Int
-  warehouse_areas_warehouseTowarehouse warehouse @relation("areas_warehouseTowarehouse", fields: [warehouse], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_areas_warehouse1")
+  type                                 areas_type?
+  warehouse_areas_warehouseTowarehouse warehouse   @relation("areas_warehouseTowarehouse", fields: [warehouse], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_areas_warehouse1")
   shelves                              shelves[]
 
   @@index([warehouse], map: "fk_areas_warehouse1_idx")
@@ -209,17 +210,18 @@ model inventory_history_adjustments {
 }
 
 model inventory_products {
-  id                Int                 @id @default(autoincrement())
-  description       String?             @db.VarChar(45)
-  quantity          Int?
-  createdAt         DateTime            @default(now()) @db.DateTime(0)
-  updatedAt         DateTime            @default(now()) @db.DateTime(0)
-  product           Int
-  shelf             Int
-  inventory_history inventory_history[]
-  products          products            @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_products1")
-  shelves           shelves             @relation(fields: [shelf], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_shelfs1")
-  putaway_products  putaway_products[]
+  id                  Int                 @id @default(autoincrement())
+  description         String?             @db.VarChar(45)
+  quantity            Int?
+  createdAt           DateTime            @default(now()) @db.DateTime(0)
+  updatedAt           DateTime            @default(now()) @db.DateTime(0)
+  product             Int
+  shelf               Int
+  maxQuantityPerShelf Int?
+  inventory_history   inventory_history[]
+  products            products            @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_products1")
+  shelves             shelves             @relation(fields: [shelf], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_shelfs1")
+  putaway_products    putaway_products[]
 
   @@unique([product, shelf], map: "product_shelf")
   @@index([product], map: "fk_inventory_products_products1_idx")
@@ -913,4 +915,15 @@ enum vendors_status {
 enum products_status {
   Active
   Inactive
+}
+
+enum areas_type {
+  Selling
+  Picking
+  Holding
+  Inbounding
+  Assemble
+  QC_Area            @map("QC Area")
+  Return_To_Customer @map("Return To Customer")
+  E_waste            @map("E-waste")
 }

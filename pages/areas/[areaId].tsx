@@ -19,7 +19,7 @@ import createShelf from "app/shelves/mutations/createShelf";
 import { DataTable } from "primereact/datatable";
 import getShelves from "app/shelves/queries/getShelves";
 import { Column } from "primereact/column";
-import { createSearchFunction, initialFilterRules, tsuccess } from "app/constants";
+import { createSearchFunction, initialFilterRules, tError, tsuccess } from "app/constants";
 import updateShelf from "app/shelves/mutations/updateShelf";
 import { Toast } from "primereact/toast";
 import { FilterMatchMode } from "primereact/api";
@@ -146,7 +146,8 @@ export const Area = () => {
             },
             onError: async (error) => {
               console.log('error: ', error);
-              // alert('update Error', error)s
+              toast?.current.show(tsuccess("Not Updated", `Shelf is not updated`))
+
               await refetchArea()
             }
           })
@@ -174,7 +175,7 @@ export const Area = () => {
             },
             onError: (error) => {
               console.log('error: ', error);
-              alert('Create error')
+              toast?.current.show(tError("Not Created", `Shelf is  not created`))
             }
           })
 
