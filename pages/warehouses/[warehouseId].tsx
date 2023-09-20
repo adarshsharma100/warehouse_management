@@ -18,8 +18,9 @@ import getAreas from "app/areas/queries/getAreas";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { Toast } from "primereact/toast";
-import { initialFilterRules, tsuccess } from "app/constants";
+import { initialFilterRules, tError, tsuccess } from "app/constants";
 import { FilterMatchMode } from "primereact/api";
+import { AutoComplete } from "primereact/autocomplete";
 
 // import deleteWarehouse from "src/warehouses/mutations/deleteWarehouse";
 
@@ -71,12 +72,13 @@ export const Warehouse = () => {
 
             },
             onError: (error) => {
-              alert("Not updated :(")
+              toast?.current.show(tError("Area is ", `Not Updated `))
               console.log('error: ', error);
             }
           })
         } catch (error) {
           console.log('error: ', error);
+          toast?.current.show(tError("Area is ", `Not Updated `))
         }
       } else {
         try {
@@ -86,20 +88,18 @@ export const Warehouse = () => {
             description,
           }, {
             onSuccess: async (data) => {
-              alert('Created!')
               toast?.current.show(tsuccess("Created", `Area is  Created `))
               setActive(!active)
               await refetchWarehouse()
               console.log('data: ', data);
             },
             onError: (error) => {
-
               console.log('error: ', error);
             }
           }
           )
         } catch (error) {
-          alert('err')
+          toast?.current.show(tError("Error", `Area is  Not Created `))
           console.log('error: ', error);
         }
       }
@@ -230,6 +230,25 @@ export const Warehouse = () => {
   const warehouseIDTableHeader = renderHeader()
 
 
+  // Dropdown Filter 
+  const areaDropdownOptions = [
+    { id: 1, label: 'Good' },
+    { id: 2, label: 'Bad' },
+    { id: 3, label: 'Blocked' },
+    { id: 4, label: 'E-waste' },
+    { id: 5, label: 'Inbound' },
+    { id: 6, label: 'main' },
+  ];
+  const [areaValue, setAreaValue] = useState('');
+  const [areaItems, setAreaItems] = useState([]);
+
+  const search = (event) => {
+    let _items = areaDropdownOptions.map(option => option.label); // Use labels from areaDropdownOptions
+    setAreaItems(event.query ? _items.filter(item => item.toLowerCase().includes(event.query.toLowerCase())) : _items);
+  }
+
+
+
   return (
     <div>
       <Head>
@@ -283,8 +302,24 @@ export const Warehouse = () => {
                 )
               })
               }
-
+              {/* <div className="mt-4">
+                <span className="p-float-label">
+                  <AutoComplete
+                    dropdown
+                    value={areaValue}
+                    suggestions={areaItems}
+                    completeMethod={search}
+                    onChange={(e) => setAreaValue(e.value)}
+                  />
+                  <label >
+                    Shelf types
+                  </label>
+                </span>
+              </div> */}
             </div>
+
+
+
             <div className="flex justify-content-end">
 
               <Button

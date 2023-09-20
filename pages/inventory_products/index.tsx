@@ -22,7 +22,7 @@ import { useFormik } from "formik"
 import * as Yup from "yup"
 import classNames from "classnames"
 import { AutoComplete } from "primereact/autocomplete"
-import { createSearchFunction, exportExcel, initialFilterRules, tsuccess } from "app/constants"
+import { createSearchFunction, exportExcel, initialFilterRules, tError, tsuccess } from "app/constants"
 import { Toast } from "primereact/toast"
 import ErrorCard from "components/ErrorCard"
 import LoaderFullScreen from "components/LoaderFullScreen"
@@ -32,6 +32,9 @@ import getWarehouse from "app/warehouses/queries/getWarehouse"
 import getArea from "app/areas/queries/getArea"
 import { MultiSelect } from "primereact/multiselect"
 import { Paginator } from "primereact/paginator"
+import { ConfirmDialog } from "primereact/confirmdialog"
+import { InputTextarea } from "primereact/inputtextarea"
+import { Dialog } from "primereact/dialog"
 
 const ITEMS_PER_PAGE = 20;
 
@@ -102,6 +105,7 @@ export const Inventory_productsList = () => {
     name: "",
     price: null,
     quantity: null,
+    maxQuantityPerShelf: null,
     products_product_id: "",
     product_description: "",
     good_stock: null,
@@ -115,6 +119,7 @@ export const Inventory_productsList = () => {
   const [productSuggestions, setProductSuggestions] = useState<any>(null)
   const [productDetails, setProductDetails] = useState(productInitialState)
   const [activeRowData, setActiveRowData] = useState({})
+  console.log('activeRowData: ', activeRowData);
   const [btnVisibility, setBtnVisibility] = useState(false)
   const [errorProducts, setErrorProducts] = useState([])
 
@@ -142,13 +147,13 @@ export const Inventory_productsList = () => {
   const toast = useRef(null)
   const scrollToTop = useRef<HTMLDivElement>(null)
   const [selectedColumns, setSelectedColumns] = useState([])
+
   const columns = [
     {
       field: "product.sku",
       header: "SKU",
       filter: true,
       filterPlaceholder: "Search by SKU",
-
     },
     {
       field: "product.name",
@@ -160,22 +165,21 @@ export const Inventory_productsList = () => {
       field: "product.product_types.type",
       header: "Type",
       filter: true,
-      filterPlaceholder: "Search by Type"
+      filterPlaceholder: "Search by Type",
     },
     {
       field: "good_stock",
       header: "Good-Stock",
       filter: true,
       filterPlaceholder: "Search by Good stock",
-      body: (rowdata) => findQuantityByShelfType("Good", rowdata.shelves)
-
+      body: (rowdata) => findQuantityByShelfType("Good", rowdata.shelves),
     },
     {
       field: "bad_stock",
       header: "Bad-Stock",
       filter: true,
       filterPlaceholder: "Search by bad stock",
-      body: (rowdata) => findQuantityByShelfType("Bad", rowdata.shelves)
+      body: (rowdata) => findQuantityByShelfType("Bad", rowdata.shelves),
     },
     {
       field: "block_stock",
@@ -201,8 +205,8 @@ export const Inventory_productsList = () => {
       field: "brand",
       header: "Brand",
     }
-
   ];
+
   const clearFilter = () => {
     setFilters(initialFilters)
     setGlobalFilterValue("")
@@ -231,6 +235,7 @@ export const Inventory_productsList = () => {
           />
         </div>
 
+
         <span className="p-input-icon-left">
           <i className="pi pi-search" />
           <InputText
@@ -253,9 +258,94 @@ export const Inventory_productsList = () => {
   }
   const header1 = renderHeader()
 
+  const [value, setValue] = useState('');
+  const [visible, setVisible] = useState(false);
+  const [isSubmitEnabled, setIsSubmitEnabled] = useState(false);
+  const [updateData, setUpdateData] = useState(null); // Store the quantity data to be updated
+
+  const handleInputChange = (e) => {
+    const inputValue = e.target.value;
+    setValue(inputValue);
+    setIsSubmitEnabled(inputValue.length >= 5);
+  };
+ 
+  const handleYesClick = async () => {
+    if (updateData) {
+      const { id, newValue } = updateData;
+      console.log('updateQuantity: ', id, newValue);
+      try {
+        await updateInventory_productMutation(
+          {
+            id,
+            quantity: newValue,
+          },
+          {
+            onSuccess: async (data) => {
+              toast?.current?.show(
+                tsuccess(' updated', 'updated successfully.')
+              );
+            },
+            onError: async (error) => {
+              console.log('error:== ', error);
+              toast?.current?.show(
+                tError(' error', ' update.')
+              );
+            },
+          }
+        );
+      } catch (error) {
+        toast?.current?.show(
+          tError(' error', ' update.')
+        );
+        console.log('error: ', error);
+      } finally {
+        setVisible(false);
+        setValue('');
+        setUpdateData(null);
+      }
+    }
+  };
+
+  const onCellEditComplete = async (e) => {
+    const { rowData, newValue, field, originalEvent: event } = e;
+
+    if (['quantity'].includes(field)) {
+      if (newValue?.trim().length > 0) {
+        const intValue = parseInt(newValue, 10);
+        
+        if (!isNaN(intValue)) { 
+          rowData[field] = intValue;
+          const updateQuantity = rowData.inventoryProductId; 
+
+          console.log('updateQuantity: ', updateQuantity);
+          setVisible(true)
+
+          setUpdateData({
+            id: updateQuantity,
+            newValue: intValue,
+          });
+
+        } else {
+          // alert('Please enter a valid integer value for quantity.');
+          toast?.current?.show(
+            tsuccess("Please enter a valid", `integer value for quantity.`)
+          )
+          event.preventDefault();
+        }
+      } else {
+        event.preventDefault();
+      }
+    }
+  };
+
+  const textEditor = (options) => {
+    return <InputText type="text" value={options.value} onChange={(e) => options.editorCallback(e.target.value)} />;
+  };
+
+
   const rowExpansionTemplate = (data) => {
     return (
-      <div className="w-full expandTable">
+      <div className="w-full expandTable" >
         <DataTable
           value={data.shelves}
           responsiveLayout="scroll"
@@ -264,7 +354,6 @@ export const Inventory_productsList = () => {
           stripedRows
           className="text-s datatable-responsive"
           onRowClick={async (e) => {
-
             const {
               product: { name, sku, id: productId },
               quantity,
@@ -275,6 +364,7 @@ export const Inventory_productsList = () => {
               shelf_type: { name: shelfType }
             } = e.data
 
+            console.log('inventoryProductId: ', inventoryProductId);
             await formik.setValues({
               inventoryProductId,
               name: `${name} - ${sku}`,
@@ -285,8 +375,8 @@ export const Inventory_productsList = () => {
               shelf: { name: `${number} - ${shelfType}` }
 
             })
-            setProductForm(true)
-            setProductEditState(true)
+            // setProductForm(false)
+            // setProductEditState(true)
           }}
 
         // paginator
@@ -310,15 +400,22 @@ export const Inventory_productsList = () => {
             },
             {
               field: "quantity", header: "Quantity"
-            }
+            },
+
+
           ].map(({ field, header, body }, i) => (
             <Column
               key={i}
               field={field}
               header={header}
               body={body}
+              editor={field === "quantity" ? textEditor : null}
+              onCellEditComplete={field === "quantity" ? onCellEditComplete : null}
+
             />
           ))}
+
+
 
         </DataTable>
       </div >
@@ -366,21 +463,25 @@ export const Inventory_productsList = () => {
       area: Yup.object().required("*Required"),
       shelf: Yup.object().required("*Required"),
       quantity: Yup.number().required("*Required").typeError("Must be a Number"),
+      maxQuantityPerShelf: Yup.number().required("*Required").typeError("Must be a Number"),
+
       // good_stock: Yup.number().required("*Required").typeError("Must be a Number"),
     }),
     onSubmit: async (data) => {
       console.log("formdata", data)
 
 
-      const { quantity, products_product_id, shelf, inventoryProductId } = data
+      const { quantity, maxQuantityPerShelf, products_product_id, shelf, inventoryProductId } = data
+      console.log('maxQuantityPerShelf: ', typeof maxQuantityPerShelf);
 
       if (!productEditState) {
         try {
           await createInventory_productMutation(
             {
-              quantity: quantity,
+              quantity: Number(quantity),
               product: products_product_id,
               shelf: shelf.id,
+              maxQuantityPerShelf: Number(maxQuantityPerShelf),
             },
             {
               onSuccess: () => {
@@ -402,6 +503,7 @@ export const Inventory_productsList = () => {
             {
               id: inventoryProductId,
               quantity: Number(quantity),
+              maxQuantityPerShelf: Number(maxQuantityPerShelf),
             },
             {
               onSuccess: () => {
@@ -494,6 +596,7 @@ export const Inventory_productsList = () => {
           filterField={curr?.filterField}
           filterElement={curr?.filterElement}
           dataType={curr?.dataType}
+
         />
       ];
     return acc;
@@ -517,7 +620,38 @@ export const Inventory_productsList = () => {
 
   return (
     <>
+      <ConfirmDialog />
       <Head><title>Inventory</title></Head>
+
+      <Dialog header="Confirmation" visible={visible} style={{ width: '30vw' }} onHide={() => {setVisible(false); setValue('') }}>
+        <div className="flex gap-2 align-items-center" style={{ fontSize: '1.2rem' }}>
+          <i className="pi pi-exclamation-triangle" style={{ fontSize: '1.5rem' }}></i>
+          <p>Are you sure you want to proceed?</p>
+        </div>
+        <div className="mt-6">
+          <label>
+           Adjustment Remark*
+          </label>
+          <InputTextarea
+            value={value}
+            // onChange={(e) => setValue(e.target.value)}
+            onChange={handleInputChange}
+            rows={5}
+            cols={77}
+            placeholder="compulsory 5 characters"
+            className="mt-2"
+          />
+        
+        </div>
+        <div className="flex gap-4 mt-5 justify-content-between">
+          <Button label="Confirm" className="w-full p-button-success"
+            onClick={handleYesClick}
+            disabled={!isSubmitEnabled}
+          />
+          <Button label="Cancel" className="w-full  p-button-danger" onClick={()=> {setVisible(false);setValue('') }} />
+        </div>
+      </Dialog>
+
       <div className="grid w-full mr-0" ref={scrollToTop}>
         {creatingInventory && <LoaderFullScreen />}
         {updatingInventory && <LoaderFullScreen />}
@@ -596,7 +730,7 @@ export const Inventory_productsList = () => {
         >
           <div className="card p-4">
             <form className="p-fluid" onSubmit={formik.handleSubmit}>
-              <h4 className="mb-3">{productEditState ? "Update " : "Create "}Product</h4>
+              <h4 className="mb-3">{productEditState ? "Update " : "Create "}Inventory</h4>
               <div className="formgrid grid justify-content-flex-start">
                 <div className="field col-12 md:col-3 lg:col-3 mt-4">
                   <div className="p-float-label">
@@ -738,6 +872,8 @@ export const Inventory_productsList = () => {
                   // { type: "text", label: "Price", field: "price" },
                   // { type: "text", label: "Quantity", field: "quantity" },
                   { type: "text", label: "Quantity", field: "quantity" },
+                  { type: "text", label: "Max Quantity", field: "maxQuantityPerShelf" },
+
                 ].map((ele, i) => (
                   <div key={i} className="field col-12 md:col-3 lg:col-3 mt-4">
                     <span className="p-float-label">

@@ -5,6 +5,7 @@ import { z } from "zod"
 
 const CreateInventory_product = z.object({
   quantity: z.number(),
+  maxQuantityPerShelf: z.number(),
   product: z.number(),
   shelf: z.number(),
 })
