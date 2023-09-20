@@ -25,6 +25,7 @@ import { Toast } from "primereact/toast";
 import { FilterMatchMode } from "primereact/api";
 import { shelves_reach, shelves_loadingStrength } from "@prisma/client";
 import { Dropdown } from "primereact/dropdown";
+import { L } from "@blitzjs/auth/dist/index-c7aa9db2";
 
 
 const initialShelf = {
@@ -78,7 +79,7 @@ export const Area = () => {
 
   const [checkUpdate, setCheckUpdate] = useState(false)
 
-  const [area, { refetch: refetchArea }] = useQuery(getArea, { id: areaId });
+  const [area, { refetch }] = useQuery(getArea, { id: areaId });
   console.log('area: ', area);
 
 
@@ -141,14 +142,15 @@ export const Area = () => {
             onSuccess: async (data) => {
               toast?.current.show(tsuccess("Updated", `Shelf is  updated`))
               setActive(!active)
-              await refetchArea()
+              await refetch()
+              
 
             },
             onError: async (error) => {
               console.log('error: ', error);
               toast?.current.show(tsuccess("Not Updated", `Shelf is not updated`))
 
-              await refetchArea()
+              await refetch()
             }
           })
 
@@ -172,6 +174,7 @@ export const Area = () => {
             onSuccess: (data) => {
               toast?.current.show(tsuccess("Created", `Shelf is  created`))
               setActive(!active)
+              refetch()
             },
             onError: (error) => {
               console.log('error: ', error);
@@ -391,69 +394,84 @@ export const Area = () => {
             <div className="flex">
 
               <div className="field col-12 md:col-3 lg:col-3">
-                <Dropdown
-                  value={formik.values.loadingStrength}
-                  onChange={(e) => {
-                    formik.setFieldValue('loadingStrength', e.value); // Update loadingStrength field in Formik
-                  }}
-                  // value={selectedLoadingStrength}
-                  // onChange={(e) => setSelectedLoadingStrength(e.target.value)}
-                  options={shelvesLoadingStrength}
-                  optionLabel="value"
-                  placeholder="Select a Loading Strength"
-                />
+                <span className="p-float-label">
+                  <Dropdown
+                    value={formik.values.loadingStrength}
+                    onChange={(e) => {
+                      formik.setFieldValue('loadingStrength', e.value); // Update loadingStrength field in Formik
+                    }}
+                    // value={selectedLoadingStrength}
+                    // onChange={(e) => setSelectedLoadingStrength(e.target.value)}
+                    options={shelvesLoadingStrength}
+                    optionLabel="value"
+                   
+                  />
+                  <label>Loading Strength</label>
+                </span>
               </div>
 
               <div className="field col-12 md:col-3 lg:col-3">
-                <Dropdown
-                  value={formik.values.reach}
-                  onChange={(e) => {
-                    formik.setFieldValue('reach', e.value); // Update loadingStrength field in Formik
-                  }}
-                  // value={selectedReach}
-                  // onChange={(e) => setSelectedReach(e.target.value)}
-                  options={shelveReach}
-                  optionLabel="value"
-                  placeholder="Select a Reach"
+                <span className="p-float-label">
+                  <Dropdown
+                    value={formik.values.reach}
+                    onChange={(e) => {
+                      formik.setFieldValue('reach', e.value); // Update loadingStrength field in Formik
+                    }}
+                    // value={selectedReach}
+                    // onChange={(e) => setSelectedReach(e.target.value)}
+                    options={shelveReach}
+                    optionLabel="value"
+                   
 
-                />
+                  />
+                  <label>Reach</label>
+                </span>
               </div>
-              <AutoComplete
-                className="field col-12 md:col-3 lg:col-3"
-                value={formik.values?.shelfType}
-                // completeMethod={search}
-                completeMethod={searchShelfType}
-                // suggestions={items}
-                field='name'
-                suggestions={shelfTypeSuggestions}
-                placeholder="Shelf Type"
-                onChange={async (e) => {
-                  await formik.setValues({
-                    ...formik.values,
-                    shelfType: e.value
-                  })
-                }}
-                dropdown
-              />
+              <div className="field col-12 md:col-3 lg:col-3">
+                <span className="p-float-label">
+                  <AutoComplete
+                    
+                    value={formik.values?.shelfType}
+                    // completeMethod={search}
+                    completeMethod={searchShelfType}
+                    // suggestions={items}
+                    field='name'
+                    suggestions={shelfTypeSuggestions}
+                    
+                    onChange={async (e) => {
+                      await formik.setValues({
+                        ...formik.values,
+                        shelfType: e.value
+                      })
+                    }}
+                    dropdown
+                  />
+                  <label>Shelf Type</label>
+                </span>
+              </div>
+              <div className="field col-12 md:col-3 lg:col-3">
+                <span className="p-float-label">
+                  <AutoComplete
+                    value={formik.values?.sellable}
+                    suggestions={sellableSuggestions}
+                    completeMethod={searchSellable}
+                    field="label"
 
-              <AutoComplete
-                className="field col-12 md:col-3 lg:col-3 mt-4'"
-                value={formik.values?.sellable}
-                suggestions={sellableSuggestions}
-                completeMethod={searchSellable}
-                field="label"
+                    onChange={async (e) => {
+                      console.log('e: ', e);
 
-                onChange={async (e) => {
-                  console.log('e: ', e);
+                      await formik.setValues({
+                        ...formik.values,
+                        sellable: e.value
+                      })
+                    }}
+                    
+                    dropdown
+                  />
+                  <label>Sellable</label>
+                </span>
 
-                  await formik.setValues({
-                    ...formik.values,
-                    sellable: e.value
-                  })
-                }}
-                placeholder="Sellable"
-                dropdown
-              />
+              </div>
 
             </div>
             <div className="flex justify-content-end">
