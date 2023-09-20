@@ -22,7 +22,7 @@ import { useFormik } from "formik"
 import * as Yup from "yup"
 import classNames from "classnames"
 import { AutoComplete } from "primereact/autocomplete"
-import { createSearchFunction, exportExcel, initialFilterRules, tError, tsuccess } from "app/constants"
+import { createSearchFunction, exportExcel, initialFilterRules, tError, tWarn, tsuccess } from "app/constants"
 import { Toast } from "primereact/toast"
 import ErrorCard from "components/ErrorCard"
 import LoaderFullScreen from "components/LoaderFullScreen"
@@ -251,6 +251,16 @@ export const Inventory_productsList = () => {
           className="p-button-outlined ml-3"
           onClick={clearFilter}
         />
+        <Button
+          className="ml-3"
+          type="button"
+          icon="pi pi-file-excel"
+          label="Export as XLSX"
+          // severity="success"
+          onClick={exportExcel}
+          tooltip="Export Data"
+          tooltipOptions={{ position: 'top' }}
+        />
 
 
       </div>
@@ -268,7 +278,14 @@ export const Inventory_productsList = () => {
     setValue(inputValue);
     setIsSubmitEnabled(inputValue.length >= 5);
   };
- 
+
+  const handleKeyPress = (e) => {
+    const keyCode = e.keyCode || e.which;
+    if (keyCode < 48 || keyCode > 57) {
+      e.preventDefault();
+    }
+  };
+
   const handleYesClick = async () => {
     if (updateData) {
       const { id, newValue } = updateData;
@@ -284,6 +301,7 @@ export const Inventory_productsList = () => {
               toast?.current?.show(
                 tsuccess(' updated', 'updated successfully.')
               );
+              refetch()
             },
             onError: async (error) => {
               console.log('error:== ', error);
@@ -312,10 +330,10 @@ export const Inventory_productsList = () => {
     if (['quantity'].includes(field)) {
       if (newValue?.trim().length > 0) {
         const intValue = parseInt(newValue, 10);
-        
-        if (!isNaN(intValue)) { 
+
+        if (!isNaN(intValue)) {
           rowData[field] = intValue;
-          const updateQuantity = rowData.inventoryProductId; 
+          const updateQuantity = rowData.inventoryProductId;
 
           console.log('updateQuantity: ', updateQuantity);
           setVisible(true)
@@ -328,7 +346,7 @@ export const Inventory_productsList = () => {
         } else {
           // alert('Please enter a valid integer value for quantity.');
           toast?.current?.show(
-            tsuccess("Please enter a valid", `integer value for quantity.`)
+            tWarn("Please enter a valid", `integer value for quantity.`)
           )
           event.preventDefault();
         }
@@ -358,17 +376,19 @@ export const Inventory_productsList = () => {
               product: { name, sku, id: productId },
               quantity,
               inventoryProductId,
+              maxQuantityPerShelf,
               areas: area,
               areas: { warehouse_areas_warehouseTowarehouse: warehouse },
               number,
               shelf_type: { name: shelfType }
             } = e.data
 
-            console.log('inventoryProductId: ', inventoryProductId);
+            console.log('inventoryProductId: ',data.shelves);
             await formik.setValues({
               inventoryProductId,
               name: `${name} - ${sku}`,
               quantity,
+              maxQuantityPerShelf,
               products_product_id: productId,
               warehouse,
               area,
@@ -401,6 +421,9 @@ export const Inventory_productsList = () => {
             {
               field: "quantity", header: "Quantity"
             },
+            {
+              field: "maxQuantityPerShelf", header: "Max Quantity"
+            },
 
 
           ].map(({ field, header, body }, i) => (
@@ -432,15 +455,15 @@ export const Inventory_productsList = () => {
   console.log('inventory_products: ', inventory_products);
   const inventoryTableData = Object.values(
     inventory_products.reduce((acc, curr) => {
-      const { id, quantity, products, shelves } = curr
+      const { id, quantity,maxQuantityPerShelf, products, shelves } = curr
 
       if (acc[products.sku]) {
-        acc[products.sku].shelves.push({ inventoryProductId: id, quantity, product: products, ...shelves, })
+        acc[products.sku].shelves.push({ inventoryProductId: id, quantity, maxQuantityPerShelf, product: products, ...shelves, })
 
       } else {
         acc[products.sku] = {
           product: products,
-          shelves: [{ inventoryProductId: id, quantity, product: products, ...shelves, }],
+          shelves: [{ inventoryProductId: id, quantity,maxQuantityPerShelf, product: products, ...shelves, }],
         }
       }
       return acc;
@@ -488,6 +511,7 @@ export const Inventory_productsList = () => {
                 toast?.current?.show(
                   tsuccess("Product Created", `${data.name} created successfully.`)
                 )
+                refetch()
               },
             }
           )
@@ -510,6 +534,7 @@ export const Inventory_productsList = () => {
                 toast?.current?.show(
                   tsuccess("Product Updated", `${data.name} updated successfully.`)
                 )
+                refetch()
               },
             }
           )
@@ -616,39 +641,40 @@ export const Inventory_productsList = () => {
 
   const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={totalInventoryProduct} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
 
-
+  
 
   return (
     <>
       <ConfirmDialog />
       <Head><title>Inventory</title></Head>
 
-      <Dialog header="Confirmation" visible={visible} style={{ width: '30vw' }} onHide={() => {setVisible(false); setValue('') }}>
-        <div className="flex gap-2 align-items-center" style={{ fontSize: '1.2rem' }}>
+      <Dialog header="Confirmation" visible={visible} style={{ width: '50vw' }} onHide={() => { setVisible(false); setValue('') }}>
+      <div className="flex gap-2 align-items-center" style={{ fontSize: '1.2rem' }}>
           <i className="pi pi-exclamation-triangle" style={{ fontSize: '1.5rem' }}></i>
           <p>Are you sure you want to proceed?</p>
         </div>
-        <div className="mt-6">
-          <label>
-           Adjustment Remark*
-          </label>
+        <div className="mt-4">
+          <p>
+            Adjustment Remark*
+          </p>
           <InputTextarea
             value={value}
             // onChange={(e) => setValue(e.target.value)}
             onChange={handleInputChange}
+            onKeyPress={handleKeyPress}
             rows={5}
             cols={77}
-            placeholder="compulsory 5 characters"
-            className="mt-2"
+            
+            className=""
           />
-        
+
         </div>
         <div className="flex gap-4 mt-5 justify-content-between">
-          <Button label="Confirm" className="w-full p-button-success"
+          <Button label="Confirm" className="w-full"
             onClick={handleYesClick}
             disabled={!isSubmitEnabled}
           />
-          <Button label="Cancel" className="w-full  p-button-danger" onClick={()=> {setVisible(false);setValue('') }} />
+          <Button label="Cancel" className="w-full p-button-secondary" onClick={() => { setVisible(false); setValue('') }} />
         </div>
       </Dialog>
 
@@ -915,18 +941,6 @@ export const Inventory_productsList = () => {
               </div>
             </form>
           </div>
-        </div>
-
-        <div className=" w-full mr-0 flex justify-content-end ">
-          <Button
-            type="button"
-            icon="pi pi-file-excel"
-            label="Export as XLSX"
-            // severity="success"
-            onClick={exportExcel}
-            tooltip="Export Data"
-            tooltipOptions={{ position: 'top' }}
-          />
         </div>
 
         <div className="col-12 mt-3">

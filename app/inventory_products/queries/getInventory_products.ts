@@ -37,6 +37,7 @@ export default resolver.pipe(
                     warehouse_areas_warehouseTowarehouse: true
                   }
                 },
+                
 
 
 
