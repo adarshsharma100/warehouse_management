@@ -148,7 +148,7 @@ export const Area = () => {
             },
             onError: async (error) => {
               console.log('error: ', error);
-              toast?.current.show(tsuccess("Not Updated", `Shelf is not updated`))
+              toast?.current.show(tError("Not Updated", `Shelf is not updated`))
 
               await refetch()
             }
