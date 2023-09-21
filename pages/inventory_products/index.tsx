@@ -261,8 +261,6 @@ export const Inventory_productsList = () => {
           tooltip="Export Data"
           tooltipOptions={{ position: 'top' }}
         />
-
-
       </div>
     )
   }
@@ -279,12 +277,6 @@ export const Inventory_productsList = () => {
     setIsSubmitEnabled(inputValue.length >= 5);
   };
 
-  const handleKeyPress = (e) => {
-    const keyCode = e.keyCode || e.which;
-    if (keyCode < 48 || keyCode > 57) {
-      e.preventDefault();
-    }
-  };
 
   const handleYesClick = async () => {
     if (updateData) {
@@ -356,8 +348,16 @@ export const Inventory_productsList = () => {
     }
   };
 
+
   const textEditor = (options) => {
-    return <InputText type="text" value={options.value} onChange={(e) => options.editorCallback(e.target.value)} />;
+    const handleInputChange = (e) => {
+      const inputValue = e.target.value;
+      if (/^[0-9]*$/.test(inputValue)) {
+        options.editorCallback(inputValue);
+      }
+    };
+
+    return <InputText type="text" inputMode="numeric" pattern="[0-9]*" value={options.value} onChange={handleInputChange} />;
   };
 
 
@@ -383,7 +383,7 @@ export const Inventory_productsList = () => {
               shelf_type: { name: shelfType }
             } = e.data
 
-            console.log('inventoryProductId: ',data.shelves);
+            console.log('inventoryProductId: ', data.shelves);
             await formik.setValues({
               inventoryProductId,
               name: `${name} - ${sku}`,
@@ -455,7 +455,7 @@ export const Inventory_productsList = () => {
   console.log('inventory_products: ', inventory_products);
   const inventoryTableData = Object.values(
     inventory_products.reduce((acc, curr) => {
-      const { id, quantity,maxQuantityPerShelf, products, shelves } = curr
+      const { id, quantity, maxQuantityPerShelf, products, shelves } = curr
 
       if (acc[products.sku]) {
         acc[products.sku].shelves.push({ inventoryProductId: id, quantity, maxQuantityPerShelf, product: products, ...shelves, })
@@ -463,7 +463,7 @@ export const Inventory_productsList = () => {
       } else {
         acc[products.sku] = {
           product: products,
-          shelves: [{ inventoryProductId: id, quantity,maxQuantityPerShelf, product: products, ...shelves, }],
+          shelves: [{ inventoryProductId: id, quantity, maxQuantityPerShelf, product: products, ...shelves, }],
         }
       }
       return acc;
@@ -641,15 +641,15 @@ export const Inventory_productsList = () => {
 
   const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={totalInventoryProduct} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
 
-  
+
 
   return (
     <>
       <ConfirmDialog />
       <Head><title>Inventory</title></Head>
 
-      <Dialog header="Confirmation" visible={visible} style={{ width: '50vw' }} onHide={() => { setVisible(false); setValue('') }}>
-      <div className="flex gap-2 align-items-center" style={{ fontSize: '1.2rem' }}>
+      <Dialog header="Confirmation" visible={visible} style={{ width: '40vw' }} onHide={() => { setVisible(false); setValue('') }}>
+        <div className="flex gap-2 align-items-center" style={{ fontSize: '1.2rem' }}>
           <i className="pi pi-exclamation-triangle" style={{ fontSize: '1.5rem' }}></i>
           <p>Are you sure you want to proceed?</p>
         </div>
@@ -659,12 +659,11 @@ export const Inventory_productsList = () => {
           </p>
           <InputTextarea
             value={value}
-            // onChange={(e) => setValue(e.target.value)}
             onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
             rows={5}
-            cols={77}
-            
+            // cols={70}
+            style={{width:'100%'}}
+            placeholder="compulsory 5 characters"
             className=""
           />
 
@@ -677,6 +676,10 @@ export const Inventory_productsList = () => {
           <Button label="Cancel" className="w-full p-button-secondary" onClick={() => { setVisible(false); setValue('') }} />
         </div>
       </Dialog>
+
+
+
+
 
       <div className="grid w-full mr-0" ref={scrollToTop}>
         {creatingInventory && <LoaderFullScreen />}
