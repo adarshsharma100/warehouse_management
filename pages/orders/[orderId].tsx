@@ -496,10 +496,9 @@ export const OrderDetails = () => {
                 </Accordion>
               </TabPanel>
               <TabPanel header='Activities'>
-
               </TabPanel>
 
-              <TabPanel header="Details">
+              {/* <TabPanel header="Details">
                 <div className="flex gap-5 ">
                   <div className="text-lg p-2">
                     {Object.entries(orderDetails).map(([key, value]) => (
@@ -514,7 +513,7 @@ export const OrderDetails = () => {
                   <Barcode value="1234567" />
 
                 </div>
-              </TabPanel>
+              </TabPanel> */}
             </TabView>
           </div>
           <div style={{ width: '25%' }}>
@@ -531,6 +530,19 @@ export const OrderDetails = () => {
                       <div className="mt-2 " key={key}>{value}</div>
                     ))}
                   </div>
+                </div>
+                <div className="flex gap-5">
+                  <div className="text-lg p-2">
+                    <p>Payment Method</p>
+                    <p>GSTIN</p>
+                    <p>Payment Method</p>
+                  </div>
+                  <div className="text-lg p-2 px-5">
+                    <p>{order.gateway === "" ? "-" :order.gateway }</p>
+                    <p>{order.gstNumber === "" ? "-" :  order.gstNumber}</p>
+                    <p>{order.paymentMethodId === "" ? "-" : order.paymentMethodId}</p>
+                  </div>
+
                 </div>
               </AccordionTab>
               <AccordionTab header="Item Summery">
