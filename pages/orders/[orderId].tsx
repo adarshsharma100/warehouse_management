@@ -20,6 +20,7 @@ import getOrders from "app/orders/queries/getOrders";
 import getOrder from "app/orders/queries/getOrder";
 import { getQueryClient, useMutation, usePaginatedQuery } from "@blitzjs/rpc";
 import Barcode from "react-barcode";
+import { Accordion, AccordionTab } from "primereact/accordion";
 
 // import Layout from "src/core/layouts/Layout";
 // import getOrder from "src/orders/queries/getOrder";
@@ -35,11 +36,13 @@ const columns = [
   // { field: "subTotal", header: "Sub Total (₹)" },
   // { field: "tax", header: "Taxes (₹)" },
   // { field: "charge", header: "Charges (₹)" },
-  { field: "", header: "Total (₹)" , body: (rowdata) => {
-    // calculate from 
+  {
+    field: "", header: "Total (₹)", body: (rowdata) => {
+      // calculate from 
 
-  return <p>{"Price"}</p>
-  }},
+      return <p>{"Price"}</p>
+    }
+  },
   // {
   //   field: 'createdAt',
   //   header: "Created On",
@@ -58,6 +61,32 @@ const columnsTwo = [
   { field: "branchCode", header: "Branch Code" },
 
 ]
+
+const orderColumn = [
+  { field: "itemContains", header: "Item Contanis" },
+  { field: "products.description", header: "Product Description" },
+  { field: "facility", header: "Facility" },
+  { field: "price", header: "Price info (?)" },
+  { field: "totalUnit", header: "Total Units" },
+  { field: "inProcess", header: "In Process" },
+  { field: "unfullfillable", header: "Unfullfillable" },
+  { field: "cancelled", header: "Cancelled" },
+  { field: "hold", header: "On Hold" },
+  { field: "reshipped", header: "Reshipped" },
+]
+const shipmentColumn = [
+  { field: "Item", header: "Item" },
+  { field: "SKU", header: "SKU" },
+  { field: "Quantity", header: "Quantity" },
+  { field: "Cancelled", header: "Cancelled" },
+  { field: "Hold", header: "Hold" },
+  { field: "Zone", header: "Zone" },
+  { field: "Picklist", header: "Picklist" },
+  { field: "Item Contains", header: "Item Contains" },
+]
+
+
+
 const invoiceData = [{
   id: 1,
   invoice: "TIF/23-24/101587",
@@ -73,6 +102,21 @@ const invoiceData = [{
 
 }]
 
+const orderData = [
+  {
+    itemContains: '',
+    productDescription: '7731522109664-4303110000-10Pin Aligator clip',
+    facility: 'robocraze',
+    price: '168.00',
+    totalUnit: '1',
+    inProcess: '1',
+    unfullfillable: '0',
+    cancelled: '0',
+    hold: '0',
+    reshipped: '0',
+  }
+]
+
 const itemData = [{
   id: 1,
   item: "TIF/23-24/101587",
@@ -84,6 +128,18 @@ const itemData = [{
   additionalTax: '178.17',
   branchCode: '4.75',
 }]
+const shipmentData = [
+  {
+    "Item": '10 pin Crocodile clips with male jumper wires',
+    "SKU": 'TIFCW0059',
+    "Quantity": '1',
+    "Cancelled": '0',
+    "Hold": '0',
+    "Zone": '-',
+    'Picklist': '-',
+    'Item Contains': '-',
+  }
+]
 
 const styles = StyleSheet.create({
   page: {
@@ -130,11 +186,31 @@ const orderDetails = {
   shoppingMethodTitle: 'Premium (Priority (2-4 days))',
 };
 
+const shipmentDetails = {
+  "Picklist Number": '-',
+  "Shipment Mainfest": "-",
+  "Return Mainfest": "-",
+  "Invoice Number": "TIF/23-24/110380",
+  "Parent Pckage ": "-",
+  "Reshipment Order": "-",
+  "RTO Facility": "TIF LABS PVT LTD",
+  "Shipping Method": "std-false",
+  "Courier Status": "-",
+  "Courier Name ": "SREE_MURTHI",
+  "Dispatched Date ": "-",
+  "Delivery Date ": "-",
+  "No. of Items ": "1",
+  "Shipping Carrier ": "SREE_MURTHI",
+}
+
 
 export const OrderDetails = () => {
 
   const [selectedColumns] = useState(columns)
   const [selectedColumnsTwo] = useState(columnsTwo)
+  const [orderSetectedColumn] = useState(orderColumn)
+  const [shipmentSetectedColumn] = useState(shipmentColumn)
+
   const [dataSummery] = useState(summeryData)
   const [comments, setComments] = useState([]);
   const [dialogBox, setDialogBox] = useState(false);
@@ -148,8 +224,10 @@ export const OrderDetails = () => {
   const [order] = useQuery(getOrder, { id: orderId })
   console.log('order: ', order);
 
-const [item,setItem] = useState(order.shipment)
-console.log('item: ', item);
+  const [item] = useState(order.shipment)
+  console.log('item: ', item);
+  const [itemOrder] = useState(order.order_items)
+  console.log('itemOrder: ', itemOrder);
   // const [invoiceData] = useState(order.shipment.map((ele) => ele.sales_invoice_details))
   // console.log('invoiceData: ', invoiceData);
 
@@ -177,6 +255,31 @@ console.log('item: ', item);
   })
 
   const columnTwoComponents = selectedColumnsTwo.map((col) => {
+    return (
+      <Column
+        key={col.field}
+        field={col.field}
+        header={col.header}
+        body={col?.body}
+        filter
+        filterPlaceholder="Search..."
+      />
+    )
+  })
+
+  const shipmentColumnComponent = shipmentSetectedColumn.map((col) => {
+    return (
+      <Column
+        key={col.field}
+        field={col.field}
+        header={col.header}
+        body={col?.body}
+        filter
+        filterPlaceholder="Search..."
+      />
+    )
+  })
+  const orderColumnComponent = orderSetectedColumn.map((col) => {
     return (
       <Column
         key={col.field}
@@ -228,94 +331,227 @@ console.log('item: ', item);
         <title>Order Details</title>
       </Head>
 
+      <div className="col-12">
+        <div className="card flex gap-2  m-0">
+          <h2>Orders - #{orderId}</h2>
+          <i className="pi pi-copy mt-2" style={{ fontSize: '1.5rem' }} />
+        </div>
+      </div>
       <div className="card">
-        <TabView>
-          <TabPanel header="Invoice">
-            <div className="flex justify-content-between mt-3">
-              <div className="font-bold" style={{ fontSize: '17px', textDecoration: 'underline', padding: '10px' }}>Invoice Details</div>
+        <div className="flex gap-2">
+          <div style={{ width: '75%' }}>
+            <TabView>
+              <TabPanel header='Order Items'>
+                <div className="flex gap-2">
+                  <div className="card">
+                    <DataTable
+                      value={itemOrder}
+                      responsiveLayout="scroll"
+                      showGridlines
+                      // header={header1}
+                      // filters={filters}
+                      className="text-s datatable-responsive"
+                      filterDisplay="menu"
+                      emptyMessage="No Results found."
+                      rowHover={true}
+                    >
+                      {orderColumnComponent}
 
-              <Button type="button" icon="pi pi-file-pdf"
-                severity="warning" tooltipOptions={{ position: "left" }}
-                tooltip="PDF" onClick={togglePdf} />
-            </div>
+                    </DataTable>
+                  </div>
+                </div>
 
-            <div>
-              <Dialog header="Invoice Details" visible={dialogBox} style={{ width: '50vw' }} onHide={() => setDialogBox(false)}>
-                pdf data
-              </Dialog>
-            </div>
+              </TabPanel>
+              <TabPanel header="Invoice">
+                <div className="flex justify-content-between mt-3">
+                  <div className="font-bold" style={{ fontSize: '17px', textDecoration: 'underline', padding: '10px' }}>Invoice Details</div>
 
-            <div className="col-12 mt-3" >
+                  <Button type="button" icon="pi pi-file-pdf"
+                    severity="warning" tooltipOptions={{ position: "left" }}
+                    tooltip="PDF" onClick={togglePdf} />
+                </div>
 
-              <DataTable
-                value={item}
-                responsiveLayout="scroll"
-                showGridlines
-                // header={header1}
-                // filters={filters}
-                className="text-s datatable-responsive"
-                filterDisplay="menu"
-                emptyMessage="No Results found."
-                rowHover={true}
-              >
-                {columnComponents}
-                
-              </DataTable>
+                <div>
+                  <Dialog header="Invoice Details" visible={dialogBox} style={{ width: '50vw' }} onHide={() => setDialogBox(false)}>
+                    pdf data
+                  </Dialog>
+                </div>
 
-            </div >
+                <div className="col-12 mt-3" >
 
-            <div className="col-12" >
-              <div className="font-bold" style={{ fontSize: '17px', textDecoration: 'underline' }}>Item Details</div>
+                  <DataTable
+                    value={item}
+                    responsiveLayout="scroll"
+                    showGridlines
+                    // header={header1}
+                    // filters={filters}
+                    className="text-s datatable-responsive"
+                    filterDisplay="menu"
+                    emptyMessage="No Results found."
+                    rowHover={true}
+                  >
+                    {columnComponents}
 
-              <DataTable
-                value={itemData}
-                responsiveLayout="scroll"
-                showGridlines
-                // header={header1}
-                // filters={filters}
-                className="text-s datatable-responsive mt-4"
-                filterDisplay="menu"
-                emptyMessage="No Results found."
-                rowHover={true}
-              >
-                {columnTwoComponents}
+                  </DataTable>
 
-              </DataTable>
+                </div >
 
-            </div>
+                <div className="col-12" >
+                  <div className="font-bold" style={{ fontSize: '17px', textDecoration: 'underline' }}>Item Details</div>
 
-            <div className="flex gap-5 justify-content-end">
-              <div className="text-lg p-2">
-                {dataSummery.map((item, index) => (
-                  <div className="mt-2" key={index}>{item.name}</div>
-                ))}
-              </div>
-              <div className="text-lg p-2 px-5">
-                {dataSummery.map((item, index) => (
-                  <div className="mt-2 " key={index}>{item.value}</div>
-                ))}
-              </div>
-            </div>
-          </TabPanel>
+                  <DataTable
+                    value={itemData}
+                    responsiveLayout="scroll"
+                    showGridlines
+                    // header={header1}
+                    // filters={filters}
+                    className="text-s datatable-responsive mt-4"
+                    filterDisplay="menu"
+                    emptyMessage="No Results found."
+                    rowHover={true}
+                  >
+                    {columnTwoComponents}
+
+                  </DataTable>
+
+                </div>
+
+                <div className="flex gap-5 justify-content-end">
+                  <div className="text-lg p-2">
+                    {dataSummery.map((item, index) => (
+                      <div className="mt-2" key={index}>{item.name}</div>
+                    ))}item
+                  </div>
+                  <div className="text-lg p-2 px-5">
+                    {dataSummery.map((item, index) => (
+                      <div className="mt-2 " key={index}>{item.value}</div>
+                    ))}
+                  </div>
+                </div>
+              </TabPanel>
+              <TabPanel header='Shipments'>
+                <Accordion activeIndex={0}>
+                  <AccordionTab
+                    header={
+                      <div style={{ display: 'flex', gap: '25rem' }}>
+                        <div style={{ display: 'flex', gap: '4rem' }}>
+                          <div>ShipmentId ROBO108966</div>
+                          <div>shipmentStatus Ready to Ship</div>
+                          <div>Created on 29Jun 2023, 15:25</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                          <i className="pi pi-check-square" style={{ fontSize: '1.5rem' }} />
+                          <i className="pi pi-book" style={{ fontSize: '1.5rem' }} />
+                          <i className="pi pi-sync" style={{ fontSize: '1.5rem' }} />
+                          <i className="pi pi-box" style={{ fontSize: '1.5rem' }} />
+                          <i className="pi pi-lock" style={{ fontSize: '1.5rem' }} />
+                        </div>
+                      </div>
+                    }>
+                    <div className="flex">
+                      {item.map((sales_invoice_details, i) => {
+                        const { awb, sales_invoice_details: { invoiceNumber } } = sales_invoice_details;
+                        const keyValuePairs = [
+                          { key: "AWB", value: awb },
+                          { key: "Invoice Number", value: invoiceNumber },
+                          // Add more key-value pairs as needed
+                        ];
+                        return (
+                          <div className="flex gap-2 text-xl flex-wrap align-items-center" key={i}>
+                            {keyValuePairs.map(({ key, value }, index) => (
+                              <div className="" key={key}>
+                                <label className="font-bold">{key} :</label>
+                                <label className="ml-2">{value} </label>
+                                {/* {value} */}
+                                {index < keyValuePairs.length - 1 && <span className="mx-2">{'  '}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
 
 
-          <TabPanel header="Details">
-            <div className="flex gap-5 ">
-              <div className="text-lg p-2">
-                {Object.entries(orderDetails).map(([key, value]) => (
-                  <div className="mt-2" key={key}>{key}</div>
-                ))}
-              </div>
-              <div className="text-lg p-2 px-5">
-                {Object.entries(orderDetails).map(([key, value]) => (
-                  <div className="mt-2 " key={key}>{value}</div>
-                ))}
-              </div>
-<Barcode value="1234567"/>
-             
-            </div>
-          </TabPanel>
-        </TabView>
+                    <div className="mt-5" style={{ width: '50%' }}>
+                      <DataTable
+                        value={shipmentData}
+                        responsiveLayout="scroll"
+                        showGridlines
+                        // header={header1}
+                        // filters={filters}
+                        className="text-s datatable-responsive mt-4"
+                        filterDisplay="menu"
+                        emptyMessage="No Results found."
+                        rowHover={true}
+                      >
+                        {shipmentColumnComponent}
+
+                      </DataTable>
+
+                    </div>
+
+
+                  </AccordionTab>
+
+                </Accordion>
+              </TabPanel>
+              <TabPanel header='Activities'>
+
+              </TabPanel>
+
+              <TabPanel header="Details">
+                <div className="flex gap-5 ">
+                  <div className="text-lg p-2">
+                    {Object.entries(orderDetails).map(([key, value]) => (
+                      <div className="mt-2" key={key}>{key}</div>
+                    ))}
+                  </div>
+                  <div className="text-lg p-2 px-5">
+                    {Object.entries(orderDetails).map(([key, value]) => (
+                      <div className="mt-2 " key={key}>{value}</div>
+                    ))}
+                  </div>
+                  <Barcode value="1234567" />
+
+                </div>
+              </TabPanel>
+            </TabView>
+          </div>
+          <div style={{ width: '25%' }}>
+            <Accordion activeIndex={0}>
+              <AccordionTab header="Order Details">
+                <div className="flex gap-5 ">
+                  <div className="text-lg p-2">
+                    {Object.entries(orderDetails).map(([key, value]) => (
+                      <div className="mt-2" key={key}>{key}</div>
+                    ))}
+                  </div>
+                  <div className="text-lg p-2 px-5">
+                    {Object.entries(orderDetails).map(([key, value]) => (
+                      <div className="mt-2 " key={key}>{value}</div>
+                    ))}
+                  </div>
+                </div>
+              </AccordionTab>
+              <AccordionTab header="Item Summery">
+                <p className="m-0">
+
+                </p>
+              </AccordionTab>
+              <AccordionTab header="Payment Summery">
+                <p className="m-0">
+                </p>
+              </AccordionTab>
+              <AccordionTab header="Billing/Shipping Address">
+                <p className="m-0">
+                </p>
+              </AccordionTab>
+            </Accordion>
+          </div>
+
+        </div>
+
+
 
         <div className="mt-6">
           {comments.map((comment, index) => (
@@ -357,4 +593,7 @@ const ShowOrderPage = () => {
 // ShowOrderPage.authenticate = true;
 // ShowOrderPage.getLayout = (page) => <Layout>{page}</Layout> ;
 
+
+
 export default ShowOrderPage;
+
