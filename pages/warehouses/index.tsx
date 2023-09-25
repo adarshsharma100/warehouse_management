@@ -130,18 +130,43 @@ export const WarehousesList = () => {
   const dt = useRef(null);
   const exportColumns = columns.map((col) => ({ title: col.header, dataKey: col.field }));
 
+  // const exportExcel = () => {
+  //   import('xlsx').then((xlsx) => {
+  //     const worksheet = xlsx.utils.json_to_sheet(warehouses);
+  //     const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
+  //     const excelBuffer = xlsx.write(workbook, {
+  //       bookType: 'xlsx',
+  //       type: 'array'
+  //     });
+
+  //     saveAsExcelFile(excelBuffer, 'products');
+  //   });
+  // };
+
+
+  {/* Remove key which not have data */}
   const exportExcel = () => {
     import('xlsx').then((xlsx) => {
-      const worksheet = xlsx.utils.json_to_sheet(warehouses);
-      const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
+      const filteredWarehouses = warehouses.map((warehouse) => {
+        const filteredWarehouse = { ...warehouse };
+        delete filteredWarehouse.areas_areas_warehouseTowarehouse;
+        if (filteredWarehouse.addressesId === null) {
+          delete filteredWarehouse.addressesId;
+        }
+        return filteredWarehouse;
+      });
+  
+      const worksheet = xlsx.utils.json_to_sheet(filteredWarehouses);
+        const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
       const excelBuffer = xlsx.write(workbook, {
         bookType: 'xlsx',
-        type: 'array'
+        type: 'array',
       });
-
+  
       saveAsExcelFile(excelBuffer, 'products');
     });
   };
+  
 
   const saveAsExcelFile = (buffer, fileName) => {
     import('file-saver').then((module) => {

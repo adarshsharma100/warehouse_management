@@ -157,16 +157,14 @@ export const OrdersList = () => {
         return { ...state, skipCount: payload };
       case 'UPDATE_TABLE_ROWS_COUNT':
         return { ...state, tableRowsCount: payload };
-
       default:
         throw new Error(`Unhandled action type: ${type}`);
     }
   }
   const [state, dispatch] = useReducer(reducer, initialState);
-  const [allOrders, setAllOrders] = useState([]);
   const [isVisible, setIsVisible] = useState(true);
 
-  const { statusId, skipCount, tableRowsCount, statusName, _orders } = state
+  const { statusId, skipCount, tableRowsCount, statusName, _orders, } = state
   const toast = useRef(null)
   const router = useRouter();
 
@@ -178,7 +176,11 @@ export const OrdersList = () => {
     skip: skipCount,
     take: tableRowsCount,
   });
-  console.log(' orders: ', orders);
+
+  const [allOrder] = useQuery(getOrders, {
+    orderBy: { id: "asc" },
+    where: { orderStatus: statusId },
+  });
 
   const [{ po_terms }] = useQuery(getPo_terms, {
     orderBy: { id: 'asc' },
@@ -195,7 +197,7 @@ export const OrdersList = () => {
     skip: 0,
     take: undefined,
   })
-  // console.log('order_statuses: ', order_statuses);
+  console.log('order_statuses: ', order_statuses);
   console.log("statusId", statusId);
   console.log("statusName", statusName);
 
@@ -576,6 +578,7 @@ export const OrdersList = () => {
       const {
         firstName, lastName, companyName, email, contactNumber, orderStatus,
         landmarkName, pincode, paymentStatus, totalPrice, gateway, payment_method, display, discountAmount, gstNumber, gstTaxTypeCode, paymentMethodId, paymentTermsId, paymentReferenceId,
+
         orderItems, address, state, country, city,
         shippingAddress: {
           address: shippingAreaStreet,
@@ -598,29 +601,155 @@ export const OrdersList = () => {
           contactNumber: billingContactNumber
         }
       } = data
+      console.log('gateway: ', gateway);
       console.log('orderItems: ', orderItems);
 
+      //TIP:=>  isAllQuantityAvailable comment code for not create wne qty is more then avaliable qty
+      // const isAllQuantityAvailable = orderItems?.map((product) => {
+      //   const { availableInventory, quantity } = product
+
+      //   return (
+      //     {
+      //       ...product,
+      //       isAvailable: Number(availableInventory) >= Number(quantity)
+      //     }
+      //   );
+      // })
+
+      // if (!isAllQuantityAvailable.every(product => product.isAvailable === true)) {
+      //   toast.current?.show({
+      //     severity: 'error',
+      //     summary: 'Error',
+      //     detail: "Can not verify order due to low Quantity",
+      //     life: 3000
+      //   })
+      //   return
+      // }
+
+
       const isAllQuantityAvailable = orderItems?.map((product) => {
-        const { availableInventory, quantity } = product
+        const { availableInventory, quantity } = product;
+        return {
+          ...product,
+          isAvailable: Number(availableInventory) >= Number(quantity),
+        };
+      });
+      console.log('isAllQuantityAvailable: ', isAllQuantityAvailable);
 
-        return (
-          {
-            ...product,
-            isAvailable: Number(availableInventory) >= Number(quantity)
-          }
-        );
-      })
+      if (!isAllQuantityAvailable.every((product) => product.isAvailable === true)) {
+        // Change the order status to "FAILED" here
+        console.log(" isAllQuantityAvailable:  first>>>")
+        setSelectOrderStatus(order_statuses.find((status) => status.name === 'FAILED'));
 
+        try {
+          await createNewOrder({
+            customer: {
+              firstName,
+              lastName,
+              companyName,
+              display,
+            },
+            order: {
+              orderStatus: 5,
+              isShippingIsBilling: true,
+              shippingAddress: {
+                areaStreet: shippingAreaStreet,
+                landmarkName: shippingLandmarkName,
+                cityCountryProvince: shippingCity,
+                state: shippingState,
+                pincode: shippingPincode,
+                country: 1,
+                emails_emails_addressesToaddresses: {
+                  create: [
+                    {
+                      email: shippingEmail,
+                    },
+                  ],
+                },
+                contact_number: {
+                  create: [
+                    {
+                      type: "mobile",
+                      number: shippingContactNumber,
+                    },
+                  ],
+                }
+              },
+              billingAddress: {
+                areaStreet: billingAreaStreet,
+                landmarkName: billingLandmarkName,
+                cityCountryProvince: billingCity,
+                state: billingState,
+                pincode: billingPincode,
+                country: 1,
+                emails_emails_addressesToaddresses: {
+                  create: [
+                    {
+                      email: billingEmail,
+                    },
+                  ],
+                },
+                contact_number: {
+                  create: [
+                    {
+                      type: "mobile",
+                      number: billingContactNumber,
+                    },
+                  ],
+                }
+              },
+              paymentMethodId: selectPaymentMethod ? selectPaymentMethod?.id : null,
+              paymentStatus: selectedPaymentStatus ? selectedPaymentStatus.id : null,
+              totalPrice,
+              gateway: selectPaymentMethod ? selectPaymentMethod.name : null,
+              discountAmount,
+              gstNumber,
+              gstTaxTypeCode,
+              paymentTermsId: selectedPaymentTerm ? selectedPaymentTerm.id : null,
+              paymentReferenceId,
+              order_items: {
+                create: orderItems.map((ele) => ({
+                  product: ele.id,
+                  quantity: Number(ele.quantity),
+                  price: Number(ele.price),
+                }))
+              },
+              orderItemsData: orderItems.map(ele => ({
+                productID: ele?.id,
+                quantity: Number(ele.quantity),
 
+              }))
+            },
+          },
+            {
+              onSuccess: async (data) => {
+                await refetchOrders()
+                formik?.resetForm()
+                setOrderDialog(!orderDialog)
+                toast.current?.show({
+                  severity: 'warn',
+                  summary: 'Warning',
+                  detail: `${data.id} Create order status is failed`,
+                  life: 3000,
+                });
+              }, onError: (error) => {
+                console.log('error: ', error);
+                toast.current.show({ severity: 'error', summary: 'error', detail: `${data?.id} Created`, life: 3000 });
 
-      if (!isAllQuantityAvailable.every(product => product.isAvailable === true)) {
-        toast.current?.show({
-          severity: 'error',
-          summary: 'Error',
-          detail: "Can not verify order due to low Quantity",
-          life: 3000
-        })
-        return
+              },
+            })
+        } catch (error) {
+          console.log('error: ', error);
+
+        }
+        // toast.current?.show({
+        //   severity: 'warn',
+        //   summary: 'Warning',
+        //   detail: 'Create order status is failed',
+        //   life: 3000,
+        // });
+
+        return;
       }
 
       // const orderItemValue = orderItems?.map((ele) => ele)
@@ -741,7 +870,7 @@ export const OrdersList = () => {
               paymentMethodId: selectPaymentMethod ? selectPaymentMethod?.id : null,
               paymentStatus: selectedPaymentStatus ? selectedPaymentStatus.id : null,
               totalPrice,
-              gateway,
+              gateway: selectPaymentMethod ? selectPaymentMethod.name : null,
               discountAmount,
               gstNumber,
               gstTaxTypeCode,
@@ -764,7 +893,6 @@ export const OrdersList = () => {
           },
             {
               onSuccess: async (data) => {
-
                 await refetchOrders()
                 formik?.resetForm()
                 setOrderDialog(!orderDialog)
@@ -1026,7 +1154,6 @@ export const OrdersList = () => {
   const handlePageChange = async (event) => {
     dispatch({ type: "UPDATE_SKIP_COUNT", payload: event.first })
     dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
-
   }
 
   const searchCustomer = createSearchFunction(customerOptions, setCustomerOptionsSuggestions)
@@ -1045,24 +1172,60 @@ export const OrdersList = () => {
   };
 
 
-  const tabMenuItems = order_statuses?.map(status => (
-    {
-      label: status.name,
-      status: status.name,
-      id: status.id
-    }
-  ))
+  // const tabMenuItems = order_statuses?.map(status => (
+  //   {
+  //     label: status.name,
+  //     status: status.name,
+  //     id: status.id
+  //   }
+  // ))
+
+  // const pendingVerificationCount = allOrder.orders.filter(order => order.order_status.name === "PENDING VERIFICATION").length;
+  // const failed = allOrder.orders.filter(order => order.order_status.name === "FAILED").length;
+
+  // const tabMenuItems = order_statuses?.map(status => {
+  //   return {
+  //     label: (
+  //       <div>
+  //         <span>{status.name}</span>
+  //         {(status.name === "PENDING VERIFICATION" || status.name === "FAILED") && (
+  //           <Badge className="p-overlay-badge"
+  //             value={
+  //               status.name === "PENDING VERIFICATION" ? pendingVerificationCount :
+  //                 status.name === "FAILED" ? failed : ""
+  //             } severity="success" />
+  //         )}
+  //       </div>
+  //     ),
+  //     status: status.name,
+  //     id: status.id,
+  //   };
+  // });
+
+  const allTab = { label: 'ALL', status: 'ALL' };
+  const pendingVerificationTab = { label: 'PENDING VERIFICATION', status: 'PENDING VERIFICATION' };
+
+  const otherTabs = order_statuses
+    .filter(status => status.name !== 'PENDING VERIFICATION')
+    .map(status => ({ label: status.name, status: status.name }));
+  const tabMenuItems = [pendingVerificationTab, ...otherTabs, allTab];
+  const activeTabIndex = tabMenuItems.findIndex(tab => tab.status === statusName);
 
 
-  const handleOnPageChange = () => {
+  const filteredOrders = statusName === 'ALL' ? allOrder.orders : allOrder.orders.filter(order => order.order_status.name === statusName);
+  // const filteredOrders = statusName === 'ALL' ? orders : orders.filter(order => order.order_status.name === statusName);
+  console.log('filteredOrders: ', filteredOrders);
 
 
-  }
+  const tabMenuItemsModified = [
+    { label: "PENDING VERIFICATION" },
+    ...tabMenuItems.filter(item => item.label !== "PENDING VERIFICATION"),
+    { label: "ALL" }
+  ];
+
 
   const isSelectable = (data) => !data?.verified;
-
   const isRowSelectable = (event) => (event.data ? isSelectable(event.data) : true);
-
   const paginator = <Paginator first={skipCount} rows={tableRowsCount} totalRecords={orderCounts} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
 
 
@@ -1115,7 +1278,8 @@ export const OrdersList = () => {
     setOrderStatus(order_statuses.map((val) => val.name))
   }
 
-  const [selectOrderStatus, setSelectOrderStatus] = useState({ id: 4, name: 'Created', description: 'Order has been opened' })
+  // const [selectOrderStatus, setSelectOrderStatus] = useState({ id: 4, name: 'Created', description: 'Order has been opened' })
+  const [selectOrderStatus, setSelectOrderStatus] = useState({ id: 1, name: 'PENDING VERIFICATION', description: 'Order has been in pending' })
 
   const handleOrderStatusChange = (e) => {
     const selectedOrder = order_statuses.find((order) => order.name === e.value);
@@ -1129,12 +1293,12 @@ export const OrdersList = () => {
     setPaymentMethod(payment_methods.map((val) => val.name))
   }
   const [selectPaymentMethod, setSelectPaymentMethod] = useState({})
+  console.log('selectPaymentMethod: ', selectPaymentMethod);
 
 
   const handlePaymentMethodChange = (e) => {
     const selectPaymentMethod = payment_methods.find((val) => val.name === e.value)
     setSelectPaymentMethod(selectPaymentMethod)
-
   }
 
 
@@ -1180,11 +1344,33 @@ export const OrdersList = () => {
   );
 
 
+  //  comment handleTabMenuOrderDataChange was before when all ta is first
+  // const handleTabMenuOrderDataChange = (event) => {
+  //   const { id, label, status } = event.value;
+  //   dispatch({ type: 'UPDATE_STATUS_ID', payload: id })
+  //   dispatch({ type: 'UPDATE_STATUS_NAME', payload: status ?? label })
+  // }
+
   const handleTabMenuOrderDataChange = (event) => {
-    const { id, label, status } = event.value;
+    const { status, id } = event.value;
     dispatch({ type: 'UPDATE_STATUS_ID', payload: id })
-    dispatch({ type: 'UPDATE_STATUS_NAME', payload: status ?? label })
+    dispatch({ type: 'UPDATE_STATUS_NAME', payload: status });
   }
+
+  // const [activeIndex, setActiveIndex] = useState(0);
+
+  // const handleTabMenuOrderDataChange = (event) => {
+  //   const { id, label, status } = event.value;
+  //   console.log('Selected Status:', status || label);
+
+  //   const clickedTabIndex = tabMenuItems.findIndex(item => item.id === id);
+  //   dispatch({ type: 'UPDATE_STATUS_ID', payload: id });
+  //   dispatch({ type: 'UPDATE_STATUS_NAME', payload: status ?? label });
+  //   setActiveIndex(clickedTabIndex);
+  //   console.log('Selected Status: clickedTabIndex: ', clickedTabIndex);
+  // };
+
+
 
   const handleMouseEnter = (event) => {
     if (productDisplayRef.current) {
@@ -1352,7 +1538,9 @@ export const OrdersList = () => {
                   maxHeight: '200px',
                   overflow: 'auto',
                 }}> */}
-                  {order_items.map((product, i) => {
+
+
+                  {/* {order_items.map((product, i) => {
                     const { quantity, products: { name, sku } } = product;
                     return (
 
@@ -1371,9 +1559,6 @@ export const OrdersList = () => {
                             </div>
 
                           </div>
-
-
-
                         ))}
                         {i !== order_items.length - 1 && (
                           <Divider align="center" type="dashed" style={{ borderTop: '1px solid #ddd' }} />
@@ -1382,27 +1567,39 @@ export const OrdersList = () => {
 
 
                     )
+                  })} */}
+                  {order_items.map((product, i) => {
+                    const { quantity, products: { name, sku } } = product;
+                    const slNo = i + 1;
+                    return (
+                      <div key={i} className="flex mt-4 ">
+                        <div className="flex gap-2">
+                          {/* <div className="font-semibold ml-2">Name:</div> */}
+                          <div className="">{`${slNo}. ${name} (${sku}) - ${quantity}`}</div>
+                        </div>
+                      </div>
+                    );
                   })}
+
                 </div>
               </OverlayPanel>
             </div>
           </div>
           : order_items.length < 3 && order_items.length > 0 ?
-            <div className="w-20rem">
-              {order_items.map((product, i) => {
+            <div className="w-30rem">
+
+              {/* {order_items.map((product, i) => {
                 const { quantity, products: { name, sku } } = product;
                 return (
-
-                  <div key={i} >
-
+                  <div key={i} className="flex mt-4" >
                     {[{ prop: "Name", value: name },
                     { prop: "SKU", value: sku },
                     { prop: "Quantity", value: quantity }
                     ].map(({ prop, value }, index) => (
-                      <div key={index} className="grid">
+                      <div key={index} className="flex gap-2">
 
-                        <label className="font-semibold col-4">{prop}:</label>
-                        <div className="col">
+                        <label className="font-semibold ml-2">{prop}:</label>
+                        <div className="">
                           {value?.toString()}
                         </div>
 
@@ -1413,8 +1610,23 @@ export const OrdersList = () => {
                     )}
                   </div>
                 )
+              })} */}
+
+              {order_items.map((product, i) => {
+                const { quantity, products: { name, sku } } = product;
+                const slNo = i + 1;
+                return (
+                  <div key={i} className="flex mt-4 ">
+                    <div className="flex gap-2">
+                      {/* <div className="font-semibold ml-2">Name:</div> */}
+                      <div className="">{`${slNo}. ${name} (${sku}) - ${quantity}`}</div>
+                    </div>
+                  </div>
+                );
               })}
             </div>
+
+
             : <div className="hideLargeContent">-</div>
         }
       </div>
@@ -1431,7 +1643,6 @@ export const OrdersList = () => {
   console.log('displayChecked: ', displayChecked);
   console.log("orders", orders);
 
-  console.log("_orders", allOrders);
   console.log('formik.values: ', formik.values.name);
 
 
@@ -2421,14 +2632,23 @@ export const OrdersList = () => {
         <div className="card">
           <div className="col-12">
             <TabMenu
-              model={[{ label: "ALL" }, ...tabMenuItems]}
-              activeIndex={statusId}
               onTabChange={handleTabMenuOrderDataChange}
-
+              activeIndex={statusId}
+              model={tabMenuItems}
+            // model={tabMenuItemsModified}
+            // activeIndex={activeIndex}
+            // model={[{ label: "ALL" }, ...tabMenuItems]}
+            // activeIndex={activeTabIndex}
+            // model={tabMenuItemsWithAll}
+            // activeIndex={activeTabIndex}
+            // model={tabMenuItems}
+            // activeIndex={statusId === "pending-verification" ? 0 : (statusId === "all" ? tabMenuItems.length - 1 : tabMenuItems.findIndex(tab => tab.id === statusId))}
             />
           </div>
+
           <DataTable
-            value={orders}
+            // value={orders}
+            value={filteredOrders}
             responsiveLayout="scroll"
             // scrollable
             header={renderHeader}
@@ -2440,7 +2660,6 @@ export const OrdersList = () => {
             isDataSelectable={isRowSelectable}
             cellClassName={cellClassName}
             footer={paginator}
-
           >
             {statusId === 1 ? <Column
               selectionMode="multiple"
