@@ -62,6 +62,7 @@ export const Purchase_order = () => {
 
   const toast = useRef(null)
   const [purchase_order, { refetch }] = useQuery(getPurchase_order, { id: purchase_orderId, })
+
   const [createGrnMutation, { error: grnCreationError }] = useMutation(createGrn)
   const [updateGrnMutation] = useMutation(updateGrn)
   const [{ grn_statuses },] = useQuery(getGrn_statuses, { orderBy: { id: "asc" }, })
@@ -186,6 +187,7 @@ export const Purchase_order = () => {
 
     // user: { name: approvedBy } = { name: "-" }
   } = purchase_order
+  console.log('purchase_order: ', purchase_order);
 
   console.log('po_products: ', po_products);
   console.log('poNumber: ', poNumber);
@@ -510,9 +512,9 @@ export const Purchase_order = () => {
 
   const onCellEditComplete = async (e) => {
     const { rowData, newValue, field, originalEvent: event } = e;
-    console.log('newValue: ', newValue, rowData, field); 
+    console.log('newValue: ', newValue, rowData, field);
     if (['receivedQuantity', 'grnRejectedQuantity', 'qcRejectedQuantity', 'grnRejectionRemarks', 'qcRejectionRemarks',].includes(field)) {
-      
+
       if (newValue?.trim().length > 0) {
         if (field === 'grnRejectedQuantity' || field === 'qcRejectedQuantity' || field === 'receivedQuantity') {
           const intValue = parseInt(newValue, 10);
@@ -533,13 +535,13 @@ export const Purchase_order = () => {
         const updatedGRNItems = grnProductsList.map((item) => {
           console.log('here:+++== ', item.id, rowData.id);
           if (item.id === rowData.id) {
-            console.log('here!!++',item.id , rowData.id)
+            console.log('here!!++', item.id, rowData.id)
             return { ...item, [field]: rowData[field] };
           }
           console.log('here!!')
           return item;
         });
-        
+
 
         formik.setValues({
           ...formik.values,
@@ -552,10 +554,6 @@ export const Purchase_order = () => {
       }
     }
   };
-
-
-
-
 
   const textEditor = (options) => {
 
@@ -1303,7 +1301,7 @@ export const Purchase_order = () => {
                         )}
                       />
                       <Column
-                      header='QC Bypass'
+                        header='QC Bypass'
                         selectionMode="multiple"
                         // headerStyle={{ width: '1rem' }}
                         checked={isAllRowsSelected()}
@@ -1454,13 +1452,17 @@ export const Purchase_order = () => {
               console.log('shouldShowButton: ', shouldShowButton);
 
               const accordionHeader = (
-                <div style={{ display: 'flex', gap: '15px', justifyContent:'space-between', alignItems: 'center' }}>
-                  <div>GrnID: {grn.grnNumber}</div>
-                  <div>Shipment: {shipmentId}</div>
-                  <div>Remarks: {grn.grnRemarks ? grn.grnRemarks : '-'}</div>
-                  <div>Status: {grn.grn_status.name}</div>
+                <div className="flex justify-content-between align-items-center "
+                // style={{ width: '400px' }}
+                // style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
+                  <div className="w-9rem">GrnID: {grn.grnNumber}</div>
+                  <div className="w-15rem">Shipment: {shipmentId}</div>
+                  <div className="w-15rem">Remarks: {grn.grnRemarks ? grn.grnRemarks : '-'}</div>
+                  <div className="w-15rem">Status: {grn.grn_status.name}</div>
 
-                  <div className="flex gap-2">
+
+                  <div className="flex gap-2 w-15rem">
                     <div>
                       {shouldShowButton && (
                         <div className="flex justify-content-end">
@@ -1506,7 +1508,6 @@ export const Purchase_order = () => {
                               }
 
                             }}
-
                           />
                         </div>
                       )}
@@ -1520,9 +1521,14 @@ export const Purchase_order = () => {
 
               return (
                 <AccordionTab
-                  // header={headerText}
+                  pt={{
+                    headertitle: {
+                      className: "w-full"
+                    }
+                  }}
+
                   header={accordionHeader}
-                 
+
                   key={index}
                 >
                   {/* {shouldShowButton && (
