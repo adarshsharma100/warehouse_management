@@ -177,10 +177,6 @@ export const OrdersList = () => {
     take: tableRowsCount,
   });
 
-  const [allOrder] = useQuery(getOrders, {
-    orderBy: { id: "asc" },
-    where: { orderStatus: statusId },
-  });
 
   const [{ po_terms }] = useQuery(getPo_terms, {
     orderBy: { id: 'asc' },
@@ -1172,13 +1168,13 @@ export const OrdersList = () => {
   };
 
 
-  // const tabMenuItems = order_statuses?.map(status => (
-  //   {
-  //     label: status.name,
-  //     status: status.name,
-  //     id: status.id
-  //   }
-  // ))
+  const tabMenuItems = order_statuses?.map(status => (
+    {
+      label: status.name,
+      status: status.name,
+      id: status.id
+    }
+  ))
 
   // const pendingVerificationCount = allOrder.orders.filter(order => order.order_status.name === "PENDING VERIFICATION").length;
   // const failed = allOrder.orders.filter(order => order.order_status.name === "FAILED").length;
@@ -1202,19 +1198,18 @@ export const OrdersList = () => {
   //   };
   // });
 
-  const allTab = { label: 'ALL', status: 'ALL' };
-  const pendingVerificationTab = { label: 'PENDING VERIFICATION', status: 'PENDING VERIFICATION' };
+  // const allTab = { label: 'ALL', status: 'ALL' };
+  // const pendingVerificationTab = { label: 'PENDING VERIFICATION', status: 'PENDING VERIFICATION' };
 
-  const otherTabs = order_statuses
-    .filter(status => status.name !== 'PENDING VERIFICATION')
-    .map(status => ({ label: status.name, status: status.name }));
-  const tabMenuItems = [pendingVerificationTab, ...otherTabs, allTab];
-  const activeTabIndex = tabMenuItems.findIndex(tab => tab.status === statusName);
+  // const otherTabs = order_statuses
+  //   .filter(status => status.name !== 'PENDING VERIFICATION')
+  //   .map(status => ({ label: status.name, status: status.name }));
+  // const tabMenuItems = [pendingVerificationTab, ...otherTabs, allTab];
+  // const activeTabIndex = tabMenuItems.findIndex(tab => tab.status === statusName);
+  // const filteredOrders = statusName === 'ALL' ? allOrder.orders : allOrder.orders.filter(order => order.order_status.name === statusName);
+  // console.log('filteredOrders: ', filteredOrders);
 
 
-  const filteredOrders = statusName === 'ALL' ? allOrder.orders : allOrder.orders.filter(order => order.order_status.name === statusName);
-  // const filteredOrders = statusName === 'ALL' ? orders : orders.filter(order => order.order_status.name === statusName);
-  console.log('filteredOrders: ', filteredOrders);
 
 
   const tabMenuItemsModified = [
@@ -1345,17 +1340,12 @@ export const OrdersList = () => {
 
 
   //  comment handleTabMenuOrderDataChange was before when all ta is first
-  // const handleTabMenuOrderDataChange = (event) => {
-  //   const { id, label, status } = event.value;
-  //   dispatch({ type: 'UPDATE_STATUS_ID', payload: id })
-  //   dispatch({ type: 'UPDATE_STATUS_NAME', payload: status ?? label })
-  // }
-
   const handleTabMenuOrderDataChange = (event) => {
-    const { status, id } = event.value;
+    const { id, label, status } = event.value;
     dispatch({ type: 'UPDATE_STATUS_ID', payload: id })
-    dispatch({ type: 'UPDATE_STATUS_NAME', payload: status });
+    dispatch({ type: 'UPDATE_STATUS_NAME', payload: status ?? label })
   }
+
 
   // const [activeIndex, setActiveIndex] = useState(0);
 
@@ -2633,22 +2623,23 @@ export const OrdersList = () => {
           <div className="col-12">
             <TabMenu
               onTabChange={handleTabMenuOrderDataChange}
-              activeIndex={statusId}
-              model={tabMenuItems}
-            // model={tabMenuItemsModified}
-            // activeIndex={activeIndex}
-            // model={[{ label: "ALL" }, ...tabMenuItems]}
-            // activeIndex={activeTabIndex}
-            // model={tabMenuItemsWithAll}
-            // activeIndex={activeTabIndex}
-            // model={tabMenuItems}
-            // activeIndex={statusId === "pending-verification" ? 0 : (statusId === "all" ? tabMenuItems.length - 1 : tabMenuItems.findIndex(tab => tab.id === statusId))}
+              // model={tabMenuItems}
+              model={[{ label: "ALL" }, ...tabMenuItems]}
+              activeIndex={statusId === "pending-verification" ? 0 : (statusId === "all" ? tabMenuItems.length - 1 : tabMenuItems.findIndex(tab => tab.id === statusId))}
+              // model={tabMenuItems}
+              // activeIndex={activeTabIndex}
+
+              // model={tabMenuItemsModified}
+              // activeIndex={statusId}
+              // activeIndex={activeTabIndex}
+              // model={tabMenuItemsWithAll}
+              // activeIndex={activeTabIndex}
             />
           </div>
 
           <DataTable
-            // value={orders}
-            value={filteredOrders}
+            value={orders}
+            // value={filteredOrders}
             responsiveLayout="scroll"
             // scrollable
             header={renderHeader}
