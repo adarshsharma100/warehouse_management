@@ -10,6 +10,7 @@ import { Button } from 'primereact/button';
 import { Column } from 'primereact/column';
 import { DataTable } from 'primereact/datatable';
 import { InputText } from 'primereact/inputtext';
+import { Toast } from 'primereact/toast';
 import React, { useRef, useState } from 'react'
 
 function VendorShipment() {
@@ -20,7 +21,7 @@ function VendorShipment() {
         shipmentId: "",
         courier: "",
     }
-    const [{ vendor_shipments }] = useQuery(getVendor_shipments, {
+    const [{ vendor_shipments , }] = useQuery(getVendor_shipments, {
         where: undefined,
         orderBy: undefined,
         skip: undefined,
@@ -43,7 +44,6 @@ function VendorShipment() {
             console.log('data trackingId: ', trackingId);
 
             if (false) {
-
             } else {
                 try {
                     await createVendorShipment({
@@ -56,19 +56,22 @@ function VendorShipment() {
                             }
                         }
                     }, {
-                        onSuccess: (data) => {
-                            toast?.current.show(tsuccess("Created Shipment"))
+                        onSuccess: async (data) => {
+                            toast?.current.show(tsuccess(`Created Shipment`))
+                            await refetch()
+                            formik.resetForm()
                             setActiveVendor(!activeVendor)
-                            console.log('data: ', data);
                         },
                         onError: (error) => {
                             toast?.current.show(tError("Error", ))
                             console.log('error: ', error);
+                            refetch()
                         }
                     }
                     )
                 } catch (error) {
                     console.log('error: ', error);
+                    refetch()
                 }
             }
 
@@ -104,6 +107,7 @@ function VendorShipment() {
 
     return (
         <div>
+             <Toast ref={toast} />
             <div className="flex justify-content-end px-3 mt-4 ">
                 <Button
                     label="Create Vendor Shipment"

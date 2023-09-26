@@ -1303,8 +1303,9 @@ export const Purchase_order = () => {
                         )}
                       />
                       <Column
+                      header='QC Bypass'
                         selectionMode="multiple"
-                        headerStyle={{ width: '3rem' }}
+                        // headerStyle={{ width: '1rem' }}
                         checked={isAllRowsSelected()}
                         onChange={(e) => handleSelectAll(e)}
                       />
@@ -1453,7 +1454,7 @@ export const Purchase_order = () => {
               console.log('shouldShowButton: ', shouldShowButton);
 
               const accordionHeader = (
-                <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '15px', justifyContent:'space-between', alignItems: 'center' }}>
                   <div>GrnID: {grn.grnNumber}</div>
                   <div>Shipment: {shipmentId}</div>
                   <div>Remarks: {grn.grnRemarks ? grn.grnRemarks : '-'}</div>
@@ -1521,6 +1522,7 @@ export const Purchase_order = () => {
                 <AccordionTab
                   // header={headerText}
                   header={accordionHeader}
+                 
                   key={index}
                 >
                   {/* {shouldShowButton && (
