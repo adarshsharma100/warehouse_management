@@ -165,6 +165,7 @@ export const OrdersList = () => {
   const [isVisible, setIsVisible] = useState(true);
 
   const { statusId, skipCount, tableRowsCount, statusName, _orders, } = state
+  console.log('statusId: ', statusId);
   const toast = useRef(null)
   const router = useRouter();
 
@@ -177,6 +178,19 @@ export const OrdersList = () => {
     take: tableRowsCount,
   });
 
+
+  const [{ count: pendingVerificationCount }] = useQuery(getOrders, {
+    orderBy: { id: "asc" },
+    where: { orderStatus: 1 },
+    skip: skipCount,
+    take: tableRowsCount,
+  });
+  const [{ count: failedCount }] = useQuery(getOrders, {
+    orderBy: { id: "asc" },
+    where: { orderStatus: 5 },
+    skip: skipCount,
+    take: tableRowsCount,
+  });
 
   const [{ po_terms }] = useQuery(getPo_terms, {
     orderBy: { id: 'asc' },
@@ -1168,55 +1182,34 @@ export const OrdersList = () => {
   };
 
 
-  const tabMenuItems = order_statuses?.map(status => (
-    {
-      label: status.name,
-      status: status.name,
-      id: status.id
-    }
-  ))
-
-  // const pendingVerificationCount = allOrder.orders.filter(order => order.order_status.name === "PENDING VERIFICATION").length;
-  // const failed = allOrder.orders.filter(order => order.order_status.name === "FAILED").length;
-
-  // const tabMenuItems = order_statuses?.map(status => {
-  //   return {
-  //     label: (
-  //       <div>
-  //         <span>{status.name}</span>
-  //         {(status.name === "PENDING VERIFICATION" || status.name === "FAILED") && (
-  //           <Badge className="p-overlay-badge"
-  //             value={
-  //               status.name === "PENDING VERIFICATION" ? pendingVerificationCount :
-  //                 status.name === "FAILED" ? failed : ""
-  //             } severity="success" />
-  //         )}
-  //       </div>
-  //     ),
+  // const tabMenuItems = order_statuses?.map(status => (
+  //   {
+  //     label: status.name,
   //     status: status.name,
-  //     id: status.id,
-  //   };
-  // });
+  //     id: status.id
+  //   }
+  // ))
 
-  // const allTab = { label: 'ALL', status: 'ALL' };
-  // const pendingVerificationTab = { label: 'PENDING VERIFICATION', status: 'PENDING VERIFICATION' };
+  const tabMenuItems = order_statuses?.map(status => {
+    return {
+      label: (
+        <div>
+          <span>{status.name}</span>
+          {(status.name === "PENDING VERIFICATION" || status.name === "FAILED") && (
+            <Badge className="p-overlay-badge"
+              value={
+                status.name === "PENDING VERIFICATION" ? pendingVerificationCount :
+                  status.name === "FAILED" ? failedCount : ""
+              } severity="success" />
+          )}
+        </div>
+      ),
+      status: status.name,
+      id: status.id,
+    };
+  });
+  console.log('tabMenuItems: ', tabMenuItems);
 
-  // const otherTabs = order_statuses
-  //   .filter(status => status.name !== 'PENDING VERIFICATION')
-  //   .map(status => ({ label: status.name, status: status.name }));
-  // const tabMenuItems = [pendingVerificationTab, ...otherTabs, allTab];
-  // const activeTabIndex = tabMenuItems.findIndex(tab => tab.status === statusName);
-  // const filteredOrders = statusName === 'ALL' ? allOrder.orders : allOrder.orders.filter(order => order.order_status.name === statusName);
-  // console.log('filteredOrders: ', filteredOrders);
-
-
-
-
-  const tabMenuItemsModified = [
-    { label: "PENDING VERIFICATION" },
-    ...tabMenuItems.filter(item => item.label !== "PENDING VERIFICATION"),
-    { label: "ALL" }
-  ];
 
 
   const isSelectable = (data) => !data?.verified;
@@ -1339,7 +1332,6 @@ export const OrdersList = () => {
   );
 
 
-  //  comment handleTabMenuOrderDataChange was before when all ta is first
   const handleTabMenuOrderDataChange = (event) => {
     const { id, label, status } = event.value;
     dispatch({ type: 'UPDATE_STATUS_ID', payload: id })
@@ -1347,18 +1339,6 @@ export const OrdersList = () => {
   }
 
 
-  // const [activeIndex, setActiveIndex] = useState(0);
-
-  // const handleTabMenuOrderDataChange = (event) => {
-  //   const { id, label, status } = event.value;
-  //   console.log('Selected Status:', status || label);
-
-  //   const clickedTabIndex = tabMenuItems.findIndex(item => item.id === id);
-  //   dispatch({ type: 'UPDATE_STATUS_ID', payload: id });
-  //   dispatch({ type: 'UPDATE_STATUS_NAME', payload: status ?? label });
-  //   setActiveIndex(clickedTabIndex);
-  //   console.log('Selected Status: clickedTabIndex: ', clickedTabIndex);
-  // };
 
 
 
@@ -2623,18 +2603,14 @@ export const OrdersList = () => {
           <div className="col-12">
             <TabMenu
               onTabChange={handleTabMenuOrderDataChange}
-              // model={tabMenuItems}
-              model={[{ label: "ALL" }, ...tabMenuItems]}
-              activeIndex={statusId === "pending-verification" ? 0 : (statusId === "all" ? tabMenuItems.length - 1 : tabMenuItems.findIndex(tab => tab.id === statusId))}
-              // model={tabMenuItems}
-              // activeIndex={activeTabIndex}
-
-              // model={tabMenuItemsModified}
-              // activeIndex={statusId}
-              // activeIndex={activeTabIndex}
-              // model={tabMenuItemsWithAll}
-              // activeIndex={activeTabIndex}
+              model={[ ...tabMenuItems, { label: "ALL" },]}
+               activeIndex={statusId ===1 ? 0 : (statusId === "all"
+                 ? tabMenuItems.length - 1 
+                 : tabMenuItems.findIndex(tab => tab.id === statusId))}
+             
             />
+
+
           </div>
 
           <DataTable
