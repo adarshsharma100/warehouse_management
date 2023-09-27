@@ -1,6 +1,8 @@
 import { invoke, useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
 import { cities, createSearchFunction, dateFormat } from "app/constants";
 import Head from "next/head";
+import Link from "next/link"
+import { Routes } from "@blitzjs/next"
 import getOrder_statuses from "app/order_statuses/queries/getOrder_statuses";
 import createOrder from "app/orders/mutations/createOrder";
 import updateOrder from "app/orders/mutations/updateOrder";
@@ -2603,11 +2605,11 @@ export const OrdersList = () => {
           <div className="col-12">
             <TabMenu
               onTabChange={handleTabMenuOrderDataChange}
-              model={[ ...tabMenuItems, { label: "ALL" },]}
-               activeIndex={statusId ===1 ? 0 : (statusId === "all"
-                 ? tabMenuItems.length - 1 
-                 : tabMenuItems.findIndex(tab => tab.id === statusId))}
-             
+              model={[...tabMenuItems, { label: "ALL" },]}
+              activeIndex={statusId === 1 ? 0 : (statusId === "all"
+                ? tabMenuItems.length - 1
+                : tabMenuItems.findIndex(tab => tab.id === statusId))}
+
             />
 
 
@@ -2642,7 +2644,10 @@ export const OrdersList = () => {
             <Column
               // field={}
               header="Order ID"
-              body={(rowData) => rowData.Id ? rowData.id : rowData.id}
+              // body={(rowData) => rowData.Id ? rowData.id : rowData.id}
+              body={(rowData) => (
+                <Link href={`/orders/${rowData.id}`}>{rowData.id}</Link>
+              )}
             />
 
             {/* <Column

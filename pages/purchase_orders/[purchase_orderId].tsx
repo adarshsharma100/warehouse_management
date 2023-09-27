@@ -1416,12 +1416,12 @@ export const Purchase_order = () => {
                 <div className="flex justify-content-between gap-5 mt-4">
                   {selectAllChecked ? "" : <Button type="submit" onClick={() => qcHandleSubmit(value)} label="Submit for QC" />}
                   <Button type="submit"
-                    label={selectAllChecked ? "Mark as QC Completed" : "SUBMIT"}
+                    label={selectAllChecked ? "Mark as QC Completed" : "Submit"}
                     onClick={() => qcHandleSubmit(value)}
                   />
 
                   <Button type="submit"
-                    label="CANCEL"
+                    label="Cancle"
                     onClick={() => {
                       setActive(!active); setUpdateGrns(false);
                       formik.resetForm()
