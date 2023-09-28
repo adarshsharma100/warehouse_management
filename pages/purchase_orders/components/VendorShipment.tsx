@@ -10,30 +10,35 @@ import { Button } from 'primereact/button';
 import { Column } from 'primereact/column';
 import { DataTable } from 'primereact/datatable';
 import { InputText } from 'primereact/inputtext';
+import { Toast } from 'primereact/toast';
 import React, { useRef, useState } from 'react'
+import {initialFilterRules} from "app/constants"
+import { FilterMatchMode } from "primereact/api"
 
 function VendorShipment() {
 
-  const toast = useRef(null)
+    const toast = useRef(null)
     const vendorShipmentDetails = {
         trackingId: "",
         shipmentId: "",
         courier: "",
     }
-    const [{ vendor_shipments }] = useQuery(getVendor_shipments, {
+    const [{ vendor_shipments, }, { refetch }] = useQuery(getVendor_shipments, {
         where: undefined,
         orderBy: undefined,
         skip: undefined,
         take: undefined
     })
     const purchase_orderId = useParam("purchase_orderId", "number")
-    const [purchase_order, { refetch }] = useQuery(getPurchase_order, { id: purchase_orderId, })
-    console.log('purchase_order: ++', purchase_order.id);
 
-    console.log('vendor_shipments: ', vendor_shipments);
+    const [purchase_order, ] = useQuery(getPurchase_order, { id: purchase_orderId, })
+    const { id: poId, poNumber } = purchase_order
+    const filteredShipments = vendor_shipments.filter((shipment) => shipment.purchaseOrderId === poId);
+
+
+
     const [activeVendor, setActiveVendor] = useState(false)
     const [createVendorShipment] = useMutation(createVendor_shipment)
-
 
     const formik = useFormik({
         initialValues: vendorShipmentDetails,
@@ -43,7 +48,6 @@ function VendorShipment() {
             console.log('data trackingId: ', trackingId);
 
             if (false) {
-
             } else {
                 try {
                     await createVendorShipment({
@@ -56,19 +60,23 @@ function VendorShipment() {
                             }
                         }
                     }, {
-                        onSuccess: (data) => {
-                            toast?.current.show(tsuccess("Created Shipment"))
+                        onSuccess: async (data) => {
+                            toast?.current.show(tsuccess(`Created Shipment`))
+                            await refetch()
+                           
+                            formik.resetForm()
                             setActiveVendor(!activeVendor)
-                            console.log('data: ', data);
                         },
                         onError: (error) => {
-                            toast?.current.show(tError("Error", ))
+                            toast?.current.show(tError("Error",))
                             console.log('error: ', error);
+                            refetch()
                         }
                     }
                     )
                 } catch (error) {
                     console.log('error: ', error);
+                    refetch()
                 }
             }
 
@@ -81,7 +89,7 @@ function VendorShipment() {
 
     const vendorComponent = [
         { field: 'trackingId', header: 'Tracking Id', },
-        { field: "shipmentId", header: 'shipment Id' },
+        { field: "shipmentId", header: 'Shipment Id' },
         { field: "courier", header: "Courier" },
     ].map((col) => {
         return (
@@ -101,9 +109,12 @@ function VendorShipment() {
     //     onTrackingIDChange(e.target.value);
     // };
 
+    
+
 
     return (
         <div>
+            <Toast ref={toast} />
             <div className="flex justify-content-end px-3 mt-4 ">
                 <Button
                     label="Create Vendor Shipment"
@@ -194,8 +205,9 @@ function VendorShipment() {
 
             <div className="col-12 mt-4">
                 <DataTable
-                    value={vendor_shipments}
+                    value={filteredShipments}
                     showGridlines
+                    header='Vendor Shipment'
                 >
                     <Column
                         header='Sl No.'
