@@ -257,7 +257,7 @@ export const Inventory_productsList = () => {
           icon="pi pi-file-excel"
           label="Export as XLSX"
           // severity="success"
-          onClick={exportExcel}
+          onClick={() => exportExcel()}
           tooltip="Export Data"
           tooltipOptions={{ position: 'top' }}
         />
@@ -579,19 +579,53 @@ export const Inventory_productsList = () => {
   const dt = useRef(null);
   const exportColumns = columns.map((col) => ({ title: col.header, dataKey: col.field }));
 
+  // Single Datatable data
+  
+  // const exportExcel = () => {
+  //   import('xlsx').then((xlsx) => {
+  //     // Create a new array containing only the "product" properties
+  //     const productData = inventoryTableData.map((item) => item.product);
+
+  //     // Create the worksheet from the "product" data
+  //     const worksheet = xlsx.utils.json_to_sheet(productData);
+
+  //     const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
+  //     const excelBuffer = xlsx.write(workbook, {
+  //       bookType: 'xlsx',
+  //       type: 'array',
+  //     });
+
+  //     saveAsExcelFile(excelBuffer, 'products');
+  //   });
+  // };
+
+
+  // Both datatable data 
   const exportExcel = () => {
     import('xlsx').then((xlsx) => {
-      const worksheet = xlsx.utils.json_to_sheet(inventoryTableData);
-      const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
-      const excelBuffer = xlsx.write(workbook, {
+      const productWorksheet = xlsx.utils.json_to_sheet(inventoryTableData.map((item) => item.product));
+  
+      const shelvesData = inventoryTableData.flatMap((item) => item.shelves);
+  
+      const shelvesWorksheet = xlsx.utils.json_to_sheet(shelvesData);
+  
+      const productWorkbook = { Sheets: { data: productWorksheet }, SheetNames: ['data'] };
+      const productExcelBuffer = xlsx.write(productWorkbook, {
         bookType: 'xlsx',
-        type: 'array'
+        type: 'array',
       });
-
-      saveAsExcelFile(excelBuffer, 'products');
+      saveAsExcelFile(productExcelBuffer, 'products');
+  
+      const shelvesWorkbook = { Sheets: { data: shelvesWorksheet }, SheetNames: ['data'] };
+      const shelvesExcelBuffer = xlsx.write(shelvesWorkbook, {
+        bookType: 'xlsx',
+        type: 'array',
+      });
+      saveAsExcelFile(shelvesExcelBuffer, 'shelves');
     });
   };
-
+  
+  
   const saveAsExcelFile = (buffer, fileName) => {
     import('file-saver').then((module) => {
       if (module && module.default) {
@@ -605,6 +639,8 @@ export const Inventory_productsList = () => {
       }
     });
   };
+
+
 
 
   const columnComponents = columns.reduce((acc, curr) => {
@@ -662,7 +698,7 @@ export const Inventory_productsList = () => {
             onChange={handleInputChange}
             rows={5}
             // cols={70}
-            style={{width:'100%'}}
+            style={{ width: '100%' }}
             placeholder="compulsory 5 characters"
             className=""
           />

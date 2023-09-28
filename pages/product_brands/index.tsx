@@ -50,6 +50,7 @@ export const Product_brandsList = () => {
     where: {},
     take: tableRowsCount
   })
+  console.log('product_brands: ', product_brands);
 
   const [productBrand] = useState(initialproductBrand)
   const [selectedColumns] = useState(columns);
@@ -119,6 +120,8 @@ export const Product_brandsList = () => {
   const exportColumns = columns.map((col) => ({ title: col.header, dataKey: col.field }));
 
   const exportExcel = () => {
+    console.log('Export button clicked'); 
+
     import('xlsx').then((xlsx) => {
       const worksheet = xlsx.utils.json_to_sheet(product_brands);
       const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };

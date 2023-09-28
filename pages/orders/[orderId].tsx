@@ -37,12 +37,13 @@ const columns = [
   // { field: "tax", header: "Taxes (₹)" },
   // { field: "charge", header: "Charges (₹)" },
   {
-    field: "", header: "Total (₹)", body: (rowdata) => {
-      // calculate from 
-
-      return <p>{"Price"}</p>
-    }
-  },
+    field: "",
+    header: "Total (₹)",
+    body: (rowData) => {
+      const price = rowData.price || '-';
+      return <p>{price}</p>;
+    },
+  }
   // {
   //   field: 'createdAt',
   //   header: "Created On",
@@ -63,7 +64,7 @@ const columnsTwo = [
 ]
 
 const orderColumn = [
-  { field: "itemContains", header: "Item Contanis" },
+  { field: "itemContains", header: "Item Contains" },
   { field: "products.description", header: "Product Description" },
   { field: "facility", header: "Facility" },
   { field: "price", header: "Price info (?)" },
@@ -248,6 +249,7 @@ export const OrderDetails = () => {
         field={col.field}
         header={col.header}
         body={col?.body}
+        
         filter
         filterPlaceholder="Search..."
       />
@@ -260,7 +262,8 @@ export const OrderDetails = () => {
         key={col.field}
         field={col.field}
         header={col.header}
-        body={col?.body}
+        // body={col?.body}
+        body={(rowData) => rowData[col.field] || '-'}
         filter
         filterPlaceholder="Search..."
       />
@@ -285,7 +288,10 @@ export const OrderDetails = () => {
         key={col.field}
         field={col.field}
         header={col.header}
-        body={col?.body}
+        // body={col?.body}
+        body={(rowData) => rowData[col.field] || '-'}
+
+
         filter
         filterPlaceholder="Search..."
       />
@@ -400,7 +406,8 @@ export const OrderDetails = () => {
                   <div className="font-bold" style={{ fontSize: '17px', textDecoration: 'underline' }}>Item Details</div>
 
                   <DataTable
-                    value={itemData}
+                    // value={itemData}
+                    value={item}
                     responsiveLayout="scroll"
                     showGridlines
                     // header={header1}
@@ -424,7 +431,9 @@ export const OrderDetails = () => {
                   </div>
                   <div className="text-lg p-2 px-5">
                     {dataSummery.map((item, index) => (
-                      <div className="mt-2 " key={index}>{item.value}</div>
+                      // <div className="mt-2 " key={index}>{item.value}</div>
+                      <div className="mt-2 " key={index}>-</div>
+
                     ))}
                   </div>
                 </div>
@@ -432,14 +441,18 @@ export const OrderDetails = () => {
               <TabPanel header='Shipments'>
                 <Accordion activeIndex={0}>
                   <AccordionTab
+                    pt={{
+                      headertitle: {
+                        className: "w-full"
+                      }
+                    }}
                     header={
-                      <div style={{ display: 'flex', gap: '25rem' }}>
-                        <div style={{ display: 'flex', gap: '4rem' }}>
-                          <div>ShipmentId ROBO108966</div>
-                          <div>shipmentStatus Ready to Ship</div>
-                          <div>Created on 29Jun 2023, 15:25</div>
-                        </div>
-                        <div style={{ display: 'flex', gap: '1rem' }}>
+                      <div className="flex justify-content-between align-items-center"
+                      >
+                        <div>Shipment Id: ROBO108966</div>
+                        <div>shipment Status: Ready to Ship</div>
+                        <div>Created On: 29Jun 2023, 15:25</div>
+                        <div className="flex gap-3">
                           <i className="pi pi-check-square" style={{ fontSize: '1.5rem' }} />
                           <i className="pi pi-book" style={{ fontSize: '1.5rem' }} />
                           <i className="pi pi-sync" style={{ fontSize: '1.5rem' }} />
@@ -519,7 +532,7 @@ export const OrderDetails = () => {
           <div style={{ width: '25%' }}>
             <Accordion activeIndex={0}>
               <AccordionTab header="Order Details">
-                <div className="flex gap-5 ">
+                {/* <div className="flex gap-5 ">
                   <div className="text-lg p-2">
                     {Object.entries(orderDetails).map(([key, value]) => (
                       <div className="mt-2" key={key}>{key}</div>
@@ -530,7 +543,8 @@ export const OrderDetails = () => {
                       <div className="mt-2 " key={key}>{value}</div>
                     ))}
                   </div>
-                </div>
+                </div> */}
+
                 <div className="flex gap-5">
                   <div className="text-lg p-2">
                     <p>Payment Method</p>
@@ -538,8 +552,8 @@ export const OrderDetails = () => {
                     <p>Payment Method</p>
                   </div>
                   <div className="text-lg p-2 px-5">
-                    <p>{order.gateway === "" ? "-" :order.gateway }</p>
-                    <p>{order.gstNumber === "" ? "-" :  order.gstNumber}</p>
+                    <p>{order.gateway === "" ? "-" : order.gateway}</p>
+                    <p>{order.gstNumber === "" ? "-" : order.gstNumber}</p>
                     <p>{order.paymentMethodId === "" ? "-" : order.paymentMethodId}</p>
                   </div>
 
