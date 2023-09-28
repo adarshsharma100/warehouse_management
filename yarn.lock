@@ -9632,10 +9632,10 @@ primeicons@6.0.1:
   resolved "https://registry.npmjs.org/primeicons/-/primeicons-6.0.1.tgz"
   integrity sha512-KDeO94CbWI4pKsPnYpA1FPjo79EsY9I+M8ywoPBSf9XMXoe/0crjbUK7jcQEDHuc0ZMRIZsxH3TYLv4TUtHmAA==
 
-primereact@9.6.2:
-  version "9.6.2"
-  resolved "https://registry.npmjs.org/primereact/-/primereact-9.6.2.tgz"
-  integrity sha512-wc7bvhR+9TiWkHADp02R10lnLbtmXiJ0Pdix8jgVh9HdHMaT2tbA6zPuhaRvA1PVT49hvrDXRCL9QB6YtaCi3w==
+primereact@8.7.0:
+  version "8.7.0"
+  resolved "https://registry.npmjs.org/primereact/-/primereact-8.7.0.tgz"
+  integrity sha512-HJxDucaz7NzBDdvSMS4Y9jP3Z5aBmj5HZlcN/9ZY/YbjGIePLzOxtNm44AMVzW34EBdr2v7uzgv/pwlceUV7Ug==
   dependencies:
     "@types/react-transition-group" "^4.4.1"
     react-transition-group "^4.4.1"

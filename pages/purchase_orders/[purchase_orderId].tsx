@@ -62,6 +62,7 @@ export const Purchase_order = () => {
 
   const toast = useRef(null)
   const [purchase_order, { refetch }] = useQuery(getPurchase_order, { id: purchase_orderId, })
+  console.log('purchase_orderpoiu: ', purchase_order);
 
   const [createGrnMutation, { error: grnCreationError }] = useMutation(createGrn)
   const [updateGrnMutation] = useMutation(updateGrn)
@@ -135,13 +136,14 @@ export const Purchase_order = () => {
   const [activeGrn, setActiveGrn] = useState({})
   const [updateGrns, setUpdateGrns] = useState(false)
 
+
   const initialGrnProductState = {
     receivedQuantity: "",
     grnRejectedQuantity: 0,
     grnRejectionRemarks: '',
     poProduct: "",
     productName: "",
-    shortSupply: "",
+    shortSupply: 5,
     qcComplete: 0,
     qcRejectedQuantity: "",
     qcRejectionRemarks: "",
@@ -151,12 +153,14 @@ export const Purchase_order = () => {
       });
     }),
   }
+
+
+
+
   const [grnProductsList, setGrnProductsList] = useState([initialGrnProductState])
 
   console.log('grnProductsList: ', grnProductsList);
   const searchStatuses = createSearchFunction(grn_statuses, setGrnStatuses)
-
-
 
   const {
     id: poId,
@@ -197,6 +201,9 @@ export const Purchase_order = () => {
     let approvedBy = name
   }
 
+
+
+
   const setGrnProducts = (poProducts) => {
     const _poProducts = poProducts.map(
       ({ id, quantity, vendor_products: { products: { name, sku } } }) => ({
@@ -205,7 +212,7 @@ export const Purchase_order = () => {
         qcComplete: 0,
         poProduct: id,
         productName: `${sku}-${name}`,
-        shortSupply: "",
+        shortSupply: 4,
         grnRejectionRemarks: '',
         qcRejectedQuantity: 0,
         qcRejectionRemarks: "",
@@ -214,6 +221,12 @@ export const Purchase_order = () => {
     setGrnProductsList(_poProducts)
     setItemProductsList(_poProducts)
   }
+
+
+
+
+
+
   const getPoProductQty = (poProducts, poId) => poProducts.find(ele => ele.id === poId)?.quantity
 
   const getReceviedGrnProductQty = (poId) => {
@@ -300,87 +313,128 @@ export const Purchase_order = () => {
     onSubmit: async (data) => {
       console.log('data: ', data);
       const { grnNumber, invoiceNo, invoiceDate, status, grnRemarks, createdBy, trackingId, eta }: any = data
-
       if (updateGrns) {
         try {
+          const updatedGrnProducts = grnProductsList.map(({ grnProductId, receivedQuantity, grnRejectionRemarks, grnRejectedQuantity, qcRejectionRemarks, qcRejectedQuantity, poProduct }) => {
+            const poProductData = purchase_order.po_products.find((poProductObj) => poProductObj.id === poProduct);
+
+            if (poProductData) {
+              const shortSupply = poProductData.quantity - receivedQuantity;
+              return {
+                where: { id: grnProductId },
+                data: {
+                  receivedQuantity,
+                  grnRejectedQuantity,
+                  qcRejectedQuantity,
+                  finalQuantity: receivedQuantity - grnRejectedQuantity - qcRejectedQuantity,
+                  grnRejectionRemarks,
+                  qcRejectionRemarks,
+                  shortSupply,
+                },
+              };
+            } else {
+              return {
+                where: { id: grnProductId },
+                data: {
+                  receivedQuantity,
+                  grnRejectedQuantity,
+                  qcRejectedQuantity,
+                  finalQuantity: receivedQuantity - grnRejectedQuantity - qcRejectedQuantity,
+                  grnRejectionRemarks,
+                  qcRejectionRemarks,
+                },
+              };
+            }
+          });
+
           await updateGrnMutation({
             id: activeGrn?.id,
             grnNumber,
             invoiceNo,
             invoiceDate,
-            // trackingId,
-            // eta,
             status: status?.id,
             grn_products: {
-              updateMany: grnProductsList.map(({ grnProductId, receivedQuantity, grnRejectedQuantity, qcRejectedQuantity, }) => ({
-                where: {
-                  id: grnProductId
-                },
-                data: {
-                  receivedQuantity,
-                  grnRejectedQuantity,
-                  // grnRejectionRemarks,
-                  qcRejectedQuantity,
-                  finalQuantity: receivedQuantity - grnRejectedQuantity - qcRejectedQuantity,
-                  // qcRejectionRemarks,
-                },
-              }))
-            }
-
+              updateMany: updatedGrnProducts,
+            },
           }, {
             onSuccess: async (data) => {
-              toast?.current.show(tsuccess("Updated", `${data.grnNumber} is updated successfully`))
-              console.log(data)
-              await refetch()
+              toast?.current.show(tsuccess("Updated", `${data.grnNumber} is updated successfully`));
+              console.log(data);
+              await refetch();
             },
             onError: (error) => {
-              toast?.current.show(tError("Error", `${error} `))
+              toast?.current.show(tError("Error", `${error} `));
               console.log('error: ', error);
-            }
-          }
-          )
-          setActive(false)
-          formik.resetForm()
-          setGrnProductsList([])
+            },
+          });
+
+          setActive(false);
+          formik.resetForm();
+          setGrnProductsList([]);
 
         } catch (error) {
           console.log('error: ', error);
         }
       }
+
       else {
         try {
+          const grnProductsWithShortSupply = grnProductsList.map(({
+            receivedQuantity,
+            grnRejectedQuantity,
+            poProduct,
+            qcComplete,
+            qcRejectedQuantity,
+            grnRejectionRemarks,
+            qcRejectionRemarks,
+            finalQuantity,
+          }) => {
+            // Find the corresponding po_product based on poProduct ID
+            const poProductData = purchase_order.po_products.find((poProductObj) => poProductObj.id === poProduct);
+
+            if (poProductData) {
+              // Calculate shortSupply using the found po_product data
+              const shortSupply = poProductData.quantity - receivedQuantity;
+
+              return {
+                receivedQuantity,
+                grnRejectedQuantity,
+                grnRejectionRemarks,
+                poProduct,
+                qcComplete,
+                qcRejectedQuantity,
+                qcRejectionRemarks,
+                finalQuantity: receivedQuantity - grnRejectedQuantity - qcRejectedQuantity,
+                shortSupply, // Include the calculated shortSupply value
+              };
+            } else {
+              // Handle the case where the poProduct ID is not found in po_products
+              return {
+                receivedQuantity,
+                grnRejectedQuantity,
+                grnRejectionRemarks,
+                poProduct,
+                qcComplete,
+                qcRejectedQuantity,
+                qcRejectionRemarks,
+                finalQuantity: receivedQuantity - grnRejectedQuantity - qcRejectedQuantity,
+                shortSupply, // Set a default value or handle the error as needed
+              };
+            }
+          });
+
+          // Now, include grnProductsWithShortSupply in your API call
           await createGrnMutation({
             grnNumber,
             invoiceNo,
             invoiceDate,
-            // trackingId,
             createdBy: userId,
-            // eta,
             status: status?.id,
-
             vendorShipmentId: tracking?.id,
             grnRemarks,
             purchaseOrder: purchase_orderId,
             grn_products: {
-              create: grnProductsList.map(({
-                receivedQuantity,
-                grnRejectedQuantity,
-                poProduct,
-                qcComplete,
-                qcRejectedQuantity,
-                grnRejectionRemarks,
-                qcRejectionRemarks,
-                // finalQuantity
-              }) => ({
-                receivedQuantity,
-                grnRejectedQuantity,
-                grnRejectionRemarks,
-                poProduct,
-                qcComplete,
-                qcRejectedQuantity,
-                qcRejectionRemarks,
-                // finalQuantity
-              }))
+              create: grnProductsWithShortSupply, // Use the calculated shortSupply values
             },
           }, {
             onSuccess: async (data) => {
@@ -389,21 +443,28 @@ export const Purchase_order = () => {
               setActive(!active)
               formik.resetForm()
               await refetch()
-
             },
             onError: (error) => {
               toast?.current.show(tError("Error", `${error} `))
               console.log('error: ', error);
-            }
-          }
-          )
-        } catch (error) {
+            },
+          });
+
+        }
+
+        catch (error) {
           console.log('error: ', error);
         }
 
+
+
+
       }
     }
+
+
   })
+
 
   const isFormFieldValid = (name) => !!(formik.touched[name] && formik.errors[name])
   const getFormErrorMessage = (name) => {
@@ -436,6 +497,7 @@ export const Purchase_order = () => {
 
     const grnProduct = grn_products && grn_products.length > 0 ? grn_products[0] : null;
 
+
     // Extract the grnRejectionRemarks property from the grnProduct object.
     const grnRejectionRemarks = grnProduct ? grnProduct.grnRejectionRemarks : "";
 
@@ -454,10 +516,13 @@ export const Purchase_order = () => {
           icon='pi pi-pencil'
           onClick={async () => {
             window.scrollTo(90, 90)
-            const _grnprodListFormat = grn_products.map(({ id: grnProductId, finalQuantity, receivedQuantity, grnRejectedQuantity,
+            const _grnprodListFormat = grn_products.map(({ id: grnProductId, finalQuantity, receivedQuantity, grnRejectedQuantity, grnRejectionRemarks, qcRejectionRemarks, qcRejectedQuantity,
               po_products: { id, vendor_products: { products: { name, sku } } } }) => ({
                 receivedQuantity,
                 grnRejectedQuantity,
+                qcRejectedQuantity,
+                grnRejectionRemarks,
+                qcRejectionRemarks,
                 poProduct: id,
                 grnProductId,
                 productName: `${sku}-${name}`,
@@ -513,44 +578,79 @@ export const Purchase_order = () => {
   const onCellEditComplete = async (e) => {
     const { rowData, newValue, field, originalEvent: event } = e;
     console.log('newValue: ', newValue, rowData, field);
-    if (['receivedQuantity', 'grnRejectedQuantity', 'qcRejectedQuantity', 'grnRejectionRemarks', 'qcRejectionRemarks',].includes(field)) {
+    if (pullProducts === true) {
+      if (['receivedQuantity', 'grnRejectedQuantity', 'qcRejectedQuantity', 'grnRejectionRemarks', 'qcRejectionRemarks',].includes(field)) {
 
-      if (newValue?.trim().length > 0) {
-        if (field === 'grnRejectedQuantity' || field === 'qcRejectedQuantity' || field === 'receivedQuantity') {
-          const intValue = parseInt(newValue, 10);
-          rowData[field] = intValue;
-        } else {
-          // For string fields grnRejectionRemarks and qcRejectionRemarks
-          rowData[field] = newValue;
-        }
-
-        // single product
-        // if (selectedProduct?.id === rowData.id) {
-        //   setSelectedProduct({
-        //     ...selectedProduct,
-        //     [field]: rowData[field],
-        //   });
-        // }
-
-        const updatedGRNItems = grnProductsList.map((item) => {
-          console.log('here:+++== ', item.id, rowData.id);
-          if (item.id === rowData.id) {
-            console.log('here!!++', item.id, rowData.id)
-            return { ...item, [field]: rowData[field] };
+        if (newValue?.trim().length > 0) {
+          if (field === 'grnRejectedQuantity' || field === 'qcRejectedQuantity' || field === 'receivedQuantity') {
+            const intValue = parseInt(newValue, 10);
+            rowData[field] = intValue;
+          } else {
+            // For string fields grnRejectionRemarks and qcRejectionRemarks
+            rowData[field] = newValue;
           }
-          console.log('here!!')
-          return item;
-        });
 
+          // single product
+          // if (selectedProduct?.id === rowData.id) {
+          //   setSelectedProduct({
+          //     ...selectedProduct,
+          //     [field]: rowData[field],
+          //   });
+          // }
+
+          const updatedGRNItems = grnProductsList.map((item) => {
+            console.log('here:+++== ', item.id, rowData.id);
+            if (item.id === rowData.id) {
+              console.log('here!!++', item.id, rowData.id)
+              return { ...item, [field]: rowData[field] };
+            }
+            console.log('here!!')
+            return item;
+          });
+
+
+          formik.setValues({
+            ...formik.values,
+            grnProductsList: updatedGRNItems,
+          });
+
+
+        } else {
+          event.preventDefault();
+        }
+      }
+    }
+
+    else {
+      if (['receivedQuantity', 'grnRejectedQuantity', 'qcRejectedQuantity', 'grnRejectionRemarks', 'qcRejectionRemarks',].includes(field)) {
+        if (newValue?.trim().length > 0) {
+          if (field === 'grnRejectedQuantity' || field === 'qcRejectedQuantity' || field === 'receivedQuantity') {
+            const singleIntValue = parseInt(newValue, 10);
+            rowData[field] = singleIntValue;
+          } else {
+            rowData[field] = newValue
+          }
+        }
+        // const updateSingleGRNItem = singleProductArray.map((item) => {
+        //   console.log('here:+++== ', item.id, rowData.id);
+        //   if (item.id === rowData.id) {
+        //     console.log('here!!++', item.id, rowData.id)
+        //     return { ...item, [field]: rowData[field] };
+        //   }
+        //   console.log('here!!')
+        //   return item;
+        // });
+
+        const updateSingleGRNItem = { ...singleProductArray }
+        if (updateSingleGRNItem.id === rowData.id) {
+          updateSingleGRNItem[field] = rowData[field];
+        }
 
         formik.setValues({
           ...formik.values,
-          grnProductsList: updatedGRNItems,
-        });
+          grnProductsList: updateSingleGRNItem,
+        })
 
-
-      } else {
-        event.preventDefault();
       }
     }
   };
@@ -566,6 +666,7 @@ export const Purchase_order = () => {
       />
     );
   };
+
 
   const grnItemColumn = [
     // { field: "shortSupply", header: 'Short Supply', body: (rowData) => rowData.po_products.quantity - rowData.receivedQuantity || "-" },
@@ -676,6 +777,8 @@ export const Purchase_order = () => {
   console.log('selectedProduct: ', selectedProduct);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [selectedRowData, setSelectedRowData] = useState(null);
+  const [singleProductArray, setSingleProductArray] = useState([])
+  console.log('singleProductArray: ', singleProductArray);
 
   // Filter products based on user input
   const filterProducts = (event) => {
@@ -1147,141 +1250,6 @@ export const Purchase_order = () => {
                     </div>
 
                     {/* <DataTable
-                    value={grnProductsList}
-                      
-                      showGridlines
-                      stripedRows
-                      editMode="cell"
-                      // selectionMode={grnProductsList.length === 1 ? 'single' : null}
-                      selectionMode='multiple'
-                      selection={selectGrnProducts}
-                      onSelectionChange={(e) => setSelectGrnProducts(e.value)}
-                    >
-                      <Column
-                        header='ID'
-                        className="reduce-column"
-                        body={(ele, { rowIndex }) => (
-                          <div key={rowIndex} className=" ">
-                            <span className="bg-primary border-circle w-2rem h-2rem flex align-items-center justify-content-center">{rowIndex + 1}</span>
-                          </div>
-                        )}
-                      />
-                      <Column
-                        selectionMode="multiple"
-                        headerStyle={{ width: '3rem' }}
-                        checked={isAllRowsSelected()}
-                        onChange={(e) => handleSelectAll(e)}
-                      />
-                      <Column
-                        header='Products'
-                        body={(ele, { rowIndex }) => {
-                          return (
-                            <div className="">
-                              {pullProducts ? (
-                                <AutoComplete
-                                  id="name"
-                                  name="productName"
-                                  value={ele.productName}
-                                  dropdown
-                                  onChange={async (e) => {
-                                    // const selectedProduct = e.value;
-                                    // handleProductSelect(selectedProduct);
-                                    // console.log("event understand", e.value)
-                                    // let product_id = typeof e.value === "string" ? "" : e.value?.product_id
-                                    // let name = typeof e.value === "string" ? e.value : e.value?.name
-                                    // let price_per_unit = typeof e.value === "string" ? e.value : e.value?.Price
-                                    // let data = [...itemList]
-
-                                    // data[i].product_name = name
-                                    // data[i].products_product_id = product_id
-                                    // data[i].price_per_unit = price_per_unit
-                                    // data[i].quantity = ""
-
-                                    // let itemsLength = !e.value?.name ? false : true
-                                    // await formik.setValues({ ...formik.values, itemsLength })
-
-                                    // setItemList(data)
-                                  }}
-                                  aria-label="products"
-                                  dropdownAriaLabel="Select Product"
-                                //   className={classNames({ "p-invalid": isFormFieldValid("name") })}
-                                />
-                              ) : (
-                                
-                                <AutoComplete
-                                  id="name"
-                                  name="productName"
-                                  value={ele.productName}
-                                  suggestions={itemProductList.map((ele) => ele.productName)}
-                                  dropdown
-                                  onChange={(e) => {
-                                    // Handle product selection when pullProducts is false
-                                  }}
-                                  aria-label="products"
-                                  dropdownAriaLabel="Select Product =="
-                                />
-                              )}
-
-                            </div>
-                          )
-                        }}
-                      />
-
-                      {grnItemColumn.map((i) => {
-                        return (
-                          <Column
-                            key={i.field}
-                            field={i.field}
-                            header={i.header}
-                            body={i.body}
-                            editor={
-                              i.field === 'receivedQuantity' ||
-                                i.field === 'grnRejectedQuantity' ||
-                                i.field === 'qcRejectedQuantity' ||
-                                i.field === 'grnRejectionRemarks' ||
-                                i.field === 'qcRejectionRemarks' ?
-                                textEditor : null
-                            }
-                            onCellEditComplete={
-                              i.field === 'receivedQuantity' ||
-                                i.field === 'grnRejectedQuantity' ||
-                                i.field === 'qcRejectedQuantity' ||
-                                i.field === 'grnRejectionRemarks' ||
-                                i.field === 'qcRejectionRemarks' ?
-                                onCellEditComplete : null
-                            }
-                          />
-                        )
-                      })}
-
-
-                      {grnProductsList?.length > 1 && (
-                        <Column
-                          header='Remove'
-                          className="reduce-column"
-                          body={(ele, { rowIndex }) => {
-                            return (
-                              <span className="">
-
-                                {grnProductsList.length > 1 && (
-                                  <Button
-                                    type="button"
-                                    icon='pi pi-times'
-                                    className="p-button-secondary"
-                                    onClick={() => {
-                                      removeFields(rowIndex);
-                                    }}
-                                  />
-                                )}
-                              </span>
-                            );
-                          }}
-                        />
-                      )}
-
-                    </DataTable>  */}
-
-                    <DataTable
                       value={pullProducts ? grnProductsList : [{}]}
                       showGridlines
                       stripedRows
@@ -1399,14 +1367,127 @@ export const Purchase_order = () => {
                         />
                       )}
 
+                    </DataTable> */}
+
+
+                    <DataTable
+                      value={pullProducts ? grnProductsList : [{}]}
+                      showGridlines
+                      stripedRows
+                      editMode="cell"
+                      // selectionMode={grnProductsList.length === 1 ? 'single' : null}
+                      selectionMode='multiple'
+                      selection={selectGrnProducts}
+                      onSelectionChange={(e) => setSelectGrnProducts(e.value)}
+                    >
+                      <Column
+                        header='ID'
+                        className="reduce-column"
+                        body={(ele, { rowIndex }) => (
+                          <div key={rowIndex} className=" ">
+                            <span className="bg-primary border-circle w-2rem h-2rem flex align-items-center justify-content-center">{rowIndex + 1}</span>
+                          </div>
+                        )}
+                      />
+                      <Column
+                        header='QC Bypass'
+                        selectionMode="multiple"
+                        // headerStyle={{ width: '1rem' }}
+                        checked={isAllRowsSelected()}
+                        onChange={(e) => handleSelectAll(e)}
+                      />
+                      <Column
+                        header='Products'
+                        body={(ele, { rowIndex }) => {
+                          return (
+                            <div className="">
+                              {pullProducts ? (
+                                <AutoComplete
+                                  id="name"
+                                  name="productName"
+                                  value={ele.productName}
+                                  dropdown
+                                  onChange={async (e) => {
+
+                                  }}
+                                  aria-label="products"
+                                  dropdownAriaLabel="Select Product"
+                                />
+                              ) : (
+
+
+                                <AutoComplete
+                                  value={selectedProduct}
+                                  suggestions={filteredProducts}
+                                  completeMethod={filterProducts}
+                                  field="productName"
+                                  onChange={(e) => {
+                                    setSelectedProduct(e.value);
+                                    setSingleProductArray(e.value)
+                                  }}
+                                  placeholder="Select product==="
+                                  dropdown
+                                />
+
+                              )}
+                            </div>
+                          )
+                        }}
+                      />
+
+                      {grnItemColumn.map((i) => {
+                        return (
+                          <Column
+                            key={i.field}
+                            field={i.field}
+                            header={i.header}
+                            body={i.body}
+                            editor={
+                              i.field === 'receivedQuantity' ||
+                                i.field === 'grnRejectedQuantity' ||
+                                i.field === 'qcRejectedQuantity' ||
+                                i.field === 'grnRejectionRemarks' ||
+                                i.field === 'qcRejectionRemarks' ?
+                                textEditor : null
+                            }
+                            onCellEditComplete={
+                              i.field === 'receivedQuantity' ||
+                                i.field === 'grnRejectedQuantity' ||
+                                i.field === 'qcRejectedQuantity' ||
+                                i.field === 'grnRejectionRemarks' ||
+                                i.field === 'qcRejectionRemarks' ?
+                                onCellEditComplete : null
+                            }
+                          />
+                        )
+                      })}
+
+
+                      {grnProductsList?.length > 1 && (
+                        <Column
+                          header='Remove'
+                          className="reduce-column"
+                          body={(ele, { rowIndex }) => {
+                            return (
+                              <span className="">
+
+                                {grnProductsList.length > 1 && (
+                                  <Button
+                                    type="button"
+                                    icon='pi pi-times'
+                                    className="p-button-secondary"
+                                    onClick={() => {
+                                      removeFields(rowIndex);
+                                    }}
+                                  />
+                                )}
+                              </span>
+                            );
+                          }}
+                        />
+                      )}
+
                     </DataTable>
-
-
-
-
-
-
-
 
                   </div>
 
@@ -1425,8 +1506,6 @@ export const Purchase_order = () => {
                       setActive(!active); setUpdateGrns(false);
                       formik.resetForm()
                       setGrnProductsList([initialGrnProductState])
-
-
                     }}
                     className="p-button-secondary flex-grow-0" />
                 </div>
@@ -1452,7 +1531,8 @@ export const Purchase_order = () => {
               console.log('shouldShowButton: ', shouldShowButton);
 
               const accordionHeader = (
-                <div className="flex justify-content-between align-items-center "
+                <div
+                  className="flex justify-content-between align-items-center"
                 // style={{ width: '400px' }}
                 // style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                 >

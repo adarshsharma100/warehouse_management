@@ -12,6 +12,8 @@ import { DataTable } from 'primereact/datatable';
 import { InputText } from 'primereact/inputtext';
 import { Toast } from 'primereact/toast';
 import React, { useRef, useState } from 'react'
+import {initialFilterRules} from "app/constants"
+import { FilterMatchMode } from "primereact/api"
 
 function VendorShipment() {
 
@@ -21,7 +23,7 @@ function VendorShipment() {
         shipmentId: "",
         courier: "",
     }
-    const [{ vendor_shipments, }] = useQuery(getVendor_shipments, {
+    const [{ vendor_shipments, }, { refetch }] = useQuery(getVendor_shipments, {
         where: undefined,
         orderBy: undefined,
         skip: undefined,
@@ -29,7 +31,7 @@ function VendorShipment() {
     })
     const purchase_orderId = useParam("purchase_orderId", "number")
 
-    const [purchase_order, { refetch }] = useQuery(getPurchase_order, { id: purchase_orderId, })
+    const [purchase_order, ] = useQuery(getPurchase_order, { id: purchase_orderId, })
     const { id: poId, poNumber } = purchase_order
     const filteredShipments = vendor_shipments.filter((shipment) => shipment.purchaseOrderId === poId);
 
@@ -61,6 +63,7 @@ function VendorShipment() {
                         onSuccess: async (data) => {
                             toast?.current.show(tsuccess(`Created Shipment`))
                             await refetch()
+                           
                             formik.resetForm()
                             setActiveVendor(!activeVendor)
                         },
@@ -86,7 +89,7 @@ function VendorShipment() {
 
     const vendorComponent = [
         { field: 'trackingId', header: 'Tracking Id', },
-        { field: "shipmentId", header: 'shipment Id' },
+        { field: "shipmentId", header: 'Shipment Id' },
         { field: "courier", header: "Courier" },
     ].map((col) => {
         return (
@@ -107,7 +110,8 @@ function VendorShipment() {
     // };
 
     
-  
+
+
     return (
         <div>
             <Toast ref={toast} />
@@ -203,6 +207,7 @@ function VendorShipment() {
                 <DataTable
                     value={filteredShipments}
                     showGridlines
+                    header='Vendor Shipment'
                 >
                     <Column
                         header='Sl No.'
