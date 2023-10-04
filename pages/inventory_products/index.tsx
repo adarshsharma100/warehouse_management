@@ -132,8 +132,6 @@ export const Inventory_productsList = () => {
     bad_stock: initialFilterRules.andContains,
     block_stock: initialFilterRules.andContains,
     available_stock: initialFilterRules.andContains,
-
-
   }
   const [filters, setFilters] = useState(initialFilters)
   const [globalFilterValue, setGlobalFilterValue] = useState("")
@@ -471,12 +469,11 @@ export const Inventory_productsList = () => {
     }, {})
   )
   console.log(inventoryTableData, 'inventoryTableData')
-
+  
   const findQuantityByShelfType = (shelfType, shelves) => {
     const qty = shelves.reduce((acc, { shelf_type: { name }, quantity }) => name === shelfType ? acc + quantity : acc, 0)
     return qty
   }
-
 
   const formik = useFormik({
     initialValues: productDetails,
@@ -581,49 +578,49 @@ export const Inventory_productsList = () => {
 
   // Single Datatable data
   
-  // const exportExcel = () => {
-  //   import('xlsx').then((xlsx) => {
-  //     // Create a new array containing only the "product" properties
-  //     const productData = inventoryTableData.map((item) => item.product);
+  const exportExcel = () => {
+    import('xlsx').then((xlsx) => {
+      // Create a new array containing only the "product" properties
+      const productData = inventoryTableData.map((item) => item.product);
 
-  //     // Create the worksheet from the "product" data
-  //     const worksheet = xlsx.utils.json_to_sheet(productData);
+      // Create the worksheet from the "product" data
+      const worksheet = xlsx.utils.json_to_sheet(productData);
 
-  //     const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
-  //     const excelBuffer = xlsx.write(workbook, {
-  //       bookType: 'xlsx',
-  //       type: 'array',
-  //     });
+      const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
+      const excelBuffer = xlsx.write(workbook, {
+        bookType: 'xlsx',
+        type: 'array',
+      });
 
-  //     saveAsExcelFile(excelBuffer, 'products');
-  //   });
-  // };
+      saveAsExcelFile(excelBuffer, 'products');
+    });
+  };
 
 
   // Both datatable data 
-  const exportExcel = () => {
-    import('xlsx').then((xlsx) => {
-      const productWorksheet = xlsx.utils.json_to_sheet(inventoryTableData.map((item) => item.product));
+  // const exportExcel = () => {
+  //   import('xlsx').then((xlsx) => {
+  //     const productWorksheet = xlsx.utils.json_to_sheet(inventoryTableData.map((item) => item.product));
   
-      const shelvesData = inventoryTableData.flatMap((item) => item.shelves);
+  //     const shelvesData = inventoryTableData.flatMap((item) => item.shelves);
   
-      const shelvesWorksheet = xlsx.utils.json_to_sheet(shelvesData);
+  //     const shelvesWorksheet = xlsx.utils.json_to_sheet(shelvesData);
   
-      const productWorkbook = { Sheets: { data: productWorksheet }, SheetNames: ['data'] };
-      const productExcelBuffer = xlsx.write(productWorkbook, {
-        bookType: 'xlsx',
-        type: 'array',
-      });
-      saveAsExcelFile(productExcelBuffer, 'products');
+  //     const productWorkbook = { Sheets: { data: productWorksheet }, SheetNames: ['data'] };
+  //     const productExcelBuffer = xlsx.write(productWorkbook, {
+  //       bookType: 'xlsx',
+  //       type: 'array',
+  //     });
+  //     saveAsExcelFile(productExcelBuffer, 'products');
   
-      const shelvesWorkbook = { Sheets: { data: shelvesWorksheet }, SheetNames: ['data'] };
-      const shelvesExcelBuffer = xlsx.write(shelvesWorkbook, {
-        bookType: 'xlsx',
-        type: 'array',
-      });
-      saveAsExcelFile(shelvesExcelBuffer, 'shelves');
-    });
-  };
+  //     const shelvesWorkbook = { Sheets: { data: shelvesWorksheet }, SheetNames: ['data'] };
+  //     const shelvesExcelBuffer = xlsx.write(shelvesWorkbook, {
+  //       bookType: 'xlsx',
+  //       type: 'array',
+  //     });
+  //     saveAsExcelFile(shelvesExcelBuffer, 'shelves');
+  //   });
+  // };
   
   
   const saveAsExcelFile = (buffer, fileName) => {

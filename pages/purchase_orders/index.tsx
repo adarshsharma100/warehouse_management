@@ -129,19 +129,19 @@ export const Purchase_ordersList = () => {
     },
     {
       field: "vendors.name",
-      filterField: "vendor",
+      filterField: "vendors.name",
       header: "Vendor",
       filter: true,
       filterPlaceholder: "Search by Vendor"
     },
     {
-      field: "updatedAt",
+      field: "updatedAT",
       header: "Updated on",
-      filterField: "updatedAt",
-      filter: true,
-      filterElement: dateFilterTemplate,
+      filterField: "updatedAT",
       dataType: "date",
       body: (rowData) => dateFormat(rowData.updatedAT),
+      filter: true,
+      filterElement: dateFilterTemplate,
     },
     {
       field: "expectedDod",
@@ -153,8 +153,9 @@ export const Purchase_ordersList = () => {
       filterElement: dateFilterTemplate
     },
     {
-      field: "po_status",
+      field: "po_status.name",
       header: "Status",
+      filterField: "po_status.name",
       body: (rowData) => rowData.po_status?.name,
       filter: true,
       filterPlaceholder: "Search by Status"
@@ -302,12 +303,12 @@ export const Purchase_ordersList = () => {
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
     poNumber: initialFilterRules.andContains,
     description: initialFilterRules.andContains,
-    vendor: initialFilterRules.orContains,
-    po_status: initialFilterRules.andContains,
+    "vendors.name": initialFilterRules.orContains,
+    "po_status.name": initialFilterRules.orContains,
     from_party: initialFilterRules.andContains,
     agreement_status: initialFilterRules.andContains,
     expectedDod: initialFilterRules.dateIs,
-    updatedAt: initialFilterRules.dateIs,
+    updatedAT: initialFilterRules.dateIs,
   }
 
   const [filters, setFilters] = useState(initialColumnFilters)
@@ -325,6 +326,45 @@ export const Purchase_ordersList = () => {
     setFilters(_filters1)
     setGlobalFilterValue(value)
   }
+
+
+
+  const exportExcel = () => {
+    import('xlsx').then((xlsx) => {
+      const productData = purchase_orders.map((item) => ({
+        poNumber: item.poNumber,
+        "name":item.vendors.name,
+        "Status":item.po_status.name,
+        description: item.description,
+        updatedAT:item.updatedAT,
+        expectedDod: item.expectedDod,
+        
+      }));
+      const worksheet = xlsx.utils.json_to_sheet(productData);
+  
+      const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
+      const excelBuffer = xlsx.write(workbook, {
+        bookType: 'xlsx',
+        type: 'array',
+      });
+  
+      saveAsExcelFile(excelBuffer, 'purchase_orders');
+    });
+  };
+
+  const saveAsExcelFile = (buffer, fileName) => {
+    import('file-saver').then((module) => {
+      if (module && module.default) {
+        let EXCEL_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+        let EXCEL_EXTENSION = '.xlsx';
+        const data = new Blob([buffer], {
+          type: EXCEL_TYPE
+        });
+
+        module.default.saveAs(data, fileName + '_export_' + new Date().getTime() + EXCEL_EXTENSION);
+      }
+    });
+  };
 
   const renderHeader = () => {
     return (
@@ -359,6 +399,17 @@ export const Purchase_ordersList = () => {
           style={{ height: "2.4rem" }}
 
           onClick={clearFilter}
+        />
+
+        <Button
+          className="ml-3"
+          type="button"
+          icon="pi pi-file-excel"
+          label="Export as XLSX"
+          // severity="success"
+          onClick={() => exportExcel()}
+          tooltip="Export Data"
+          tooltipOptions={{ position: 'top' }}
         />
       </div>
     )

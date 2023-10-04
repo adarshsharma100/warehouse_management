@@ -1,7 +1,9 @@
 import { invoke, useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
-import { cities, createSearchFunction, dateFormat } from "app/constants";
+import { cities, createSearchFunction, dateFormat, initialFilterRules } from "app/constants";
 import Head from "next/head";
 import Link from "next/link"
+import { dateFilterTemplate } from "components/FilterTemplates"
+
 import { Routes } from "@blitzjs/next"
 import getOrder_statuses from "app/order_statuses/queries/getOrder_statuses";
 import createOrder from "app/orders/mutations/createOrder";
@@ -42,6 +44,7 @@ import { InputSwitch } from "primereact/inputswitch";
 import getOrder_payment_statuses from "app/order_payment_statuses/queries/getOrder_payment_statuses";
 import getPayment_methods from "app/payment_methods/queries/getPayment_methods";
 import { Divider } from "primereact/divider";
+import { FilterMatchMode } from "primereact/api";
 
 const initialState = {
   _orders: [],
@@ -179,6 +182,7 @@ export const OrdersList = () => {
     skip: skipCount,
     take: tableRowsCount,
   });
+  console.log('orders: ', orders);
 
 
   const [{ count: pendingVerificationCount }] = useQuery(getOrders, {
@@ -261,6 +265,7 @@ export const OrdersList = () => {
   // console.log('optionsPaymentTerms: ', optionsPaymentTerms);
 
 
+
   const [createNewOrder] = useMutation(createOrder)
   const [updateNewOrder, { isLoading }] = useMutation(updateOrder)
   const [orderItemsDetails, setOrderItemsDetails] = useState(initialOrderDetails)
@@ -283,8 +288,6 @@ export const OrdersList = () => {
           companyName: { contains: selectedCustomerName ?? undefined }
         }
       ]
-
-
     },
     take: undefined
   })
@@ -324,9 +327,7 @@ export const OrdersList = () => {
   // console.log('gstTotal: ', gstTotal);
 
 
-  const calculateTotalPrice = () => {
 
-  }
 
 
   const [orderItemsSuggestions, setOderItemsSuggestions] = useState<any>(null)
@@ -968,6 +969,46 @@ export const OrdersList = () => {
   }
 
 
+
+  const exportExcel = () => {
+    import('xlsx').then((xlsx) => {
+      // Create an array of objects that represent your orders data
+      const ordersData = orders.map((order) => {
+        return {
+          OrderID: order.id,
+          CustomerName: `${order.customers.firstName} ${order.customers.lastName}`,
+          TotalPrice: order.totalPrice,
+        };
+      });
+
+      const worksheet = xlsx.utils.json_to_sheet(ordersData);
+
+      const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
+
+      const excelBuffer = xlsx.write(workbook, {
+        bookType: 'xlsx',
+        type: 'array',
+      });
+
+      saveAsExcelFile(excelBuffer, 'order');
+    });
+  };
+
+
+  const saveAsExcelFile = (buffer, fileName) => {
+    import('file-saver').then((module) => {
+      if (module && module.default) {
+        let EXCEL_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+        let EXCEL_EXTENSION = '.xlsx';
+        const data = new Blob([buffer], {
+          type: EXCEL_TYPE
+        });
+
+        module.default.saveAs(data, fileName + '_export_' + new Date().getTime() + EXCEL_EXTENSION);
+      }
+    });
+  };
+
   const [createShipment] = useMutation(CreateShipment)
 
   const renderHeader = () => {
@@ -976,7 +1017,7 @@ export const OrdersList = () => {
       <>
         <Toast ref={toast} />
 
-        <div className="flex justify-content-end">
+        <div className="flex gap-3 justify-content-end">
           {checkVerified && (
 
             <Button
@@ -1031,107 +1072,43 @@ export const OrdersList = () => {
 
               }}
             />
-
-
-            // <Button
-            //   type="button"
-            //   icon="pi pi-verified"
-            //   label="Verify"
-            //   className="p-button-outlined"
-            //   onClick={async () => {
-            //     const activeIDs = selectedOrder.map((ele) => ele?.id);
-            //     const activeOrderItems = selectedOrder.map((ele) => ele?.order_items).flat();
-            //     const activeOrderNames = activeOrderItems.map((i) => i.products.name);
-            //     const activeOrderQuantities = activeOrderItems.map((i) => i.quantity);
-
-            //     if (activeIDs.length > 0) {
-            //       let verificationPassed = true; // Flag to track if all products pass verification
-
-            //       for (let i = 0; i < activeOrderItems.length; i++) {
-            //         const activeOrderItem = activeOrderItems[i];
-            //         const activeOrderName = activeOrderNames[i];
-            //         const activeOrderQuantity = activeOrderQuantities[i];
-
-            //         const selectedProduct = inventory_products.find((product) => product.products.name === activeOrderName);
-
-            //         if (!selectedProduct || selectedProduct.quantity < activeOrderQuantity) {
-            //           verificationPassed = false;
-            //           break;
-            //         }
-            //       }
-
-            //       if (verificationPassed) {
-            //         for (let i = 0; i < activeIDs.length; i++) {
-            //           const id = activeIDs[i];
-            //           const activeOrderItem = activeOrderItems[i];
-            //           const activeOrderName = activeOrderNames[i];
-            //           const activeOrderQuantity = activeOrderQuantities[i];
-
-            //           const selectedProduct = inventory_products.find((product) => product.products.name === activeOrderName);
-            //           const updatedQuantity = selectedProduct.quantity - activeOrderQuantity;
-
-            //           await updateInventory_productMutation(
-            //             {
-            //               id: selectedProduct.id,
-            //               quantity: updatedQuantity,
-            //             },
-            //             {
-            //               onSuccess: () => {
-            //                 toast?.current?.show(tsuccess("Inventory updated successfully."));
-            //               },
-            //             }
-            //           );
-
-            //           await updateNewOrder({
-            //             id,
-            //             verified: 1,
-            //           });
-
-            //           const shipmentNumber = `ROB0${Math.floor(Math.random() * 100000)}`;
-            //           const shipmentItems = {
-            //             order_items: {
-            //               connect: {
-            //                 id: activeOrderItem.id,
-            //               },
-            //             },
-            //           };
-
-            //           await createShipment(
-            //             {
-            //               ordersId: id,
-            //               shipmentNumber,
-            //               priority: 'LOW',
-            //               shipment_items: {
-            //                 create: shipmentItems,
-            //               },
-            //             },
-            //             {
-            //               onSuccess: () => {
-            //                 toast?.current.show(tsuccess('Verified'));
-            //               },
-            //               onError: (error) => {
-            //
-            //                 toast?.current.show(terror('Not Verified'));
-            //               },
-            //             }
-            //           );
-            //         }
-            //       } else {
-            //         alert('Product quantity is insufficient or product not found in inventory');
-            //       }
-            //     }
-            //   }}
-            // />
-
-
-
           )}
+          <div className="flex gap-4">
+            <span className="p-input-icon-left">
+              <i className="pi pi-search" />
+              <InputText
+                value={globalFilterValue}
+                onChange={onGlobalFilterChange}
+                placeholder="Keyword Search"
+              />
+            </span>
+            <Button
+              type="button"
+              icon="pi pi-filter-slash"
+              label="Clear"
+              className="p-button-outlined"
+              onClick={clearFilter}
+            />
+
+            <Button
+              type="button"
+              icon="pi pi-file-excel"
+              label="Export as XLSX"
+              // severity="success"
+              rounded onClick={exportExcel}
+              tooltip="Export Data"
+              tooltipOptions={{ position: 'top' }}
+            />
+
+          </div>
+
         </div>
 
       </>
 
     )
   }
+  const orderHeader = renderHeader()
 
 
   const [selectedOrder, setSelectedOrder] = useState([]);
@@ -1195,10 +1172,10 @@ export const OrdersList = () => {
   const tabMenuItems = order_statuses?.map(status => {
     return {
       label: (
-        <div>
+        <div className="flex gap-1">
           <span>{status.name}</span>
           {(status.name === "PENDING VERIFICATION" || status.name === "FAILED") && (
-            <Badge className="p-overlay-badge"
+            <Badge className="p-overlay-badge -mt-3"
               value={
                 status.name === "PENDING VERIFICATION" ? pendingVerificationCount :
                   status.name === "FAILED" ? failedCount : ""
@@ -1359,13 +1336,10 @@ export const OrdersList = () => {
   };
 
   const handleCustomerDetailsRender = ({ customers }) => {
-    console.log("Customer Data", customers);
+
     const { addresses: { contact_number, emails_emails_addressesToaddresses,
       areaStreet, buildingNumber, cityCountryProvince, landmarkName, pincode, state },
       firstName, lastName } = customers;
-
-
-
     return (
       <div className="w-30rem">
         <div className="customer-name-container">
@@ -1391,104 +1365,17 @@ export const OrdersList = () => {
 
   }
 
+
+
+
+
   const handleShowProducts = ({ order_items }) => {
-    // return (
-    //   <div className="product-column">
-    //     {order_items.length > 2 ?
-    //       <>
-    //         <div
-    //           className="product-header"
-
-    //         >
-    //           <Button
-    //             label={`Products(${order_items.length})`}
-    //             className="p-button-link"
-    //             onMouseEnter={handleMouseEnter}
-    //           // onMouseLeave={handleMouseLeave}
-
-    //           />
-    //         </div>
-    //         <div className="overlay-panel">
-    //           <OverlayPanel ref={productDisplayRef} showCloseIcon  >
-    //             <div style={{
-    //               maxHeight: '200px',
-    //               overflowY: 'auto',
-    //               overflowX: 'hidden'
-    //             }}>
-    //               {/* <Tooltip target=".product-header" autoHide={true} >
-    //             <div style={{
-    //               maxHeight: '200px',
-    //               overflow: 'auto',
-    //             }}> */}
-    //               {order_items.map((product, i) => {
-    //                 const { quantity, products: { name, sku } } = product;
-    //                 return (
-
-    //                   <div key={i} >
-
-    //                     {[{ prop: "Name", value: name },
-    //                     { prop: "SKU", value: sku },
-    //                     { prop: "Quantity", value: quantity }
-    //                     ].map(({ prop, value }, index) => (
-
-    //                       <div key={index} className="grid">
-
-    //                         <label className="font-semibold col-4">{prop}:</label>
-    //                         <div className="col">
-    //                           {value?.toString()}
-    //                         </div>
-
-    //                       </div>
-
-
-
-    //                     ))}
-    //                     {i !== order_items.length - 1 && (
-    //                       <Divider align="center" type="dashed" style={{ borderTop: '1px solid #ddd' }} />
-    //                     )}
-    //                   </div>
-
-
-    //                 )
-    //               })}
-    //             </div>
-    //           </OverlayPanel>
-    //         </div>
-
-
-    //       </>
-    //       : order_items.length === 2 && order_items.length !== 0 ?
-    //         <OverlayPanel ref={productDisplayRef} className="w-20rem">
-    //           {order_items.map((product, i) => {
-    //             const { quantity, products: { name, sku } } = product;
-    //             return (
-    //               <div key={i} className="pt-2 pb-2">
-    //                 {[{ prop: "Name", value: name },
-    //                 { prop: "SKU", value: sku },
-    //                 { prop: "Quantity", value: quantity }
-    //                 ].map(({ prop, value }, index) => (
-    //                   <div key={index} className="grid">
-    //                     <label className="font-semibold col-4">{prop}:</label>
-    //                     <div className="col">
-    //                       {value?.toString()}
-    //                     </div>
-    //                   </div>
-    //                 ))}
-    //               </div>
-    //             )
-    //           })}
-    //         </OverlayPanel> :
-    //         <div className="hideLargeContent">No Product is found</div>}
-    //   </div>
-    // )
-
     return (
       <div>
         {order_items.length > 2 ?
           <div>
             <div
               className="product-header"
-
             >
               <Button
                 label={`Products(${order_items.length})`}
@@ -1603,12 +1490,7 @@ export const OrdersList = () => {
         }
       </div>
     )
-
   }
-
-
-
-
 
   //  checked customer
   const [displayChecked, setDisplayChecked] = useState(false);
@@ -1710,9 +1592,6 @@ export const OrdersList = () => {
     formik.setFieldValue("orderItems", newInputsItems);
   };
 
-
-
-
   const initialItemList = {
     id: '',
     name: '',
@@ -1727,6 +1606,35 @@ export const OrdersList = () => {
     },
   ])
 
+  const initialFilters = {
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    name: initialFilterRules.andContains,
+    firstName: initialFilterRules.andContains,
+    shopifyId: initialFilterRules.andContains,
+    id: initialFilterRules.andContains,
+    gateway: initialFilterRules.andContains,
+    discountAmount: initialFilterRules.andContains,
+    gstNumber: initialFilterRules.andContains,
+    paymentReferenceId: initialFilterRules.andContains,
+    totalPrice: initialFilterRules.andContains,
+    "order_items.products.name": initialFilterRules.andContains,
+    createdAt: initialFilterRules.dateIs,
+  }
+
+  const [filters, setFilters] = useState(initialFilters)
+  const [globalFilterValue, setGlobalFilterValue] = useState("")
+  const clearFilter = () => {
+    setFilters(initialFilters)
+    setGlobalFilterValue("")
+  }
+  const onGlobalFilterChange = (e) => {
+    const value = e.target.value
+    let _filters1 = { ...filters }
+    _filters1["global"].value = value
+
+    setFilters(_filters1)
+    setGlobalFilterValue(value)
+  }
 
 
   return (
@@ -2621,7 +2529,9 @@ export const OrdersList = () => {
             responsiveLayout="scroll"
             // scrollable
             header={renderHeader}
+            filters={filters}
             stripedRows
+            showGridlines
             className="text-s datatable-responsive"
             selection={selectedOrder}
             onSelectionChange={(e) => setSelectedOrder(e.value)}
@@ -2642,120 +2552,86 @@ export const OrdersList = () => {
             </Column> : null}
 
             <Column
-              // field={}
+              field='id'
               header="Order ID"
-              // body={(rowData) => rowData.Id ? rowData.id : rowData.id}
+
               body={(rowData) => (
                 <Link href={`/orders/${rowData.id}`}>{rowData.id}</Link>
               )}
+              filter
+              filterField="id"
+              filterPlaceholder="Search..."
+
             />
-
-            {/* <Column
-              field=""
-              header="Customer Name"
-              body={({ customers }) => {
-                const { firstName, lastName } = customers || {};
-                return (
-                  <div className="pt-2 pb-2 w-8rem">
-                    <div className="grid">
-                      <div className="col">
-                        {`${firstName} ${lastName}`}
-                      </div>
-                    </div>
-                  </div>
-                )
-              }}
-            />  */}
-
             <Column
-              field="products.name"
+              field="shopifyId"
               header="Channel"
-              // className="text-center"
               body={(rowdata) => rowdata.shopifyId ? "SH" : "IH"}
+
             />
 
 
             {/* Add Hover thing in product  */}
 
             <Column
-              field=""
+              field="order_items"
               header="Products"
               body={handleShowProducts}
+
             />
 
             <Column
-              field=""
+              field="firstName"
               header="Customer"
               body={handleCustomerDetailsRender}
+
             />
-
-            {/* <Column
-              field=""
-              header="Customer Contact Number"
-              body={({ customers }) => {
-                const contactNumbers = customers?.addresses?.contact_number || [];
-                return (
-                  <div className="">
-                    {contactNumbers.map((contact, i) => {
-                      const { type, number } = contact;
-                      return (
-                        <div key={i} className="">
-                          {[{ value: number }
-                          ].map(({ value }, index) => (
-                            <div key={index} className="">
-                              <div className="">
-                                {value?.toString()}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )
-              }}
-
-            /> */}
-
-            {/* <Column
-              field=""
-              header='Customer Address'
-              body={({ customers }) => {
-                const customerAddress = customers?.addresses?.cityCountryProvince
-                return (
-                  <div className="">
-                    {customerAddress}
-                  </div>
-                )
-              }}
-            /> */}
-
             <Column
               field="gateway"
               header="Payment Method"
+              filter
+              filterField="gateway"
+              filterPlaceholder="Search..."
             />
             <Column
               field="discountAmount"
               header="Discount"
+              filter
+              filterField="discountAmount"
+              filterPlaceholder="Search..."
             />
 
             <Column
               field="gstNumber"
               header='GST Number'
+              filter
+              filterField="gstNumber"
+              filterPlaceholder="Search..."
             />
             <Column
               field="paymentReferenceId"
               header='Payment Reference Id'
+              filter
+              filterField="paymentReferenceId"
+              filterPlaceholder="Search..."
 
             />
             <Column
               field="totalPrice"
               header="Amount"
-            // className="text-center"
+              filter
+              filterField="totalPrice"
+              filterPlaceholder="Search..."
+
             />
             <Column
               field="createdAt"
               header="Created At"
+              filter
+              filterField="createdAt"
+              dataType= "date"
+              filterElement={dateFilterTemplate}
+              className=""
               // className="text-center"
               body={(rowData) => dateFormat(rowData.createdAt)}
             />
@@ -2789,12 +2665,15 @@ export const OrdersList = () => {
                     </pre>
                   )
               }}
-              className="OrderStatus"
+
             />
+
+
             <Column
               header="Verified orders"
               body={verifyOrder}
               bodyClassName={(rowData) => rowData.verified ? 'verified' : 'not-verified'}
+
             />
             <Column
               header="Action"

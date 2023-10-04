@@ -176,6 +176,7 @@ export const Product_brandsList = () => {
   const initialColumnFilters = {
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
     name: initialFilterRules.andContains,
+    id: initialFilterRules.andContains,
   }
 
   const [filters, setFilters] = useState(initialColumnFilters);

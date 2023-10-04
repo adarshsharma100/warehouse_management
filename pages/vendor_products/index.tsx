@@ -252,7 +252,7 @@ export const Vendor_productsList = () => {
         operator: FilterOperator.AND,
         constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
       },
-      "products.sku": {
+      "sku": {
         operator: FilterOperator.AND,
         constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
       },
@@ -267,6 +267,37 @@ export const Vendor_productsList = () => {
     })
     setGlobalFilterValue("")
   }
+
+
+
+  const exportExcel = () => {
+    console.log('Export button clicked'); 
+
+    import('xlsx').then((xlsx) => {
+      const worksheet = xlsx.utils.json_to_sheet(vendor_products);
+      const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
+      const excelBuffer = xlsx.write(workbook, {
+        bookType: 'xlsx',
+        type: 'array'
+      });
+
+      saveAsExcelFile(excelBuffer, 'vendor_products');
+    });
+  };
+
+  const saveAsExcelFile = (buffer, fileName) => {
+    import('file-saver').then((module) => {
+      if (module && module.default) {
+        let EXCEL_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+        let EXCEL_EXTENSION = '.xlsx';
+        const data = new Blob([buffer], {
+          type: EXCEL_TYPE
+        });
+
+        module.default.saveAs(data, fileName + '_export_' + new Date().getTime() + EXCEL_EXTENSION);
+      }
+    });
+  };
 
   const renderHeader = () => {
     return (
@@ -293,6 +324,15 @@ export const Vendor_productsList = () => {
             label="Clear"
             className="p-button-outlined"
             onClick={clearFilter}
+          />
+          <Button
+            type="button"
+            icon="pi pi-file-excel"
+            label="Export as XLSX"
+            // severity="success"
+            rounded onClick={exportExcel}
+            tooltip="Export Data"
+            tooltipOptions={{ position: 'top' }}
           />
         </div>
       </div>
