@@ -54,20 +54,49 @@ import chroma from "chroma-js"
 import { validateZodSchema } from "blitz"
 import { Vendor } from "app/auth/validations"
 import { type } from "os"
+import { Paginator } from "primereact/paginator"
+
+import { createSearchFunction, exportExcel, initialFilterRules, tWarn, } from "app/constants"
 
 const ITEMS_PER_PAGE = 100
 
+const initialState = {
+  tableRowsCount: 10,
+  skipCount: 0,
 
+};
+
+const reducer = (state, { type, payload }) => {
+  switch (type) {
+    case 'UPDATE_TABLE_ROWS_COUNT':
+      return { ...state, tableRowsCount: payload }
+    case 'UPDATE_SKIP_COUNT':
+      return { ...state, skipCount: payload }
+    default:
+      throw new Error(`Unhandled action type: ${type}`);
+  }
+}
 
 export const VendorsList = () => {
   const router = useRouter()
+
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { skipCount, tableRowsCount } = state;
+
   const page = Number(router.query.page) || 0
 
-  const [{ vendors }, { refetch, error: getVendorError }] = useQuery(getVendors, {
+  // const [{ vendors }, { refetch, error: getVendorError }] = useQuery(getVendors, {
+  //   orderBy: { id: "desc" },
+  //   skip: undefined,
+  //   where: undefined,
+  //   take: undefined
+  // })
+
+  const [{ vendors, count: vendorCount }, { refetch, error: getVendorError, }] = usePaginatedQuery(getVendors, {
     orderBy: { id: "desc" },
-    skip: undefined,
+    skip: skipCount,
     where: undefined,
-    take: undefined
+    take: tableRowsCount
   })
 
   console.log("vendors", vendors)
@@ -83,24 +112,107 @@ export const VendorsList = () => {
   }
 
   const columns = [
-    { field: "name", header: "Vendor", filter: true, filterPlaceholder: "Search bu Vendor name" },
-    { field: "code", header: "Code" },
-    { field: "", header: "Branch Code", body: (rowData) => rowData?.vendor_branches[0]?.branchCode },
-    { field: "email", header: "Email", body: (rowData) => rowData?.vendor_branches[0]?.addresses?.emails_emails_addressesToaddresses[0]?.email },
-    { field: "vendor_city", header: "City", body: (rowData) => rowData?.vendor_branches[0]?.addresses?.cityCountryProvince },
-    { field: "vendor_state", header: "State", body: (rowData) => rowData?.vendor_branches[0]?.addresses?.state },
+    { field: "name", header: "Vendor", filter: true, filterPlaceholder: "Search by Vendor name" },
+    { field: "code", header: "Code", filter: true, filterPlaceholder: "Search by code" },
     {
-      field: "vendor_state", header: "Country",
-      body: (rowData) => rowData?.vendor_branches[0]?.addresses?.country_addresses_countryTocountry?.name
+      field: "vendor_branches.0.branchCode",
+      header: "Branch Code",
+      body: (rowData) => rowData?.vendor_branches[0]?.branchCode,
+      filterField: "vendor_branches.0.branchCode",
+      filter: true,
+      filterPlaceholder: "Search..."
     },
-    { field: "contact", header: "Contact", body: (rowData) => rowData?.vendor_branches[0]?.addresses?.contact_number[0]?.number },
-    { field: "gstin", header: "GSTIN" },
-    { field: "address", header: "Address", body: (rowData) => VendorAddress(rowData) },
-    { field: "leadTime", header: "Lead Time" },
-    { field: 'vendorScore', header: 'Vendor Score ' },
-    { field: "creditPeriod", header: "Credit Peroid" },
-    { field: "status", header: "Status" },
+    {
+      field: "vendor_branches.0.addresses.emails_emails_addressesToaddresses.0.email",
+      header: "Email",
+      body: (rowData) => rowData?.vendor_branches[0]?.addresses?.emails_emails_addressesToaddresses[0]?.email,
+      filterField: "vendor_branches.0.addresses.emails_emails_addressesToaddresses.0.email",
+      filter: true,
+      filterPlaceholder: "Search..."
+    },
+    {
+      field: "vendor_branches.0.addresses.cityCountryProvince",
+      header: "City",
+      body: (rowData) => rowData?.vendor_branches[0]?.addresses?.cityCountryProvince,
+      filterField: "vendor_branches.0.addresses.cityCountryProvince",
+      filter: true,
+      filterPlaceholder: "Search..."
+    },
+    {
+      field: "vendor_branches.0.addresses.state",
+      header: "State",
+      body: (rowData) => rowData?.vendor_branches[0]?.addresses?.state,
+      filterField: "vendor_branches.0.addresses.state",
+      filter: true,
+      filterPlaceholder: "Search..."
+    },
+    {
+      field: "vendor_branches.0.addresses.country_addresses_countryTocountry.name",
+      header: "Country",
+      body: (rowData) => rowData?.vendor_branches[0]?.addresses?.country_addresses_countryTocountry?.name,
+      filterField: "vendor_branches.0.addresses.country_addresses_countryTocountry.name",
+      filter: true,
+      filterPlaceholder: "Search..."
+    },
+    {
+      field: "vendor_branches.0.addresses.contact_number.0.number",
+      header: "Contact",
+      body: (rowData) => rowData?.vendor_branches[0]?.addresses?.contact_number[0]?.number,
+      filterField: "vendor_branches.0.addresses.contact_number.0.number",
+      filter: true,
+      filterPlaceholder: "Search..."
+    },
+    {
+      field: "gstin", header: "GSTIN",
+      filterField: "gstin",
+      filter: true,
+      filterPlaceholder: "Search..."
+    },
+    {
+      field: "address",
+      header: "Address",
+      body: (rowData) => VendorAddress(rowData),
+      filterField: "address",
+      filter: true,
+      filterPlaceholder: "Search..."
+    },
+
+   
+
+    
+    {
+      field: "leadTime", header: "Lead Time",
+      filterField: "leadTime",
+      filter: true,
+      filterPlaceholder: "Search..."
+
+    },
+    {
+      field: 'vendorScore', header: 'Vendor Score ',
+      filterField: "vendorScore",
+      filter: true,
+      filterPlaceholder: "Search..."
+
+    },
+    {
+      field: "creditPeriod", header: "Credit Peroid",
+      filterField: "creditPeriod",
+      filter: true,
+      filterPlaceholder: "Search..."
+    },
+    {
+      field: "status", header: "Status",
+      filterField: "status",
+      filter: true,
+      filterPlaceholder: "Search..."
+    },
   ]
+
+
+
+
+
+
   // const [{ tags }, { refetch: refeatchTags }] = useQuery(getTags, {
   //   orderBy: { id: "asc" },
   //   skip: ITEMS_PER_PAGE * page,
@@ -359,11 +471,29 @@ export const VendorsList = () => {
     )
   }
 
-  const [filters, setFilters] = useState({})
-  const [globalFilterValue, setGlobalFilterValue] = useState("")
+  const initialFilters = {
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    name: initialFilterRules.andContains,
+    code: initialFilterRules.andContains,
+    gstin: initialFilterRules.andContains,
+    address: initialFilterRules.andContains,
+    leadTime: initialFilterRules.andContains,
+    vendorScore: initialFilterRules.andContains,
+    creditPeriod: initialFilterRules.andContains,
+    status: initialFilterRules.andContains,
+    "vendor_branches.0.branchCode": initialFilterRules.andContains,
+    "vendor_branches.0.addresses.cityCountryProvince": initialFilterRules.andContains,
+    "vendor_branches.0.addresses.emails_emails_addressesToaddresses.0.email": initialFilterRules.andContains,
+    "vendor_branches.0.addresses.state": initialFilterRules.andContains,
+    "vendor_branches.0.addresses.country_addresses_countryTocountry.name": initialFilterRules.andContains,
+    "vendor_branches.0.addresses.contact_number.0.number": initialFilterRules.andContains
+  }
 
+  const [filters, setFilters] = useState(initialFilters)
+  const [globalFilterValue, setGlobalFilterValue] = useState("")
   const clearFilter = () => {
-    initFilters()
+    setFilters(initialFilters)
+    setGlobalFilterValue("")
   }
   const onGlobalFilterChange = (e) => {
     const value = e.target.value
@@ -373,49 +503,7 @@ export const VendorsList = () => {
     setFilters(_filters1)
     setGlobalFilterValue(value)
   }
-  const initFilters = () => {
-    setFilters({
-      global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-
-      name: {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      },
-      vendor_code: {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      },
-      vendor_email: {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      },
-      vendor_city: {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      },
-      vendor_state: {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      },
-      vendor_contact: {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      },
-      vendor_gstin: {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      },
-      address: {
-        operator: FilterOperator.AND,
-        constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }],
-      },
-      status: {
-        operator: FilterOperator.OR,
-        constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }],
-      },
-    })
-    setGlobalFilterValue("")
-  }
+ 
   const statuses = [true, false]
 
   const statusFilterTemplate = (options) => {
@@ -439,6 +527,43 @@ export const VendorsList = () => {
       </span>
     )
   }
+
+
+  const exportExcel = () => {
+    import('xlsx').then((xlsx) => {
+      const filteredWarehouses = vendors.map((vendor) => {
+        return {
+          VendorID: vendor.id,
+          Name: vendor.name,
+          GSTIN: vendor.gstin,
+        };
+      });
+
+      const worksheet = xlsx.utils.json_to_sheet(filteredWarehouses);
+      const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
+      const excelBuffer = xlsx.write(workbook, {
+        bookType: 'xlsx',
+        type: 'array',
+      });
+
+      saveAsExcelFile(excelBuffer, 'vendor');
+    });
+  };
+
+
+  const saveAsExcelFile = (buffer, fileName) => {
+    import('file-saver').then((module) => {
+      if (module && module.default) {
+        let EXCEL_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+        let EXCEL_EXTENSION = '.xlsx';
+        const data = new Blob([buffer], {
+          type: EXCEL_TYPE
+        });
+
+        module.default.saveAs(data, fileName + '_export_' + new Date().getTime() + EXCEL_EXTENSION);
+      }
+    });
+  };
 
   const renderHeader = () => {
     return (
@@ -470,6 +595,15 @@ export const VendorsList = () => {
             label="Clear"
             className="p-button-outlined"
             onClick={clearFilter}
+          />
+          <Button
+            type="button"
+            icon="pi pi-file-excel"
+            label="Export as XLSX"
+            // severity="success"
+            rounded onClick={exportExcel}
+            tooltip="Export Data"
+            tooltipOptions={{ position: 'top' }}
           />
         </div>
       </div>
@@ -760,9 +894,9 @@ export const VendorsList = () => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
 
-  useEffect(() => {
-    initFilters()
-  }, [])
+  // useEffect(() => {
+  //   initFilters()
+  // }, [])
 
   console.log("formik values", formik.values)
 
@@ -801,6 +935,14 @@ export const VendorsList = () => {
   }))
 
   console.log("formik", vendorEditState)
+
+  const handlePageChange = async (event) => {
+    console.log(event);
+    dispatch({ type: "UPDATE_SKIP_COUNT", payload: event.first })
+    dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
+  }
+  const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={vendorCount} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
+
 
   return (
     <div className="grid w-full mr-0" ref={scrollToTop}>
@@ -1126,6 +1268,7 @@ export const VendorsList = () => {
             className="text-s datatable-responsive"
             responsiveLayout="scroll"
             filters={filters}
+            footer={pagination}
             header={header1}
             filterDisplay="menu"
             onRowClick={async (e) => {

@@ -182,6 +182,7 @@ export const Product_categoriesList = () => {
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
     name: initialFilterRules.andContains,
     code: initialFilterRules.andContains,
+    id:initialFilterRules.andContains,
   }
 
   const [filters, setFilters] = useState(initialColumnFilters);

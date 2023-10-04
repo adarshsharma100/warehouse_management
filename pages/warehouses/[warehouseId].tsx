@@ -1,9 +1,9 @@
-import { Suspense, useState, useRef, useEffect } from "react";
+import { Suspense, useState, useRef, useEffect, useReducer } from "react";
 import { Routes } from "@blitzjs/next";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router"; useRef
-import { useQuery, useMutation } from "@blitzjs/rpc";
+import { useQuery, useMutation, usePaginatedQuery } from "@blitzjs/rpc";
 import { useParam } from "@blitzjs/next";
 import Layout from 'layouts/Layout'
 import getWarehouse from "app/warehouses/queries/getWarehouse";
@@ -21,6 +21,7 @@ import { Toast } from "primereact/toast";
 import { initialFilterRules, tError, tsuccess } from "app/constants";
 import { FilterMatchMode } from "primereact/api";
 import { AutoComplete } from "primereact/autocomplete";
+import { Paginator } from "primereact/paginator";
 
 // import deleteWarehouse from "src/warehouses/mutations/deleteWarehouse";
 
@@ -33,11 +34,42 @@ const columns = [
   { field: "description", header: "Description" },
 ]
 
+const ITEMS_PER_PAGE = 20;
+const initialState = {
+  tableRowsCount: 10,
+  skipCount: 0,
+
+};
+
+const reducer = (state, { type, payload }) => {
+  switch (type) {
+    case 'UPDATE_TABLE_ROWS_COUNT':
+      return { ...state, tableRowsCount: payload }
+    case 'UPDATE_SKIP_COUNT':
+      return { ...state, skipCount: payload }
+    default:
+      throw new Error(`Unhandled action type: ${type}`);
+  }
+}
+
 export const Warehouse = () => {
   const router = useRouter();
   const warehouseId = useParam("warehouseId", "number");
-  const [warehouse, { refetch: refetchWarehouse }] = useQuery(getWarehouse, { id: warehouseId, orderBy: "desc" });
+  // const [warehouse, { refetch: refetchWarehouse }] = useQuery(getWarehouse, { id: warehouseId, orderBy: "desc" });
+
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { skipCount, tableRowsCount } = state;
+  const page = Number(router.query.page) || 0;
+
+  const [warehouse, { refetch: refetchWarehouse }] = usePaginatedQuery(getWarehouse,
+    {
+      id: warehouseId,
+      orderBy: "desc"
+    }
+  );
+
   const [areas, setAreas] = useState(warehouse?.areas_areas_warehouseTowarehouse)
+  console.log('areas: ', areas);
   const [active, setActive] = useState(false)
   const [areasData, setAreasData] = useState(initialAreas)
   const [createArea] = useMutation(CreateArea)
@@ -249,6 +281,14 @@ export const Warehouse = () => {
 
 
 
+  const handlePageChange = async (event) => {
+    console.log(event);
+    dispatch({ type: "UPDATE_SKIP_COUNT", payload: event.first })
+    dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
+  }
+  const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={areas.length} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
+
+
   return (
     <div>
       <Head>
@@ -357,6 +397,7 @@ export const Warehouse = () => {
         <h3>Areas</h3>
         <DataTable
           value={areas}
+          footer={pagination}
           showGridlines
           stripedRows
           className="text-s datatable-responsive"

@@ -403,6 +403,35 @@ export const RfqsList = () => {
 
   console.log("selectedColumns", selectedVendorsWithEmails);
 
+  const exportExcel = () => {
+    console.log('Export button clicked');
+
+    import('xlsx').then((xlsx) => {
+      const worksheet = xlsx.utils.json_to_sheet(rfqs);
+      const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
+      const excelBuffer = xlsx.write(workbook, {
+        bookType: 'xlsx',
+        type: 'array'
+      });
+
+      saveAsExcelFile(excelBuffer, 'rfq');
+    });
+  };
+
+  const saveAsExcelFile = (buffer, fileName) => {
+    import('file-saver').then((module) => {
+      if (module && module.default) {
+        let EXCEL_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+        let EXCEL_EXTENSION = '.xlsx';
+        const data = new Blob([buffer], {
+          type: EXCEL_TYPE
+        });
+
+        module.default.saveAs(data, fileName + '_export_' + new Date().getTime() + EXCEL_EXTENSION);
+      }
+    });
+  };
+
   const renderHeader = () => {
     return (
       <div className="flex justify-content-between">
@@ -417,7 +446,7 @@ export const RfqsList = () => {
             style={{ width: "20em" }}
           />
         </div>
-        <div className="flex">
+        <div className="flex gap-3">
           <span className="p-input-icon-left">
             <i className="pi pi-search" />
             <InputText
@@ -430,8 +459,17 @@ export const RfqsList = () => {
             type="button"
             icon="pi pi-filter-slash"
             label="Clear"
-            className="p-button-outlined ml-3"
+            className="p-button-outlined "
             onClick={clearFilter}
+          />
+          <Button
+            type="button"
+            icon="pi pi-file-excel"
+            label="Export as XLSX"
+            // severity="success"
+            rounded onClick={exportExcel}
+            tooltip="Export Data"
+            tooltipOptions={{ position: 'top' }}
           />
         </div>
       </div>
@@ -630,7 +668,7 @@ export const RfqsList = () => {
               updateMany: itemList.map((ele) => ({
                 where: {
                   id: ele.rfq_products_id,
-                  
+
 
                 },
                 data: {
@@ -651,7 +689,7 @@ export const RfqsList = () => {
                 tsuccess("Updated", `${rfqNumber} is now updated successfully`),
 
               )
-              
+
               setActiveRow({})
               await refetch()
               setRfqDialog(false)
@@ -665,7 +703,7 @@ export const RfqsList = () => {
                 tError("Updated", `${rfqNumber} Could not Update`),
               )
 
-              
+
             },
           })
         } catch (error) {
@@ -1143,7 +1181,7 @@ export const RfqsList = () => {
                             }
                           }
                         } catch (error) {
-                          
+
                           console.log('error: ', error);
 
                         }

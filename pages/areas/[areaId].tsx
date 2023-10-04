@@ -1,4 +1,4 @@
-import { Suspense, useState, useRef, useEffect } from "react";
+import { Suspense, useState, useRef, useEffect, useReducer } from "react";
 import { Routes } from "@blitzjs/next";
 import Head from "next/head";
 import Link from "next/link";
@@ -26,6 +26,7 @@ import { FilterMatchMode } from "primereact/api";
 import { shelves_reach, shelves_loadingStrength } from "@prisma/client";
 import { Dropdown } from "primereact/dropdown";
 import { L } from "@blitzjs/auth/dist/index-c7aa9db2";
+import { Paginator } from "primereact/paginator";
 
 
 const initialShelf = {
@@ -51,12 +52,36 @@ const columns = [
   { field: "sellable", header: "Sellable" },
 
 ]
+
+const ITEMS_PER_PAGE = 20;
+const initialState = {
+  tableRowsCount: 10,
+  skipCount: 0,
+
+};
+
+const reducer = (state, { type, payload }) => {
+  switch (type) {
+    case 'UPDATE_TABLE_ROWS_COUNT':
+      return { ...state, tableRowsCount: payload }
+    case 'UPDATE_SKIP_COUNT':
+      return { ...state, skipCount: payload }
+    default:
+      throw new Error(`Unhandled action type: ${type}`);
+  }
+}
 export const Area = () => {
+  const router = useRouter();
+  
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { skipCount, tableRowsCount } = state;
+  const page = Number(router.query.page) || 0;
+
   const [{ shelf_types }] = useQuery(getShelf_types, {
     orderBy: { id: "asc" },
-    // skip: undefined,
-    // where: undefined,
-    // take: undefined
+    where: undefined,
+    take: undefined,
+    skip: undefined
   })
   const [{ shelves, }] = useQuery(getShelves, {
     orderBy: { id: "asc" },
@@ -70,7 +95,7 @@ export const Area = () => {
   const [updateShelfsMutation] = useMutation(updateShelf)
 
   console.log('shelf_types: ', shelf_types);
-  const router = useRouter();
+ 
   const areaId = useParam("areaId", "number");
   console.log('areaId: ', areaId);
   // const [deleteAreaMutation] = useMutation(deleteArea);
@@ -84,6 +109,7 @@ export const Area = () => {
 
 
   const [shelvesList, setShelvesList] = useState(area?.shelves)
+  console.log('shelvesList: ', shelvesList.length);
   const [active, setActive] = useState(false)
   const [shelfData, setShelfData] = useState(initialShelf)
   const [editAreas, setEditAreas] = useState(false)
@@ -251,6 +277,7 @@ export const Area = () => {
     number: initialFilterRules.andContains,
     length: initialFilterRules.andContains,
     width: initialFilterRules.andContains,
+    height:initialFilterRules.andContains,
     loadingStrength: initialFilterRules.andContains,
     reach: initialFilterRules.andContains,
     "shelf_type.name": initialFilterRules.andContains,
@@ -329,6 +356,16 @@ export const Area = () => {
   }));
 
 
+
+  const handlePageChange = async (event) => {
+    console.log(event);
+    dispatch({ type: "UPDATE_SKIP_COUNT", payload: event.first })
+    dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
+  }
+  const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={shelvesList?.length} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
+
+
+  
   return (
     <>
       <Head>
@@ -515,6 +552,7 @@ export const Area = () => {
           responsiveLayout="scroll"
           filterDisplay="menu"
           filters={filters}
+          footer={pagination}
           header={areasTableHeader}
           onRowClick={async (e) => {
             setRowDataStore({ ...e.data })

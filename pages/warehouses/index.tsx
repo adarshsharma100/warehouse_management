@@ -5,7 +5,7 @@ import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
 import { useRouter } from "next/router";
 import getWarehouses from "app/warehouses/queries/getWarehouses";
 import Layout from 'layouts/Layout'
-import React, { Suspense, useEffect, useRef, useState } from 'react'
+import React, { Suspense, useEffect, useReducer, useRef, useState } from 'react'
 import Loading from "components/loading";
 import { Button } from "primereact/button";
 import { InputText } from "primereact/inputtext";
@@ -19,8 +19,8 @@ import { Column } from "primereact/column";
 import { initialFilterRules, tsuccess } from "app/constants";
 import { Toast } from "primereact/toast";
 import { FilterMatchMode } from "primereact/api";
+import { Paginator } from "primereact/paginator";
 
-const ITEMS_PER_PAGE = 100;
 const initialWarehouse = {
   name: '',
   description: ''
@@ -29,22 +29,47 @@ const columns = [
   { field: "description", header: "Description" },
 ]
 
+const ITEMS_PER_PAGE = 20;
+const initialState = {
+  tableRowsCount: 10,
+  skipCount: 0,
+
+};
+
+const reducer = (state, { type, payload }) => {
+  switch (type) {
+    case 'UPDATE_TABLE_ROWS_COUNT':
+      return { ...state, tableRowsCount: payload }
+    case 'UPDATE_SKIP_COUNT':
+      return { ...state, skipCount: payload }
+    default:
+      throw new Error(`Unhandled action type: ${type}`);
+  }
+}
+
 export const WarehousesList = () => {
   const router = useRouter();
   const scrollToTop = useRef<HTMLDivElement>(null)
+  
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { skipCount, tableRowsCount } = state;
+
   const page = Number(router.query.page) || 0;
-  // const [{ warehouses, hasMore }] = usePaginatedQuery(getWarehouses, {
-  //   orderBy: { id: "asc" },
-  //   skip: ITEMS_PER_PAGE * page,
-  //   take: ITEMS_PER_PAGE,
-  // });
-  const [{ warehouses }, { refetch: refetchWarehouses, }] = useQuery(getWarehouses, {
+  
+
+  const [{ warehouses, hasMore, count:totalWarehouse }] = usePaginatedQuery(getWarehouses, {
     orderBy: { id: "desc" },
-    skip: undefined,
-    where: undefined,
-    take: undefined
-  })
-  console.log('warehouses: ', warehouses);
+    skip: ITEMS_PER_PAGE * page,
+    take: ITEMS_PER_PAGE,
+    where: undefined
+  });
+
+  // const [{ warehouses }, { refetch: refetchWarehouses, }] = useQuery(getWarehouses, {
+  //   orderBy: { id: "desc" },
+  //   skip: undefined,
+  //   where: undefined,
+  //   take: undefined
+  // })
 
   const goToPreviousPage = () => router.push({ query: { page: page - 1 } });
   const goToNextPage = () => router.push({ query: { page: page + 1 } });
@@ -144,7 +169,7 @@ export const WarehousesList = () => {
   // };
 
 
-  {/* Remove key which not have data */}
+  {/* Remove key which not have data */ }
   const exportExcel = () => {
     import('xlsx').then((xlsx) => {
       const filteredWarehouses = warehouses.map((warehouse) => {
@@ -155,18 +180,18 @@ export const WarehousesList = () => {
         }
         return filteredWarehouse;
       });
-  
+
       const worksheet = xlsx.utils.json_to_sheet(filteredWarehouses);
-        const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
+      const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
       const excelBuffer = xlsx.write(workbook, {
         bookType: 'xlsx',
         type: 'array',
       });
-  
+
       saveAsExcelFile(excelBuffer, 'products');
     });
   };
-  
+
 
   const saveAsExcelFile = (buffer, fileName) => {
     import('file-saver').then((module) => {
@@ -254,6 +279,13 @@ export const WarehousesList = () => {
     )
   }
   const warehouseTableHeader = renderHeader()
+
+  const handlePageChange = async (event) => {
+    console.log(event);
+    dispatch({ type: "UPDATE_SKIP_COUNT", payload: event.first })
+    dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
+  }
+  const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={totalWarehouse} rowsPerPageOptions={[10, 20, 30]} onPageChange={handlePageChange} />
 
 
   return (
@@ -349,6 +381,7 @@ export const WarehousesList = () => {
           responsiveLayout="scroll"
           // filterDisplay="menu"
           filters={filters}
+          footer={pagination}
           header={warehouseTableHeader}
           onRowClick={async (e) => {
             setActiveWarehouse({ ...e.data })

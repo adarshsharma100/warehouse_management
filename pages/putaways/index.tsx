@@ -1,4 +1,5 @@
-import { Suspense, useEffect, useRef, useState } from "react";
+import React from 'react';
+import { Suspense, useEffect, useReducer, useRef, useState } from "react";
 import { Routes } from "@blitzjs/next";
 import Head from "next/head";
 import Link from "next/link";
@@ -18,16 +19,17 @@ import UpdatePutaway from 'app/putaways/mutations/updatePutaway';
 import { InputText } from "primereact/inputtext";
 import classNames from "classnames";
 import { useFormik } from "formik";
-import { tError, tsuccess } from "app/constants";
+import { initialFilterRules, tError, tsuccess } from "app/constants";
 import { Dropdown } from "primereact/dropdown";
 import { connect } from "http2";
 import { Dialog } from "primereact/dialog";
 import { Toast } from "primereact/toast";
 import { useCurrentUser } from "app/core/hooks/useCurrentUser";
+import { FilterMatchMode } from "primereact/api";
+import { Paginator } from "primereact/paginator";
 
 
 
-const ITEMS_PER_PAGE = 100;
 const randomPutawayNumber = `Putaway#${Math.floor(Math.random() * 100000)}`;
 
 const initialPutaway = {
@@ -42,14 +44,33 @@ const initialPutaway = {
   grn: [{}],
 }
 
+
+const ITEMS_PER_PAGE = 100;
+const initialState = {
+  tableRowsCount: 10,
+  skipCount: 0,
+}
+
+const reducer = (state, { type, payload }) => {
+  switch (type) {
+    case 'UPDATE_TABLE_ROWS_COUNT':
+      return { ...state, tableRowsCount: payload }
+    case 'UPDATE_SKIP_COUNT':
+      return { ...state, skipCount: payload }
+    default:
+      throw new Error(`Unhandled action type: ${type}`);
+  }
+}
 export const PutawaysList = () => {
   const router = useRouter();
   const page = Number(router.query.page) || 0;
   const toast = useRef(null)
   const user = useCurrentUser()
   const { id, role, name, email } = user
-  console.log('user:@ ', user.id);
-  
+
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { skipCount, tableRowsCount } = state;
+
   // const [{  hasMore }] = usePaginatedQuery(getPutaways, {
   //   orderBy: { id: "asc" },
   //   skip: ITEMS_PER_PAGE * page,
@@ -57,12 +78,20 @@ export const PutawaysList = () => {
   //   where: undefined
   // });
 
-  const [{ putaways }] = useQuery(getPutaways, {
+  // const [{ putaways }] = useQuery(getPutaways, {
+  //   orderBy: { id: "asc" },
+  //   skip: ITEMS_PER_PAGE * page,
+  //   take: ITEMS_PER_PAGE,
+  //   where: undefined
+  // })
+
+  const [{ putaways }] = usePaginatedQuery(getPutaways, {
     orderBy: { id: "asc" },
-    skip: ITEMS_PER_PAGE * page,
-    take: ITEMS_PER_PAGE,
+    skip: skipCount,
+    take: tableRowsCount,
     where: undefined
   })
+
 
   const [{ putaway_types }] = useQuery(getPutaway_types, {
     orderBy: { id: "asc" },
@@ -81,15 +110,13 @@ export const PutawaysList = () => {
   const [activePutawayData, setActivePutawayData] = useState({})
 
   const column = [
-    { field: 'putawayNumber', header: 'Putaway Number' },
+    { field: 'putawayNumber', header: 'Putaway Number', filter: true, filterPlaceholder: "Search...", filterField: "putawayNumber", },
     { field: 'pendingQuantity', header: 'Pending Quantity' },
     { field: 'quantity', header: 'Quantity' },
     { field: 'status', header: 'Status' },
     { field: 'putawaytypeId', header: 'Putways Type' },
     { field: 'grnId', header: 'Grn ID' },
     { field: 'createdBy', header: 'Created By' },
-
-
   ]
 
 
@@ -98,57 +125,58 @@ export const PutawaysList = () => {
   console.log('selectedPutawayType: ', selectedPutawayType);
 
   const [selectedPutawayColumn, setSelectedPutawayColumn] = useState([])
-
-  // const columnComponents = column.reduce((acc, curr) => {
-  //   if (selectedPutawayColumn.includes(curr.field))
-  //     return [
-  //       ...acc,
-  //       <Column
-  //         key={curr.field}
-  //         field={curr.field}
-  //         header={curr.header}
-  //         body={curr.body}
-  //         filter
-  //         filterPlaceholder="Search...."
-  //       />
-  //     ];
-  //   return acc;
-  // }, []);
-
+  console.log('selectedPutawayColumn: ', selectedPutawayColumn);
 
   const columnComponents = column.reduce((acc, curr) => {
-    if (selectedPutawayColumn.includes(curr.field)) {
-      if (curr.field === 'putawaytypeId') {
-        return [
-          ...acc,
-          <Column
-            key={curr.field}
-            field={curr.field}
-            header={curr.header}
-            body={(rowData) => {
-              const selectedPutawayType = putaway_types.find((type) => type.id === rowData.putawaytypeId);
-              return selectedPutawayType ? selectedPutawayType.name : '';
-            }}
-            filter
-            filterPlaceholder="Search...."
-          />
-        ];
-      } else {
-        return [
-          ...acc,
-          <Column
-            key={curr.field}
-            field={curr.field}
-            header={curr.header}
-            body={curr.body}
-            filter
-            filterPlaceholder="Search...."
-          />
-        ];
-      }
-    }
+    if (selectedPutawayColumn.includes(curr.field))
+      return [
+        ...acc,
+        <Column
+          key={curr.field}
+          field={curr.field}
+          header={curr.header}
+          body={curr.body}
+          filter
+          filterPlaceholder="Search...."
+        />
+      ];
     return acc;
   }, []);
+
+
+  // const columnComponents = column.reduce((acc, curr) => {
+  //   if (selectedPutawayColumn.includes(curr.field)) {
+  //     if (curr.field === 'putawaytypeId') {
+  //       return [
+  //         ...acc,
+  //         <Column
+  //           key={curr.field}
+  //           field={curr.field}
+  //           header={curr.header}
+  //           body={(rowData) => {
+  //             const selectedPutawayType = putaway_types.find((type) => type.id === rowData.putawaytypeId);
+  //             return selectedPutawayType ? selectedPutawayType.name : '';
+  //           }}
+  //           filter
+  //           filterPlaceholder="Search...."
+  //         />
+  //       ];
+  //     } else {
+  //       return [
+  //         ...acc,
+  //         <Column
+  //           key={curr.field}
+  //           field={curr.field}
+  //           header={curr.header}
+  //           body={curr.body}
+  //           filter
+  //           filterPlaceholder="Search...."
+  //         />
+  //       ];
+  //     }
+  //   }
+  //   return acc;
+  // }, []);
 
 
   useEffect(() => {
@@ -162,7 +190,9 @@ export const PutawaysList = () => {
 
   // Filter putaways based on status
   const pendingPutaways = putaways.filter((putaway) => putaway.status === "Pending");
+  console.log('pendingPutaways: ', pendingPutaways);
   const allPutaways = putaways;
+  console.log('allPutaways: ', allPutaways);
 
   // Formik 
   const formik = useFormik({
@@ -232,7 +262,7 @@ export const PutawaysList = () => {
             user: {
               connect: {
                 // id: Number(createdBy)
-                id:Number(user?.id)
+                id: Number(user?.id)
               }
             },
             // grn: {
@@ -270,6 +300,123 @@ export const PutawaysList = () => {
     return isFormFieldValid(name) && <small className="p-error">{formik.errors[name]}</small>
   }
 
+  const handlePageChange = async (event) => {
+    console.log(event);
+    dispatch({ type: "UPDATE_SKIP_COUNT", payload: event.first })
+    dispatch({ type: "UPDATE_TABLE_ROWS_COUNT", payload: event.rows })
+  }
+
+  const pagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={allPutaways?.length} rowsPerPageOptions={[5, 10, 15]} onPageChange={handlePageChange} />
+  const pendingPagination = () => <Paginator first={skipCount} rows={tableRowsCount} totalRecords={pendingPutaways?.length} rowsPerPageOptions={[5, 10, 15]} onPageChange={handlePageChange} />
+
+  const initialFilters = {
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    putawayNumber: initialFilterRules.andContains,
+    putawaytypeId: initialFilterRules.andContains,
+    status: initialFilterRules.andContains,
+    quantity: initialFilterRules.andContains,
+    grnId: initialFilterRules.andContains,
+    createdBy: initialFilterRules.andContains,
+    pendingQuantity: initialFilterRules.andContains,
+  }
+
+  const [filters, setFilters] = useState(initialFilters)
+  const [globalFilterValue, setGlobalFilterValue] = useState("")
+  const clearFilter = () => {
+    setFilters(initialFilters)
+    setGlobalFilterValue("")
+  }
+  const onGlobalFilterChange = (e) => {
+    const value = e.target.value
+    let _filters1 = { ...filters }
+    _filters1["global"].value = value
+
+    setFilters(_filters1)
+    setGlobalFilterValue(value)
+  }
+
+  const exportExcel = () => {
+    console.log('Export button clicked');
+
+    import('xlsx').then((xlsx) => {
+      const worksheet = xlsx.utils.json_to_sheet(allPutaways);
+      const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
+      const excelBuffer = xlsx.write(workbook, {
+        bookType: 'xlsx',
+        type: 'array'
+      });
+
+      saveAsExcelFile(excelBuffer, 'putaway');
+    });
+  };
+
+  const saveAsExcelFile = (buffer, fileName) => {
+    import('file-saver').then((module) => {
+      if (module && module.default) {
+        let EXCEL_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+        let EXCEL_EXTENSION = '.xlsx';
+        const data = new Blob([buffer], {
+          type: EXCEL_TYPE
+        });
+
+        module.default.saveAs(data, fileName + '_export_' + new Date().getTime() + EXCEL_EXTENSION);
+      }
+    });
+  };
+
+  const renderHeader = () => {
+    return (
+      <div className="flex justify-content-end">
+        <div className="flex gap-4">
+          <span className="p-input-icon-left">
+            <i className="pi pi-search" />
+            <InputText
+              value={globalFilterValue}
+              onChange={onGlobalFilterChange}
+              placeholder="Keyword Search"
+            />
+          </span>
+          <Button
+            type="button"
+            icon="pi pi-filter-slash"
+            label="Clear"
+            className="p-button-outlined"
+            onClick={clearFilter}
+          />
+
+          <Button
+            type="button"
+            icon="pi pi-file-excel"
+            label="Export as XLSX"
+            // severity="success"
+            rounded onClick={exportExcel}
+            tooltip="Export Data"
+            tooltipOptions={{ position: 'top' }}
+          />
+
+        </div>
+      </div>
+    )
+  }
+  const putawayHeader = renderHeader()
+
+
+
+
+  const [columnFilters, setColumnFilters] = useState({
+    putawayNumber: null,
+    pendingQuantity: null,
+    quantity: null,
+    status: null,
+    putawaytypeId: null,
+    grnId: null,
+    createdBy: null,
+  });
+
+  // Create a function to handle filter changes
+  const handleFilterChange = (columnField, value) => {
+    setColumnFilters({ ...columnFilters, [columnField]: value });
+  };
   return (
     <div>
       <Toast ref={toast} />
@@ -290,10 +437,10 @@ export const PutawaysList = () => {
 
         {createDialog &&
           // <Dialog header="Create Putaway" visible={createDialog} style={{ width: '50vw', height: '40vh' }} onHide={() => setCreateDialog(false)}>
-            <>
+          <>
             <h3>Create Putaways</h3>
             <div className="field col-12 lg:col-2 md:col-6 mt-3">
-            {/* <div className="field mt-4"> */}
+              {/* <div className="field mt-4"> */}
               <span className="p-float-label">
                 <Dropdown
                   value={selectedPutawayType}
@@ -321,7 +468,7 @@ export const PutawaysList = () => {
                 label="Create Putaway"
               />
             </div>
-            </>
+          </>
           // </Dialog>
         }
 
@@ -415,11 +562,6 @@ export const PutawaysList = () => {
 
       </form>
 
-
-
-
-
-
       <div className="mt-2">
         {/* Filter putaways based on status  */}
 
@@ -428,6 +570,9 @@ export const PutawaysList = () => {
             <div className="col-12 card">
               <DataTable
                 value={allPutaways}
+                footer={pagination}
+                header={putawayHeader}
+                filters={filters}
                 responsiveLayout="scroll"
                 showGridlines
                 stripedRows
@@ -447,6 +592,7 @@ export const PutawaysList = () => {
                 }}
               >
                 {columnComponents}
+
               </DataTable>
             </div>
           </TabPanel>
@@ -455,19 +601,21 @@ export const PutawaysList = () => {
             <div className="col-12 card">
               <DataTable
                 value={pendingPutaways}
+                footer={pendingPagination}
+                header={putawayHeader}
+                filters={filters}
                 responsiveLayout="scroll"
                 showGridlines
                 stripedRows
                 className="text-s datatable-responsive"
               >
                 {columnComponents}
-                <Column field="putawayNumber" header="Putaway Number" />
+
+
               </DataTable>
             </div>
           </TabPanel>
         </TabView>
-
-
 
       </div>
     </div >
