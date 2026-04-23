@@ -56,3 +56,5 @@ lib-cov
 .vscode-test
 node_modules
 public/uploads/
+
+/generated/prisma
