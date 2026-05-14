@@ -221,9 +221,9 @@ export const createOrderFunction = async (input) => {
       data: {
         shopifyId: createShopify.id,
         orderStatus,
-        paymentStatus,
+        paymentStatus: parseInt(paymentStatus) || 1,
         totalPrice,
-        gateway,
+        gateway: gateway?.substring(0, 45),
         customerId: customer.id,
         shippingAddressId: ShippingAddress.id,
         billingAddressId: isShippingIsBilling ? ShippingAddress.id : BillingAddress.id,

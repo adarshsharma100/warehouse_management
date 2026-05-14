@@ -1,13 +1,10 @@
 import db from "./index"
 import { SecurePassword } from "@blitzjs/auth"
+import seedMetadata from "./seed-metadata"
 
-/*
- * This seed function is executed when you run `blitz db seed`.
- *
- * Probably you want to use a library like https://chancejs.com
- * to easily generate realistic data.
- */
 const seed = async () => {
+  await seedMetadata()
+
   const email = "admin@warehouse.com"
   const password = "AdminPassword123!"
   const hashedPassword = await SecurePassword.hash(password.trim())

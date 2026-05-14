@@ -5,22 +5,25 @@ import { handler } from "app/orders/functions/fetchAllOrders"
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export default Queue("api/orderJobs", async (uploadId: number) => {
-  await db.jobs.update({
-    where: { id: uploadId },
-    data: {
-      isRunning: true,
-    },
-  })
+  const job = await db.jobs.findUnique({ where: { id: uploadId } })
+  
+  if (job) {
+    await db.jobs.update({
+      where: { id: uploadId },
+      data: { isRunning: true },
+    })
+  }
 
-  // TODO: uncomment handler on server
   await handler()
-  await sleep(360000)
+  await sleep(2000) // Reduced sleep time
 
-  await db.jobs.update({
-    where: { id: uploadId },
-    data: {
-      isRunning: false,
-      isCompleted: true,
-    },
-  })
+  if (job) {
+    await db.jobs.update({
+      where: { id: uploadId },
+      data: {
+        isRunning: false,
+        isCompleted: true,
+      },
+    })
+  }
 })

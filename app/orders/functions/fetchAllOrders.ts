@@ -94,10 +94,7 @@ const ordersQuery = gql`
   }
 `
 
-const getAllOrders = async (orders = [], after = null, timeout = 100) => {
-  console.log(`Completed: ${orders.length}`)
-  // //TODO: remove return
-  // if (orders.length > 0) return orders
+const getAllOrders = async (after = null, timeout = 100) => {
   try {
     await sleep(timeout)
     const latestOrder = await db.shopify.findMany({
@@ -106,82 +103,82 @@ const getAllOrders = async (orders = [], after = null, timeout = 100) => {
     })
 
     const data = await graphQLClient.request(ordersQuery, after ? { after } : {})
-    const foundIndex = data.orders.nodes.findIndex((data) => data.id === latestOrder[0]?.orderId)
+    
     if (!data?.orders?.nodes?.length) {
-      console.log("No more from shopify")
-      return orders
-    }
-    if (foundIndex >= 0) {
-      console.log("foundIndex: ", foundIndex)
-      return [...orders, ...data.orders.nodes.slice(0, foundIndex)]
-    }
-    const latestOrderTime = latestOrder?.[0]?.["createdAt"] ? moment(latestOrder?.[0]?.["createdAt"]) : moment().subtract(5, 'days')
-
-    const hasOlderOrder = data.orders.nodes.find((data) => moment(data.createdAt).isBefore(latestOrderTime))
-    console.log('hasOlderOrder: ', hasOlderOrder);
-    if (hasOlderOrder) {
-      console.log('latestOrderTime: ', latestOrderTime);
-      return [...orders, ...data.orders.nodes]
+      console.log("No more orders found on Shopify.")
+      return
     }
 
-    // console.log('data.orders.edges: ', data.orders.edges);
-
-    return await getAllOrders(
-      [...orders, ...data.orders.nodes],
-      data.orders.edges[data.orders.edges.length - 1].cursor,
-      timeout
-    )
-  } catch (error) {
-    console.log("error! ", error)
-    console.log("timeout: ", timeout)
-    const newTimeout = timeout > 10000 ? 5000 : timeout + 100
-    return getAllOrders(orders, after, newTimeout)
-  }
-}
-
-export const handler = async () => {
-  const orders = await getAllOrders()
-  console.log('orders: ', orders.length);
-  await Promise.all(
-    orders.map(async (order) => {
+    // PROCESS AND SAVE ORDERS IMMEDIATELY
+    console.log(`Processing batch of ${data.orders.nodes.length} orders...`)
+    
+    for (const order of data.orders.nodes) {
       const { customer, shippingAddress, billingAddress, lineItems } = order
 
-      const latestOrder = await db.shopify.findFirst({
-        where: {
-          orderId: order.id,
-        },
+      // Check if order already exists
+      const existingOrder = await db.shopify.findFirst({
+        where: { orderId: order.id },
       })
-      if (latestOrder) return
+      if (existingOrder) {
+        console.log(`Order ${order.id} already exists, skipping.`)
+        continue
+      }
 
+      console.log(`Syncing Order: ${order.id}`)
+      
       let productList = []
-      //Create products if do not exist
       for (let i = 0; i < lineItems.nodes.length; i++) {
         const currentProduct = lineItems.nodes[i]
         const product = await db.products.findFirst({
-          where: {
-            sku: currentProduct.sku,
-          },
+          where: { sku: currentProduct.sku },
         })
 
         if (!product && !currentProduct.product) continue
 
-        if (product) productList = [...productList, { ...currentProduct, productId: product.id }]
-        else {
-          console.log('currentProduct.product?.title: ', currentProduct.product?.title);
+        if (product) {
+          productList = [...productList, { ...currentProduct, productId: product.id }]
+        } else {
+          const price = currentProduct.product?.priceRange?.maxVariantPrice?.amount ? parseInt(currentProduct.product?.priceRange?.maxVariantPrice?.amount) : 0
+          
           const newProduct = await db.products.create({
             data: {
               sku: currentProduct.sku,
               name: currentProduct.product?.title,
               description: currentProduct.product?.description,
-              type: 1,
-              costPrice: currentProduct.product?.priceRange?.maxVariantPrice?.amount ? parseInt(currentProduct.product?.priceRange?.maxVariantPrice?.amount) : 0,
               imageUrl: currentProduct.product?.featuredImage?.url,
+              // Fix: Connect to product_types (ID: 1 is usually 'Finished Goods' or 'Simple')
+              product_types: {
+                connect: { id: 1 }
+              },
+              // Fix: Create default dimensions (Required by your schema)
+              dimensions: {
+                create: {
+                  weight: 0,
+                  length: 0,
+                  width: 0,
+                  height: 0
+                }
+              },
+              // Fix: Move price to the product_prices table
+              product_prices: {
+                create: {
+                  sellingPrice: price,
+                  mrp: price
+                }
+              },
+              // Fix: Create an inventory record so it shows up in the Inventory section
+              inventory_products: {
+                create: {
+                  shelf: 1, // Connect to Default Shelf (ID: 1)
+                  quantity: 0, // Initial quantity
+                  description: "Shopify Synced"
+                }
+              }
             },
           })
-          productList = [...productList, { ...lineItems, productId: newProduct.id }]
+          productList = [...productList, { ...currentProduct, productId: newProduct.id }]
         }
       }
-
 
       const newOrderObject = {
         customer: {
@@ -190,19 +187,14 @@ export const handler = async () => {
           shopifyId: customer.id,
           addresses: {
             create: {
-              areaStreet: customer.defaultAddress.address1,
-              landmarkName: customer.defaultAddress.address2,
-              cityCountryProvince: customer.defaultAddress.city,
-              state: customer.defaultAddress.province,
-              pincode: customer.defaultAddress.zip,
+              areaStreet: customer.defaultAddress?.address1 || "",
+              landmarkName: customer.defaultAddress?.address2 || "",
+              cityCountryProvince: customer.defaultAddress?.city || "",
+              state: customer.defaultAddress?.province || "",
+              pincode: customer.defaultAddress?.zip || "",
               country: 1,
               contact_number: {
-                create: [
-                  {
-                    type: "mobile",
-                    number: customer.defaultAddress.phone,
-                  },
-                ],
+                create: [{ type: "mobile", number: customer.defaultAddress?.phone || "" }],
               },
             },
           },
@@ -212,61 +204,70 @@ export const handler = async () => {
           orderStatus: 4,
           isShippingIsBilling: false,
           shippingAddress: {
-            areaStreet: shippingAddress.address1,
-            landmarkName: shippingAddress.address2,
-            cityCountryProvince: shippingAddress.city,
-            state: shippingAddress.province,
-            pincode: shippingAddress.zip,
+            areaStreet: shippingAddress?.address1 || "",
+            landmarkName: shippingAddress?.address2 || "",
+            cityCountryProvince: shippingAddress?.city || "",
+            state: shippingAddress?.province || "",
+            pincode: shippingAddress?.zip || "",
             country: 1,
             contact_number: {
-              create: [
-                {
-                  type: "mobile",
-                  number: shippingAddress.phone,
-                },
-              ],
+              create: [{ type: "mobile", number: shippingAddress?.phone || "" }],
             },
           },
           billingAddress: {
-            areaStreet: billingAddress.address1,
-            landmarkName: billingAddress.address2,
-            cityCountryProvince: billingAddress.city,
-            state: billingAddress.province,
-            pincode: billingAddress.zip,
+            areaStreet: billingAddress?.address1 || "",
+            landmarkName: billingAddress?.address2 || "",
+            cityCountryProvince: billingAddress?.city || "",
+            state: billingAddress?.province || "",
+            pincode: billingAddress?.zip || "",
             country: 1,
             contact_number: {
-              create: [
-                {
-                  type: "mobile",
-                  number: billingAddress.phone,
-                },
-              ],
+              create: [{ type: "mobile", number: billingAddress?.phone || "" }],
             },
           },
-          paymentStatus: order.displayFinancialStatus,
+          paymentStatus: order.displayFinancialStatus === "PAID" ? 2 : 1, // Map PAID to ID 2
+          paymentTermsId: 1, // Default to 'Due on Receipt'
           totalPrice: parseInt(order.totalPrice),
-          gateway: order.paymentGatewayNames?.join(","),
+          gateway: order.paymentGatewayNames?.join(",").substring(0, 45), // Truncate to fit VarChar(45)
           order_items: {
-            create: productList.map((lineItem) => {
-              const product = lineItem?.nodes?.[0] ?? lineItem
-              if (!product.productId)
-                console.log('product:-> ', product);
-
-              return {
-                product: product.productId,
-                quantity: product.quantity,
-                price: parseInt(product.discountedTotalSet?.shopMoney.amount),
-              }
-            }),
+            create: productList.map((p) => ({
+              product: p.productId,
+              quantity: p.quantity,
+              price: parseInt(p.discountedTotalSet?.shopMoney.amount || "0"),
+            })),
           },
         },
       }
 
       await createOrderFunction(newOrderObject)
-    })
-  )
+    }
 
-  console.timeEnd()
+    // CHECK IF WE NEED TO FETCH MORE
+    const latestOrderTime = latestOrder?.[0]?.["createdAt"] ? moment(latestOrder?.[0]?.["createdAt"]) : moment().subtract(30, 'days')
+    const hasOlderOrder = data.orders.nodes.find((data) => moment(data.createdAt).isBefore(latestOrderTime))
 
-  // console.log("orders: ", orders)
+    if (hasOlderOrder) {
+      console.log("Reached historical limit. Sync complete.")
+      return
+    }
+
+    // Recurse to next page
+    if (data.orders.edges?.length > 0) {
+      return await getAllOrders(
+        data.orders.edges[data.orders.edges.length - 1].cursor,
+        timeout
+      )
+    }
+  } catch (error) {
+    console.error("Sync Error: ", error)
+    const newTimeout = timeout > 10000 ? 5000 : timeout + 500
+    return getAllOrders(after, newTimeout)
+  }
 }
+
+export const handler = async () => {
+  console.log("Starting Shopify Sync (Streaming mode)...")
+  await getAllOrders()
+  console.log("Sync Finished.")
+}
+
