@@ -2,6 +2,23 @@ import db from "db"
 import ordersFetchQueue from "pages/api/orderJobs/"
 
 export default async function fetchOrdersJob(userId) {
+  const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000)
+
+  // Self-healing: Mark any stale sync jobs older than 30 minutes as completed
+  await db.jobs.updateMany({
+    where: {
+      isCompleted: false,
+      jobTypesId: 2,
+      createdAt: {
+        lt: thirtyMinutesAgo
+      }
+    },
+    data: {
+      isCompleted: true,
+      isRunning: false
+    }
+  })
+
   const existingJob = await db.jobs.findFirst({
     where: {
       isCompleted: false,

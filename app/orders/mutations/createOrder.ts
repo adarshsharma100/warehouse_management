@@ -200,6 +200,15 @@ export const createOrderFunction = async (input) => {
   } = input
 
   try {
+    // PREVENTION: Check if this Shopify Order already exists before doing anything
+    const existingShopifyOrder = await db.shopify.findFirst({
+      where: { orderId: shopifyId }
+    })
+    if (existingShopifyOrder) {
+      console.log(`Order ${shopifyId} already exists in database. Skipping duplicate.`)
+      return
+    }
+
     const createShopify = await db.shopify.create({
       data: {
         orderId: shopifyId,

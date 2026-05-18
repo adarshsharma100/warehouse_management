@@ -20,7 +20,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const ordersQuery = gql`
   query orders($after: String) {
-    orders(first: 5, after: $after, reverse: true) {
+    orders(first: 50, after: $after, reverse: true) {
       nodes {
         id
         displayFinancialStatus
@@ -51,7 +51,10 @@ const ordersQuery = gql`
         totalPrice
         paymentGatewayNames
       }
-      edges { cursor }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
     }
   }
 `
@@ -79,7 +82,7 @@ const productsQuery = gql`
   }
 `
 
-const syncAllProducts = async (after = null) => {
+export const syncAllProducts = async (after = null) => {
   try {
     console.log("Fetching products from Shopify...")
     const data = await graphQLClient.request(productsQuery, { after })
@@ -102,7 +105,7 @@ const syncAllProducts = async (after = null) => {
           localProduct = await db.products.create({
             data: {
               sku: variant.sku,
-              name: product.title,
+              name: product.title.substring(0, 100),
               description: product.descriptionHtml,
               imageUrl: product.featuredImage?.url,
               product_types: { connect: { id: 1 } },
@@ -147,10 +150,6 @@ const syncAllProducts = async (after = null) => {
 const getAllOrders = async (after = null, timeout = 100) => {
   try {
     await sleep(timeout)
-    const latestOrder = await db.shopify.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 1
-    })
 
     const data = await graphQLClient.request(ordersQuery, after ? { after } : {})
     
@@ -173,32 +172,50 @@ const getAllOrders = async (after = null, timeout = 100) => {
       
       let productList = []
       for (const item of lineItems.nodes) {
-        let product = await db.products.findFirst({
+        // Use upsert to avoid race conditions with duplicate SKUs
+        const price = item.product?.priceRange?.maxVariantPrice?.amount ? parseInt(item.product?.priceRange?.maxVariantPrice?.amount) : 0
+        const product = await db.products.upsert({
           where: { sku: item.sku },
+          update: {}, // Don't change anything if it exists
+          create: {
+            sku: item.sku,
+            name: (item.product?.title || "Unknown Product").substring(0, 100),
+            description: item.product?.description,
+            imageUrl: item.product?.featuredImage?.url,
+            product_types: { connect: { id: 1 } },
+            dimensions: { create: { weight: 0, length: 0, width: 0, height: 0 } },
+            product_prices: { create: { sellingPrice: price, mrp: price } },
+            inventory_products: {
+              create: {
+                shelf: 1,
+                quantity: item.variant?.inventoryQuantity || 0,
+                description: "Shopify Synced"
+              }
+            }
+          },
+        })
+        // Update local inventory from Shopify's latest count (Real-time update)
+        const stockLevel = item.variant?.inventoryQuantity || 0
+        const inventoryRecord = await db.inventory_products.findFirst({
+          where: { product: product.id, shelf: 1 }
         })
 
-        if (!product) {
-          // If product doesn't exist, create it with current stock
-          const price = item.product?.priceRange?.maxVariantPrice?.amount ? parseInt(item.product?.priceRange?.maxVariantPrice?.amount) : 0
-          product = await db.products.create({
+        if (inventoryRecord) {
+          await db.inventory_products.update({
+            where: { id: inventoryRecord.id },
+            data: { quantity: stockLevel }
+          })
+        } else {
+          await db.inventory_products.create({
             data: {
-              sku: item.sku,
-              name: item.product?.title || "Unknown Product",
-              description: item.product?.description,
-              imageUrl: item.product?.featuredImage?.url,
-              product_types: { connect: { id: 1 } },
-              dimensions: { create: { weight: 0, length: 0, width: 0, height: 0 } },
-              product_prices: { create: { sellingPrice: price, mrp: price } },
-              inventory_products: {
-                create: {
-                  shelf: 1,
-                  quantity: item.variant?.inventoryQuantity || 0,
-                  description: "Shopify Synced"
-                }
-              }
-            },
+              product: product.id,
+              shelf: 1,
+              quantity: stockLevel,
+              description: "Shopify Synced"
+            }
           })
         }
+
         productList.push({ ...item, productId: product.id })
       }
 
@@ -258,12 +275,9 @@ const getAllOrders = async (after = null, timeout = 100) => {
       await createOrderFunction(newOrderObject)
     }
 
-    const latestOrderTime = latestOrder?.[0]?.["createdAt"] ? moment(latestOrder?.[0]?.["createdAt"]) : moment().subtract(30, 'days')
-    const hasOlderOrder = data.orders.nodes.find((data) => moment(data.createdAt).isBefore(latestOrderTime))
-
-    if (!hasOlderOrder && data.orders.edges?.length > 0) {
+    if (data.orders.pageInfo.hasNextPage) {
       return await getAllOrders(
-        data.orders.edges[data.orders.edges.length - 1].cursor,
+        data.orders.pageInfo.endCursor,
         timeout
       )
     }
@@ -274,9 +288,9 @@ const getAllOrders = async (after = null, timeout = 100) => {
 }
 
 export const handler = async () => {
-  console.log("--- STARTING FULL SHOPIFY SYNC ---")
-  await syncAllProducts() // First, get ALL products and their stock
-  await getAllOrders()     // Then, get orders
-  console.log("--- SYNC COMPLETE ---")
+  console.log("--- STARTING SHOPIFY ORDER SYNC ---")
+  // await syncAllProducts() // Skipping product sync as requested
+  await getAllOrders()     // Only sync orders
+  console.log("--- ORDER SYNC COMPLETE ---")
 }
 

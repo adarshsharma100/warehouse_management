@@ -742,7 +742,7 @@ model shipment_status {
 
 model shopify {
   id             Int       @id @default(autoincrement())
-  orderId        String?   @db.VarChar(150)
+  orderId        String?   @unique(map: "orderId_UNIQUE") @db.VarChar(150)
   orderNumber    String?   @db.VarChar(150)
   orderStatusUrl String?   @db.VarChar(200)
   createdAt      DateTime? @default(now()) @db.DateTime(0)
