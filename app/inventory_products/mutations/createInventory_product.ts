@@ -2,6 +2,7 @@ import { resolver } from "@blitzjs/rpc"
 import axios from "axios"
 import db from "db"
 import { z } from "zod"
+import { pushStockToShopify } from "app/shopify/syncToShopify"
 
 const CreateInventory_product = z.object({
   quantity: z.number(),
@@ -90,7 +91,19 @@ export default resolver.pipe(
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const inventory_product = await db.inventory_products.create({
       data: input,
+      include: { products: true }
     })
+
+    // Calculate total stock across all shelves for this product and push to Shopify
+    if (inventory_product.products?.sku) {
+      const totalInventory = await db.inventory_products.aggregate({
+        where: { product: inventory_product.product },
+        _sum: { quantity: true }
+      })
+      const totalQty = totalInventory._sum.quantity || 0
+
+      pushStockToShopify(inventory_product.products.sku, totalQty).catch(console.error)
+    }
 
     // await mailer(inventory_product.created_at)
 

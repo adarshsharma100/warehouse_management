@@ -181,7 +181,8 @@ export const OrdersList = () => {
     where: { orderStatus: statusId },
     skip: skipCount,
     take: tableRowsCount,
-  });
+    sync: true,
+  } as any);
   console.log('orders: ', orders);
 
 

@@ -6,12 +6,17 @@ import fetchOrdersJob from "../functions/fetchOrdersJobCreation"
 import { Ctx } from "@blitzjs/next"
 
 interface GetOrdersInput
-  extends Pick<Prisma.ordersFindManyArgs, "where" | "orderBy" | "skip" | "take"> { }
+  extends Pick<Prisma.ordersFindManyArgs, "where" | "orderBy" | "skip" | "take"> {
+  sync?: boolean
+}
 
 export default resolver.pipe(
   resolver.authorize(),
-  async ({ where, orderBy, skip = 0, take = 100 }: GetOrdersInput, ctx: Ctx) => {
-    const jobId = await fetchOrdersJob(ctx.session.userId)
+  async ({ where, orderBy, skip = 0, take = 100, sync = false }: GetOrdersInput, ctx: Ctx) => {
+    if (sync) {
+      fetchOrdersJob(ctx.session.userId).catch(console.error)
+    }
+    const jobId = null
 
     // TODO: in multi-tenant app, you must add validation to ensure correct tenant
     const {

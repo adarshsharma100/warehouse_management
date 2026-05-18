@@ -18,8 +18,15 @@ export default resolver.pipe(
 
     // If quantity was updated and we have a valid product SKU, push to Shopify
     if (data.quantity !== undefined && inventory_product.products?.sku) {
+      // Calculate total stock across all shelves for this product
+      const totalInventory = await db.inventory_products.aggregate({
+        where: { product: inventory_product.product },
+        _sum: { quantity: true }
+      })
+      const totalQty = totalInventory._sum.quantity || 0
+
       // Run this asynchronously so it doesn't block the UI response
-      pushStockToShopify(inventory_product.products.sku, inventory_product.quantity).catch(console.error)
+      pushStockToShopify(inventory_product.products.sku, totalQty).catch(console.error)
     }
 
     return inventory_product

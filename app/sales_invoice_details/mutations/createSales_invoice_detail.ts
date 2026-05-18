@@ -44,11 +44,26 @@ export default resolver.pipe(
           }
         },
         data: { quantity: { decrement: quantity } },
+        include: { products: true }
       })
       return updatedProduct
     }
 
     const updatedProducts = await Promise.all(shipmentProducts.map(({ product, quantity }) => updateInventoryProduct(product, quantity)))
+
+    // Calculate new total stock and push to Shopify for each updated product
+    for (const inventory_product of updatedProducts) {
+      if (inventory_product.products?.sku) {
+        const totalInventory = await db.inventory_products.aggregate({
+          where: { product: inventory_product.product },
+          _sum: { quantity: true }
+        })
+        const totalQty = totalInventory._sum.quantity || 0
+
+        const { pushStockToShopify } = require("app/shopify/syncToShopify")
+        pushStockToShopify(inventory_product.products.sku, totalQty).catch(console.error)
+      }
+    }
 
 
     console.log('sales_invoice_detail: ', sales_invoice_detail);
