@@ -6,7 +6,7 @@ import { useRouter } from "next/router";
 import { useQuery, useMutation } from "@blitzjs/rpc";
 import { useParam } from "@blitzjs/next";
 
-import Layout from "layouts/Layout";
+import Layout from "src/core/layouts/Layout";
 import getPutaway from "app/putaways/queries/getPutaway";
 import updatePutaway from "app/putaways/mutations/updatePutaway";
 import { PutawayForm, FORM_ERROR } from "app/putaways/components/PutawayForm";

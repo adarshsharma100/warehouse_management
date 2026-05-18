@@ -2,7 +2,7 @@ import { Routes } from "@blitzjs/next";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useMutation } from "@blitzjs/rpc";
-import Layout from "layouts/Layout";
+import Layout from "src/core/layouts/Layout";
 import createPutaway from "app/putaways/mutations/createPutaway";
 import { PutawayForm, FORM_ERROR } from "app/putaways/components/PutawayForm";
 
