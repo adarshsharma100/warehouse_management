@@ -1,10 +1,13 @@
 import { GraphQLClient, gql } from "graphql-request"
 
-const endpoint = `https://${process.env.SHOPIFY_STORE_NAME}.myshopify.com/admin/api/2023-01/graphql.json`
+const storeName = process.env.SHOPIFY_STORE_NAME || "robocraze-com"
+const accessToken = process.env.SHOPIFY_ACCESS_TOKEN || "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"
+
+const endpoint = `https://${storeName}.myshopify.com/admin/api/2023-01/graphql.json`
 
 const graphQLClient = new GraphQLClient(endpoint, {
   headers: {
-    "X-Shopify-Access-Token": process.env.SHOPIFY_ACCESS_TOKEN || "",
+    "X-Shopify-Access-Token": accessToken,
   },
 })
 
@@ -50,7 +53,7 @@ const setQuantityMutation = gql`
 
 export const pushStockToShopify = async (sku: string, newQuantity: number) => {
   try {
-    if (!process.env.SHOPIFY_STORE_NAME || !process.env.SHOPIFY_ACCESS_TOKEN) {
+    if (!storeName || !accessToken) {
       console.warn("Shopify credentials missing. Cannot push stock.")
       return false
     }
