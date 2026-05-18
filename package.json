@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "concurrently \"yarn blitz dev\" 'quirrel'",
     "build": "blitz build",
-    "start": "blitz start",
+    "start": "concurrently \"blitz start\" 'quirrel'",
     "studio": "blitz prisma studio",
     "lint": "eslint --ignore-path .gitignore --ext .js,.ts,.tsx .",
     "test": "jest",
