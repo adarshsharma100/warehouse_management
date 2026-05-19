@@ -13,6 +13,7 @@ import { FileUpload } from "primereact/fileupload"
 import papa from "papaparse"
 import createInventory_product from "app/inventory_products/mutations/createInventory_product"
 import updateInventory_product from "app/inventory_products/mutations/updateInventory_product"
+import syncShopifyStock from "app/inventory_products/mutations/syncShopifyStock"
 import createNotifications_sent from "app/notifications_sents/mutations/createNotifications_sent"
 import getProducts from "app/products/queries/getProducts"
 import deleteInventory_product from "app/inventory_products/mutations/deleteInventory_product"
@@ -62,6 +63,7 @@ export const Inventory_productsList = () => {
   const { skipCount, tableRowsCount } = state;
   const [createInventory_productMutation, { error: createInventoryError, isLoading: creatingInventory },] = useMutation(createInventory_product)
   const [updateInventory_productMutation, { error: updateInventoryError, isLoading: updatingInventory },] = useMutation(updateInventory_product)
+  const [syncShopifyStockMutation, { isLoading: isSyncing }] = useMutation(syncShopifyStock)
 
   const [selectedWarehouse, setSelectedWarehouse] = useState()
   const [{ inventory_products, count: totalInventoryProduct }, { refetch }] = usePaginatedQuery(getInventory_products, {
@@ -218,6 +220,29 @@ export const Inventory_productsList = () => {
     setGlobalFilterValue(value)
   }
 
+  const handleSyncClick = async () => {
+    try {
+      toast?.current?.show({
+        severity: "info",
+        summary: "Sync Started",
+        detail: "Fetching inventory updates from Shopify...",
+        life: 3000,
+      })
+      const result = await syncShopifyStockMutation(null)
+      if (result.success) {
+        toast?.current?.show(
+          tsuccess("Sync Complete", `Successfully synced ${result.updatedCount} products from Shopify.`)
+        )
+        refetch()
+      }
+    } catch (error) {
+      console.error("Sync Error:", error)
+      toast?.current?.show(
+        tError("Sync Error", "Failed to sync inventory from Shopify.")
+      )
+    }
+  }
+
   const renderHeader = () => {
     return (
       <div className="flex justify-content-center">
@@ -257,6 +282,16 @@ export const Inventory_productsList = () => {
           // severity="success"
           onClick={() => exportExcel()}
           tooltip="Export Data"
+          tooltipOptions={{ position: 'top' }}
+        />
+        <Button
+          className="ml-3 p-button-success"
+          type="button"
+          icon="pi pi-sync"
+          label={isSyncing ? "Syncing..." : "Sync Stocks from Shopify"}
+          disabled={isSyncing}
+          onClick={handleSyncClick}
+          tooltip="Sync stock levels from Shopify for recently updated products"
           tooltipOptions={{ position: 'top' }}
         />
       </div>
@@ -430,9 +465,6 @@ export const Inventory_productsList = () => {
               field={field}
               header={header}
               body={body}
-              editor={field === "quantity" ? textEditor : null}
-              onCellEditComplete={field === "quantity" ? onCellEditComplete : null}
-
             />
           ))}
 
@@ -945,6 +977,7 @@ export const Inventory_productsList = () => {
                         value={formik.values[ele.field]}
                         // onChange={formik.handleChange}
                         onChange={(e) => formik.setFieldValue(`${ele.field}`, e.value)}
+                        disabled={ele.field === "quantity"}
                         autoFocus
                         className={classNames({ "p-invalid": isFormFieldValid(ele.field) })}
                       />
