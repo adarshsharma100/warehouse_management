@@ -159,7 +159,7 @@ const Alltable = ({ value, type, refetch }) => {
           <div className="card col-7 message-output pt-3 mt-3 " style={{ overflowY: "scroll", height: "50vh" }}>
             <Timeline className="p-fluid" value={messages.filter(({ incident_id }: any) => {
               return incident_id == activeIncidents
-            })} opposite={(item) => moment(item.message_time).format("DD-MM-YY,HH:MM").toString()} content={(item) => <div className="card shadow-5 " >
+            })} opposite={(item) => moment(item.message_time).format("DD-MM-YY,HH:mm").toString()} content={(item) => <div className="card shadow-5 " >
               <div className="flex justify-content-between"><div><span style={{ color: "#6ABD6E" }}>From:</span>{item.message_from}</div> <div>{item.message_for && <div><span style={{ color: "#6ABD6E" }}>To:</span>{item.message_for}</div>}</div></div>
               {item.message_cause &&
 

@@ -899,7 +899,7 @@ export const AppTopbar = (props) => {
       <div className="border-solid border-1 border-round-lg mb-2 p-2">
         <p className="m-0">{`${ele.mutations} by ${ele.user_name} `}</p>
         <p className="text-xs align-content-end text-right mt-2	">
-          {moment(ele.created_at).format("DD-MM-YYYY, HH:MM")}
+          {moment(ele.created_at).format("DD-MM-YYYY, HH:mm")}
         </p>
       </div>
     )

@@ -1639,9 +1639,9 @@ export const removeKeyFromObj = (obj, ...keys) => {
   return obj
 }
 
-// export const dateFormat = (dateObj) => moment(new Date(dateObj)).format("DD-MM-YYYY, HH:MM")
+// export const dateFormat = (dateObj) => moment(new Date(dateObj)).format("DD-MM-YYYY, HH:mm")
 export const dateFormat = (dateObj) => {
-  const formatedDate = moment(dateObj).format("DD-MM-YYYY, HH:MM")
+  const formatedDate = moment(dateObj).format("DD-MM-YYYY, HH:mm")
   return formatedDate === "Invalid date" ? "N/A" : formatedDate
 }
 export const calenderDateFormat = () => "dd/mm/yy"

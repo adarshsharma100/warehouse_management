@@ -492,7 +492,7 @@ export const GrnsList = () => {
               header="Created on"
               filterField="created_on"
               dataType="date"
-              body={(rowData) => moment(rowData.created_on).format("DD-MM-YYYY, HH:MM")}
+              body={(rowData) => moment(rowData.created_on).format("DD-MM-YYYY, HH:mm")}
               filter
               filterElement={dateFilterTemplate}
 
