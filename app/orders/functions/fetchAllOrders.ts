@@ -334,15 +334,20 @@ export const syncRecentInventoryChanges = async (after = null) => {
     const isoString = lastSyncTime.toISOString()
     const query = `updated_at:>='${isoString}'`
 
-    console.log(`Fetching Shopify stock updates since: ${isoString} (Query: "${query}")`)
+    console.log(`\n======================================================`)
+    console.log(`[Shopify 5-Min Sync] Checking for stock updates since: ${isoString}`)
+    console.log(`======================================================`)
     const data = await graphQLClient.request(changedVariantsQuery, { query, after })
 
     if (!data?.productVariants?.nodes?.length) {
-      console.log("No inventory changes found on Shopify since last sync.")
+      console.log("[Shopify 5-Min Sync] No inventory changes found on Shopify.")
+      console.log(`======================================================\n`)
       return
     }
 
-    console.log(`Processing ${data.productVariants.nodes.length} stock changes...`)
+    console.log(`[Shopify 5-Min Sync] Found ${data.productVariants.nodes.length} potential stock adjustments on Shopify. Processing...`)
+
+    let changedCount = 0
 
     for (const variant of data.productVariants.nodes) {
       if (!variant.sku) continue
@@ -353,7 +358,7 @@ export const syncRecentInventoryChanges = async (after = null) => {
       })
 
       if (!localProduct) {
-        console.log(`SKU ${variant.sku} not found locally. Skipping.`)
+        console.log(`[Shopify 5-Min Sync] local SKU ${variant.sku} not found in warehouse. Skipping.`)
         continue
       }
 
@@ -366,11 +371,14 @@ export const syncRecentInventoryChanges = async (after = null) => {
 
       if (inventoryRecord) {
         if (inventoryRecord.quantity !== stockLevel) {
+          const oldQty = inventoryRecord.quantity
           await db.inventory_products.update({
             where: { id: inventoryRecord.id },
             data: { quantity: stockLevel }
           })
-          console.log(`Synced quantity from Shopify for SKU ${variant.sku}: ${inventoryRecord.quantity} -> ${stockLevel}`)
+          changedCount++
+          console.log(`  -> [CHANGED] SKU: ${variant.sku} | Name: "${localProduct.name}"`)
+          console.log(`     Quantity Sync: ${oldQty} -> ${stockLevel}`)
         }
       } else {
         await db.inventory_products.create({
@@ -381,15 +389,21 @@ export const syncRecentInventoryChanges = async (after = null) => {
             description: "Shopify Changed Sync"
           }
         })
-        console.log(`Created new shelf #1 record for SKU ${variant.sku} with quantity ${stockLevel}`)
+        changedCount++
+        console.log(`  -> [NEW SHELF ENTRY] SKU: ${variant.sku} | Name: "${localProduct.name}"`)
+        console.log(`     Quantity Sync: Created at ${stockLevel}`)
       }
     }
+
+    console.log(`------------------------------------------------------`)
+    console.log(`[Shopify 5-Min Sync] Sync Complete. Updated ${changedCount} stock levels.`)
+    console.log(`======================================================\n`)
 
     if (data.productVariants.pageInfo.hasNextPage) {
       await syncRecentInventoryChanges(data.productVariants.pageInfo.endCursor)
     }
   } catch (error) {
-    console.error("Shopify Stock Changes Pull Error:", error)
+    console.error("[Shopify 5-Min Sync] Error:", error)
   }
 }
 

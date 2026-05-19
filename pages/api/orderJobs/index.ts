@@ -4,7 +4,7 @@ import { handler } from "app/orders/functions/fetchAllOrders"
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-// This job will now run automatically every 15 minutes
+// This job will now run automatically every 5 minutes
 export default Queue(
   "api/orderJobs",
   async (uploadId: number | null) => {
@@ -42,7 +42,7 @@ export default Queue(
   },
   {
     repeat: {
-      cron: "*/15 * * * *",
+      cron: "*/5 * * * *",
     },
   }
 )
