@@ -196,6 +196,7 @@ export const createOrderFunction = async (input) => {
       discountAmount,
       payment_method,
       paymentMethodId,
+      channelCreatedAt,
     },
   } = input
 
@@ -243,9 +244,7 @@ export const createOrderFunction = async (input) => {
         discountAmount,
         payment_method,
         paymentMethodId,
-
-
-
+        channelCreatedAt: channelCreatedAt ? new Date(channelCreatedAt) : undefined,
       },
     })
     // console.log("order123: ", order)

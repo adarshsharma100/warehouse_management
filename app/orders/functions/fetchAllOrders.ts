@@ -247,6 +247,7 @@ const getAllOrders = async (after = null, timeout = 100) => {
             shopifyId: order.id,
             orderStatus: 4,
             isShippingIsBilling: false,
+            channelCreatedAt: order.createdAt,
             shippingAddress: {
               areaStreet: shippingAddress?.address1 || "",
               landmarkName: shippingAddress?.address2 || "",

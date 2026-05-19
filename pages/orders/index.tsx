@@ -177,7 +177,7 @@ export const OrdersList = () => {
   const page = Number(router.query.page) || 0;
 
   const [{ orders, count: orderCounts }, { refetch: refetchOrders }] = usePaginatedQuery(getOrders, {
-    orderBy: { id: "asc" },
+    orderBy: { channelCreatedAt: "desc" },
     where: { orderStatus: statusId },
     skip: skipCount,
     take: tableRowsCount,
@@ -187,13 +187,13 @@ export const OrdersList = () => {
 
 
   const [{ count: pendingVerificationCount }] = useQuery(getOrders, {
-    orderBy: { id: "asc" },
+    orderBy: { channelCreatedAt: "desc" },
     where: { orderStatus: 1 },
     skip: skipCount,
     take: tableRowsCount,
   });
   const [{ count: failedCount }] = useQuery(getOrders, {
-    orderBy: { id: "asc" },
+    orderBy: { channelCreatedAt: "desc" },
     where: { orderStatus: 5 },
     skip: skipCount,
     take: tableRowsCount,
@@ -2626,15 +2626,13 @@ export const OrdersList = () => {
 
             />
             <Column
-              field="createdAt"
-              header="Created At"
+              field="channelCreatedAt"
+              header="Order Date & Time"
               filter
-              filterField="createdAt"
-              dataType= "date"
+              filterField="channelCreatedAt"
+              dataType="date"
               filterElement={dateFilterTemplate}
-              className=""
-              // className="text-center"
-              body={(rowData) => dateFormat(rowData.createdAt)}
+              body={(rowData) => dateFormat(rowData.channelCreatedAt || rowData.createdAt)}
             />
 
             <Column
