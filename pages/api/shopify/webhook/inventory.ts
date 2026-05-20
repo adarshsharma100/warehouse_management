@@ -2,8 +2,8 @@ import { NextApiRequest, NextApiResponse } from "next"
 import { GraphQLClient, gql } from "graphql-request"
 import db from "db"
 
-const store = process.env.SHOPIFY_STORE_NAME || "robocraze-com"
-const accessToken = process.env.SHOPIFY_ACCESS_TOKEN || "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"
+const store = process.env.SHOPIFY_STORE_NAME
+const accessToken = process.env.SHOPIFY_ACCESS_TOKEN
 const endpoint = `https://${store}.myshopify.com/admin/api/2023-10/graphql.json`
 
 const graphQLClient = new GraphQLClient(endpoint, {

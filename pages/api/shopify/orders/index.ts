@@ -4,14 +4,15 @@ import { GraphQLClient, gql } from "graphql-request"
 import db from "db"
 import { createOrderFunction } from "app/orders/mutations/createOrder"
 
-const store = "robocraze-com"
+const store = process.env.SHOPIFY_STORE_NAME
+const accessToken = process.env.SHOPIFY_ACCESS_TOKEN
 const hostName = store + ".myshopify.com"
 const apiVersion = "2023-01"
 const apiLocation = "/admin/api/"
 const endpoint = "https://" + hostName + apiLocation + apiVersion + "/graphql.json"
 const header = {
   "Content-Type": "application/json",
-  "X-Shopify-Access-Token": "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",
+  "X-Shopify-Access-Token": accessToken,
 }
 const graphQLClient = new GraphQLClient(endpoint, {
   headers: JSON.parse(JSON.stringify(header)),
