@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState, useReducer } from "react"
+import { Suspense, useEffect, useRef, useState, useReducer, useMemo } from "react"
 import { Routes } from "@blitzjs/next"
 import Head from "next/head"
 import { invoke, useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc"
@@ -66,6 +66,30 @@ export const Inventory_productsList = () => {
   const [syncShopifyStockMutation, { isLoading: isSyncing }] = useMutation(syncShopifyStock)
 
   const [selectedWarehouse, setSelectedWarehouse] = useState()
+  const [searchInputValue, setSearchInputValue] = useState("")
+  const [globalFilterValue, setGlobalFilterValue] = useState("")
+  const initialFilters = {
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    "product.sku": initialFilterRules.andContains,
+    "product.name": initialFilterRules.andContains,
+    "product.product_types.type": initialFilterRules.andContains,
+    good_stock: initialFilterRules.andContains,
+    bad_stock: initialFilterRules.andContains,
+    block_stock: initialFilterRules.andContains,
+    available_stock: initialFilterRules.andContains,
+  }
+  const [filters, setFilters] = useState<any>(initialFilters)
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setGlobalFilterValue(searchInputValue)
+      dispatch({ type: "UPDATE_SKIP_COUNT", payload: 0 })
+    }, 300)
+
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [searchInputValue])
   const [{ inventory_products, count: totalInventoryProduct }, { refetch }] = usePaginatedQuery(getInventory_products, {
     orderBy: { id: "asc" },
     where: {
@@ -73,7 +97,21 @@ export const Inventory_productsList = () => {
         areas: {
           warehouse: selectedWarehouse?.id ?? undefined
         }
-      }
+      },
+      products: globalFilterValue ? {
+        OR: [
+          {
+            sku: {
+              contains: globalFilterValue
+            }
+          },
+          {
+            name: {
+              contains: globalFilterValue
+            }
+          }
+        ]
+      } : undefined
     },
     skip: skipCount,
     take: tableRowsCount,
@@ -125,18 +163,6 @@ export const Inventory_productsList = () => {
   const [btnVisibility, setBtnVisibility] = useState(false)
   const [errorProducts, setErrorProducts] = useState([])
 
-  const initialFilters = {
-    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    "product.sku": initialFilterRules.andContains,
-    "product.name": initialFilterRules.andContains,
-    "product.product_types.type": initialFilterRules.andContains,
-    good_stock: initialFilterRules.andContains,
-    bad_stock: initialFilterRules.andContains,
-    block_stock: initialFilterRules.andContains,
-    available_stock: initialFilterRules.andContains,
-  }
-  const [filters, setFilters] = useState(initialFilters)
-  const [globalFilterValue, setGlobalFilterValue] = useState("")
   const [warehouseSuggestions, setWarehouseSuggestions] = useState<any>(null)
   const [areaOptions, setAreaOptions] = useState<any>(null)
   const [areaSuggestions, setAreaSuggestions] = useState<any>(null)
@@ -209,15 +235,13 @@ export const Inventory_productsList = () => {
 
   const clearFilter = () => {
     setFilters(initialFilters)
+    setSearchInputValue("")
     setGlobalFilterValue("")
+    dispatch({ type: "UPDATE_SKIP_COUNT", payload: 0 })
   }
   const onGlobalFilterChange = (e) => {
     const value = e.target.value
-    let _filters1 = { ...filters }
-    _filters1["global"].value = value
-
-    setFilters(_filters1)
-    setGlobalFilterValue(value)
+    setSearchInputValue(value)
   }
 
   const handleSyncClick = async () => {
@@ -245,7 +269,7 @@ export const Inventory_productsList = () => {
 
   const renderHeader = () => {
     return (
-      <div className="flex justify-content-center">
+      <div className="flex justify-content-between align-items-center mb-3">
         <div className="flex-grow-1">
           <MultiSelect
             value={selectedColumns}
@@ -258,42 +282,42 @@ export const Inventory_productsList = () => {
           />
         </div>
 
-
-        <span className="p-input-icon-left">
-          <i className="pi pi-search" />
-          <InputText
-            value={globalFilterValue}
-            onChange={onGlobalFilterChange}
-            placeholder="Keyword Search"
+        <div className="flex align-items-center">
+          <span className="p-input-icon-left">
+            <i className="pi pi-search" />
+            <InputText
+              value={searchInputValue}
+              onChange={onGlobalFilterChange}
+              placeholder="Search SKU / Product..."
+            />
+          </span>
+          <Button
+            type="button"
+            icon="pi pi-filter-slash"
+            label="Clear"
+            className="p-button-outlined ml-3"
+            onClick={clearFilter}
           />
-        </span>
-        <Button
-          type="button"
-          icon="pi pi-filter-slash"
-          label="Clear"
-          className="p-button-outlined ml-3"
-          onClick={clearFilter}
-        />
-        <Button
-          className="ml-3"
-          type="button"
-          icon="pi pi-file-excel"
-          label="Export as XLSX"
-          // severity="success"
-          onClick={() => exportExcel()}
-          tooltip="Export Data"
-          tooltipOptions={{ position: 'top' }}
-        />
-        <Button
-          className="ml-3 p-button-success"
-          type="button"
-          icon="pi pi-sync"
-          label={isSyncing ? "Syncing..." : "Sync Stocks from Shopify"}
-          disabled={isSyncing}
-          onClick={handleSyncClick}
-          tooltip="Sync stock levels from Shopify for recently updated products"
-          tooltipOptions={{ position: 'top' }}
-        />
+          <Button
+            className="ml-3"
+            type="button"
+            icon="pi pi-file-excel"
+            label="Export as XLSX"
+            onClick={() => exportExcel()}
+            tooltip="Export Data"
+            tooltipOptions={{ position: 'top' }}
+          />
+          <Button
+            className="ml-3 p-button-success"
+            type="button"
+            icon="pi pi-sync"
+            label={isSyncing ? "Syncing..." : "Sync Stocks from Shopify"}
+            disabled={isSyncing}
+            onClick={handleSyncClick}
+            tooltip="Sync stock levels from Shopify for recently updated products"
+            tooltipOptions={{ position: 'top' }}
+          />
+        </div>
       </div>
     )
   }
@@ -1015,6 +1039,7 @@ export const Inventory_productsList = () => {
         <div className="col-12 mt-3">
 
           <div className="card">
+            {header1}
             <DataTable
               value={inventoryTableData}
               showGridlines
@@ -1026,7 +1051,7 @@ export const Inventory_productsList = () => {
               scrollHeight="400px"
               className="text-s datatable-responsive"
               filters={filters}
-              header={header1}
+              onFilter={(e) => setFilters(e.filters)}
               filterDisplay="menu"
               expandedRows={expandedRows}
               onRowToggle={(e) => setExpandedRows(e.data)}
