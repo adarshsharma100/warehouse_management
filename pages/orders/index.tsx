@@ -28,7 +28,7 @@ import { OverlayPanel } from 'primereact/overlaypanel';
 import { Badge } from "primereact/badge";
 import { Tooltip } from "primereact/tooltip";
 import { Paginator } from "primereact/paginator";
-import { Suspense, useEffect, useReducer, useRef, useState, startTransition } from "react";
+import { Suspense, useEffect, useReducer, useRef, useState, useTransition } from "react";
 import * as Yup from "yup";
 import AddressComponent from "../../components/AddressComponent";
 
@@ -169,6 +169,50 @@ export const OrdersList = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [isVisible, setIsVisible] = useState(true);
 
+  const [searchInputValue, setSearchInputValue] = useState("");
+  const [globalFilterValue, setGlobalFilterValue] = useState("");
+  const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      startTransition(() => {
+        setGlobalFilterValue(searchInputValue);
+        dispatch({ type: 'UPDATE_SKIP_COUNT', payload: 0 });
+      });
+    }, 300);
+
+    return () => {
+      clearTimeout(debounceTimer);
+    };
+  }, [searchInputValue]);
+
+  const initialFilters = {
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    name: initialFilterRules.andContains,
+    firstName: initialFilterRules.andContains,
+    shopifyId: initialFilterRules.andContains,
+    id: initialFilterRules.andContains,
+    gateway: initialFilterRules.andContains,
+    discountAmount: initialFilterRules.andContains,
+    gstNumber: initialFilterRules.andContains,
+    paymentReferenceId: initialFilterRules.andContains,
+    totalPrice: initialFilterRules.andContains,
+    "order_items.products.name": initialFilterRules.andContains,
+    createdAt: initialFilterRules.dateIs,
+  }
+
+  const [filters, setFilters] = useState(initialFilters)
+  const clearFilter = () => {
+    setFilters(initialFilters)
+    setSearchInputValue("")
+    setGlobalFilterValue("")
+    dispatch({ type: 'UPDATE_SKIP_COUNT', payload: 0 })
+  }
+  const onGlobalFilterChange = (e) => {
+    const value = e.target.value
+    setSearchInputValue(value)
+  }
+
   const { statusId, skipCount, tableRowsCount, statusName, _orders, } = state
   console.log('statusId: ', statusId);
   const toast = useRef(null)
@@ -176,9 +220,41 @@ export const OrdersList = () => {
 
   const page = Number(router.query.page) || 0;
 
+  const isNumeric = !isNaN(Number(globalFilterValue)) && globalFilterValue.trim() !== "";
+  const searchFilter = globalFilterValue ? {
+    OR: [
+      {
+        customers: {
+          OR: [
+            { firstName: { contains: globalFilterValue } },
+            { lastName: { contains: globalFilterValue } },
+            { companyName: { contains: globalFilterValue } },
+          ]
+        }
+      },
+      {
+        shopify: {
+          OR: [
+            { orderId: { contains: globalFilterValue } },
+            { orderNumber: { contains: globalFilterValue } }
+          ]
+        }
+      },
+      ...(isNumeric ? [
+        { id: Number(globalFilterValue) },
+        { totalPrice: Number(globalFilterValue) }
+      ] : [])
+    ]
+  } : {};
+
+  const whereQuery = {
+    orderStatus: statusId,
+    ...searchFilter
+  };
+
   const [{ orders, count: orderCounts }, { refetch: refetchOrders }] = usePaginatedQuery(getOrders, {
     orderBy: { channelCreatedAt: "desc" },
-    where: { orderStatus: statusId },
+    where: whereQuery,
     skip: skipCount,
     take: tableRowsCount,
     sync: true,
@@ -1078,7 +1154,7 @@ export const OrdersList = () => {
             <span className="p-input-icon-left">
               <i className="pi pi-search" />
               <InputText
-                value={globalFilterValue}
+                value={searchInputValue}
                 onChange={onGlobalFilterChange}
                 placeholder="Keyword Search"
               />
@@ -1109,7 +1185,7 @@ export const OrdersList = () => {
 
     )
   }
-  const orderHeader = renderHeader()
+  // Render header dynamically in the JSX to prevent Temporal Dead Zone (TDZ) issues for handlers and states
 
 
   const [selectedOrder, setSelectedOrder] = useState([]);
@@ -1607,35 +1683,6 @@ export const OrdersList = () => {
     },
   ])
 
-  const initialFilters = {
-    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    name: initialFilterRules.andContains,
-    firstName: initialFilterRules.andContains,
-    shopifyId: initialFilterRules.andContains,
-    id: initialFilterRules.andContains,
-    gateway: initialFilterRules.andContains,
-    discountAmount: initialFilterRules.andContains,
-    gstNumber: initialFilterRules.andContains,
-    paymentReferenceId: initialFilterRules.andContains,
-    totalPrice: initialFilterRules.andContains,
-    "order_items.products.name": initialFilterRules.andContains,
-    createdAt: initialFilterRules.dateIs,
-  }
-
-  const [filters, setFilters] = useState(initialFilters)
-  const [globalFilterValue, setGlobalFilterValue] = useState("")
-  const clearFilter = () => {
-    setFilters(initialFilters)
-    setGlobalFilterValue("")
-  }
-  const onGlobalFilterChange = (e) => {
-    const value = e.target.value
-    let _filters1 = { ...filters }
-    _filters1["global"].value = value
-
-    setFilters(_filters1)
-    setGlobalFilterValue(value)
-  }
 
 
   return (
@@ -2524,12 +2571,15 @@ export const OrdersList = () => {
 
           </div>
 
+          <div className="col-12 mt-3 mb-3">
+            {renderHeader()}
+          </div>
+
           <DataTable
             value={orders}
             // value={filteredOrders}
             responsiveLayout="scroll"
             // scrollable
-            header={renderHeader}
             filters={filters}
             stripedRows
             showGridlines
@@ -2537,6 +2587,7 @@ export const OrdersList = () => {
             selection={selectedOrder}
             onSelectionChange={(e) => setSelectedOrder(e.value)}
             tableStyle={{ minWidth: '50rem' }}
+            style={{ opacity: isPending ? 0.6 : 1, transition: 'opacity 0.2s ease-in-out' }}
             isDataSelectable={isRowSelectable}
             cellClassName={cellClassName}
             footer={paginator}
@@ -2563,6 +2614,17 @@ export const OrdersList = () => {
               filterField="id"
               filterPlaceholder="Search..."
 
+            />
+            <Column
+              field="shopify.orderNumber"
+              header="Shopify Order #"
+              body={(rowData) => {
+                if (!rowData.shopify) return <span>-</span>;
+                const shopifyNum = rowData.shopify.orderNumber || rowData.shopify.orderId;
+                if (!shopifyNum) return <span>-</span>;
+                const cleaned = shopifyNum.replace("gid://shopify/Order/", "");
+                return <span>{cleaned}</span>;
+              }}
             />
             <Column
               field="shopifyId"

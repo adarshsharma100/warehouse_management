@@ -24,6 +24,7 @@ const ordersQuery = gql`
     orders(first: 5, after: $after) {
       nodes {
         id
+        name
         displayFinancialStatus
         lineItems(first: 50) {
           nodes {
@@ -185,6 +186,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         },
         order: {
           shopifyId: order.id,
+          shopifyOrderNumber: order.name?.replace("#", ""),
           orderStatus: 4,
           isShippingIsBilling: false,
           shippingAddress: {

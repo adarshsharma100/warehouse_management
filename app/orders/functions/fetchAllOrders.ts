@@ -23,6 +23,7 @@ const ordersQuery = gql`
     orders(first: 50, after: $after, reverse: true) {
       nodes {
         id
+        name
         displayFinancialStatus
         lineItems(first: 40) {
           nodes {
@@ -245,6 +246,7 @@ const getAllOrders = async (after = null, timeout = 100) => {
           },
           order: {
             shopifyId: order.id,
+            shopifyOrderNumber: order.name?.replace("#", ""),
             orderStatus: 4,
             isShippingIsBilling: false,
             channelCreatedAt: order.createdAt,

@@ -1,4 +1,4 @@
-import { Suspense, useState, useRef, useEffect, useReducer, useCallback } from "react"
+import { Suspense, useState, useRef, useEffect, useReducer, useCallback, useTransition } from "react"
 import { useMutation, useQuery, usePaginatedQuery } from "@blitzjs/rpc"
 import { BlobServiceClient, ContainerClient } from '@azure/storage-blob';
 import { v4 as uuidv4 } from 'uuid';
@@ -323,13 +323,43 @@ export const ProductsList = () => {
   console.log("state", state);
   const { skipCount, tableRowsCount } = state;
 
+  const [searchInputValue, setSearchInputValue] = useState("")
+  const [globalFilterValue, setGlobalFilterValue] = useState("")
+  const [isPending, startTransition] = useTransition()
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      startTransition(() => {
+        setGlobalFilterValue(searchInputValue)
+        dispatch({ type: "UPDATE_SKIP_COUNT", payload: 0 })
+      })
+    }, 300)
+
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [searchInputValue])
+
 
   // USE QUERY
   // <===START===>
   const [{ products, count: totalProductsCount }, { refetch }] = usePaginatedQuery(getProducts,
     {
       orderBy: { id: "desc" },
-      where: {},
+      where: globalFilterValue ? {
+        OR: [
+          {
+            sku: {
+              contains: globalFilterValue
+            }
+          },
+          {
+            name: {
+              contains: globalFilterValue
+            }
+          }
+        ]
+      } : {},
       skip: skipCount,
       take: tableRowsCount
 
@@ -365,7 +395,6 @@ export const ProductsList = () => {
   const [errorProducts, setErrorProducts] = useState([])
   const [ErrorMsgs, setErrorMsgs] = useState([])
   const [filters, setFilters] = useState<any>(initialColumnFilters)
-  const [globalFilterValue, setGlobalFilterValue] = useState("")
   const [selectedColumns, setSelectedColumns] = useState([])
   // const [editUpdateProduct, setEditUpdateProduct] = useState(false)
   const [filename, setFilename] = useState('');
@@ -448,15 +477,13 @@ export const ProductsList = () => {
 
   const clearFilter = () => {
     setFilters(initialColumnFilters)
+    setSearchInputValue("")
     setGlobalFilterValue("")
+    dispatch({ type: "UPDATE_SKIP_COUNT", payload: 0 })
   }
   const onGlobalFilterChange = (e) => {
     const value = e.target.value
-    let _filters1 = { ...filters }
-    _filters1["global"].value = value
-
-    setFilters(_filters1)
-    setGlobalFilterValue(value)
+    setSearchInputValue(value)
   }
 
 
@@ -490,9 +517,9 @@ export const ProductsList = () => {
           <span className="p-input-icon-left">
             <i className="pi pi-search" />
             <InputText
-              value={globalFilterValue}
+              value={searchInputValue}
               onChange={onGlobalFilterChange}
-              placeholder="Keyword Search"
+              placeholder="Search SKU / Product..."
             />
           </span>
           <Button
@@ -1542,13 +1569,15 @@ export const ProductsList = () => {
       </div >
       <div className="col-12" >
         <div className="card">
+          {productsTableHeader}
           <DataTable
             value={products}
             responsiveLayout="scroll"
             showGridlines
+            style={{ opacity: isPending ? 0.6 : 1, transition: 'opacity 0.2s ease-in-out' }}
             footer={pagination}
-            header={productsTableHeader}
             filters={filters}
+            onFilter={(e) => setFilters(e.filters)}
             className="text-s datatable-responsive"
             filterDisplay="menu"
             emptyMessage="No Results found."

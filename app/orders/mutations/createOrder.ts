@@ -190,6 +190,7 @@ export const createOrderFunction = async (input) => {
       isShippingIsBilling,
       order_items,
       shopifyId,
+      shopifyOrderNumber,
       gstNumber,
       paymentTermsId,
       paymentReferenceId,
@@ -213,7 +214,7 @@ export const createOrderFunction = async (input) => {
     const createShopify = await db.shopify.create({
       data: {
         orderId: shopifyId,
-        orderNumber: shopifyId,
+        orderNumber: shopifyOrderNumber || shopifyId,
         orderStatusUrl: shopifyId,
       },
     })

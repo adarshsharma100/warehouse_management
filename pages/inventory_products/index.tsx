@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState, useReducer, useMemo } from "react"
+import { Suspense, useEffect, useRef, useState, useReducer, useMemo, useTransition } from "react"
 import { Routes } from "@blitzjs/next"
 import Head from "next/head"
 import { invoke, useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc"
@@ -68,6 +68,7 @@ export const Inventory_productsList = () => {
   const [selectedWarehouse, setSelectedWarehouse] = useState()
   const [searchInputValue, setSearchInputValue] = useState("")
   const [globalFilterValue, setGlobalFilterValue] = useState("")
+  const [isPending, startTransition] = useTransition()
   const initialFilters = {
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
     "product.sku": initialFilterRules.andContains,
@@ -82,8 +83,10 @@ export const Inventory_productsList = () => {
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      setGlobalFilterValue(searchInputValue)
-      dispatch({ type: "UPDATE_SKIP_COUNT", payload: 0 })
+      startTransition(() => {
+        setGlobalFilterValue(searchInputValue)
+        dispatch({ type: "UPDATE_SKIP_COUNT", payload: 0 })
+      })
     }, 300)
 
     return () => {
@@ -1043,6 +1046,7 @@ export const Inventory_productsList = () => {
             <DataTable
               value={inventoryTableData}
               showGridlines
+              style={{ opacity: isPending ? 0.6 : 1, transition: 'opacity 0.2s ease-in-out' }}
               // header={renderHeader}
               // scrollable
               // scrollHeight="60vh"

@@ -16,48 +16,38 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("Testing search query inside workspace...");
   try {
-    const count = await prisma.inventory_products.count();
-    console.log("Total inventory products count:", count);
-
-    const firstItems = await prisma.inventory_products.findMany({
-      take: 1,
-      include: {
-        products: true
+    const withGidCount = await prisma.shopify.count({
+      where: {
+        orderNumber: {
+          contains: "gid://"
+        }
       }
     });
-    
-    if (firstItems.length > 0) {
-      const realSku = firstItems[0].products.sku;
-      console.log("Found a real SKU to search:", realSku);
-
-      const searchCount = await prisma.inventory_products.count({
-        where: {
-          products: {
-            sku: {
-              contains: realSku
-            }
+    const withoutGidCount = await prisma.shopify.count({
+      where: {
+        NOT: {
+          orderNumber: {
+            contains: "gid://"
           }
         }
-      });
-      console.log(`Count of items matching real SKU "${realSku}":`, searchCount);
-      
-      const searchItems = await prisma.inventory_products.findMany({
+      }
+    });
+    console.log("Total records with 'gid://':", withGidCount);
+    console.log("Total records without 'gid://':", withoutGidCount);
+
+    if (withoutGidCount > 0) {
+      const recordsWithoutGid = await prisma.shopify.findMany({
         where: {
-          products: {
-            sku: {
-              contains: realSku
+          NOT: {
+            orderNumber: {
+              contains: "gid://"
             }
           }
         },
-        include: {
-          products: true
-        }
+        take: 10
       });
-      console.log("Found items:", JSON.stringify(searchItems, null, 2));
-    } else {
-      console.log("No inventory products found to test!");
+      console.log("Example records without 'gid://':", JSON.stringify(recordsWithoutGid, null, 2));
     }
   } catch (error) {
     console.error("Prisma query failed:", error);
