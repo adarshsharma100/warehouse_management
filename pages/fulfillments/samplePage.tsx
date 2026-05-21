@@ -371,7 +371,7 @@ const initialOrders = [
   },
 ]
 
-export default function BasicDemo() {
+export default function SamplePageDemo() {
   const items = [
     { label: 'ALL' },
     { label: 'NEW' },

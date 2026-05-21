@@ -24,7 +24,7 @@ const initialOrders = [
     },
 ];
 
-export default function BasicDemo() {
+export default function SampleFormDemo() {
     const [orders, setOrders] = useState(initialOrders);
     const [activeIndex, setActiveIndex] = useState(0);
 
