@@ -129,13 +129,13 @@ const columns = [
     filterPlaceholder: "Search by Cost Price",
     body: (rowData) => <div className="hideLargeContent">{rowData.product_prices?.averageCostPrice !== null ? rowData.product_prices?.averageCostPrice : "N/A"}</div>
   },
-  {
-    field: "product_prices.sellingPrice",
-    header: "Selling Price",
-    filter: true,
-    filterPlaceholder: "Search by Price",
-    body: (rowData) => <div className="hideLargeContent">{rowData.product_prices?.sellingPrice !== null ? rowData.product_prices?.sellingPrice : "N/A"}</div>
-  },
+    {
+      field: "product_prices.sellingPrice",
+      header: "Selling Price",
+      filter: true,
+      filterPlaceholder: "Search by Price",
+      body: (rowData) => <div className="hideLargeContent">{rowData.product_prices?.sellingPrice ?? "N/A"}</div>
+    },
   {
     field: "taxCalcuation",
     header: "Tax Calcuation"
