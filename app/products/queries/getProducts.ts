@@ -40,7 +40,12 @@ export default resolver.pipe(
             },
             product_categories: true,
             product_types: true,
-            product_brand: true,
+            product_brand: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
             product_prices: {
               select: {
                 sellingPrice: true,

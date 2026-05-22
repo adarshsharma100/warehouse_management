@@ -90,106 +90,6 @@ const columns = [
   },
 
   {
-    field: "kit_products_kit_products_productIdToproducts",
-    header: "Kit Products",
-    body: ({ kit_products_kit_products_productIdToproducts }) => {
-      const [showOverlay, setShowOverlay] = useState(false);
-      const productDisplayRef = useRef(null);
-
-      const handleMouseEnter = (event) => {
-        if (productDisplayRef.current) {
-          productDisplayRef.current.toggle(event);
-
-        }
-
-      };
-
-      const handleMouseLeave = () => {
-        setShowOverlay(false);
-      };
-
-      return (
-        <>
-          {kit_products_kit_products_productIdToproducts?.length > 2 ? (
-            <div className="product-column">
-              <div
-                className="product-header"
-              // onMouseLeave={handleMouseLeave}
-              >
-                <Button
-                  label={`Kit-Products(${kit_products_kit_products_productIdToproducts.length})`}
-                  className="p-button-link"
-                  onMouseEnter={handleMouseEnter}
-                />
-              </div>
-              {/* {showOverlay && ( */}
-              <div className="overlay-panel">
-                <OverlayPanel ref={productDisplayRef} showCloseIcon  >
-                  <div style={{
-                    maxHeight: '200px',
-                    overflowY: 'auto',
-                    overflowX: 'hidden'
-                  }}>
-                    {kit_products_kit_products_productIdToproducts.map((product, i) => {
-                      const { quantity, products_kit_products_kitProductIdToproducts: { name, sku } } = product;
-                      return (
-                        <div key={i} className="pt-2 pb-2">
-                          {[{ prop: "Name", value: name },
-                          { prop: "SKU", value: sku },
-                          { prop: "Quantity", value: quantity }
-                          ].map(({ prop, value }, index) => (
-                            <div key={index} className="grid">
-                              <span className="font-semibold col-4">{prop}:</span>
-                              <span className="col">
-                                {value?.toString()}
-                              </span>
-
-                            </div>
-                          ))}
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                </OverlayPanel>
-
-              </div>
-
-            </div>
-
-
-          ) : kit_products_kit_products_productIdToproducts?.length < 3 && kit_products_kit_products_productIdToproducts.length > 0 ?
-            <div className="w-20rem">
-              {kit_products_kit_products_productIdToproducts?.map((product, i) => {
-                const { quantity, products_kit_products_kitProductIdToproducts: { name, sku } } = product;
-                return (
-                  <div key={i} className="pt-2 pb-2">
-                    {[{ prop: "Name", value: name },
-                    { prop: "SKU", value: sku },
-                    { prop: "Quantity", value: quantity }
-                    ].map(({ prop, value }, index) => (
-                      <div key={index} className="grid">
-                        <label className="font-semibold col-4">{prop}:</label>
-                        <div className="col">
-                          {value?.toString()}
-                        </div>
-                      </div>
-                    ))}
-
-                  </div>
-                )
-              })}
-            </div>
-
-
-            : <div className="hideLargeContent">-</div>
-
-          }
-        </>
-      )
-    },
-  },
-  {
     field: "length",
     header: "Length"
   },
@@ -209,19 +109,14 @@ const columns = [
     field: "color",
     header: "Color"
   },
-  {
-    field: "brand",
-    header: "Brand"
-  },
+    {
+      field: "product_brand",
+      header: "Brand",
+      body: (rowData) => <div className="hideLargeContent">{rowData.product_brand?.name ?? rowData.product_brand?.id ?? rowData.product_brand}</div>
+    },
   {
     field: "customDuty",
     header: "Custom Duty"
-  },
-  {
-    field: "gstTaxTypeCode",
-    header: "Gst Code",
-    filter: true,
-    filterPlaceholder: "Search by GST",
   },
   {
     field: "hsnCode",
@@ -490,7 +385,7 @@ export const ProductsList = () => {
   // USE Effect
   // <===START===>
   useEffect(() => {
-    const defaultColumns = columns.filter(col => !["updatedAt", "length", "width", "height", "weight", "brand", "customDuty", "taxCalcuation", "color", "hsnCode"].includes(col.field)).map(col => col.field)
+    const defaultColumns = columns.filter(col => !["updatedAt", "length", "width", "height", "weight", "customDuty", "taxCalcuation", "color", "hsnCode", "kit_products_kit_products_productIdToproducts", "gstTaxTypeCode", "product_prices.averageCostPrice"].includes(col.field)).map(col => col.field);
 
     setSelectedColumns(defaultColumns)
 
