@@ -2,7 +2,7 @@
   "name": "inventory-management",
   "version": "1.0.0",
   "scripts": {
-    "dev": "concurrently \"yarn blitz dev\" 'quirrel'",
+    "dev": "node sync_shopify_to_db.js && concurrently \"yarn blitz dev\" 'quirrel'",
     "build": "blitz build",
     "start": "blitz start",
     "studio": "blitz prisma studio",
