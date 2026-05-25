@@ -124,7 +124,7 @@ const columns = [
   },
   {
     field: "product_prices.averageCostPrice",
-    header: "Average Cost Price",
+    header: "Cost Price",
     filter: true,
     filterPlaceholder: "Search by Cost Price",
     body: (rowData) => <div className="hideLargeContent">{rowData.product_prices?.averageCostPrice !== null ? rowData.product_prices?.averageCostPrice : "N/A"}</div>
@@ -396,7 +396,7 @@ export const ProductsList = () => {
   // USE Effect
   // <===START===>
   useEffect(() => {
-    const defaultColumns = columns.filter(col => !["updatedAT", "product_types.type", "length", "width", "height", "weight", "customDuty", "taxCalcuation", "color", "hsnCode", "kit_products_kit_products_productIdToproducts", "gstTaxTypeCode", "product_prices.averageCostPrice"].includes(col.field)).map(col => col.field);
+    const defaultColumns = columns.filter(col => !["updatedAT", "product_types.type", "length", "width", "height", "weight", "customDuty", "taxCalcuation", "color", "hsnCode", "kit_products_kit_products_productIdToproducts", "gstTaxTypeCode"].includes(col.field)).map(col => col.field);
 
     setSelectedColumns(defaultColumns)
 

@@ -17,6 +17,11 @@ const query = `
         compareAtPrice
         title
         inventoryQuantity
+        inventoryItem {
+          unitCost {
+            amount
+          }
+        }
         product {
           id
           title
@@ -29,7 +34,12 @@ const query = `
 `;
 
 async function main() {
-  const skus = ['TIFIC0149', 'TIF3P0171'];
+  const skus = [
+    'TIFC00020', 'TIFC00150',
+    'DTIFPS0206', 'DTIFPS0226',
+    'TIFPS0503', 'TIFPS0507',
+    'TIFPS0642', 'TIFPS0644', 'TIFPS0646'
+  ];
   for (const sku of skus) {
     console.log(`Querying Shopify for SKU: ${sku}...`);
     const response = await axios.post(
