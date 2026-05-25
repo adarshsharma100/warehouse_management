@@ -52,6 +52,11 @@ export default resolver.pipe(
                 averageCostPrice: true,
               }
             },
+            inventory_products: {
+              select: {
+                quantity: true
+              }
+            },
             // images: {
             //   select: {
             //     imageUrl: true

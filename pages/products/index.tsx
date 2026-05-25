@@ -136,6 +136,16 @@ const columns = [
       filterPlaceholder: "Search by Price",
       body: (rowData) => <div className="hideLargeContent">{rowData.product_prices?.sellingPrice || "N/A"}</div>
     },
+    {
+      field: "available_stock",
+      header: "Available Stock",
+      filter: true,
+      filterPlaceholder: "Search by Stock",
+      body: (rowData) => {
+        const total = rowData.inventory_products?.reduce((acc, inv) => acc + (inv.quantity || 0), 0) ?? 0;
+        return <div className="hideLargeContent">{total}</div>;
+      }
+    },
   {
     field: "taxCalcuation",
     header: "Tax Calcuation"
@@ -199,6 +209,7 @@ const initialColumnFilters = {
   "product_types.type": initialFilterRules.andContains,
   "product_prices.averageCostPrice": initialFilterRules.andContains,
   "product_prices.sellingPrice": initialFilterRules.andContains,
+  available_stock: initialFilterRules.andContains,
 }
 
 const reducer = (state, { type, payload }) => {
@@ -385,7 +396,7 @@ export const ProductsList = () => {
   // USE Effect
   // <===START===>
   useEffect(() => {
-    const defaultColumns = columns.filter(col => !["updatedAt", "length", "width", "height", "weight", "customDuty", "taxCalcuation", "color", "hsnCode", "kit_products_kit_products_productIdToproducts", "gstTaxTypeCode", "product_prices.averageCostPrice"].includes(col.field)).map(col => col.field);
+    const defaultColumns = columns.filter(col => !["updatedAT", "product_types.type", "length", "width", "height", "weight", "customDuty", "taxCalcuation", "color", "hsnCode", "kit_products_kit_products_productIdToproducts", "gstTaxTypeCode", "product_prices.averageCostPrice"].includes(col.field)).map(col => col.field);
 
     setSelectedColumns(defaultColumns)
 
