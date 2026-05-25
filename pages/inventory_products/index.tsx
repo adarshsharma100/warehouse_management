@@ -221,6 +221,7 @@ export const Inventory_productsList = () => {
       header: "Available-Stock",
       filter: true,
       filterPlaceholder: "Search by Available stock",
+      body: (rowdata) => rowdata.shelves?.reduce((acc, { quantity }) => acc + (quantity || 0), 0) ?? 0,
     },
     {
       field: "size",
@@ -720,7 +721,7 @@ export const Inventory_productsList = () => {
   }, []);
 
   useEffect(() => {
-    const defaultColumns = columns.filter(col => !["size", "color", "brand",].includes(col.field))
+    const defaultColumns = columns.filter(col => !["size", "color", "brand", "good_stock", "bad_stock", "product.product_types.type"].includes(col.field))
       .map(col => col.field)
     setSelectedColumns(defaultColumns)
   }, [])

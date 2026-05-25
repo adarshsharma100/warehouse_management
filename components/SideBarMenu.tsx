@@ -43,6 +43,7 @@ const SideBarMenu = () => {
     },
     {
       label: "Depository",
+      expanded: true,
       items: [
         {
           label: "Warehouse",
