@@ -114,6 +114,20 @@ export const syncAllProducts = async (after = null) => {
               product_prices: { create: { sellingPrice: price, mrp: price } }
             }
           })
+        } else {
+          // Sync prices for existing products if they are missing or need update
+          await db.product_prices.upsert({
+            where: { productId: localProduct.id },
+            update: {
+              sellingPrice: price,
+              mrp: price,
+            },
+            create: {
+              productId: localProduct.id,
+              sellingPrice: price,
+              mrp: price,
+            }
+          })
         }
 
         // 2. Update Inventory / Stock Level

@@ -134,7 +134,7 @@ const columns = [
       header: "Selling Price",
       filter: true,
       filterPlaceholder: "Search by Price",
-      body: (rowData) => <div className="hideLargeContent">{rowData.product_prices?.sellingPrice ?? "N/A"}</div>
+      body: (rowData) => <div className="hideLargeContent">{rowData.product_prices?.sellingPrice || "N/A"}</div>
     },
   {
     field: "taxCalcuation",

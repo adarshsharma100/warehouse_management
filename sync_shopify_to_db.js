@@ -74,6 +74,10 @@ async function fetchAllProducts(since) {
         if (linkHeader) {
           const nextMatch = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
           url = nextMatch ? nextMatch[1] : null;
+          if (url) {
+            // sleep 500ms before next fetch to avoid Shopify rate limits
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
         } else {
           url = null;
         }
@@ -114,36 +118,105 @@ async function sync() {
       console.log(`Created default product type with id ${defaultProductType.id}`);
     }
 
+    // Optimization: pre-fetch brands, products and product prices into maps
+    console.log('Pre-fetching brands, products, and prices from DB...');
+    const brandsInDb = await prisma.product_brand.findMany();
+    const brandMap = new Map(brandsInDb.map(b => [b.name, b.id]));
+
+    const productsInDb = await prisma.products.findMany({
+      select: { id: true, sku: true }
+    });
+    const productMap = new Map(
+      productsInDb
+        .filter(p => p.sku)
+        .map(p => [p.sku.trim().toLowerCase(), p.id])
+    );
+
+    const pricesInDb = await prisma.product_prices.findMany();
+    const priceMap = new Map(pricesInDb.map(pr => [pr.productId, pr]));
+    console.log(`Loaded ${brandMap.size} brands, ${productMap.size} products, and ${priceMap.size} prices.`);
+
+    let productsCreated = 0;
+    let pricesCreated = 0;
+    let pricesUpdated = 0;
+    let productsSkipped = 0;
+
     for (const p of products) {
       const brandName = p.vendor || 'Unknown';
-        let brand = await prisma.product_brand.findFirst({ where: { name: brandName } });
-      if (!brand) {
-        brand = await prisma.product_brand.create({ data: { name: brandName } });
+      let brandId = brandMap.get(brandName);
+      if (!brandId) {
+        const brand = await prisma.product_brand.create({ data: { name: brandName } });
+        brandId = brand.id;
+        brandMap.set(brandName, brandId);
         console.log(`Created brand: ${brandName}`);
       }
-      const sku = p.variants?.[0]?.sku;
-      if (!sku) {
-        console.warn(`Product ${p.id} has no SKU – skipping`);
+
+      const rawSku = p.variants?.[0]?.sku;
+      if (!rawSku) {
         continue;
       }
+      const sku = rawSku.trim();
+      const normalizedSku = sku.toLowerCase();
+      
+      let productId = productMap.get(normalizedSku);
       const truncatedName = p.title?.substring(0, 100) || '';
-      await prisma.products.upsert({
-        where: { sku },
-        // No update – we only want to insert new products. Existing rows keep their data,
-        // including the brand relationship that was set on first insert.
-        update: {},
-        create: {
-          sku,
-          name: truncatedName,
-          description: p.body_html || '',
-          brand: brand.id,
-          dimensionsId: defaultDimensions.id,
-          type: defaultProductType.id,
-        },
-      });
-      console.log(`Synced SKU ${sku} (Shopify ID ${p.id})`);
+
+      if (!productId) {
+        const localProduct = await prisma.products.create({
+          data: {
+            sku,
+            name: truncatedName,
+            description: p.body_html || '',
+            brand: brandId,
+            dimensionsId: defaultDimensions.id,
+            type: defaultProductType.id,
+          },
+        });
+        productId = localProduct.id;
+        productMap.set(normalizedSku, productId);
+        productsCreated++;
+      } else {
+        productsSkipped++;
+      }
+
+      const firstVariant = p.variants?.[0];
+      if (firstVariant) {
+        const priceVal = firstVariant.price ? Math.round(parseFloat(firstVariant.price)) : 0;
+        const mrpVal = firstVariant.compare_at_price ? Math.round(parseFloat(firstVariant.compare_at_price)) : priceVal;
+
+        const existingPrice = priceMap.get(productId);
+        if (!existingPrice) {
+          const newPrice = await prisma.product_prices.create({
+            data: {
+              productId,
+              sellingPrice: priceVal,
+              mrp: mrpVal,
+            },
+          });
+          priceMap.set(productId, newPrice);
+          pricesCreated++;
+          console.log(`Created missing price for SKU ${sku} (Price: ${priceVal}, MRP: ${mrpVal})`);
+        } else if (existingPrice.sellingPrice !== priceVal || existingPrice.mrp !== mrpVal) {
+          const updatedPrice = await prisma.product_prices.update({
+            where: { id: existingPrice.id },
+            data: {
+              sellingPrice: priceVal,
+              mrp: mrpVal,
+            },
+          });
+          priceMap.set(productId, updatedPrice);
+          pricesUpdated++;
+          console.log(`Updated price for SKU ${sku} (Price: ${existingPrice.sellingPrice} -> ${priceVal}, MRP: ${existingPrice.mrp} -> ${mrpVal})`);
+        }
+      }
     }
-    console.log('✅ Sync complete');
+
+    console.log(`✅ Sync complete:`);
+    console.log(`   - New products created: ${productsCreated}`);
+    console.log(`   - Existing products matched: ${productsSkipped}`);
+    console.log(`   - Missing prices created: ${pricesCreated}`);
+    console.log(`   - Prices updated: ${pricesUpdated}`);
+
     // Determine the newest updated_at among the fetched products and store it.
     const latestTimestamp = products.reduce((max, p) => {
       const t = p.updated_at || '';
