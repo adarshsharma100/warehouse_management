@@ -70,6 +70,19 @@ const initialState = {
 };
 
 
+const stripHtmlTags = (html: string | null | undefined): string => {
+  if (!html) return "";
+  return html
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim();
+}
+
 const columns = [
   {
     field: "sku",
@@ -97,23 +110,23 @@ const columns = [
 
   {
     field: "dimensions.length",
-    header: "Length",
-    body: (rowData) => <div>{rowData.dimensions?.length !== null && rowData.dimensions?.length !== undefined ? rowData.dimensions.length : "-"}</div>
+    header: "Length (cm)",
+    body: (rowData) => <div>{rowData.dimensions?.length !== null && rowData.dimensions?.length !== undefined ? `${rowData.dimensions.length} cm` : "-"}</div>
   },
   {
     field: "dimensions.width",
-    header: "Width",
-    body: (rowData) => <div>{rowData.dimensions?.width !== null && rowData.dimensions?.width !== undefined ? rowData.dimensions.width : "-"}</div>
+    header: "Width (cm)",
+    body: (rowData) => <div>{rowData.dimensions?.width !== null && rowData.dimensions?.width !== undefined ? `${rowData.dimensions.width} cm` : "-"}</div>
   },
   {
     field: "dimensions.height",
-    header: "Height",
-    body: (rowData) => <div>{rowData.dimensions?.height !== null && rowData.dimensions?.height !== undefined ? rowData.dimensions.height : "-"}</div>
+    header: "Height (cm)",
+    body: (rowData) => <div>{rowData.dimensions?.height !== null && rowData.dimensions?.height !== undefined ? `${rowData.dimensions.height} cm` : "-"}</div>
   },
   {
     field: "dimensions.weight",
-    header: "Weight",
-    body: (rowData) => <div>{rowData.dimensions?.weight !== null && rowData.dimensions?.weight !== undefined ? rowData.dimensions.weight : "-"}</div>
+    header: "Weight (g)",
+    body: (rowData) => <div>{rowData.dimensions?.weight !== null && rowData.dimensions?.weight !== undefined ? `${rowData.dimensions.weight} g` : "-"}</div>
   },
   {
     field: "color",
@@ -165,7 +178,7 @@ const columns = [
     header: "Description",
     filter: true,
     filterPlaceholder: "Search by Description",
-    body: ({ description }) => <div className="hideLargeContent">{description}</div>
+    body: ({ description }) => <div className="hideLargeContent">{stripHtmlTags(description)}</div>
   },
 
   {
@@ -1498,37 +1511,6 @@ export const ProductsList = () => {
             filterDisplay="menu"
             emptyMessage="No Results found."
             rowHover={true}
-            onRowClick={async (e) => {
-              setActiveRowData({ ...e.data })
-              setActiveProduct(true)
-              setProductDialog(true)
-              console.log("row data click", e.data);
-
-              setSelectedStatus(e.data.product_types)
-
-
-              const _kitData = e.data.kit_products_kit_products_productIdToproducts?.map((prod) => {
-                const { products_kit_products_kitProductIdToproducts: product, quantity, id: kitId } = prod
-                return ({
-                  product: { name: `${product.sku}-${product.name}`, id: product?.id, },
-                  quantity,
-                  kitId,
-                })
-              });
-              setInputs(_kitData)
-
-              await formik.setValues({
-                ...e.data,
-                type: e?.data?.type,
-                category: e.data.product_categories,
-                gstTaxTypeCode: e?.data?.gstTaxTypeCode,
-                taxCalcuation: e?.data?.taxCalcType,
-                kitProducts: _kitData,
-                brand: e?.data.product_brand,
-
-              })
-              scrolToTop?.current && scrolToTop?.current.scrollIntoView()
-            }}
           >
             {columnComponents}
           </DataTable>

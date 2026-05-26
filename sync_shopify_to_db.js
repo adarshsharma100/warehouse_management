@@ -53,7 +53,7 @@ function saveLastSync(timestamp) {
 async function fetchAllProducts(since) {
   const allProducts = [];
   // Request only needed fields, include updated_at for incremental logic
-  let url = `${baseEndpoint}&fields=id,title,body_html,vendor,variants,updated_at&updated_at_min=${encodeURIComponent(since)}`;
+  let url = `${baseEndpoint}&fields=id,title,body_html,vendor,variants,image,updated_at&updated_at_min=${encodeURIComponent(since)}`;
   while (url) {
     let attempts = 0;
     while (attempts < 3) {
@@ -222,6 +222,7 @@ async function sync() {
             dimensionsId: dimsId,
             type: defaultProductType.id,
             hsnCode: hsnCodeVal,
+            imageUrl: p.image?.src || null,
           },
         });
         productId = localProduct.id;
@@ -233,6 +234,7 @@ async function sync() {
           where: { id: productId },
           select: {
             hsnCode: true,
+            imageUrl: true,
             dimensionsId: true,
             dimensions: {
               select: { length: true, width: true, height: true, weight: true }
@@ -241,22 +243,26 @@ async function sync() {
         });
 
         if (existingProduct) {
+          const imageUrlVal = p.image?.src || null;
           const hsnChanged = existingProduct.hsnCode !== hsnCodeVal;
+          const imageChanged = existingProduct.imageUrl !== imageUrlVal;
           const dimensionsChanged = !existingProduct.dimensions ||
             existingProduct.dimensions.weight !== weightVal ||
             existingProduct.dimensions.length !== lengthVal ||
             existingProduct.dimensions.height !== heightVal ||
             existingProduct.dimensions.width !== widthVal;
 
-          if (hsnChanged || dimensionsChanged) {
+          if (hsnChanged || imageChanged || dimensionsChanged) {
+            const dataToUpdate = {};
+            if (hsnChanged) dataToUpdate.hsnCode = hsnCodeVal;
+            if (imageChanged) dataToUpdate.imageUrl = imageUrlVal;
+
             if (existingProduct.dimensionsId === defaultDimensions.id) {
               if (weightVal === 0 && lengthVal === 0 && heightVal === 0 && widthVal === 0) {
-                if (hsnChanged) {
-                  await prisma.products.update({
-                    where: { id: productId },
-                    data: { hsnCode: hsnCodeVal }
-                  });
-                }
+                await prisma.products.update({
+                  where: { id: productId },
+                  data: dataToUpdate
+                });
               } else {
                 const newDims = await prisma.dimensions.create({
                   data: { length: lengthVal, width: widthVal, height: heightVal, weight: weightVal }
@@ -264,19 +270,21 @@ async function sync() {
                 await prisma.products.update({
                   where: { id: productId },
                   data: {
-                    hsnCode: hsnCodeVal,
+                    ...dataToUpdate,
                     dimensionsId: newDims.id
                   }
                 });
               }
             } else {
-              await prisma.dimensions.update({
-                where: { id: existingProduct.dimensionsId },
-                data: { length: lengthVal, width: widthVal, height: heightVal, weight: weightVal }
-              });
+              if (dimensionsChanged) {
+                await prisma.dimensions.update({
+                  where: { id: existingProduct.dimensionsId },
+                  data: { length: lengthVal, width: widthVal, height: heightVal, weight: weightVal }
+                });
+              }
               await prisma.products.update({
                 where: { id: productId },
-                data: { hsnCode: hsnCodeVal }
+                data: dataToUpdate
               });
             }
           }
