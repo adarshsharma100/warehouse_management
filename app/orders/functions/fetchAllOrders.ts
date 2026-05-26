@@ -29,6 +29,14 @@ const ordersQuery = gql`
           nodes {
             sku
             quantity
+            discountedTotalSet {
+              presentmentMoney {
+                amount
+              }
+              shopMoney {
+                amount
+              }
+            }
             product {
               description
               title
