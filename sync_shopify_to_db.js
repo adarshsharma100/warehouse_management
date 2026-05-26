@@ -226,6 +226,15 @@ async function sync() {
     saveLastSync(ts);
     console.log(`Saved last sync timestamp: ${ts}`);
 
+    // Automatically run the merge script after syncing
+    try {
+      console.log('🔄 Running merge_duplicate_products.js...');
+      const { execSync } = require('child_process');
+      execSync('node merge_duplicate_products.js', { stdio: 'inherit' });
+    } catch (mergeErr) {
+      console.error('Error running merge script:', mergeErr.message);
+    }
+
   } catch (err) {
     console.error('Error during sync:', err.response?.data || err.message);
     process.exit(1);

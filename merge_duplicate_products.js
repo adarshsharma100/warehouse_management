@@ -29,7 +29,23 @@ const mergeMapping = [
 ];
 
 async function mergeProduct(mapping) {
-  const { fromId, toId, fromSku, toSku, name } = mapping;
+  const { fromSku, toSku, name } = mapping;
+
+  const fromProduct = await prisma.products.findUnique({ where: { sku: fromSku } });
+  const toProduct = await prisma.products.findUnique({ where: { sku: toSku } });
+
+  if (!fromProduct) {
+    console.log(`Product with SKU ${fromSku} not found. Skipping merge.`);
+    return;
+  }
+  if (!toProduct) {
+    console.log(`Product with SKU ${toSku} not found. Skipping merge.`);
+    return;
+  }
+
+  const fromId = fromProduct.id;
+  const toId = toProduct.id;
+
   console.log(`\n==================================================`);
   console.log(`Merging "${name}":`);
   console.log(`  From: ID ${fromId} (SKU: ${fromSku})`);
