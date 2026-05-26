@@ -1,5 +1,7 @@
 import { Suspense, useState, useRef, useEffect, useReducer, useCallback, useTransition } from "react"
 import { useMutation, useQuery, usePaginatedQuery } from "@blitzjs/rpc"
+import { Routes } from "@blitzjs/next"
+import Link from "next/link"
 import { BlobServiceClient, ContainerClient } from '@azure/storage-blob';
 import { v4 as uuidv4 } from 'uuid';
 import papa from "papaparse"
@@ -74,7 +76,11 @@ const columns = [
     header: "SKU",
     filter: true,
     filterPlaceholder: "Search by Sku",
-    body: rowData => <a href='/products/id'>{rowData.sku} </a>
+    body: rowData => (
+      <Link href={Routes.ShowProductPage({ productId: rowData.id })}>
+        <a>{rowData.sku}</a>
+      </Link>
+    )
   },
   {
     field: "name",
@@ -90,20 +96,24 @@ const columns = [
   },
 
   {
-    field: "length",
-    header: "Length"
+    field: "dimensions.length",
+    header: "Length",
+    body: (rowData) => <div>{rowData.dimensions?.length !== null && rowData.dimensions?.length !== undefined ? rowData.dimensions.length : "-"}</div>
   },
   {
-    field: "width",
-    header: "Width"
+    field: "dimensions.width",
+    header: "Width",
+    body: (rowData) => <div>{rowData.dimensions?.width !== null && rowData.dimensions?.width !== undefined ? rowData.dimensions.width : "-"}</div>
   },
   {
-    field: "height",
-    header: "Height"
+    field: "dimensions.height",
+    header: "Height",
+    body: (rowData) => <div>{rowData.dimensions?.height !== null && rowData.dimensions?.height !== undefined ? rowData.dimensions.height : "-"}</div>
   },
   {
-    field: "weight",
-    header: "Weight"
+    field: "dimensions.weight",
+    header: "Weight",
+    body: (rowData) => <div>{rowData.dimensions?.weight !== null && rowData.dimensions?.weight !== undefined ? rowData.dimensions.weight : "-"}</div>
   },
   {
     field: "color",
@@ -396,7 +406,7 @@ export const ProductsList = () => {
   // USE Effect
   // <===START===>
   useEffect(() => {
-    const defaultColumns = columns.filter(col => !["updatedAT", "product_types.type", "length", "width", "height", "weight", "customDuty", "taxCalcuation", "color", "hsnCode", "kit_products_kit_products_productIdToproducts", "gstTaxTypeCode"].includes(col.field)).map(col => col.field);
+    const defaultColumns = columns.filter(col => !["updatedAT", "product_types.type", "dimensions.length", "dimensions.width", "dimensions.height", "dimensions.weight", "customDuty", "taxCalcuation", "color", "hsnCode", "kit_products_kit_products_productIdToproducts", "gstTaxTypeCode"].includes(col.field)).map(col => col.field);
 
     setSelectedColumns(defaultColumns)
 

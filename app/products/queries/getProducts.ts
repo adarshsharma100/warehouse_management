@@ -38,6 +38,7 @@ export default resolver.pipe(
 
               }
             },
+            dimensions: true,
             product_categories: true,
             product_types: true,
             product_brand: {

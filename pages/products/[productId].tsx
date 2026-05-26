@@ -20,68 +20,40 @@ export const Product = () => {
   const productId = useParam("productId", "number")
   
   const [deleteProductMutation] = useMutation(deleteProduct)
-  // const [product] = useQuery(getProduct, { id: productId })
+  const [product] = useQuery(getProduct, { id: productId! }) as [any, any]
 
   const object = {
-    Name: "3D Pen- Good Quality (Multicolour) ",
-    Type: "SIMPLE",
-    SKU: "TIF3P0001",
-    Code: "123456",
-    Category: "3D Printer",
-    Length: "40",
-    Width: "80",
-    Height: "80",
-    Color: "Black",
-    Brand: "name",
-    TaxTypeCode: "12365479885",
-    GstTaxTypeCode: "8778411445rtcf",
-    HSNCode: "84439940",
-    Tags: "tags",
-    CostPrice: "price/-",
-    MRP: "649/-",
-    BasePrice: "base price/-",
-    Enabled: "Yes",
-    TaxCalculationType: "tax calculation type",
+    Name: product.name || "-",
+    Type: product.product_types?.type || "-",
+    SKU: product.sku || "-",
+    Code: product.id.toString(),
+    Category: product.product_categories?.name || "-",
+    Length: product.dimensions?.length?.toString() || "-",
+    Width: product.dimensions?.width?.toString() || "-",
+    Height: product.dimensions?.height?.toString() || "-",
+    Weight: product.dimensions?.weight?.toString() || "-",
+    Color: product.color || "-",
+    Brand: product.product_brand?.name || "-",
+    TaxTypeCode: product.customDuty || "-",
+    GstTaxTypeCode: product.gstTaxTypeCode || "-",
+    HSNCode: product.hsnCode || "-",
+    Tags: "-",
+    CostPrice: product.product_prices?.averageCostPrice !== null && product.product_prices?.averageCostPrice !== undefined ? `${product.product_prices.averageCostPrice}/-` : "-",
+    MRP: product.product_prices?.mrp !== null && product.product_prices?.mrp !== undefined ? `${product.product_prices.mrp}/-` : "-",
+    BasePrice: product.product_prices?.sellingPrice !== null && product.product_prices?.sellingPrice !== undefined ? `${product.product_prices.sellingPrice}/-` : "-",
+    Enabled: product.status || "-",
+    TaxCalculationType: product.taxCalcType || "-",
   }
   // const obj = Object.entries(object)
   const obj = Object.entries(object).map(([key, value]) => ({ key, value }));
 
   const item = [
     {
-      itemImageSrc: "https://m.media-amazon.com/images/I/41pxcui7YpL._SY445_SX342_QL70_FMwebp_.jpg",
-      thumbnailImageSrc:
-        "https://m.media-amazon.com/images/I/41pxcui7YpL._SX38_SY50_CR,0,0,38,50_.jpg",
-      alt: "Description for Image 1",
-      title: "Title 1",
-    },
-    {
-      itemImageSrc: "https://m.media-amazon.com/images/I/41qy3JdP8tL._SX522_.jpg",
-      thumbnailImageSrc:
-        "https://m.media-amazon.com/images/I/21fJ7Bdd93L._SX38_SY50_CR,0,0,38,50_.jpg",
-      alt: "Description for Image 2",
-      title: "Title 2",
-    },
-    {
-      itemImageSrc: "https://m.media-amazon.com/images/I/51jkoGBksZL._SX522_.jpg",
-      thumbnailImageSrc:
-        "https://m.media-amazon.com/images/I/41fMCaIULOL._SX38_SY50_CR,0,0,38,50_.jpg",
-      alt: "Description for Image 3",
-      title: "Title 3",
-    },
-    {
-      itemImageSrc: "https://m.media-amazon.com/images/I/41-DWClDQnL._SX522_.jpg",
-      thumbnailImageSrc:
-        "https://m.media-amazon.com/images/I/2184TSCRHzL._SX38_SY50_CR,0,0,38,50_.jpg",
-      alt: "Description for Image 4",
-      title: "Title 4",
-    },
-    {
-      itemImageSrc: "https://m.media-amazon.com/images/I/71K1Joe6c6L._SX522_.jpg",
-      thumbnailImageSrc:
-        "https://m.media-amazon.com/images/I/41jxCFS+6VL._SX38_SY50_CR,0,0,38,50_.jpg",
-      alt: "Description for Image 5",
-      title: "Title 5",
-    },
+      itemImageSrc: product.imageUrl || "https://m.media-amazon.com/images/I/41pxcui7YpL._SY445_SX342_QL70_FMwebp_.jpg",
+      thumbnailImageSrc: product.imageUrl || "https://m.media-amazon.com/images/I/41pxcui7YpL._SX38_SY50_CR,0,0,38,50_.jpg",
+      alt: product.name,
+      title: product.name,
+    }
   ]
 
   const [active, setActive] = useState(false)
@@ -196,11 +168,7 @@ export const Product = () => {
 
             <p className="text-3xl font-bold">Description</p>
             <p className=" text-xl">
-              Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum
-              has been the industry's standard dummy text ever since the 1500s, when an unknown
-              printer took a galley of type and scrambled it to make a type specimen book. It has
-              survived not only five centuries, but also the leap into electronic typesetting,
-              remaining essentially unchanged.{" "}
+              {product.description || "No description available."}
             </p>
           </div>
         </div>

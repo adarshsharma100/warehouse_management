@@ -9,6 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const { PrismaClient } = require('@prisma/client');
+const papa = require('papaparse');
 // Axios instance with higher timeout for large payloads
 const api = axios.create({ timeout: 30000 });
 // const LAST_SYNC_FILE = path.join(__dirname, '.last_sync'); // deprecated, using sync_state.json
@@ -101,6 +102,36 @@ async function sync() {
   console.log('🔄 Starting incremental Shopify sync...');
   const lastSync = loadLastSync();
   console.log(`Loaded last sync timestamp: ${lastSync}`);
+
+  // Read and parse product-HSN.csv if available
+  const csvPath = path.resolve(__dirname, 'product-HSN.csv');
+  const csvMap = new Map();
+  if (fs.existsSync(csvPath)) {
+    console.log('Reading and parsing product-HSN.csv...');
+    try {
+      const fileContent = fs.readFileSync(csvPath, 'utf8');
+      const parsed = papa.parse(fileContent, {
+        header: true,
+        skipEmptyLines: true,
+      });
+      for (const row of parsed.data) {
+        if (row.SKU) {
+          const cleanSku = row.SKU.replace(/`/g, '').trim().toLowerCase();
+          csvMap.set(cleanSku, row);
+        }
+      }
+      console.log(`Loaded ${csvMap.size} SKUs from product-HSN.csv.`);
+    } catch (csvErr) {
+      console.error('Error parsing product-HSN.csv:', csvErr.message);
+    }
+  } else {
+    console.warn('Warning: product-HSN.csv not found in the project root.');
+  }
+
+  function matchValue(val) {
+    return val ? val.replace(/`/g, '') : '0';
+  }
+
   console.log(`Fetching products changed since ${lastSync}`);
   try {
     const products = await fetchAllProducts(lastSync);
@@ -161,21 +192,95 @@ async function sync() {
       let productId = productMap.get(normalizedSku);
       const truncatedName = p.title?.substring(0, 100) || '';
 
+      const csvMatch = csvMap.get(normalizedSku);
+      let hsnCodeVal = null;
+      let weightVal = 0, lengthVal = 0, heightVal = 0, widthVal = 0;
+      if (csvMatch) {
+        hsnCodeVal = csvMatch.ProductTaxCode ? csvMatch.ProductTaxCode.replace(/`/g, '').trim() : null;
+        weightVal = csvMatch['Weight(gms)'] ? parseFloat(matchValue(csvMatch['Weight(gms)'])) : 0;
+        lengthVal = csvMatch['Length(cms)'] ? parseFloat(matchValue(csvMatch['Length(cms)'])) : 0;
+        heightVal = csvMatch['Height(cms)'] ? parseFloat(matchValue(csvMatch['Height(cms)'])) : 0;
+        widthVal = csvMatch['Width(cms)'] ? parseFloat(matchValue(csvMatch['Width(cms)'])) : 0;
+      }
+
       if (!productId) {
+        // Determine dimensions record
+        let dimsId = defaultDimensions.id;
+        if (weightVal !== 0 || lengthVal !== 0 || heightVal !== 0 || widthVal !== 0) {
+          const newDims = await prisma.dimensions.create({
+            data: { length: lengthVal, width: widthVal, height: heightVal, weight: weightVal }
+          });
+          dimsId = newDims.id;
+        }
+
         const localProduct = await prisma.products.create({
           data: {
             sku,
             name: truncatedName,
             description: p.body_html || '',
             brand: brandId,
-            dimensionsId: defaultDimensions.id,
+            dimensionsId: dimsId,
             type: defaultProductType.id,
+            hsnCode: hsnCodeVal,
           },
         });
         productId = localProduct.id;
         productMap.set(normalizedSku, productId);
         productsCreated++;
       } else {
+        // If product already exists, update HSN and dimensions if they changed
+        const existingProduct = await prisma.products.findUnique({
+          where: { id: productId },
+          select: {
+            hsnCode: true,
+            dimensionsId: true,
+            dimensions: {
+              select: { length: true, width: true, height: true, weight: true }
+            }
+          }
+        });
+
+        if (existingProduct) {
+          const hsnChanged = existingProduct.hsnCode !== hsnCodeVal;
+          const dimensionsChanged = !existingProduct.dimensions ||
+            existingProduct.dimensions.weight !== weightVal ||
+            existingProduct.dimensions.length !== lengthVal ||
+            existingProduct.dimensions.height !== heightVal ||
+            existingProduct.dimensions.width !== widthVal;
+
+          if (hsnChanged || dimensionsChanged) {
+            if (existingProduct.dimensionsId === defaultDimensions.id) {
+              if (weightVal === 0 && lengthVal === 0 && heightVal === 0 && widthVal === 0) {
+                if (hsnChanged) {
+                  await prisma.products.update({
+                    where: { id: productId },
+                    data: { hsnCode: hsnCodeVal }
+                  });
+                }
+              } else {
+                const newDims = await prisma.dimensions.create({
+                  data: { length: lengthVal, width: widthVal, height: heightVal, weight: weightVal }
+                });
+                await prisma.products.update({
+                  where: { id: productId },
+                  data: {
+                    hsnCode: hsnCodeVal,
+                    dimensionsId: newDims.id
+                  }
+                });
+              }
+            } else {
+              await prisma.dimensions.update({
+                where: { id: existingProduct.dimensionsId },
+                data: { length: lengthVal, width: widthVal, height: heightVal, weight: weightVal }
+              });
+              await prisma.products.update({
+                where: { id: productId },
+                data: { hsnCode: hsnCodeVal }
+              });
+            }
+          }
+        }
         productsSkipped++;
       }
 
@@ -216,6 +321,84 @@ async function sync() {
     console.log(`   - Existing products matched: ${productsSkipped}`);
     console.log(`   - Missing prices created: ${pricesCreated}`);
     console.log(`   - Prices updated: ${pricesUpdated}`);
+
+    // 5. Bulk check and sync local DB products against local CSV to ensure HSN and dimensions are up-to-date
+    if (csvMap.size > 0) {
+      console.log('🔄 Checking database products against product-HSN.csv for updates...');
+      const allDbProducts = await prisma.products.findMany({
+        select: {
+          id: true,
+          sku: true,
+          dimensionsId: true,
+          hsnCode: true,
+          dimensions: {
+            select: { length: true, width: true, height: true, weight: true }
+          }
+        }
+      });
+
+      let csvMatchedCount = 0;
+      let csvUpdatedCount = 0;
+
+      for (const product of allDbProducts) {
+        if (!product.sku) continue;
+        const cleanSku = product.sku.trim().toLowerCase();
+        const csvMatch = csvMap.get(cleanSku);
+        if (!csvMatch) continue;
+
+        csvMatchedCount++;
+
+        const hsnCodeVal = csvMatch.ProductTaxCode ? csvMatch.ProductTaxCode.replace(/`/g, '').trim() : null;
+        const weightVal = csvMatch['Weight(gms)'] ? parseFloat(matchValue(csvMatch['Weight(gms)'])) : 0;
+        const lengthVal = csvMatch['Length(cms)'] ? parseFloat(matchValue(csvMatch['Length(cms)'])) : 0;
+        const heightVal = csvMatch['Height(cms)'] ? parseFloat(matchValue(csvMatch['Height(cms)'])) : 0;
+        const widthVal = csvMatch['Width(cms)'] ? parseFloat(matchValue(csvMatch['Width(cms)'])) : 0;
+
+        const hsnChanged = product.hsnCode !== hsnCodeVal;
+        const dimensionsChanged = !product.dimensions ||
+          product.dimensions.weight !== weightVal ||
+          product.dimensions.length !== lengthVal ||
+          product.dimensions.height !== heightVal ||
+          product.dimensions.width !== widthVal;
+
+        if (hsnChanged || dimensionsChanged) {
+          if (product.dimensionsId === defaultDimensions.id) {
+            if (weightVal === 0 && lengthVal === 0 && heightVal === 0 && widthVal === 0) {
+              if (hsnChanged) {
+                await prisma.products.update({
+                  where: { id: product.id },
+                  data: { hsnCode: hsnCodeVal }
+                });
+                csvUpdatedCount++;
+              }
+            } else {
+              const newDims = await prisma.dimensions.create({
+                data: { length: lengthVal, width: widthVal, height: heightVal, weight: weightVal }
+              });
+              await prisma.products.update({
+                where: { id: product.id },
+                data: {
+                  hsnCode: hsnCodeVal,
+                  dimensionsId: newDims.id
+                }
+              });
+              csvUpdatedCount++;
+            }
+          } else {
+            await prisma.dimensions.update({
+              where: { id: product.dimensionsId },
+              data: { length: lengthVal, width: widthVal, height: heightVal, weight: weightVal }
+            });
+            await prisma.products.update({
+              where: { id: product.id },
+              data: { hsnCode: hsnCodeVal }
+            });
+            csvUpdatedCount++;
+          }
+        }
+      }
+      console.log(`   - Checked ${allDbProducts.length} products. Matched ${csvMatchedCount}. CSV-updated: ${csvUpdatedCount}.`);
+    }
 
     // Determine the newest updated_at among the fetched products and store it.
     const latestTimestamp = products.reduce((max, p) => {
