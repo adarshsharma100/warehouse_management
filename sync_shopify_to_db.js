@@ -14,7 +14,6 @@ const papa = require('papaparse');
 const api = axios.create({ timeout: 30000 });
 // const LAST_SYNC_FILE = path.join(__dirname, '.last_sync'); // deprecated, using sync_state.json
 
-
 const prisma = new PrismaClient();
 
 const storeName = process.env.SHOPIFY_STORE_NAME;
@@ -73,7 +72,7 @@ async function fetchAllProducts(since) {
         }
         const linkHeader = response.headers['link'];
         if (linkHeader) {
-          const nextMatch = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
+          const nextMatch = linkHeader.match(/<(.*?)>;\s*rel="next"/);
           url = nextMatch ? nextMatch[1] : null;
           if (url) {
             // sleep 500ms before next fetch to avoid Shopify rate limits
@@ -155,12 +154,21 @@ async function sync() {
     const brandMap = new Map(brandsInDb.map(b => [b.name, b.id]));
 
     const productsInDb = await prisma.products.findMany({
-      select: { id: true, sku: true }
+      select: {
+        id: true,
+        sku: true,
+        hsnCode: true,
+        imageUrl: true,
+        dimensionsId: true,
+        dimensions: {
+          select: { length: true, width: true, height: true, weight: true }
+        }
+      }
     });
     const productMap = new Map(
       productsInDb
         .filter(p => p.sku)
-        .map(p => [p.sku.trim().toLowerCase(), p.id])
+        .map(p => [p.sku.trim().toLowerCase(), p])
     );
 
     const pricesInDb = await prisma.product_prices.findMany();
@@ -172,7 +180,13 @@ async function sync() {
     let pricesUpdated = 0;
     let productsSkipped = 0;
 
+    let syncProgress = 0;
     for (const p of products) {
+      syncProgress++;
+      if (syncProgress % 50 === 0 || syncProgress === products.length) {
+        console.log(`   - Synced ${syncProgress}/${products.length} products...`);
+      }
+
       const brandName = p.vendor || 'Unknown';
       let brandId = brandMap.get(brandName);
       if (!brandId) {
@@ -188,8 +202,9 @@ async function sync() {
       }
       const sku = rawSku.trim();
       const normalizedSku = sku.toLowerCase();
-      
-      let productId = productMap.get(normalizedSku);
+
+      const existingProduct = productMap.get(normalizedSku);
+      let productId = existingProduct?.id;
       const truncatedName = p.title?.substring(0, 100) || '';
 
       const csvMatch = csvMap.get(normalizedSku);
@@ -226,22 +241,24 @@ async function sync() {
           },
         });
         productId = localProduct.id;
-        productMap.set(normalizedSku, productId);
-        productsCreated++;
-      } else {
-        // If product already exists, update HSN and dimensions if they changed
-        const existingProduct = await prisma.products.findUnique({
-          where: { id: productId },
-          select: {
-            hsnCode: true,
-            imageUrl: true,
-            dimensionsId: true,
-            dimensions: {
-              select: { length: true, width: true, height: true, weight: true }
-            }
-          }
+
+        productMap.set(normalizedSku, {
+          id: productId,
+          sku,
+          hsnCode: hsnCodeVal,
+          imageUrl: p.image?.src || null,
+          dimensionsId: dimsId,
+          dimensions: (weightVal !== 0 || lengthVal !== 0 || heightVal !== 0 || widthVal !== 0) ? {
+            length: lengthVal,
+            width: widthVal,
+            height: heightVal,
+            weight: weightVal
+          } : null
         });
 
+        productsCreated++;
+      } else {
+        // Update existing product if needed
         if (existingProduct) {
           const imageUrlVal = p.image?.src || null;
           const hsnChanged = existingProduct.hsnCode !== hsnCodeVal;
@@ -269,11 +286,10 @@ async function sync() {
                 });
                 await prisma.products.update({
                   where: { id: productId },
-                  data: {
-                    ...dataToUpdate,
-                    dimensionsId: newDims.id
-                  }
+                  data: { ...dataToUpdate, dimensionsId: newDims.id }
                 });
+                existingProduct.dimensionsId = newDims.id;
+                existingProduct.dimensions = { length: lengthVal, width: widthVal, height: heightVal, weight: weightVal };
               }
             } else {
               if (dimensionsChanged) {
@@ -286,7 +302,14 @@ async function sync() {
                 where: { id: productId },
                 data: dataToUpdate
               });
+              if (!existingProduct.dimensions) existingProduct.dimensions = {};
+              existingProduct.dimensions.length = lengthVal;
+              existingProduct.dimensions.width = widthVal;
+              existingProduct.dimensions.height = heightVal;
+              existingProduct.dimensions.weight = weightVal;
             }
+            if (hsnChanged) existingProduct.hsnCode = hsnCodeVal;
+            if (imageChanged) existingProduct.imageUrl = imageUrlVal;
           }
         }
         productsSkipped++;
@@ -300,11 +323,7 @@ async function sync() {
         const existingPrice = priceMap.get(productId);
         if (!existingPrice) {
           const newPrice = await prisma.product_prices.create({
-            data: {
-              productId,
-              sellingPrice: priceVal,
-              mrp: mrpVal,
-            },
+            data: { productId, sellingPrice: priceVal, mrp: mrpVal }
           });
           priceMap.set(productId, newPrice);
           pricesCreated++;
@@ -312,10 +331,7 @@ async function sync() {
         } else if (existingPrice.sellingPrice !== priceVal || existingPrice.mrp !== mrpVal) {
           const updatedPrice = await prisma.product_prices.update({
             where: { id: existingPrice.id },
-            data: {
-              sellingPrice: priceVal,
-              mrp: mrpVal,
-            },
+            data: { sellingPrice: priceVal, mrp: mrpVal }
           });
           priceMap.set(productId, updatedPrice);
           pricesUpdated++;
@@ -339,16 +355,19 @@ async function sync() {
           sku: true,
           dimensionsId: true,
           hsnCode: true,
-          dimensions: {
-            select: { length: true, width: true, height: true, weight: true }
-          }
+          dimensions: { select: { length: true, width: true, height: true, weight: true } }
         }
       });
 
       let csvMatchedCount = 0;
       let csvUpdatedCount = 0;
+      let csvCheckProgress = 0;
 
       for (const product of allDbProducts) {
+        csvCheckProgress++;
+        if (csvCheckProgress % 500 === 0 || csvCheckProgress === allDbProducts.length) {
+          console.log(`   - Checked ${csvCheckProgress}/${allDbProducts.length} database products against HSN CSV...`);
+        }
         if (!product.sku) continue;
         const cleanSku = product.sku.trim().toLowerCase();
         const csvMatch = csvMap.get(cleanSku);
@@ -373,34 +392,17 @@ async function sync() {
           if (product.dimensionsId === defaultDimensions.id) {
             if (weightVal === 0 && lengthVal === 0 && heightVal === 0 && widthVal === 0) {
               if (hsnChanged) {
-                await prisma.products.update({
-                  where: { id: product.id },
-                  data: { hsnCode: hsnCodeVal }
-                });
+                await prisma.products.update({ where: { id: product.id }, data: { hsnCode: hsnCodeVal } });
                 csvUpdatedCount++;
               }
             } else {
-              const newDims = await prisma.dimensions.create({
-                data: { length: lengthVal, width: widthVal, height: heightVal, weight: weightVal }
-              });
-              await prisma.products.update({
-                where: { id: product.id },
-                data: {
-                  hsnCode: hsnCodeVal,
-                  dimensionsId: newDims.id
-                }
-              });
+              const newDims = await prisma.dimensions.create({ data: { length: lengthVal, width: widthVal, height: heightVal, weight: weightVal } });
+              await prisma.products.update({ where: { id: product.id }, data: { hsnCode: hsnCodeVal, dimensionsId: newDims.id } });
               csvUpdatedCount++;
             }
           } else {
-            await prisma.dimensions.update({
-              where: { id: product.dimensionsId },
-              data: { length: lengthVal, width: widthVal, height: heightVal, weight: weightVal }
-            });
-            await prisma.products.update({
-              where: { id: product.id },
-              data: { hsnCode: hsnCodeVal }
-            });
+            await prisma.dimensions.update({ where: { id: product.dimensionsId }, data: { length: lengthVal, width: widthVal, height: heightVal, weight: weightVal } });
+            await prisma.products.update({ where: { id: product.id }, data: { hsnCode: hsnCodeVal } });
             csvUpdatedCount++;
           }
         }
@@ -425,7 +427,6 @@ async function sync() {
     } catch (mergeErr) {
       console.error('Error running merge script:', mergeErr.message);
     }
-
   } catch (err) {
     console.error('Error during sync:', err.response?.data || err.message);
     process.exit(1);

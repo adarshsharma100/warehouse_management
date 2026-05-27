@@ -262,8 +262,22 @@ export const OrderDetails = () => {
         key={col.field}
         field={col.field}
         header={col.header}
-        // body={col?.body}
-        body={(rowData) => rowData[col.field] || '-'}
+        body={(rowData) => {
+          if (col.field === 'item') {
+            return rowData.products?.sku || '-';
+          }
+          if (col.field === 'unit') {
+            return rowData.quantity || '-';
+          }
+          if (col.field === 'mrp') {
+            return rowData.products?.product_prices?.mrp || rowData.price || '-';
+          }
+          if (col.field === 'sellingPrice') {
+            return rowData.price || '-';
+          }
+          const val = col.field.split('.').reduce((acc, part) => acc && acc[part], rowData);
+          return val !== undefined && val !== null ? String(val) : '-';
+        }}
         filter
         filterPlaceholder="Search..."
       />
@@ -288,10 +302,19 @@ export const OrderDetails = () => {
         key={col.field}
         field={col.field}
         header={col.header}
-        // body={col?.body}
-        body={(rowData) => rowData[col.field] || '-'}
-
-
+        body={(rowData) => {
+          if (col.field === 'products.description') {
+            return rowData.products?.description || '-';
+          }
+          if (col.field === 'itemContains') {
+            return rowData.products?.name || '-';
+          }
+          if (col.field === 'totalUnit') {
+            return rowData.quantity || '-';
+          }
+          const val = col.field.split('.').reduce((acc, part) => acc && acc[part], rowData);
+          return val !== undefined && val !== null ? String(val) : '-';
+        }}
         filter
         filterPlaceholder="Search..."
       />
@@ -407,7 +430,7 @@ export const OrderDetails = () => {
 
                   <DataTable
                     // value={itemData}
-                    value={item}
+                    value={itemOrder}
                     responsiveLayout="scroll"
                     showGridlines
                     // header={header1}

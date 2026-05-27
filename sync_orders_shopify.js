@@ -71,6 +71,23 @@ const ordersQuery = gql`
         }
         totalPrice
         paymentGatewayNames
+        totalDiscountsSet {
+          shopMoney {
+            amount
+          }
+        }
+        customAttributes {
+          key
+          value
+        }
+        displayFulfillmentStatus
+        cancelledAt
+        transactions(first: 5) {
+          id
+          gateway
+          status
+          receiptJson
+        }
       }
       pageInfo {
         hasNextPage
@@ -277,12 +294,93 @@ async function getAllOrders(queryStr, after = null, timeout = 100) {
       try {
         const { customer, shippingAddress, billingAddress, lineItems } = order;
 
-        const existingOrder = await prisma.shopify.findFirst({
+        const existingShopify = await prisma.shopify.findFirst({
           where: { orderId: order.id },
+          include: { orders: true }
         });
-        if (existingOrder) continue;
+        if (existingShopify) {
+          const localOrder = existingShopify.orders[0];
+          if (localOrder) {
+            let needsUpdate = false;
+            const updateData = {};
+
+            // 1. Check order status
+            let targetStatus = localOrder.orderStatus;
+            if (order.cancelledAt) {
+              targetStatus = 6; // CANCELLED
+            } else if (order.displayFulfillmentStatus === 'FULFILLED' && localOrder.orderStatus < 4) {
+              targetStatus = 4; // SHIPPED
+            }
+
+            if (localOrder.orderStatus !== targetStatus) {
+              updateData.orderStatus = targetStatus;
+              needsUpdate = true;
+            }
+
+            // 2. Check payment status
+            const targetPaymentStatus = order.displayFinancialStatus === "PAID" ? 2 : 1;
+            if (localOrder.paymentStatus !== targetPaymentStatus) {
+              updateData.paymentStatus = targetPaymentStatus;
+              needsUpdate = true;
+            }
+
+            // 3. Update if needed
+            if (needsUpdate) {
+              await prisma.orders.update({
+                where: { id: localOrder.id },
+                data: updateData
+              });
+              console.log(`Updated existing order #${localOrder.id} (Shopify #${order.name}): status=${targetStatus}, paymentStatus=${targetPaymentStatus}`);
+            }
+          }
+          continue;
+        }
 
         console.log(`Syncing Order: ${order.id}`);
+
+        // Parse discountAmount
+        let discountAmount = 0;
+        if (order.totalDiscountsSet?.shopMoney?.amount) {
+          discountAmount = Math.round(parseFloat(order.totalDiscountsSet.shopMoney.amount));
+        }
+        if (discountAmount === 0 && order.customAttributes) {
+          const discountAttr = order.customAttributes.find(attr => attr.key.toLowerCase() === 'discount');
+          if (discountAttr && discountAttr.value) {
+            const matched = discountAttr.value.match(/(\d+)/);
+            if (matched) {
+              discountAmount = parseInt(matched[1], 10);
+            }
+          }
+        }
+
+        // Parse gstNumber
+        let gstNumber = null;
+        if (order.customAttributes) {
+          const gstAttr = order.customAttributes.find(attr => 
+            attr.key.toLowerCase() === 'gst number' || 
+            attr.key.toLowerCase() === 'customergstin'
+          );
+          if (gstAttr && gstAttr.value) {
+            gstNumber = gstAttr.value.trim();
+          }
+        }
+
+        // Parse paymentReferenceId
+        let paymentReferenceId = null;
+        if (order.transactions && order.transactions.length > 0) {
+          const successfulTx = order.transactions.find(t => t.status === 'SUCCESS') || order.transactions[0];
+          if (successfulTx) {
+            if (successfulTx.receiptJson) {
+              try {
+                const receipt = JSON.parse(successfulTx.receiptJson);
+                paymentReferenceId = receipt.payment_id || receipt.transaction_id || receipt.cf_payment_id || receipt.bank_reference || receipt.authorization;
+              } catch (e) {}
+            }
+            if (!paymentReferenceId) {
+              paymentReferenceId = successfulTx.id?.replace("gid://shopify/OrderTransaction/", "");
+            }
+          }
+        }
         
         let productList = [];
         for (const item of lineItems.nodes) {
@@ -357,7 +455,7 @@ async function getAllOrders(queryStr, after = null, timeout = 100) {
           order: {
             shopifyId: order.id,
             shopifyOrderNumber: order.name?.replace("#", ""),
-            orderStatus: 4,
+            orderStatus: order.cancelledAt ? 6 : (order.displayFulfillmentStatus === 'FULFILLED' ? 4 : 1),
             isShippingIsBilling: false,
             channelCreatedAt: order.createdAt,
             shippingAddress: {
@@ -382,6 +480,9 @@ async function getAllOrders(queryStr, after = null, timeout = 100) {
             paymentTermsId: 1,
             totalPrice: parseInt(order.totalPrice || "0"),
             gateway: order.paymentGatewayNames?.join(",").substring(0, 45) || "",
+            discountAmount,
+            gstNumber,
+            paymentReferenceId,
             order_items: {
               create: productList.map((p) => ({
                 product: p.productId,

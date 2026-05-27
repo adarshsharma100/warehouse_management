@@ -1862,26 +1862,7 @@ export const OrdersList = () => {
                 <div className="grid col-12">
                   <div key={`Order Status`} className="field col-12 lg:col-4 md:col-6 ">
                     <span className="p-float-label">
-                      <AutoComplete
-                        id="orderStatus"
-                        value={selectOrderStatus ? selectOrderStatus.name : ""}
-                        suggestions={orderStatus}
-                        completeMethod={orderStatusSearch}
-                        onChange={handleOrderStatusChange}
-                        dropdown
-                        forceSelection
-
-                        // value={formik.values.orderStatus}
-                        // suggestions={orderStatusSuggestions}
-                        // completeMethod={searchOrderStatus}
-                        // onChange={(e) => {
-                        //   const selectedOption = orderStatusOption.find(option => option.name === e.target.value.name);
-                        //   const selectedOptionName = selectedOption ? selectedOption.name : null;
-                        //   formik.setFieldValue('orderStatus', selectedOption);
-                        // }}
-
-                        className={classNames({ "p-invalid": isFormFieldValid("category") })}
-                      />
+                      <span>{formik.values.orderStatus?.name || ''}</span>
                       <label
                         htmlFor={"category"}
                         className={classNames({ "p-error": isFormFieldValid("category") })}
@@ -2698,35 +2679,26 @@ export const OrdersList = () => {
             />
 
             <Column
-              // field="channelCreatedAt"
               header="Order Status"
               body={(rowData) => {
                 if (isLoading)
                   return <span>loading..</span>
-                else
-                  return (
-                    <pre>
-                      <Dropdown
-                        value={rowData.orderStatus}
-                        options={order_statuses}
-                        optionLabel="name"
-                        optionValue="id"
-                        onChange={async (e) => {
-
-                          await updateNewOrder({
-                            id: rowData.id,
-                            orderStatus: e.target.value
-                          }, {
-                            onSuccess: async () => {
-                              await refetchOrders()
-                            }
-                          })
-                        }}
-                      />
-                    </pre>
-                  )
+                const statusName = rowData.order_status?.name || rowData.orderStatus?.name || rowData.orderStatus || '-';
+                return (
+                  <span style={{
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    background: 'rgba(255,255,255,0.08)',
+                    color: '#e2e8f0',
+                    letterSpacing: '0.03em',
+                    display: 'inline-block'
+                  }}>
+                    {statusName}
+                  </span>
+                )
               }}
-
             />
 
 

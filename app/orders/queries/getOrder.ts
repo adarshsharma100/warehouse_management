@@ -22,7 +22,11 @@ export default resolver.pipe(resolver.zod(GetOrder), resolver.authorize(), async
       order_items:{
         include:{
           shipment_items:true,
-          products:true,
+          products:{
+            include: {
+              product_prices: true
+            }
+          },
         }
       }
     },
