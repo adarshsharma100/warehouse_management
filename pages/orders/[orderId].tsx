@@ -2,7 +2,6 @@ import { Suspense, useEffect } from "react";
 import { Routes } from "@blitzjs/next";
 import ReactDOM from 'react-dom';
 import Head from "next/head";
-import { Dialog } from 'primereact/dialog';
 import router, { useRouter } from "next/router";
 import { PDFDownloadLink, Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
 import { useParam } from "@blitzjs/next";
@@ -214,7 +213,6 @@ export const OrderDetails = () => {
 
   const [dataSummery] = useState(summeryData)
   const [comments, setComments] = useState([]);
-  const [dialogBox, setDialogBox] = useState(false);
 
   const orderId = useParam("orderId", "number")
   const ITEMS_PER_PAGE = 100;
@@ -321,10 +319,6 @@ export const OrderDetails = () => {
     )
   })
 
-  const togglePdf = () => {
-    setDialogBox(!dialogBox);
-  }
-
 
   const PDFData = () => (
     <Document>
@@ -389,22 +383,50 @@ export const OrderDetails = () => {
                     </DataTable>
                   </div>
                 </div>
-
               </TabPanel>
               <TabPanel header="Invoice">
-                <div className="flex justify-content-between mt-3">
-                  <div className="font-bold" style={{ fontSize: '17px', textDecoration: 'underline', padding: '10px' }}>Invoice Details</div>
-
-                  <Button type="button" icon="pi pi-file-pdf"
-                    severity="warning" tooltipOptions={{ position: "left" }}
-                    tooltip="PDF" onClick={togglePdf} />
-                </div>
-
-                <div>
-                  <Dialog header="Invoice Details" visible={dialogBox} style={{ width: '50vw' }} onHide={() => setDialogBox(false)}>
-                    pdf data
-                  </Dialog>
-                </div>
+                {order.easyecomInvoiceUrl ? (
+                  <div className="flex flex-column gap-3 mt-3">
+                    <div className="flex justify-content-between align-items-center">
+                      <h3 className="text-xl font-bold flex align-items-center gap-2 text-blue-600 m-0">
+                        <i className="pi pi-file-pdf" style={{ fontSize: '1.5rem' }}></i>
+                        Invoice
+                      </h3>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          icon="pi pi-download"
+                          label="Download Invoice"
+                          className="p-button-success"
+                          size="small"
+                          onClick={() => window.open(order.easyecomInvoiceUrl!, "_blank")}
+                        />
+                      </div>
+                    </div>
+                    <div className="card p-0 border-round overflow-hidden border-1 border-300 shadow-1">
+                      <iframe
+                        src={`/api/orders/${order.id}/invoice-pdf`}
+                        width="100%"
+                        height="700px"
+                        style={{ border: 'none' }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-column gap-3 mt-3">
+                    <div className="flex justify-content-between align-items-center">
+                      <h3 className="text-xl font-bold flex align-items-center gap-2 text-yellow-600 m-0">
+                        <i className="pi pi-file" style={{ fontSize: '1.5rem' }}></i>
+                        Invoice
+                      </h3>
+                    </div>
+                    <div className="p-4 text-center surface-100 border-round border-1 border-300">
+                      <p className="text-600 m-0">
+                        Invoice PDF not available for this order.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="col-12 mt-3" >
 

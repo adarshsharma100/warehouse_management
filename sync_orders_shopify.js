@@ -37,6 +37,7 @@ const ordersQuery = gql`
         id
         name
         displayFinancialStatus
+        statusPageUrl
         lineItems(first: 40) {
           nodes {
             sku
@@ -129,6 +130,7 @@ async function createOrderFunction(input) {
       order_items,
       shopifyId,
       shopifyOrderNumber,
+      orderStatusUrl,
       gstNumber,
       paymentTermsId,
       paymentReferenceId,
@@ -152,7 +154,7 @@ async function createOrderFunction(input) {
       data: {
         orderId: shopifyId,
         orderNumber: shopifyOrderNumber || shopifyId,
-        orderStatusUrl: shopifyId,
+        orderStatusUrl: orderStatusUrl || shopifyId,
       },
     });
 
@@ -324,13 +326,22 @@ async function getAllOrders(queryStr, after = null, timeout = 100) {
               needsUpdate = true;
             }
 
-            // 3. Update if needed
+            // 3. Update order if needed
             if (needsUpdate) {
               await prisma.orders.update({
                 where: { id: localOrder.id },
                 data: updateData
               });
               console.log(`Updated existing order #${localOrder.id} (Shopify #${order.name}): status=${targetStatus}, paymentStatus=${targetPaymentStatus}`);
+            }
+
+            // 4. Backfill invoice URL if missing
+            if (order.statusPageUrl && (!existingShopify.orderStatusUrl || !existingShopify.orderStatusUrl.startsWith('http'))) {
+              await prisma.shopify.update({
+                where: { id: existingShopify.id },
+                data: { orderStatusUrl: order.statusPageUrl }
+              });
+              console.log(`Backfilled invoice URL for order #${localOrder.id} (Shopify #${order.name})`);
             }
           }
           continue;
@@ -454,6 +465,7 @@ async function getAllOrders(queryStr, after = null, timeout = 100) {
           },
           order: {
             shopifyId: order.id,
+            orderStatusUrl: order.statusPageUrl || "",
             shopifyOrderNumber: order.name?.replace("#", ""),
             orderStatus: order.cancelledAt ? 6 : (order.displayFulfillmentStatus === 'FULFILLED' ? 4 : 1),
             isShippingIsBilling: false,

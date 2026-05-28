@@ -28,7 +28,6 @@ function runSync() {
 
     console.log('[Scheduler] Step 2: Running orders and inventory sync (sync_orders_shopify.js)...');
     exec('node sync_orders_shopify.js', (orderErr, orderStdout, orderStderr) => {
-      isRunning = false;
       if (orderErr) {
         console.error('[Scheduler] Order sync failed:', orderErr);
         console.error(orderStderr);
@@ -36,9 +35,21 @@ function runSync() {
         console.log('[Scheduler] Order sync completed successfully.');
         console.log(orderStdout.trim());
       }
-      console.log(`======================================================`);
-      console.log(`[Scheduler] Scheduled sync iteration complete.`);
-      console.log(`======================================================\n`);
+
+      console.log('[Scheduler] Step 3: Running EasyEcom invoice sync (sync_easyecom_invoices.js)...');
+      exec('node sync_easyecom_invoices.js', (invoiceErr, invoiceStdout, invoiceStderr) => {
+        isRunning = false;
+        if (invoiceErr) {
+          console.error('[Scheduler] Invoice sync failed:', invoiceErr);
+          console.error(invoiceStderr);
+        } else {
+          console.log('[Scheduler] Invoice sync completed successfully.');
+          console.log(invoiceStdout.trim());
+        }
+        console.log(`======================================================`);
+        console.log(`[Scheduler] Scheduled sync iteration complete.`);
+        console.log(`======================================================\n`);
+      });
     });
   });
 }
