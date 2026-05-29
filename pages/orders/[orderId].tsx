@@ -64,7 +64,6 @@ const columnsTwo = [
 
 const orderColumn = [
   { field: "itemContains", header: "Item Contains" },
-  { field: "products.description", header: "Product Description" },
   { field: "facility", header: "Facility" },
   { field: "price", header: "Price info (?)" },
   { field: "totalUnit", header: "Total Units" },
