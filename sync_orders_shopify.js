@@ -38,6 +38,7 @@ const ordersQuery = gql`
         name
         displayFinancialStatus
         statusPageUrl
+        sourceName
         lineItems(first: 40) {
           nodes {
             sku
@@ -131,6 +132,7 @@ async function createOrderFunction(input) {
       shopifyId,
       shopifyOrderNumber,
       orderStatusUrl,
+      sourceName,
       gstNumber,
       paymentTermsId,
       paymentReferenceId,
@@ -155,6 +157,7 @@ async function createOrderFunction(input) {
         orderId: shopifyId,
         orderNumber: shopifyOrderNumber || shopifyId,
         orderStatusUrl: orderStatusUrl || shopifyId,
+        sourceName: sourceName || null,
       },
     });
 
@@ -343,6 +346,15 @@ async function getAllOrders(queryStr, after = null, timeout = 100) {
               });
               console.log(`Backfilled invoice URL for order #${localOrder.id} (Shopify #${order.name})`);
             }
+
+            // 5. Backfill sourceName if missing
+            if (order.sourceName && !existingShopify.sourceName) {
+              await prisma.shopify.update({
+                where: { id: existingShopify.id },
+                data: { sourceName: order.sourceName }
+              });
+              console.log(`Backfilled sourceName for order #${localOrder.id} (Shopify #${order.name}): ${order.sourceName}`);
+            }
           }
           continue;
         }
@@ -467,6 +479,7 @@ async function getAllOrders(queryStr, after = null, timeout = 100) {
             shopifyId: order.id,
             orderStatusUrl: order.statusPageUrl || "",
             shopifyOrderNumber: order.name?.replace("#", ""),
+            sourceName: order.sourceName || "",
             orderStatus: order.cancelledAt ? 6 : (order.displayFulfillmentStatus === 'FULFILLED' ? 4 : 1),
             isShippingIsBilling: false,
             channelCreatedAt: order.createdAt,

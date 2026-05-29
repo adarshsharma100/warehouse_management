@@ -746,6 +746,7 @@ model shopify {
   orderNumber    String?   @db.VarChar(150)
   orderStatusUrl String?   @db.VarChar(200)
   invoiceUrl     String?   @db.VarChar(500)
+  sourceName     String?   @db.VarChar(100)
   createdAt      DateTime? @default(now()) @db.DateTime(0)
   orders         orders[]
 }

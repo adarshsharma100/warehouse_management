@@ -20,6 +20,7 @@ import getOrder from "app/orders/queries/getOrder";
 import { getQueryClient, useMutation, usePaginatedQuery } from "@blitzjs/rpc";
 import Barcode from "react-barcode";
 import { Accordion, AccordionTab } from "primereact/accordion";
+import { dateFormat } from "app/constants";
 
 // import Layout from "src/core/layouts/Layout";
 // import getOrder from "src/orders/queries/getOrder";
@@ -287,7 +288,24 @@ export const OrderDetails = () => {
         key={col.field}
         field={col.field}
         header={col.header}
-        body={col?.body}
+        body={(rowData) => {
+          if (col.field === 'Item') {
+            return rowData.order_items?.products?.name || '-';
+          }
+          if (col.field === 'SKU') {
+            return rowData.order_items?.products?.sku || '-';
+          }
+          if (col.field === 'Quantity') {
+            return rowData.order_items?.quantity || 0;
+          }
+          if (col.field === 'Cancelled') {
+            return rowData.shipment?.shipment_status?.name === 'Cancelled' ? rowData.order_items?.quantity : 0;
+          }
+          if (col.field === 'Hold') {
+            return rowData.shipment?.onHold === 1 ? rowData.order_items?.quantity : 0;
+          }
+          return '-';
+        }}
         filter
         filterPlaceholder="Search..."
       />
@@ -482,20 +500,21 @@ export const OrderDetails = () => {
                   </div>
                 </div>
               </TabPanel>
-              <TabPanel header='Shipments'>
+              {/* <TabPanel header='Shipments'>
                 <Accordion activeIndex={0}>
-                  <AccordionTab
-                    pt={{
-                      headertitle: {
-                        className: "w-full"
-                      }
-                    }}
-                    header={
-                      <div className="flex justify-content-between align-items-center"
-                      >
-                        <div>Shipment Id: ROBO108966</div>
-                        <div>shipment Status: Ready to Ship</div>
-                        <div>Created On: 29Jun 2023, 15:25</div>
+                  {item?.map((sh, idx) => {
+                    const awb = sh.awb;
+                    const invoiceNumber = sh.sales_invoice_details?.invoiceNumber || '-';
+                    const keyValuePairs = [
+                      { key: "AWB", value: awb || '-' },
+                      { key: "Invoice Number", value: invoiceNumber },
+                    ];
+
+                    const accordionHeader = (
+                      <div className="flex justify-content-between align-items-center w-full gap-3">
+                        <div>Shipment Id: {sh.shipmentNumber}</div>
+                        <div>shipment Status: {sh.shipment_status?.name || 'Ready to Ship'}</div>
+                        <div>Created On: {sh.createdAt ? dateFormat(sh.createdAt) : '-'}</div>
                         <div className="flex gap-3">
                           <i className="pi pi-check-square" style={{ fontSize: '1.5rem' }} />
                           <i className="pi pi-book" style={{ fontSize: '1.5rem' }} />
@@ -504,56 +523,50 @@ export const OrderDetails = () => {
                           <i className="pi pi-lock" style={{ fontSize: '1.5rem' }} />
                         </div>
                       </div>
-                    }>
-                    <div className="flex">
-                      {item.map((sales_invoice_details, i) => {
-                        const { awb, sales_invoice_details: { invoiceNumber } } = sales_invoice_details;
-                        const keyValuePairs = [
-                          { key: "AWB", value: awb },
-                          { key: "Invoice Number", value: invoiceNumber },
-                          // Add more key-value pairs as needed
-                        ];
-                        return (
-                          <div className="flex gap-2 text-xl flex-wrap align-items-center" key={i}>
+                    );
+
+                    return (
+                      <AccordionTab
+                        key={sh.id}
+                        pt={{
+                          headertitle: {
+                            className: "w-full"
+                          }
+                        }}
+                        header={accordionHeader}
+                      >
+                        <div className="flex">
+                          <div className="flex gap-2 text-xl flex-wrap align-items-center">
                             {keyValuePairs.map(({ key, value }, index) => (
                               <div className="" key={key}>
                                 <label className="font-bold">{key} :</label>
-                                <label className="ml-2">{value} </label>
-                                {/* {value} */}
+                                <label className="ml-2">{value}</label>
                                 {index < keyValuePairs.length - 1 && <span className="mx-2">{'  '}</span>}
                               </div>
                             ))}
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
 
-
-                    <div className="mt-5" style={{ width: '50%' }}>
-                      <DataTable
-                        value={shipmentData}
-                        responsiveLayout="scroll"
-                        showGridlines
-                        // header={header1}
-                        // filters={filters}
-                        className="text-s datatable-responsive mt-4"
-                        filterDisplay="menu"
-                        emptyMessage="No Results found."
-                        rowHover={true}
-                      >
-                        {shipmentColumnComponent}
-
-                      </DataTable>
-
-                    </div>
-
-
-                  </AccordionTab>
-
+                        <div className="mt-5" style={{ width: '100%' }}>
+                          <DataTable
+                            value={sh.shipment_items}
+                            responsiveLayout="scroll"
+                            showGridlines
+                            className="text-s datatable-responsive mt-4"
+                            filterDisplay="menu"
+                            emptyMessage="No Results found."
+                            rowHover={true}
+                          >
+                            {shipmentColumnComponent}
+                          </DataTable>
+                        </div>
+                      </AccordionTab>
+                    );
+                  })}
                 </Accordion>
-              </TabPanel>
-              <TabPanel header='Activities'>
-              </TabPanel>
+              </TabPanel> */}
+              {/* <TabPanel header='Activities'>
+              </TabPanel> */}
 
               {/* <TabPanel header="Details">
                 <div className="flex gap-5 ">
@@ -603,7 +616,7 @@ export const OrderDetails = () => {
 
                 </div>
               </AccordionTab>
-              <AccordionTab header="Item Summery">
+              {/* <AccordionTab header="Item Summery">
                 <p className="m-0">
 
                 </p>
@@ -615,7 +628,7 @@ export const OrderDetails = () => {
               <AccordionTab header="Billing/Shipping Address">
                 <p className="m-0">
                 </p>
-              </AccordionTab>
+              </AccordionTab> */}
             </Accordion>
           </div>
 

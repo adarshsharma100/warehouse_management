@@ -2610,8 +2610,13 @@ export const OrdersList = () => {
             <Column
               field="shopifyId"
               header="Channel"
-              body={(rowdata) => rowdata.shopifyId ? "SH" : "IH"}
-
+              body={(rowData) => {
+                if (!rowData.shopifyId) return "IH";
+                const source = rowData.shopify?.sourceName;
+                if (source === "web") return "SH";
+                if (source) return "APP";
+                return "SH";
+              }}
             />
 
 

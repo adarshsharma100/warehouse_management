@@ -17,7 +17,21 @@ export default resolver.pipe(resolver.zod(GetOrder), resolver.authorize(), async
       shipment: {
         include: {
           sales_invoice_details: true,
-          shipment_items: true,
+          shipment_status: true,
+          shipment_items: {
+            include: {
+              shipment: {
+                include: {
+                  shipment_status: true
+                }
+              },
+              order_items: {
+                include: {
+                  products: true
+                }
+              }
+            }
+          },
         }
       },
       order_items: {
