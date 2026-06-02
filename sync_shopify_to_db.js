@@ -121,7 +121,7 @@ function generateCategoryCodeFromName(nameStr, existingSet) {
     finalCodeStr = (codeStr + indexStr).substring(0, 10);
     indexStr++;
   }
-  return finalCodeStr;
+  return finalCodeStr.trim().toUpperCase();
 }
 
 async function sync() {
@@ -184,8 +184,9 @@ async function sync() {
     const categoryMap = new Map();
     const categoryCodes = new Set();
     for (const cat of categoriesInDb) {
-      categoryMap.set(cat.code.toUpperCase(), cat);
-      categoryCodes.add(cat.code.toUpperCase());
+      const cleanCode = cat.code.trim().toUpperCase();
+      categoryMap.set(cleanCode, cat);
+      categoryCodes.add(cleanCode);
     }
 
     const productsInDb = await prisma.products.findMany({
@@ -268,21 +269,35 @@ async function sync() {
       if (!categoryCode) {
         categoryCode = generateCategoryCodeFromName(categoryName, categoryCodes);
       }
-      categoryCode = categoryCode.toUpperCase();
+      categoryCode = categoryCode.trim().toUpperCase();
 
       let categoryId = null;
       if (categoryMap.has(categoryCode)) {
         categoryId = categoryMap.get(categoryCode).id;
       } else {
-        const truncatedCatName = categoryName.substring(0, 45);
-        const truncatedCatCode = categoryCode.substring(0, 10);
+        const truncatedCatName = categoryName.substring(0, 45).trim();
+        const truncatedCatCode = categoryCode.substring(0, 10).trim();
         console.log(`Creating missing category: "${truncatedCatName}" with code "${truncatedCatCode}"`);
-        const newCat = await prisma.product_categories.create({
-          data: { name: truncatedCatName, code: truncatedCatCode }
-        });
-        categoryId = newCat.id;
-        categoryMap.set(truncatedCatCode, newCat);
-        categoryCodes.add(truncatedCatCode);
+        let newCat;
+        try {
+          newCat = await prisma.product_categories.create({
+            data: { name: truncatedCatName, code: truncatedCatCode }
+          });
+        } catch (createErr) {
+          if (createErr.code === 'P2002') {
+            console.log(`Category code "${truncatedCatCode}" already exists. Reusing it.`);
+            newCat = await prisma.product_categories.findFirst({
+              where: { code: truncatedCatCode }
+            });
+          } else {
+            throw createErr;
+          }
+        }
+        if (newCat) {
+          categoryId = newCat.id;
+          categoryMap.set(truncatedCatCode, newCat);
+          categoryCodes.add(truncatedCatCode);
+        }
       }
 
       if (!productId) {
@@ -463,20 +478,33 @@ async function sync() {
           if (!categoryCode) {
             categoryCode = generateCategoryCodeFromName(categoryName, categoryCodes);
           }
-          categoryCode = categoryCode.toUpperCase();
+          categoryCode = categoryCode.trim().toUpperCase();
 
           let categoryRecord;
           if (categoryMap.has(categoryCode)) {
             categoryRecord = categoryMap.get(categoryCode);
           } else {
-            const truncatedCatName = categoryName.substring(0, 45);
-            const truncatedCatCode = categoryCode.substring(0, 10);
+            const truncatedCatName = categoryName.substring(0, 45).trim();
+            const truncatedCatCode = categoryCode.substring(0, 10).trim();
             console.log(`Creating missing category (CSV check): "${truncatedCatName}" with code "${truncatedCatCode}"`);
-            categoryRecord = await prisma.product_categories.create({
-              data: { name: truncatedCatName, code: truncatedCatCode }
-            });
-            categoryMap.set(truncatedCatCode, categoryRecord);
-            categoryCodes.add(truncatedCatCode);
+            try {
+              categoryRecord = await prisma.product_categories.create({
+                data: { name: truncatedCatName, code: truncatedCatCode }
+              });
+            } catch (createErr) {
+              if (createErr.code === 'P2002') {
+                console.log(`Category code "${truncatedCatCode}" already exists. Reusing it.`);
+                categoryRecord = await prisma.product_categories.findFirst({
+                  where: { code: truncatedCatCode }
+                });
+              } else {
+                throw createErr;
+              }
+            }
+            if (categoryRecord) {
+              categoryMap.set(truncatedCatCode, categoryRecord);
+              categoryCodes.add(truncatedCatCode);
+            }
           }
 
           if (product.category !== categoryRecord.id) {

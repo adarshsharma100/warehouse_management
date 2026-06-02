@@ -62,6 +62,11 @@ const SideBarMenu = () => {
           command: () => (window.location.href = "/inventory_products"),
         },
         {
+          label: "Dead Stock",
+          icon: "pi pi-fw pi-exclamation-triangle",
+          command: () => (window.location.href = "/dead_stock"),
+        },
+        {
           label: "Categories",
           icon: "pi bi-diagram-3",
           command: () => (window.location.href = "/product_categories"),
