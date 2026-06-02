@@ -12,7 +12,6 @@ const { PrismaClient } = require('@prisma/client');
 const papa = require('papaparse');
 // Axios instance with higher timeout for large payloads
 const api = axios.create({ timeout: 30000 });
-// const LAST_SYNC_FILE = path.join(__dirname, '.last_sync'); // deprecated, using sync_state.json
 
 const prisma = new PrismaClient();
 
@@ -51,8 +50,8 @@ function saveLastSync(timestamp) {
  */
 async function fetchAllProducts(since) {
   const allProducts = [];
-  // Request only needed fields, include updated_at for incremental logic
-  let url = `${baseEndpoint}&fields=id,title,body_html,vendor,variants,image,updated_at&updated_at_min=${encodeURIComponent(since)}`;
+  // Request only needed fields, include updated_at for incremental logic, now requesting product_type too
+  let url = `${baseEndpoint}&fields=id,title,body_html,vendor,variants,image,updated_at,product_type&updated_at_min=${encodeURIComponent(since)}`;
   while (url) {
     let attempts = 0;
     while (attempts < 3) {
@@ -95,6 +94,34 @@ async function fetchAllProducts(since) {
     }
   }
   return allProducts;
+}
+
+// Helpers for category extraction
+function extractCategoryCodeFromSku(skuStr) {
+  if (!skuStr) return null;
+  const cleanSku = skuStr.replace(/`/g, '').trim().toUpperCase();
+  if (cleanSku.startsWith('TIF')) {
+    return cleanSku.substring(3, 5);
+  } else if (cleanSku.startsWith('DTIF')) {
+    return cleanSku.substring(4, 6);
+  }
+  return null;
+}
+
+function generateCategoryCodeFromName(nameStr, existingSet) {
+  const cleanName = nameStr.replace(/[^a-zA-Z]/g, '').toUpperCase();
+  let codeStr = cleanName.substring(0, 2);
+  if (codeStr.length < 2) {
+    codeStr = (codeStr + 'XX').substring(0, 2);
+  }
+
+  let indexStr = 1;
+  let finalCodeStr = codeStr;
+  while (existingSet.has(finalCodeStr)) {
+    finalCodeStr = (codeStr + indexStr).substring(0, 10);
+    indexStr++;
+  }
+  return finalCodeStr;
 }
 
 async function sync() {
@@ -148,10 +175,18 @@ async function sync() {
       console.log(`Created default product type with id ${defaultProductType.id}`);
     }
 
-    // Optimization: pre-fetch brands, products and product prices into maps
-    console.log('Pre-fetching brands, products, and prices from DB...');
+    // Optimization: pre-fetch brands, products, categories and product prices into maps
+    console.log('Pre-fetching brands, products, categories, and prices from DB...');
     const brandsInDb = await prisma.product_brand.findMany();
     const brandMap = new Map(brandsInDb.map(b => [b.name, b.id]));
+
+    const categoriesInDb = await prisma.product_categories.findMany();
+    const categoryMap = new Map();
+    const categoryCodes = new Set();
+    for (const cat of categoriesInDb) {
+      categoryMap.set(cat.code.toUpperCase(), cat);
+      categoryCodes.add(cat.code.toUpperCase());
+    }
 
     const productsInDb = await prisma.products.findMany({
       select: {
@@ -160,6 +195,7 @@ async function sync() {
         hsnCode: true,
         imageUrl: true,
         dimensionsId: true,
+        category: true,
         dimensions: {
           select: { length: true, width: true, height: true, weight: true }
         }
@@ -173,7 +209,7 @@ async function sync() {
 
     const pricesInDb = await prisma.product_prices.findMany();
     const priceMap = new Map(pricesInDb.map(pr => [pr.productId, pr]));
-    console.log(`Loaded ${brandMap.size} brands, ${productMap.size} products, and ${priceMap.size} prices.`);
+    console.log(`Loaded ${brandMap.size} brands, ${categoryMap.size} categories, ${productMap.size} products, and ${priceMap.size} prices.`);
 
     let productsCreated = 0;
     let pricesCreated = 0;
@@ -218,6 +254,37 @@ async function sync() {
         widthVal = csvMatch['Width(cms)'] ? parseFloat(matchValue(csvMatch['Width(cms)'])) : 0;
       }
 
+      // Map Shopify category
+      let categoryName = null;
+      if (csvMatch && csvMatch.Category) {
+        categoryName = csvMatch.Category.replace(/`/g, '').trim();
+      } else if (p.product_type) {
+        categoryName = p.product_type.trim();
+      } else {
+        categoryName = 'General';
+      }
+
+      let categoryCode = extractCategoryCodeFromSku(sku);
+      if (!categoryCode) {
+        categoryCode = generateCategoryCodeFromName(categoryName, categoryCodes);
+      }
+      categoryCode = categoryCode.toUpperCase();
+
+      let categoryId = null;
+      if (categoryMap.has(categoryCode)) {
+        categoryId = categoryMap.get(categoryCode).id;
+      } else {
+        const truncatedCatName = categoryName.substring(0, 45);
+        const truncatedCatCode = categoryCode.substring(0, 10);
+        console.log(`Creating missing category: "${truncatedCatName}" with code "${truncatedCatCode}"`);
+        const newCat = await prisma.product_categories.create({
+          data: { name: truncatedCatName, code: truncatedCatCode }
+        });
+        categoryId = newCat.id;
+        categoryMap.set(truncatedCatCode, newCat);
+        categoryCodes.add(truncatedCatCode);
+      }
+
       if (!productId) {
         // Determine dimensions record
         let dimsId = defaultDimensions.id;
@@ -238,6 +305,7 @@ async function sync() {
             type: defaultProductType.id,
             hsnCode: hsnCodeVal,
             imageUrl: p.image?.src || null,
+            category: categoryId,
           },
         });
         productId = localProduct.id;
@@ -248,6 +316,7 @@ async function sync() {
           hsnCode: hsnCodeVal,
           imageUrl: p.image?.src || null,
           dimensionsId: dimsId,
+          category: categoryId,
           dimensions: (weightVal !== 0 || lengthVal !== 0 || heightVal !== 0 || widthVal !== 0) ? {
             length: lengthVal,
             width: widthVal,
@@ -263,16 +332,18 @@ async function sync() {
           const imageUrlVal = p.image?.src || null;
           const hsnChanged = existingProduct.hsnCode !== hsnCodeVal;
           const imageChanged = existingProduct.imageUrl !== imageUrlVal;
+          const categoryChanged = existingProduct.category !== categoryId;
           const dimensionsChanged = !existingProduct.dimensions ||
             existingProduct.dimensions.weight !== weightVal ||
             existingProduct.dimensions.length !== lengthVal ||
             existingProduct.dimensions.height !== heightVal ||
             existingProduct.dimensions.width !== widthVal;
 
-          if (hsnChanged || imageChanged || dimensionsChanged) {
+          if (hsnChanged || imageChanged || categoryChanged || dimensionsChanged) {
             const dataToUpdate = {};
             if (hsnChanged) dataToUpdate.hsnCode = hsnCodeVal;
             if (imageChanged) dataToUpdate.imageUrl = imageUrlVal;
+            if (categoryChanged) dataToUpdate.category = categoryId;
 
             if (existingProduct.dimensionsId === defaultDimensions.id) {
               if (weightVal === 0 && lengthVal === 0 && heightVal === 0 && widthVal === 0) {
@@ -310,6 +381,7 @@ async function sync() {
             }
             if (hsnChanged) existingProduct.hsnCode = hsnCodeVal;
             if (imageChanged) existingProduct.imageUrl = imageUrlVal;
+            if (categoryChanged) existingProduct.category = categoryId;
           }
         }
         productsSkipped++;
@@ -346,7 +418,7 @@ async function sync() {
     console.log(`   - Missing prices created: ${pricesCreated}`);
     console.log(`   - Prices updated: ${pricesUpdated}`);
 
-    // 5. Bulk check and sync local DB products against local CSV to ensure HSN and dimensions are up-to-date
+    // 5. Bulk check and sync local DB products against local CSV to ensure HSN, dimensions and categories are up-to-date
     if (csvMap.size > 0) {
       console.log('🔄 Checking database products against product-HSN.csv for updates...');
       const allDbProducts = await prisma.products.findMany({
@@ -355,6 +427,7 @@ async function sync() {
           sku: true,
           dimensionsId: true,
           hsnCode: true,
+          category: true,
           dimensions: { select: { length: true, width: true, height: true, weight: true } }
         }
       });
@@ -381,6 +454,37 @@ async function sync() {
         const heightVal = csvMatch['Height(cms)'] ? parseFloat(matchValue(csvMatch['Height(cms)'])) : 0;
         const widthVal = csvMatch['Width(cms)'] ? parseFloat(matchValue(csvMatch['Width(cms)'])) : 0;
 
+        // Resolve Category from CSV
+        let categoryId = product.category;
+        let categoryChanged = false;
+        if (csvMatch.Category) {
+          const categoryName = csvMatch.Category.replace(/`/g, '').trim();
+          let categoryCode = extractCategoryCodeFromSku(product.sku);
+          if (!categoryCode) {
+            categoryCode = generateCategoryCodeFromName(categoryName, categoryCodes);
+          }
+          categoryCode = categoryCode.toUpperCase();
+
+          let categoryRecord;
+          if (categoryMap.has(categoryCode)) {
+            categoryRecord = categoryMap.get(categoryCode);
+          } else {
+            const truncatedCatName = categoryName.substring(0, 45);
+            const truncatedCatCode = categoryCode.substring(0, 10);
+            console.log(`Creating missing category (CSV check): "${truncatedCatName}" with code "${truncatedCatCode}"`);
+            categoryRecord = await prisma.product_categories.create({
+              data: { name: truncatedCatName, code: truncatedCatCode }
+            });
+            categoryMap.set(truncatedCatCode, categoryRecord);
+            categoryCodes.add(truncatedCatCode);
+          }
+
+          if (product.category !== categoryRecord.id) {
+            categoryId = categoryRecord.id;
+            categoryChanged = true;
+          }
+        }
+
         const hsnChanged = product.hsnCode !== hsnCodeVal;
         const dimensionsChanged = !product.dimensions ||
           product.dimensions.weight !== weightVal ||
@@ -388,21 +492,25 @@ async function sync() {
           product.dimensions.height !== heightVal ||
           product.dimensions.width !== widthVal;
 
-        if (hsnChanged || dimensionsChanged) {
+        if (hsnChanged || dimensionsChanged || categoryChanged) {
+          const dataToUpdate = {};
+          if (hsnChanged) dataToUpdate.hsnCode = hsnCodeVal;
+          if (categoryChanged) dataToUpdate.category = categoryId;
+
           if (product.dimensionsId === defaultDimensions.id) {
             if (weightVal === 0 && lengthVal === 0 && heightVal === 0 && widthVal === 0) {
-              if (hsnChanged) {
-                await prisma.products.update({ where: { id: product.id }, data: { hsnCode: hsnCodeVal } });
-                csvUpdatedCount++;
-              }
+              await prisma.products.update({ where: { id: product.id }, data: dataToUpdate });
+              csvUpdatedCount++;
             } else {
               const newDims = await prisma.dimensions.create({ data: { length: lengthVal, width: widthVal, height: heightVal, weight: weightVal } });
-              await prisma.products.update({ where: { id: product.id }, data: { hsnCode: hsnCodeVal, dimensionsId: newDims.id } });
+              await prisma.products.update({ where: { id: product.id }, data: { ...dataToUpdate, dimensionsId: newDims.id } });
               csvUpdatedCount++;
             }
           } else {
-            await prisma.dimensions.update({ where: { id: product.dimensionsId }, data: { length: lengthVal, width: widthVal, height: heightVal, weight: weightVal } });
-            await prisma.products.update({ where: { id: product.id }, data: { hsnCode: hsnCodeVal } });
+            if (dimensionsChanged) {
+              await prisma.dimensions.update({ where: { id: product.dimensionsId }, data: { length: lengthVal, width: widthVal, height: heightVal, weight: weightVal } });
+            }
+            await prisma.products.update({ where: { id: product.id }, data: dataToUpdate });
             csvUpdatedCount++;
           }
         }

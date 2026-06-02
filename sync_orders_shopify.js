@@ -582,6 +582,7 @@ async function main() {
       }
     });
     console.log("--- ORDER/INVENTORY SYNC COMPLETE ---");
+    await cleanupJobs(2, record.id);
   } catch (err) {
     console.error("Sync run failed:", err);
     await prisma.jobs.update({
@@ -591,8 +592,68 @@ async function main() {
         isCompleted: true,
       }
     });
+    await cleanupJobs(2, record.id);
   } finally {
     await prisma.$disconnect();
+  }
+}
+
+async function cleanupJobs(jobTypesId, currentJobId) {
+  try {
+    // 1. Delete failed/incomplete jobs older than 1 hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    await prisma.jobs.deleteMany({
+      where: {
+        jobTypesId,
+        isCompleted: false,
+        createdAt: { lt: oneHourAgo },
+        id: { not: currentJobId }
+      }
+    });
+
+    // 2. Keep only one successful job per calendar day
+    const successfulJobs = await prisma.jobs.findMany({
+      where: {
+        jobTypesId,
+        isCompleted: true
+      },
+      orderBy: { id: 'desc' }
+    });
+
+    const keepIds = new Set();
+    const seenDays = new Set();
+
+    if (successfulJobs.length > 0) {
+      // Always keep the absolute most recent successful job
+      const latestJob = successfulJobs[0];
+      keepIds.add(latestJob.id);
+      
+      const latestDateStr = new Date(latestJob.createdAt).toISOString().split('T')[0];
+      seenDays.add(latestDateStr);
+
+      for (let i = 1; i < successfulJobs.length; i++) {
+        const job = successfulJobs[i];
+        const dayStr = new Date(job.createdAt).toISOString().split('T')[0];
+        if (!seenDays.has(dayStr)) {
+          seenDays.add(dayStr);
+          keepIds.add(job.id);
+        }
+      }
+
+      const allIds = successfulJobs.map(j => j.id);
+      const deleteIds = allIds.filter(id => !keepIds.has(id));
+
+      if (deleteIds.length > 0) {
+        await prisma.jobs.deleteMany({
+          where: {
+            id: { in: deleteIds }
+          }
+        });
+        console.log(`[Cleanup] Deleted ${deleteIds.length} redundant job instances of type ${jobTypesId}.`);
+      }
+    }
+  } catch (error) {
+    console.error('[Cleanup] Error cleaning up jobs:', error);
   }
 }
 
