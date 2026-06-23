@@ -310,19 +310,28 @@ async function sync() {
           dimsId = newDims.id;
         }
 
-        const localProduct = await prisma.products.create({
-          data: {
-            sku,
-            name: truncatedName,
-            description: p.body_html || '',
-            brand: brandId,
-            dimensionsId: dimsId,
-            type: defaultProductType.id,
-            hsnCode: hsnCodeVal,
-            imageUrl: p.image?.src || null,
-            category: categoryId,
-          },
-        });
+        let localProduct;
+        try {
+          localProduct = await prisma.products.create({
+            data: {
+              sku,
+              name: truncatedName,
+              description: p.body_html || '',
+              brand: brandId,
+              dimensionsId: dimsId,
+              type: defaultProductType.id,
+              hsnCode: hsnCodeVal,
+              imageUrl: p.image?.src || null,
+              category: categoryId,
+            },
+          });
+        } catch (err) {
+          if (err.code === 'P2002') {
+            console.error(`Unique constraint failed for SKU: "${sku}". Normalized: "${normalizedSku}"`);
+            continue;
+          }
+          throw err;
+        }
         productId = localProduct.id;
 
         productMap.set(normalizedSku, {

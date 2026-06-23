@@ -16,7 +16,7 @@ model addresses {
   state                                      String?           @db.VarChar(45)
   pincode                                    String?           @db.VarChar(45)
   country                                    Int
-  country_addresses_countryTocountry         country           @relation("addresses_countryTocountry", fields: [country], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_addresses_country1")
+  country_addresses_countryTocountry         country           @relation("addresses_countryTocountry", fields: [country], references: [id], onUpdate: Restrict, map: "fk_addresses_country1")
   contact_number                             contact_number[]
   customers                                  customers[]
   emails_emails_addressesToaddresses         emails[]          @relation("emails_addressesToaddresses")
@@ -34,7 +34,7 @@ model areas {
   description                          String?     @db.VarChar(150)
   warehouse                            Int
   type                                 areas_type?
-  warehouse_areas_warehouseTowarehouse warehouse   @relation("areas_warehouseTowarehouse", fields: [warehouse], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_areas_warehouse1")
+  warehouse_areas_warehouseTowarehouse warehouse   @relation("areas_warehouseTowarehouse", fields: [warehouse], references: [id], onUpdate: Restrict, map: "fk_areas_warehouse1")
   shelves                              shelves[]
 
   @@index([warehouse], map: "fk_areas_warehouse1_idx")
@@ -51,7 +51,7 @@ model bulk_awb {
   awbNumber String   @db.VarChar(45)
   createdAt DateTime @default(now()) @db.DateTime(0)
   courierId Int
-  courier   courier  @relation(fields: [courierId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_bulk_awb_courier1")
+  courier   courier  @relation(fields: [courierId], references: [id], onUpdate: Restrict, map: "fk_bulk_awb_courier1")
 
   @@index([courierId], map: "fk_bulk_awb_courier1_idx")
 }
@@ -61,7 +61,7 @@ model contact_number {
   type      contact_number_type
   number    String              @db.VarChar(45)
   address   Int
-  addresses addresses           @relation(fields: [address], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_contact_Number_addresses1")
+  addresses addresses           @relation(fields: [address], references: [id], onUpdate: Restrict, map: "fk_contact_Number_addresses1")
 
   @@index([address], map: "fk_contact_Number_addresses1_idx")
 }
@@ -77,7 +77,7 @@ model courier {
   name          String        @db.VarChar(45)
   courierTypeId Int
   bulk_awb      bulk_awb[]
-  courier_types courier_types @relation(fields: [courierTypeId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_courier_courier_types1")
+  courier_types courier_types @relation(fields: [courierTypeId], references: [id], onUpdate: Restrict, map: "fk_courier_courier_types1")
   shipment      shipment[]
 
   @@index([courierTypeId], map: "fk_courier_courier_types1_idx")
@@ -97,7 +97,7 @@ model customers {
   shopifyId   String?   @db.VarChar(45)
   companyName String?   @db.VarChar(50)
   display     Int?      @default(0) @db.TinyInt
-  addresses   addresses @relation(fields: [addressesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_customers_addresses1")
+  addresses   addresses @relation(fields: [addressesId], references: [id], onUpdate: Restrict, map: "fk_customers_addresses1")
   orders      orders[]
 
   @@index([addressesId], map: "fk_customers_addresses1_idx")
@@ -118,7 +118,7 @@ model emails {
   id                                    Int          @id @default(autoincrement())
   email                                 String       @db.VarChar(45)
   addresses                             Int
-  addresses_emails_addressesToaddresses addresses    @relation("emails_addressesToaddresses", fields: [addresses], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_emails_addresses1")
+  addresses_emails_addressesToaddresses addresses    @relation("emails_addressesToaddresses", fields: [addresses], references: [id], onUpdate: Restrict, map: "fk_emails_addresses1")
   po_sentto                             po_sentto[]
   rfq_sentto                            rfq_sentto[]
 
@@ -137,10 +137,10 @@ model grn {
   purchaseOrder    Int
   vendorShipmentId Int?
   grnRemarks       String?           @db.VarChar(250)
-  grn_status       grn_status        @relation(fields: [status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_grn_status1")
-  purchase_orders  purchase_orders   @relation(fields: [purchaseOrder], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_purchase_orders1")
-  user             user              @relation(fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_user1")
-  vendor_shipments vendor_shipments? @relation(fields: [vendorShipmentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_vendor_shipments1")
+  grn_status       grn_status        @relation(fields: [status], references: [id], onUpdate: Restrict, map: "fk_grn_grn_status1")
+  purchase_orders  purchase_orders   @relation(fields: [purchaseOrder], references: [id], onUpdate: Restrict, map: "fk_grn_purchase_orders1")
+  user             user              @relation(fields: [createdBy], references: [id], onUpdate: Restrict, map: "fk_grn_user1")
+  vendor_shipments vendor_shipments? @relation(fields: [vendorShipmentId], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_grn_vendor_shipments1")
   grn_products     grn_products[]
   putaway          putaway[]
 
@@ -162,8 +162,8 @@ model grn_products {
   qcComplete          Int?        @default(0) @db.TinyInt
   shortSupply         Int?
   finalQuantity       Int?
-  grn                 grn         @relation(fields: [grnId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_products_grn1")
-  po_products         po_products @relation(fields: [poProduct], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grn_products_po_products1")
+  grn                 grn         @relation(fields: [grnId], references: [id], onUpdate: Restrict, map: "fk_grn_products_grn1")
+  po_products         po_products @relation(fields: [poProduct], references: [id], onUpdate: Restrict, map: "fk_grn_products_po_products1")
 
   @@index([grnId], map: "fk_grn_products_grn1_idx")
   @@index([poProduct], map: "fk_grn_products_po_products1_idx")
@@ -193,9 +193,9 @@ model inventory_history {
   adjustedBy                    Int
   inventoryProduct              Int
   adjustmentType                Int
-  inventory_history_adjustments inventory_history_adjustments @relation(fields: [adjustmentType], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_history_inventory_history_adjustments1")
-  inventory_products            inventory_products            @relation(fields: [inventoryProduct], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_history_inventory_products1")
-  user                          user                          @relation(fields: [adjustedBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_history_user1")
+  inventory_history_adjustments inventory_history_adjustments @relation(fields: [adjustmentType], references: [id], onUpdate: Restrict, map: "fk_inventory_history_inventory_history_adjustments1")
+  inventory_products            inventory_products            @relation(fields: [inventoryProduct], references: [id], onUpdate: Restrict, map: "fk_inventory_history_inventory_products1")
+  user                          user                          @relation(fields: [adjustedBy], references: [id], onUpdate: Restrict, map: "fk_inventory_history_user1")
 
   @@index([adjustmentType], map: "fk_inventory_history_inventory_history_adjustments1_idx")
   @@index([inventoryProduct], map: "fk_inventory_history_inventory_products1_idx")
@@ -219,8 +219,8 @@ model inventory_products {
   shelf               Int
   maxQuantityPerShelf Int?
   inventory_history   inventory_history[]
-  products            products            @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_products1")
-  shelves             shelves             @relation(fields: [shelf], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products_shelfs1")
+  products            products            @relation(fields: [product], references: [id], onUpdate: Restrict, map: "fk_inventory_products_products1")
+  shelves             shelves             @relation(fields: [shelf], references: [id], onUpdate: Restrict, map: "fk_inventory_products_shelfs1")
   putaway_products    putaway_products[]
 
   @@unique([product, shelf], map: "product_shelf")
@@ -242,8 +242,8 @@ model jobs {
   createdAt   DateTime? @default(now()) @db.DateTime(0)
   jobTypesId  Int
   userId      Int
-  job_types   job_types @relation(fields: [jobTypesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_jobs_job_types1")
-  user        user      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_jobs_user1")
+  job_types   job_types @relation(fields: [jobTypesId], references: [id], onUpdate: Restrict, map: "fk_jobs_job_types1")
+  user        user      @relation(fields: [userId], references: [id], onUpdate: Restrict, map: "fk_jobs_user1")
 
   @@index([jobTypesId], map: "fk_jobs_job_types1_idx")
   @@index([userId], map: "fk_jobs_user1_idx")
@@ -254,8 +254,8 @@ model kit_products {
   productId                                    Int
   quantity                                     Int
   kitProductId                                 Int
-  products_kit_products_productIdToproducts    products @relation("kit_products_productIdToproducts", fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products1")
-  products_kit_products_kitProductIdToproducts products @relation("kit_products_kitProductIdToproducts", fields: [kitProductId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_kit_products_products2")
+  products_kit_products_productIdToproducts    products @relation("kit_products_productIdToproducts", fields: [productId], references: [id], onUpdate: Restrict, map: "fk_kit_products_products1")
+  products_kit_products_kitProductIdToproducts products @relation("kit_products_kitProductIdToproducts", fields: [kitProductId], references: [id], onUpdate: Restrict, map: "fk_kit_products_products2")
 
   @@index([productId], map: "fk_kit_products_products1_idx")
   @@index([kitProductId], map: "fk_kit_products_products2_idx")
@@ -273,8 +273,8 @@ model order_items {
   product        Int
   quantity       Int
   price          Int
-  orders         orders           @relation(fields: [order], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_items_orders1")
-  products       products         @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_items_products1")
+  orders         orders           @relation(fields: [order], references: [id], onUpdate: Restrict, map: "fk_order_items_orders1")
+  products       products         @relation(fields: [product], references: [id], onUpdate: Restrict, map: "fk_order_items_products1")
   shipment_items shipment_items[]
 
   @@index([order], map: "fk_order_items_orders1_idx")
@@ -316,14 +316,14 @@ model orders {
   discountAmount                                Int?
   paymentMethodId                               Int?
   order_items                                   order_items[]
-  addresses_orders_shippingAddressIdToaddresses addresses             @relation("orders_shippingAddressIdToaddresses", fields: [shippingAddressId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_addresses1")
-  addresses_orders_billingAddressIdToaddresses  addresses             @relation("orders_billingAddressIdToaddresses", fields: [billingAddressId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_addresses2")
-  customers                                     customers             @relation(fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_customers1")
-  order_payment_status                          order_payment_status? @relation(fields: [paymentStatus], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_order_payment_status1")
-  order_status                                  order_status          @relation(fields: [orderStatus], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_order_status1")
-  payment_method                                payment_method?       @relation(fields: [paymentMethodId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_payment_method2")
-  po_terms                                      po_terms              @relation(fields: [paymentTermsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_po_terms1")
-  shopify                                       shopify?              @relation(fields: [shopifyId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_shopify1")
+  addresses_orders_shippingAddressIdToaddresses addresses             @relation("orders_shippingAddressIdToaddresses", fields: [shippingAddressId], references: [id], onUpdate: Restrict, map: "fk_orders_addresses1")
+  addresses_orders_billingAddressIdToaddresses  addresses             @relation("orders_billingAddressIdToaddresses", fields: [billingAddressId], references: [id], onUpdate: Restrict, map: "fk_orders_addresses2")
+  customers                                     customers             @relation(fields: [customerId], references: [id], onUpdate: Restrict, map: "fk_orders_customers1")
+  order_payment_status                          order_payment_status? @relation(fields: [paymentStatus], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_orders_order_payment_status1")
+  order_status                                  order_status          @relation(fields: [orderStatus], references: [id], onUpdate: Restrict, map: "fk_orders_order_status1")
+  payment_method                                payment_method?       @relation(fields: [paymentMethodId], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_orders_payment_method2")
+  po_terms                                      po_terms              @relation(fields: [paymentTermsId], references: [id], onUpdate: Restrict, map: "fk_orders_po_terms1")
+  shopify                                       shopify?              @relation(fields: [shopifyId], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_orders_shopify1")
   shipment                                      shipment[]
 
   @@index([shippingAddressId], map: "fk_orders_addresses1_idx")
@@ -340,7 +340,7 @@ model packages {
   id           Int        @id @default(autoincrement())
   name         String     @db.VarChar(45)
   dimensionsId Int
-  dimensions   dimensions @relation(fields: [dimensionsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_packages_dimensions1")
+  dimensions   dimensions @relation(fields: [dimensionsId], references: [id], onUpdate: Restrict, map: "fk_packages_dimensions1")
 
   @@index([dimensionsId], map: "fk_packages_dimensions1_idx")
 }
@@ -365,8 +365,8 @@ model po_products {
   vendorProduct   Int
   purchaseOrder   Int
   grn_products    grn_products[]
-  purchase_orders purchase_orders @relation(fields: [purchaseOrder], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_po_products_purchase_orders1")
-  vendor_products vendor_products @relation(fields: [vendorProduct], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_po_products_vendor_products1")
+  purchase_orders purchase_orders @relation(fields: [purchaseOrder], references: [id], onUpdate: Restrict, map: "fk_po_products_purchase_orders1")
+  vendor_products vendor_products @relation(fields: [vendorProduct], references: [id], onUpdate: Restrict, map: "fk_po_products_vendor_products1")
 
   @@index([purchaseOrder], map: "fk_po_products_purchase_orders1_idx")
   @@index([vendorProduct], map: "fk_po_products_vendor_products1_idx")
@@ -376,8 +376,8 @@ model po_sentto {
   id              Int             @id @default(autoincrement())
   purchaseOrder   Int
   email           Int
-  emails          emails          @relation(fields: [email], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_po_sentto_emails1")
-  purchase_orders purchase_orders @relation(fields: [purchaseOrder], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_po_sentto_purchase_orders1")
+  emails          emails          @relation(fields: [email], references: [id], onUpdate: Restrict, map: "fk_po_sentto_emails1")
+  purchase_orders purchase_orders @relation(fields: [purchaseOrder], references: [id], onUpdate: Restrict, map: "fk_po_sentto_purchase_orders1")
 
   @@index([email], map: "fk_po_sentto_emails1_idx")
   @@index([purchaseOrder], map: "fk_po_sentto_purchase_orders1_idx")
@@ -419,7 +419,7 @@ model product_prices {
   sellingPrice      Int?
   averageCostPrice  Int?
   productId         Int      @unique(map: "productId_UNIQUE")
-  products          products @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_prices_products1")
+  products          products @relation(fields: [productId], references: [id], onUpdate: Restrict, map: "fk_product_prices_products1")
 
   @@index([productId], map: "fk_product_prices_products1_idx")
 }
@@ -428,7 +428,7 @@ model product_tags {
   id       Int      @id @default(autoincrement())
   tags     String?  @db.VarChar(45)
   product  Int
-  products products @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_tags_products1")
+  products products @relation(fields: [product], references: [id], onUpdate: Restrict, map: "fk_product_tags_products1")
 
   @@unique([tags, product], map: "tags_product")
   @@index([product], map: "fk_product_tags_products1_idx")
@@ -464,10 +464,10 @@ model products {
   order_items                                      order_items[]
   product_prices                                   product_prices?
   product_tags                                     product_tags[]
-  product_brand                                    product_brand?       @relation(fields: [brand], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_brands2")
-  product_categories                               product_categories?  @relation(fields: [category], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_category")
-  dimensions                                       dimensions           @relation(fields: [dimensionsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_dimensions1")
-  product_types                                    product_types        @relation(fields: [type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_product_types1")
+  product_brand                                    product_brand?       @relation(fields: [brand], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_products_brands2")
+  product_categories                               product_categories?  @relation(fields: [category], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_products_category")
+  dimensions                                       dimensions           @relation(fields: [dimensionsId], references: [id], onUpdate: Restrict, map: "fk_products_dimensions1")
+  product_types                                    product_types        @relation(fields: [type], references: [id], onUpdate: Restrict, map: "fk_products_product_types1")
   quality_ckeck_quality_ckeck_productsToproducts   quality_ckeck[]      @relation("quality_ckeck_productsToproducts")
   rfq_products                                     rfq_products[]
   vendor_products                                  vendor_products[]
@@ -501,14 +501,14 @@ model purchase_orders {
   grn                   grn[]
   po_products           po_products[]
   po_sentto             po_sentto[]
-  po_status             po_status          @relation(fields: [status], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_po_status1")
-  purchase_orders       purchase_orders?   @relation("purchase_ordersTopurchase_orders", fields: [amendedFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_purchase_orders1")
+  po_status             po_status          @relation(fields: [status], references: [id], onUpdate: Restrict, map: "fk_purchase_orders_po_status1")
+  purchase_orders       purchase_orders?   @relation("purchase_ordersTopurchase_orders", fields: [amendedFrom], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_purchase_orders_purchase_orders1")
   other_purchase_orders purchase_orders[]  @relation("purchase_ordersTopurchase_orders")
-  rfq                   rfq?               @relation(fields: [rfqId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_rfq1")
-  po_terms              po_terms           @relation(fields: [po_term], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_terms1")
-  user                  user?              @relation(fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_user1")
-  vendors               vendors            @relation(fields: [vendor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_vendors1")
-  warehouse             warehouse?         @relation(fields: [warehouseId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_purchase_orders_warehouse1")
+  rfq                   rfq?               @relation(fields: [rfqId], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_purchase_orders_rfq1")
+  po_terms              po_terms           @relation(fields: [po_term], references: [id], onUpdate: Restrict, map: "fk_purchase_orders_terms1")
+  user                  user?              @relation(fields: [approvedBy], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_purchase_orders_user1")
+  vendors               vendors            @relation(fields: [vendor], references: [id], onUpdate: Restrict, map: "fk_purchase_orders_vendors1")
+  warehouse             warehouse?         @relation(fields: [warehouseId], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_purchase_orders_warehouse1")
   vendor_shipments      vendor_shipments[]
 
   @@index([status], map: "fk_purchase_orders_po_status1_idx")
@@ -529,9 +529,9 @@ model putaway {
   grnId            Int?
   createdBy        Int
   putawaytypeId    Int
-  grn              grn?               @relation(fields: [grnId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_grn1")
-  putaway_types    putaway_types      @relation(fields: [putawaytypeId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_putaway_types1")
-  user             user               @relation(fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_user1")
+  grn              grn?               @relation(fields: [grnId], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_putaway_grn1")
+  putaway_types    putaway_types      @relation(fields: [putawaytypeId], references: [id], onUpdate: Restrict, map: "fk_putaway_putaway_types1")
+  user             user               @relation(fields: [createdBy], references: [id], onUpdate: Restrict, map: "fk_putaway_user1")
   putaway_products putaway_products[]
 
   @@index([grnId], map: "fk_putaway_grn1_idx")
@@ -545,9 +545,9 @@ model putaway_products {
   putawayId          Int
   shelvesId          Int?
   inventoryProductId Int?
-  inventory_products inventory_products? @relation(fields: [inventoryProductId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_products_inventory_products1")
-  putaway            putaway             @relation(fields: [putawayId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_products_putaway1")
-  shelves            shelves?            @relation(fields: [shelvesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_putaway_products_shelves1")
+  inventory_products inventory_products? @relation(fields: [inventoryProductId], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_putaway_products_inventory_products1")
+  putaway            putaway             @relation(fields: [putawayId], references: [id], onUpdate: Restrict, map: "fk_putaway_products_putaway1")
+  shelves            shelves?            @relation(fields: [shelvesId], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_putaway_products_shelves1")
 
   @@index([inventoryProductId], map: "fk_putaway_products_inventory_products1_idx")
   @@index([putawayId], map: "fk_putaway_products_putaway1_idx")
@@ -564,7 +564,7 @@ model putaway_types {
 model quality_ckeck {
   id                                        Int      @id @default(autoincrement())
   products                                  Int
-  products_quality_ckeck_productsToproducts products @relation("quality_ckeck_productsToproducts", fields: [products], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_quality_ckeck_products1")
+  products_quality_ckeck_productsToproducts products @relation("quality_ckeck_productsToproducts", fields: [products], references: [id], onUpdate: Restrict, map: "fk_quality_ckeck_products1")
 
   @@index([products], map: "fk_quality_ckeck_products1_idx")
 }
@@ -580,7 +580,7 @@ model rfq {
   updatedAt                          DateTime          @default(now()) @db.DateTime(0)
   ammendedFrom                       Int?
   purchase_orders                    purchase_orders[]
-  rfq                                rfq?              @relation("rfqTorfq", fields: [ammendedFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_rfq1")
+  rfq                                rfq?              @relation("rfqTorfq", fields: [ammendedFrom], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_rfq_rfq1")
   other_rfq                          rfq[]             @relation("rfqTorfq")
   rfq_products_rfq_products_rfqTorfq rfq_products[]    @relation("rfq_products_rfqTorfq")
   rfq_sentto_rfq_sentto_rfqTorfq     rfq_sentto[]      @relation("rfq_sentto_rfqTorfq")
@@ -594,8 +594,8 @@ model rfq_products {
   price                     Int?
   rfq                       Int
   product                   Int
-  products                  products @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_products_products1")
-  rfq_rfq_products_rfqTorfq rfq      @relation("rfq_products_rfqTorfq", fields: [rfq], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_products_rfq1")
+  products                  products @relation(fields: [product], references: [id], onUpdate: Restrict, map: "fk_rfq_products_products1")
+  rfq_rfq_products_rfqTorfq rfq      @relation("rfq_products_rfqTorfq", fields: [rfq], references: [id], onUpdate: Restrict, map: "fk_rfq_products_rfq1")
 
   @@index([product], map: "fk_rfq_products_products1_idx")
   @@index([rfq], map: "fk_rfq_products_rfq1_idx")
@@ -606,8 +606,8 @@ model rfq_sentto {
   email                   Int
   rfq                     Int
   sentOn                  DateTime @default(now()) @db.DateTime(0)
-  emails                  emails   @relation(fields: [email], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_sentto_emails1")
-  rfq_rfq_sentto_rfqTorfq rfq      @relation("rfq_sentto_rfqTorfq", fields: [rfq], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rfq_sentto_rfq1")
+  emails                  emails   @relation(fields: [email], references: [id], onUpdate: Restrict, map: "fk_rfq_sentto_emails1")
+  rfq_rfq_sentto_rfqTorfq rfq      @relation("rfq_sentto_rfqTorfq", fields: [rfq], references: [id], onUpdate: Restrict, map: "fk_rfq_sentto_rfq1")
 
   @@unique([email, rfq], map: "email_rfq")
   @@index([email], map: "fk_rfq_sentto_emails1_idx")
@@ -626,8 +626,8 @@ model role_permission {
   id           Int        @id @default(autoincrement())
   roleId       Int
   permissionId Int
-  permission   permission @relation(fields: [permissionId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_role_permission_permission1")
-  role         role       @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_role_permission_role1")
+  permission   permission @relation(fields: [permissionId], references: [id], onUpdate: Restrict, map: "fk_role_permission_permission1")
+  role         role       @relation(fields: [roleId], references: [id], onUpdate: Restrict, map: "fk_role_permission_role1")
 
   @@index([permissionId], map: "fk_role_permission_permission1_idx")
   @@index([roleId], map: "fk_role_permission_role1_idx")
@@ -638,7 +638,7 @@ model sales_invoice_details {
   invoiceNumber String?   @db.VarChar(45)
   createdAt     DateTime? @default(now()) @db.DateTime(0)
   shipmentId    Int       @unique(map: "shipmentId_UNIQUE")
-  shipment      shipment  @relation(fields: [shipmentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_sales_invoice_details_shipment1")
+  shipment      shipment  @relation(fields: [shipmentId], references: [id], onUpdate: Restrict, map: "fk_sales_invoice_details_shipment1")
 
   @@index([shipmentId], map: "fk_sales_invoice_details_shipment1_idx")
 }
@@ -679,8 +679,8 @@ model shelves {
   height             Int
   inventory_products inventory_products[]
   putaway_products   putaway_products[]
-  areas              areas                    @relation(fields: [area], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_areas1")
-  shelf_type         shelf_type               @relation(fields: [shelfType], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shelfs_shelf_type1")
+  areas              areas                    @relation(fields: [area], references: [id], onUpdate: Restrict, map: "fk_shelfs_areas1")
+  shelf_type         shelf_type               @relation(fields: [shelfType], references: [id], onUpdate: Restrict, map: "fk_shelfs_shelf_type1")
 
   @@index([area], map: "fk_shelfs_areas1_idx")
   @@index([shelfType], map: "fk_shelfs_shelf_type1_idx")
@@ -704,13 +704,13 @@ model shipment {
   awb                   String?                @db.VarChar(45)
   manifestId            Int?
   sales_invoice_details sales_invoice_details?
-  batch                 batch?                 @relation(fields: [batchId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_batch1")
-  courier               courier?               @relation(fields: [courierId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_courier1")
-  dimensions            dimensions?            @relation(fields: [dimensionsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_dimensions1")
-  manifest              manifest?              @relation(fields: [manifestId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_manifest1")
-  orders                orders                 @relation(fields: [ordersId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_orders1")
-  shipment_status       shipment_status        @relation(fields: [shipmentStatusId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_shipment_status1")
-  warehouse             warehouse?             @relation(fields: [pickupFrom], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_warehouse1")
+  batch                 batch?                 @relation(fields: [batchId], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_shipment_batch1")
+  courier               courier?               @relation(fields: [courierId], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_shipment_courier1")
+  dimensions            dimensions?            @relation(fields: [dimensionsId], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_shipment_dimensions1")
+  manifest              manifest?              @relation(fields: [manifestId], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_shipment_manifest1")
+  orders                orders                 @relation(fields: [ordersId], references: [id], onUpdate: Restrict, map: "fk_shipment_orders1")
+  shipment_status       shipment_status        @relation(fields: [shipmentStatusId], references: [id], onUpdate: Restrict, map: "fk_shipment_shipment_status1")
+  warehouse             warehouse?             @relation(fields: [pickupFrom], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_shipment_warehouse1")
   shipment_items        shipment_items[]
 
   @@index([batchId], map: "fk_shipment_batch1_idx")
@@ -726,8 +726,8 @@ model shipment_items {
   id           Int         @id @default(autoincrement())
   orderItemsId Int
   shipmentId   Int
-  order_items  order_items @relation(fields: [orderItemsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_items_order_items1")
-  shipment     shipment    @relation(fields: [shipmentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_shipment_items_shipment1")
+  order_items  order_items @relation(fields: [orderItemsId], references: [id], onUpdate: Restrict, map: "fk_shipment_items_order_items1")
+  shipment     shipment    @relation(fields: [shipmentId], references: [id], onUpdate: Restrict, map: "fk_shipment_items_shipment1")
 
   @@index([orderItemsId], map: "fk_shipment_items_order_items1_idx")
   @@index([shipmentId], map: "fk_shipment_items_shipment1_idx")
@@ -745,9 +745,9 @@ model shopify {
   orderId        String?   @unique(map: "orderId_UNIQUE") @db.VarChar(150)
   orderNumber    String?   @db.VarChar(150)
   orderStatusUrl String?   @db.VarChar(200)
+  createdAt      DateTime? @default(now()) @db.DateTime(0)
   invoiceUrl     String?   @db.VarChar(500)
   sourceName     String?   @db.VarChar(100)
-  createdAt      DateTime? @default(now()) @db.DateTime(0)
   orders         orders[]
 }
 
@@ -788,8 +788,8 @@ model user_roles {
   id     Int  @id @default(autoincrement())
   userId Int
   roleId Int
-  role   role @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_roles_role1")
-  user   user @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_roles_user1")
+  role   role @relation(fields: [roleId], references: [id], onUpdate: Restrict, map: "fk_user_roles_role1")
+  user   user @relation(fields: [userId], references: [id], onUpdate: Restrict, map: "fk_user_roles_user1")
 
   @@index([roleId], map: "fk_user_roles_role1_idx")
   @@index([userId], map: "fk_user_roles_user1_idx")
@@ -800,8 +800,8 @@ model vendor_branches {
   branchCode String?   @unique(map: "branch_code_UNIQUE") @db.VarChar(45)
   address    Int
   vendor     Int
-  addresses  addresses @relation(fields: [address], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_branches_addresses1")
-  vendors    vendors   @relation(fields: [vendor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_branches_vendors1")
+  addresses  addresses @relation(fields: [address], references: [id], onUpdate: Restrict, map: "fk_vendor_branches_addresses1")
+  vendors    vendors   @relation(fields: [vendor], references: [id], onUpdate: Restrict, map: "fk_vendor_branches_vendors1")
 
   @@index([address], map: "fk_vendor_branches_addresses1_idx")
   @@index([vendor], map: "fk_vendor_branches_vendors1_idx")
@@ -815,8 +815,8 @@ model vendor_products {
   product     Int
   vendor      Int
   po_products po_products[]
-  products    products               @relation(fields: [product], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_products_products1")
-  vendors     vendors                @relation(fields: [vendor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_products_vendors1")
+  products    products               @relation(fields: [product], references: [id], onUpdate: Restrict, map: "fk_vendor_products_products1")
+  vendors     vendors                @relation(fields: [vendor], references: [id], onUpdate: Restrict, map: "fk_vendor_products_vendors1")
 
   @@unique([product, priority], map: "product_priority")
   @@unique([product, vendor], map: "product_vendor")
@@ -831,7 +831,7 @@ model vendor_shipments {
   shipmentId      String          @db.VarChar(100)
   purchaseOrderId Int
   grn             grn[]
-  purchase_orders purchase_orders @relation(fields: [purchaseOrderId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_vendor_shipments_purchase_orders1")
+  purchase_orders purchase_orders @relation(fields: [purchaseOrderId], references: [id], onUpdate: Restrict, map: "fk_vendor_shipments_purchase_orders1")
 
   @@index([purchaseOrderId], map: "fk_vendor_shipments_purchase_orders1_idx")
 }
@@ -858,7 +858,7 @@ model warehouse {
   areas_areas_warehouseTowarehouse areas[]           @relation("areas_warehouseTowarehouse")
   purchase_orders                  purchase_orders[]
   shipment                         shipment[]
-  addresses                        addresses?        @relation(fields: [addressesId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_warehouse_addresses1")
+  addresses                        addresses?        @relation(fields: [addressesId], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_warehouse_addresses1")
 
   @@index([addressesId], map: "fk_warehouse_addresses1_idx")
 }
